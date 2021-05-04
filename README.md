@@ -184,7 +184,7 @@ pi                   ; => 3.1415
 Primitive types are defined in [builtin.llrl](./llrl0/src/ast/builtin.llrl#L61-L81).
 
 ```llrl
-unit
+unit      ; Synonym for empty tuple (:)
 Bool
 I8
 I16
@@ -287,32 +287,91 @@ answer:no
 (function (vec2/new x y)
   (vec2: x y))
 
-(function (vec2/squared-length vec) {(-> Vec2 F64)}
+(function (vec2/squared-length vec) {(-> Vec2 F32)}
   (match vec
     [(vec2: (let x) (let y))
       (+ (* x x) (* y y))]))
 
 ; Data types can be parameterized
 (data (MyOption A)
-  option:none
-  (option:some A))
+  myopt:none
+  (myopt:some A))
 
 (function (myopt/or a b) ; inferred as {(forall A) (-> (MyOption A) (MyOption A) (MyOption A))}
-  (match (: a b)
-    [(: (option:some (let x)) _)
-      (option:some x)]
-    [(: _ (option:some (let x)))
-      (option:some x)]
-    [_
-      option:none]))
+  (match a
+    [(myopt:some (let x))
+      (myopt:some x)]
+    [myopt:none
+      b]))
 ```
 
-`builtin` contains [`Option`](./llrl0/src/ast/builtin.llrl#L86-L89) and [`Result`](./llrl0/src/ast/builtin.llrl#L91-L94) declaration. These types are re-exported by [`std/option`](./std/option.llrl) and [`std/result`](./std/result.llrl).
+`builtin` contains [`Option`](./llrl0/src/ast/builtin.llrl#L86-L89) and [`Result`](./llrl0/src/ast/builtin.llrl#L91-L94) declaration. These types are re-exported by [`std/option`](./std/option.llrl) and [`std/result`](./std/result.llrl) with utility functions and common type class instances.
 
 ### Type classes
 
-TODO
+llrl type classes are almost same as Haskell 2010 type classes + `MultiParamTypeClasses` + `FlexibleContexts` `FlexibleInstances` + `UndecidableInstances`. Orphan checks, fundeps, and associated types are not implemented.
+
+```llrl
+(class (Semigroup A)
+  (function (<> x y) {(-> A A A)}))
+```
+
+Each class instance has its own name. Instances are automatically resolved when using methods of the class, but the instances that are resolved must exist in the current scope by import/export.
+
+```llrl
+(instance Semigroup.I32 (Semigroup I32)
+  (function (<> x y)
+    (+ x y)))
+
+(instance Semigroup.String (Semigroup String)
+  (function (<> x y)
+    (string x y)))
+
+(println! (<> 12 34))
+(println! (<> "foo" "bar"))
+```
+
+`std` provides several type classes that express frequently appearing operations like [`Eq`](./std/eq.llrl), [`Ord`](./std/ord.llrl), [`Display`](./std/display.llrl), etc.
 
 ### Macros
 
-TODO
+The definition of macros have the same form as functions, but the type of macros always be `(-> (Syntax Sexp) (Result (Syntax Sexp) String))`. [`(Syntax A)`](./llrl0/src/ast/builtin.llrl#L114-L116) is the internal representation type used for embedding context information, and [`Sexp`](./llrl0/src/ast/builtin.llrl#L118-L128) is the structure of S-expressions itself. This means that macros take the S-expression of the macro application (with context information) as an argument and either return the result of the macro expansion or return an expansion error. Since it is hard to deconstruct and construct S-expressions manually, there is `s/match` to deconstruct S-expressions and quoting to construct S-expressions.
+
+For example, `lambda` syntax is defined as a macro in [std/boot/5-lambda](./std/boot/5-lambda.llrl):
+
+```llrl
+; Example use: (lambda (x y) (+ x y))
+(macro (lambda s)
+  (s/match s                                ; Matching with (lambda (x y) (+ x y))
+    [(_ ,args ,@body)                       ; args := (x y), body := ((+ x y))
+      (ok
+        (let ([tmp-f (gensym)])             ; Generate a non-overlapping symbol
+          `(let ([(,tmp-f ,@args) ,@body])  ; Construct a S-expression:
+            ,tmp-f)))]                      ; (let ([(<tmp-f> x y) (+ x y)]) <tmp-f>)
+    [_
+      (err "Expected (lambda (arg ...) body ...)")]))
+```
+
+`s/match` and `quasiquote` are defined as macros in [std/boot/2-s-match](./std/boot/2-s-match.llrl), [std/boot/3-quasiquote](./std/boot/3-quasiquote.llrl).
+
+`'`(quote), `` ` `` (quasiquote), `,` (unquote), `,@` (unquote-splicing) are the same as in the classical Lisp, but there is a llrl-specific quoting, `\` (capture). This captures the "use" of the definition of the scope.
+For example, `and` macro (defined in [std/bool](./std/bool.llrl)) uses the function `&&` in the result of the macro expansion. Thanks to the capture, this points to the intended `&&` even if `&&` does not exist in the scope of the macro caller.
+
+```llrl
+(macro (and s)
+  (s/match s
+    [(_)
+      (ok '#t)]
+    [(_ ,a ,@bs)
+      (s/foldr (lambda (a b) `(,\&& ,a ,b)) a bs)]
+    [_
+      (err "Expected (and cond ...)")]))
+```
+
+To simplify the compilation and the JIT execution order, macros are not usable in the defined module.
+
+### Standard library
+
+Many functionalities are implemented and provided in the standard library.
+
+TODO: std overview?
