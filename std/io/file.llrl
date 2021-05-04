@@ -1,0 +1,93 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-1" _)
+(import "std/integer" _.I32 _.U64)
+(import "std/memory" Ptr ptr/_ _.Ptr)
+(import "std/ref" Ref ref _.Ref)
+(import "std/array" Array array/_)
+(import "std/rw" Read Write)
+(import "std/string" string/c-compatible-ptr)
+(import "std/io/error" _)
+(export File file/_ _.File)
+
+(value-data File
+  (file: (Ref (Ptr <File>))))
+
+(function (file/open! pathname mode) {(-> String String (Result File IoError))}
+  (let1 handle (<fopen> (string/c-compatible-ptr pathname) (string/c-compatible-ptr mode))
+    (if (ne? handle ptr/null)
+      (ok (file: (ref handle)))
+      (err (io-error/from-current-errno)))))
+
+(function file/closed {File}
+  (file: (ref ptr/null)))
+
+(function (file/read! dest file) {(-> (Array U8) File (Result U64 IoError))}
+  (with1 (file: (let handle)) file
+    (if (eq? ~handle ptr/null)
+      (err io-error:closed)
+      (let1 bytes-read (<fread> (array/ptr dest) 1 (array/length dest) ~handle)
+        (if (or (eq? bytes-read (array/length dest))
+                (ne? (<feof> ~handle) 0))
+          (ok bytes-read)
+          (err (io-error/from-current-errno)))))))
+
+(function (file/write! src file) {(-> (Array U8) File (Result unit IoError))}
+  (with1 (file: (let handle)) file
+    (if (eq? ~handle ptr/null)
+      (err io-error:closed)
+      (let1 bytes-write (<fwrite> (array/ptr src) 1 (array/length src) ~handle)
+        (if (eq? bytes-write (array/length src))
+          (ok unit)
+          (err (io-error/from-current-errno)))))))
+
+(function (file/flush! file) {(-> File (Result unit IoError))}
+  (with1 (file: (let handle)) file
+    (if (eq? ~handle ptr/null)
+      (err io-error:closed)
+      (if (eq? (<fflush> ~handle) 0)
+        (ok unit)
+        (err (io-error/from-current-errno))))))
+
+(function (file/close! file) {(-> File (Result unit IoError))}
+  (with1 (file: (let handle)) file
+    (if (eq? ~handle ptr/null)
+      (ok unit) ; Already closed; do nothing
+      (let1 close-result (<fclose> ~handle)
+        (set! handle ptr/null) ; the handle is no longer available even if close failed
+        (if (eq? close-result 0)
+          (ok unit)
+          (err (io-error/from-current-errno)))))))
+
+; Checks whether the file is closed or if the end-of file is reached.
+(function (file/eof? file) {(-> File Bool)}
+  (with1 (file: (let handle)) file
+    (or (eq? ~handle ptr/null)
+        (ne? (<feof> ~handle) 0))))
+
+; Checks whether the file has error.
+(function (file/error? file) {(-> File Bool)}
+  (with1 (file: (let handle)) file
+    (and (ne? ~handle ptr/null)
+         (ne? (<ferror> ~handle) 0))))
+
+; Checks whether the file is closed.
+(function (file/closed? file) {(-> File Bool)}
+  (with1 (file: (let handle)) file
+    (eq? ~handle ptr/null)))
+
+(data <File>)
+(c-function <fopen> {(-> (Ptr U8) (Ptr U8) (Ptr <File>))} "fopen")
+(c-function <fread> {(-> (Ptr U8) U64 U64 (Ptr <File>) U64)} "fread")
+(c-function <fwrite> {(-> (Ptr U8) U64 U64 (Ptr <File>) U64)} "fwrite")
+(c-function <fclose> {(-> (Ptr <File>) I32)} "fclose")
+(c-function <fflush> {(-> (Ptr <File>) I32)} "fflush")
+(c-function <feof> {(-> (Ptr <File>) I32)} "feof")
+(c-function <ferror> {(-> (Ptr <File>) I32)} "ferror")
+
+(instance Read.File (Read File IoError)
+  (transparent-function (read-into-buf! buf r) (file/read! buf r)))
+
+(instance Write.File (Write File IoError)
+  (transparent-function (write-bytes! bytes w) (file/write! bytes w))
+  (transparent-function (flush! w) (file/flush! w)))

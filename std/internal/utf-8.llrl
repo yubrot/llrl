@@ -1,0 +1,120 @@
+; Provides a low-level implementation of UTF-8 encoding.
+; Usually you don't need to use this module, std/string or std/char can be used.
+(no-implicit-std)
+
+(import "std/prelude/stage-1" _)
+(import "std/integer" _.U8 _.U32)
+(import "std/bits" bw_ _.U8 _.U32)
+(export Incomplete incomplete:_ Complete complete:_)
+(export Decode decode:_ decode decode-step decode/_ Encode encode:_ encode encode/_)
+
+(value-data Incomplete
+  (incomplete:2a U8)        ; [C2,DF]
+  (incomplete:3a U8)        ; [E0,EF]
+  (incomplete:3b U8 U8)     ; [E0,EF] [80,BF]
+  (incomplete:4a U8)        ; [F0,F4]
+  (incomplete:4b U8 U8)     ; [F0,F4] [80,BF]
+  (incomplete:4c U8 U8 U8)) ; [F0,F4] [80,BF] [80,BF]
+
+(value-data Complete
+  (complete:latin U8)       ; [00,7F]
+  (complete:2 U8 U8)        ; [C2,DF] [80,BF]
+  (complete:3 U8 U8 U8)     ; [E0,EF] [80,BF] [80,BF]
+  (complete:4 U8 U8 U8 U8)) ; [F0,F4] [80,BF] [80,BF] [80,BF]
+
+(value-data Decode
+  decode:invalid
+  (decode:invalid-produce U32)
+  (decode:continue Incomplete)
+  (decode:produce U32))
+
+(function (decode c) {(-> Complete Decode)}
+  (match c
+    [(complete:latin (let a))
+      (let1 x (cast a)
+        (if (<= x 127) (decode:produce x) decode:invalid))]
+    [(complete:2 (let a) (let b))
+      (let1 x (bw| (&<< a 31 6) (&<< b 63 0))
+        (if (<= 128 x 2047) (decode:produce x) decode:invalid))]
+    [(complete:3 (let a) (let b) (let c))
+      (let1 x (bw| (&<< a 15 12) (bw| (&<< b 63 6) (&<< c 63 0)))
+        (if (and (<= 2048 x 65535) (not (<= 55296 x 57343))) (decode:produce x) decode:invalid))]
+    [(complete:4 (let a) (let b) (let c) (let d))
+      (let1 x (bw| (&<< a 7 18) (bw| (&<< b 63 12) (bw| (&<< c 63 6) (&<< d 63 0))))
+        (if (<= 65536 x 111411) (decode:produce x) decode:invalid))]))
+
+(function (decode-step s n) {(-> (Option Incomplete) U8 Decode)}
+  (match (: s (input-class n))
+    [(: none input:latin) (decode (complete:latin n))]
+    [(: (some _) input:latin) (decode/mark-invalid (decode (complete:latin n)))]
+    [(: none input:2-header) (decode:continue (incomplete:2a n))]
+    [(: (some (incomplete:2a (let a))) input:progress) (decode (complete:2 a n))]
+    [(: none input:3-header) (decode:continue (incomplete:3a n))]
+    [(: (some (incomplete:3a (let a))) input:progress) (decode:continue (incomplete:3b a n))]
+    [(: (some (incomplete:3b (let a) (let b))) input:progress) (decode (complete:3 a b n))]
+    [(: none input:4-header) (decode:continue (incomplete:4a n))]
+    [(: (some (incomplete:4a (let a))) input:progress) (decode:continue (incomplete:4b a n))]
+    [(: (some (incomplete:4b (let a) (let b))) input:progress) (decode:continue (incomplete:4c a b n))]
+    [(: (some (incomplete:4c (let a) (let b) (let c))) input:progress) (decode (complete:4 a b c n))]
+    [_ decode:invalid]))
+
+(function (decode/mark-invalid d) {(-> Decode Decode)}
+  (match d
+    [(decode:produce (let n)) (decode:invalid-produce n)]
+    [_ d]))
+
+(function (decode/valid? d) {(-> Decode Bool)}
+  (match d
+    [decode:invalid #f]
+    [(decode:invalid-produce _) #f]
+    [_ #t]))
+
+(function (decode/continue? d) {(-> Decode (Option Incomplete))}
+  (match d
+    [(decode:continue (let i)) (some i)]
+    [_ none]))
+
+(value-data Encode
+  encode:invalid
+  (encode:success Complete))
+
+(function (encode x) {(-> U32 Encode)}
+  (cond
+    [(<= x 127)
+      (encode:success (complete:latin (cast x)))]
+    [(<= 128 x 2047)
+      (encode:success (complete:2 (>>&| x 6 31 192) (>>&| x 0 63 128)))]
+    [(and (<= 2048 x 65535) (not (<= 55296 x 57343)))
+      (encode:success (complete:3 (>>&| x 12 15 224) (>>&| x 6 63 128) (>>&| x 0 63 128)))]
+    [(<= 65536 x 111411)
+      (encode:success (complete:4 (>>&| x 18 7 240) (>>&| x 12 63 128) (>>&| x 6 63 128) (>>&| x 0 63 128)))]
+    [else
+      encode:invalid]))
+
+(function (encode/force-success e) {(-> Encode Complete)}
+  (match e
+    [encode:invalid (assert #f "encode/force-success")]
+    [(encode:success (let c)) c]))
+
+(value-data InputClass
+  input:invalid
+  input:latin
+  input:progress
+  input:2-header
+  input:3-header
+  input:4-header)
+
+(function (input-class i) {(-> U8 InputClass)}
+  (cond
+    [(= (bw& 128 i) 0) input:latin]
+    [(= (bw& 64 i) 0) input:progress]
+    [(= (bw& 32 i) 0) input:2-header]
+    [(= (bw& 16 i) 0) input:3-header]
+    [(= (bw& 8 i) 0) input:4-header]
+    [else input:invalid]))
+
+(function (&<< x range shift) {(-> U8 U8 U32 U32)}
+  (bw<< (cast (bw& x range)) shift))
+
+(function (>>&| x shift range header) {(-> U32 U32 U8 U8 U8)}
+  (bw| (bw& (cast (bw>> x shift)) range) header))

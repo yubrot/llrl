@@ -1,0 +1,292 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-1" _)
+(import "std/s" s/map)
+(import "std/integer" _.U64)
+(import "std/bits" _)
+(import "std/memory" Ptr ptr/_ _.Ptr)
+(import "std/ref" Ref ref _.Ref)
+(import "std/iterator" _)
+(import "std/it" it/_)
+(import "std/option" _.Option)
+(import "std/array" Array array/_ _.Array)
+(import "std/hash" hash Hash)
+(import "std/xxhash" XxHasher xx-hasher/_ _.XxHasher)
+(export HashMap hash-map hash-map/_ _.HashMap next-power-of-two)
+
+; Hash-based mutable key-value collection.
+; The HashMap implementation is based on simple Robin hood hashing with backshift removal.
+(value-data (HashMap K V)
+  (m: (Ref (HashMapBody K V))))
+
+(value-data (HashMapBody K V)
+  (m-body: XxHasher  ; hasher
+           U64       ; length
+           U64       ; capacity
+           (Ptr U64) ; hashes (most significant bit is existing flag)
+           (Ptr K)   ; keys
+           (Ptr V))) ; values
+
+(macro (hash-map s)
+  (s/match s
+    [(_ ,@elems)
+      (ok
+        (let1 tmp-table (gensym)
+          `(let ([,tmp-table ,\hash-map/empty])
+            ,@(s/map [^1 `(,\hash-map/insert-elem! ,%1 ,tmp-table)] elems)!
+            ,tmp-table)))]
+    [_
+      (err "Expected (hash-map elem ...)")]))
+
+(function hash-map/empty {(forall K V) (HashMap K V)}
+  (hash-map/with-capacity 32))
+
+(function (hash-map/with-capacity cap) {(forall K V) (-> U64 (HashMap K V))}
+  (let1 cap (next-power-of-two cap)
+    (m: (ref (m-body:
+      (xx-hasher/new)
+      0
+      cap
+      (array/ptr (array/new 0 cap))
+      (array/ptr (array/unsafe-alloc-uninitialized cap))
+      (array/ptr (array/unsafe-alloc-uninitialized cap)))))))
+
+(function (hash-map/length table) {(forall K V) (-> (HashMap K V) U64)}
+  (with1 (m: (ref (m-body: _ (let len) _ _ _ _))) table
+    len))
+
+(function (hash-map/empty? table) {(forall K V) (-> (HashMap K V) Bool)}
+  (eq? 0 (hash-map/length table)))
+
+(function (hash-map/reserve-capacity! required-cap table) {(forall K V) (-> U64 (HashMap K V) unit) (where (Eq K))}
+  (let1 required-cap (next-power-of-two required-cap)
+    (with ([(m: (let body)) table]
+           [(m-body: (let hasher) (let len) (let cap) (let hashes) (let keys) (let values)) ~body])
+      (when (<= required-cap cap) (return))
+      (set! body (m-body:
+        hasher
+        0
+        required-cap
+        (array/ptr (array/new 0 required-cap))
+        (array/ptr (array/unsafe-alloc-uninitialized required-cap))
+        (array/ptr (array/unsafe-alloc-uninitialized required-cap))))
+      (let1 i (ref 0)
+        (while (< ~i cap)
+          (when (exists? (ptr/load-at ~i hashes))
+            (insert! (ptr/load-at ~i hashes) (ptr/load-at ~i keys) (ptr/load-at ~i values) table))
+          (set! i (+ ~i 1)))))))
+
+(function (hash-map/get? key table) {(forall K V) (-> K (HashMap K V) (Option V)) (where (Eq K) (Hash K))}
+  (with1 (m: (ref (m-body: (let hasher) _ _ _ _ (let values)))) table
+    (let1 i (lookup? (put-existing-flag (hash hasher key)) key table)?
+      (some (ptr/load-at i values)))))
+
+(function (hash-map/has? key table) {(forall K V) (-> K (HashMap K V) Bool) (where (Eq K) (Hash K))}
+  (with1 (m: (ref (m-body: (let hasher) _ _ _ _ _))) table
+    (is? (some _) (lookup? (put-existing-flag (hash hasher key)) key table))))
+
+(function (hash-map/insert! key value table) {(forall K V) (-> K V (HashMap K V) (Option V)) (where (Eq K) (Hash K))}
+  (with1 (m: (ref (m-body: (let hasher) (let len) _ _ _ _))) table
+    (hash-map/reserve-capacity! (appropriate-minimal-capacity (+ len 1)) table)
+    (insert! (put-existing-flag (hash hasher key)) key value table)))
+
+(function (hash-map/insert-elem! elem table) {(forall K V) (-> (: K V) (HashMap K V) (Option V)) (where (Eq K) (Hash K))}
+  (with1 (: (let key) (let value)) elem
+    (hash-map/insert! key value table)))
+
+(function (hash-map/remove! key table) {(forall K V) (-> K (HashMap K V) (Option V)) (where (Eq K) (Hash K))}
+  (with1 (m: (ref (m-body: (let hasher) (let len) _ _ _ _))) table
+    (remove! (put-existing-flag (hash hasher key)) key table)))
+
+(function (hash-map/clear! table) {(forall K V) (-> (HashMap K V) unit)}
+  (with ([(m: (let body)) table]
+         [(m-body: (let hasher) (let len) (let cap) (let hashes) (let keys) (let values)) ~body])
+    (let1 i (ref 0)
+      (while (< ~i cap)
+        (ptr/store-at! ~i 0 hashes)
+        (set! i (+ ~i 1))))
+    (set! body (m-body: hasher 0 cap hashes keys values))))
+
+; Currently we are unable to make this implementation an instance of std/iterator/Collect.
+; In order to do so, we need to extend llrl type system to support associated types or fundeps.
+(function (hash-map/collect t) {(forall T K V) (-> (T (: K V)) (HashMap K V)) (where (Iterate T) (Eq K) (Hash K))}
+  (let1 table hash-map/empty
+    (for (: (let k) (let v)) t
+      (hash-map/insert! k v table))
+    table))
+
+(function (hash-map/elems table) {(forall K V) (-> (HashMap K V) (Iterator (: K V)))}
+  (with ([(m: (let body)) table]
+         [(m-body: (let hasher) (let len) (let cap) (let hashes) (let keys) (let values)) ~body]
+         [(let i) (ref 0)])
+    (iterator/new (lambda ()
+      (while (and (< ~i cap)
+                  (not (exists? (ptr/load-at ~i hashes))))
+        (set! i (+ ~i 1)))
+      (when? (< ~i cap)
+        (let1 index ~i
+          (set! i (+ ~i 1))
+          (: (ptr/load-at index keys) (ptr/load-at index values))))))))
+
+(function (hash-map/keys table) {(forall K V) (-> (HashMap K V) (Iterator K))}
+  (it/map (case1 (: (let key) _) key) (hash-map/elems table)))
+
+(function (hash-map/values table) {(forall K V) (-> (HashMap K V) (Iterator V))}
+  (it/map (case1 (: _ (let value)) value) (hash-map/elems table)))
+
+; ---------------------------
+
+(function (lookup? hash key table) {(forall K V) (-> U64 K (HashMap K V) (Option U64)) (where (Eq K))}
+  (with1 (m: (ref (m-body: _ _ (let cap) (let hashes) (let keys) (let values)))) table
+    (let1 i (ref (hash-ideal-index hash cap))
+      (loop
+        (let1 h (ptr/load-at ~i hashes)
+          (cond
+            [(and (eq? hash h) (eq? key (ptr/load-at ~i keys)))
+              (return (some ~i))]
+            [(not (exists? h))
+              (return none)]
+            [(> (distance-from-ideal-index ~i hash cap) (distance-from-ideal-index ~i h cap))
+              (return none)]
+            [else
+              (set! i (% (+ ~i 1) cap))]))))))
+
+(function (insert! hash key value table) {(forall K V) (-> U64 K V (HashMap K V) (Option V)) (where (Eq K))}
+  (with ([(m: (let body)) table]
+         [(m-body: (let hasher) (let len) (let cap) (let hashes) (let keys) (let values)) ~body])
+    (let* ([hash (ref hash)]
+           [key (ref key)]
+           [value (ref value)]
+           [i (ref (hash-ideal-index ~hash cap))]
+           [stealed? (ref #f)])
+      (loop
+        (let1 h (ptr/load-at ~i hashes)
+          (if (exists? h)
+            (if (and (not ~stealed?) (eq? ~hash h) (eq? ~key (ptr/load-at ~i keys)))
+              ; The value corresponding to the key already exists. replace it
+              (return (some (ptr/replace-at! ~i ~value values)))
+              (begin
+                (when (> (distance-from-ideal-index ~i ~hash cap) (distance-from-ideal-index ~i h cap))
+                  ; Steal the bucket
+                  (set! stealed? #t) ; Once stealing occured there are no buckets matching the key
+                  (set! hash (ptr/replace-at! ~i ~hash hashes))
+                  (set! key (ptr/replace-at! ~i ~key keys))
+                  (set! value (ptr/replace-at! ~i ~value values)))
+                ; Go to the next bucket
+                (set! i (% (+ ~i 1) cap))))
+            ; Found an empty bucket
+            (begin
+              (ptr/store-at! ~i ~hash hashes)
+              (ptr/store-at! ~i ~key keys)
+              (ptr/store-at! ~i ~value values)
+              (set! body (m-body: hasher (+ len 1) cap hashes keys values))
+              (return none))))))))
+
+(function (remove! hash key table) {(forall K V) (-> U64 K (HashMap K V) (Option V)) (where (Eq K))}
+  (with ([(let i) (lookup? hash key table)?]
+         [(let j) (ref i)]
+         [(m: (let body)) table]
+         [(m-body: (let hasher) (let len) (let cap) (let hashes) (let keys) (let values)) ~body]
+         [(let removed-value) (ptr/load-at i values)])
+    (while
+      (let* ([j+1 (% (+ ~j 1) cap)]
+             [h (ptr/load-at j+1 hashes)]
+             [backshift? (and (exists? h) (ne? 0 (distance-from-ideal-index j+1 h cap)))])
+        (when backshift? (set! j j+1))
+        backshift?))
+    (if (< ~j i)
+      (begin
+        (when (ne? i (- cap 1))
+          (ptr/move! (ptr/add (+ i 1) hashes) (- cap 1 i) (ptr/add i hashes))
+          (ptr/move! (ptr/add (+ i 1) keys) (- cap 1 i) (ptr/add i keys))
+          (ptr/move! (ptr/add (+ i 1) values) (- cap 1 i) (ptr/add i values)))
+        (ptr/store-at! (- cap 1) (ptr/load-at 0 hashes) hashes)
+        (ptr/store-at! (- cap 1) (ptr/load-at 0 keys) keys)
+        (ptr/store-at! (- cap 1) (ptr/load-at 0 values) values)
+        (when (ne? ~j 0)
+          (ptr/move! (ptr/add 1 hashes) ~j hashes)
+          (ptr/move! (ptr/add 1 keys) ~j keys)
+          (ptr/move! (ptr/add 1 values) ~j values)))
+      (when (ne? i ~j)
+        (ptr/move! (ptr/add (+ i 1) hashes) (- ~j i) (ptr/add i hashes))
+        (ptr/move! (ptr/add (+ i 1) keys) (- ~j i) (ptr/add i keys))
+        (ptr/move! (ptr/add (+ i 1) values) (- ~j i) (ptr/add i values))))
+    (ptr/store-at! ~j 0 hashes)
+    (set! body (m-body: hasher (- len 1) cap hashes keys values))
+    (some removed-value)))
+
+(function (hash-ideal-index hash cap) {(-> U64 U64 U64)}
+  (bw& hash (- cap 1))) ; Since cap is power-of-two, cap-1 works as a bit mask
+
+(function (distance-from-ideal-index i hash cap) {(-> U64 U64 U64 U64)}
+  (% (- (+ i cap) (hash-ideal-index hash cap)) cap))
+
+(function (appropriate-minimal-capacity required-len) {(-> U64 U64)}
+  (* (/ (+ required-len 8) 9) 10))
+
+(function (next-power-of-two n) {(-> U64 U64)}
+  (assert (<= n 0x4000000000000000))
+  (let* ([n (- n 1)]
+         [n (bw| n (bw>> n 1))]
+         [n (bw| n (bw>> n 2))]
+         [n (bw| n (bw>> n 4))]
+         [n (bw| n (bw>> n 8))]
+         [n (bw| n (bw>> n 16))]
+         [n (bw| n (bw>> n 32))])
+    (+ n 1)))
+
+(function (exists? hash) {(-> U64 Bool)}
+  (ne? (bw& hash 0x8000000000000000) 0))
+
+(function (put-existing-flag hash) {(-> U64 U64)}
+  (bw| hash 0x8000000000000000))
+
+(function 0x8000000000000000 9223372036854775808)
+(function 0x4000000000000000 4611686018427387904)
+
+; ---------------------------
+
+(instance ShallowCopy.HashMap (forall K V) (ShallowCopy (HashMap K V))
+  (function (shallow-copy a)
+    (with1 (m: (ref (m-body: (let hasher) (let len) (let cap) (let hashes) (let keys) (let values)))) a
+      (let ([new-hasher (deep-copy hasher)]
+            [new-hashes (array/ptr (array/unsafe-alloc-uninitialized cap))]
+            [new-keys (array/ptr (array/unsafe-alloc-uninitialized cap))]
+            [new-values (array/ptr (array/unsafe-alloc-uninitialized cap))])
+        (ptr/copy! hashes cap new-hashes)
+        (ptr/copy! keys cap new-keys)
+        (ptr/copy! values cap new-values)
+        (m: (ref (m-body: new-hasher len cap new-hashes new-keys new-values)))))))
+
+(instance DeepCopy.HashMap (forall K V) (DeepCopy (HashMap K V)) (where (DeepCopy K) (DeepCopy V))
+  (function (deep-copy a)
+    (with1 (m: (ref (m-body: (let hasher) (let len) (let cap) (let hashes) (let keys) (let values)))) a
+      (let ([new-hasher (deep-copy hasher)]
+            [new-hashes (array/ptr (array/unsafe-alloc-uninitialized cap))]
+            [new-keys (array/ptr (array/unsafe-alloc-uninitialized cap))]
+            [new-values (array/ptr (array/unsafe-alloc-uninitialized cap))])
+        (ptr/copy! hashes cap new-hashes)
+        (let1 i (ref 0)
+          (while (< ~i cap)
+            (when (exists? (ptr/load-at ~i hashes))
+              (ptr/store-at! ~i (deep-copy (ptr/load-at ~i keys)) new-keys)
+              (ptr/store-at! ~i (deep-copy (ptr/load-at ~i values)) new-values))
+            (set! i (+ ~i 1))))
+      (m: (ref (m-body: new-hasher len cap new-hashes new-keys new-values)))))))
+
+(instance Default.HashMap (forall K V) (Default (HashMap K V))
+  (transparent-function default hash-map/empty))
+
+(instance DebugDisplay.HashMap (forall K V) (DebugDisplay (HashMap K V)) (where (DebugDisplay K) (DebugDisplay V))
+  (function (debug-display! w a)
+    (display! w "(hash-map")!
+    (for (: (let k) (let v)) (hash-map/elems a)
+      (display-all! w " (: " (debug k) " " (debug v) ")")!)
+    (display! w ")")))
+
+(instance Eq.HashMap (forall K V) (Eq (HashMap K V)) (where (Eq K) (Hash K) (Eq V))
+  (function (eq? a b)
+    (when (ne? (hash-map/length a) (hash-map/length b)) (return #f))
+    (for (: (let k) (let v)) (hash-map/elems a)
+      (when (ne? (some v) (hash-map/get? k b)) (return #f)))
+    #t))

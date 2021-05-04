@@ -1,0 +1,14 @@
+[package]
+authors = ["yubrot <yubrot@gmail.com>"]
+build = "build.rs"
+description = "llrl runtime library"
+edition = "2018"
+keywords = ["compiler"]
+license = "BSD-3-Clause"
+name = "llrt"
+repository = "https://github.com/yubrot/llrl"
+version = "0.1.0"
+
+[lib]
+name = "llrt"
+path = "llrt.rs"

@@ -1,0 +1,146 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-0" _)
+(import "std/assert" assert)
+(import "std/num-literals" U64)
+(import "std/s" s/unsnoc)
+(export get unsafe-get get? set! unsafe-set!)
+(export Load load)
+(export Store store!)
+(export LoadAt load-at load-at? unsafe-load-at load-bound)
+(export StoreAt store-at! unsafe-store-at!)
+
+(macro (get s)
+  (s/match s
+    [(_ ,t)
+      (ok `(,\load ,t))]
+    [(_ ,t ,@accessors)
+      (expand-get-accessors t accessors)]
+    [_
+      (err "Expected (get loadable accessor ...)")]))
+
+(function (expand-get-accessors t accessors)
+  (s/match accessors
+    [()
+      (ok t)]
+    [([,index] ,@accessors)
+      (expand-get-accessors `(,\load-at ,index ,t) accessors)]
+    [_
+      (err "Expected get accessor: [index]")]))
+
+(macro (unsafe-get s)
+  (s/match s
+    [(_ ,t)
+      (ok `(,\load ,t))]
+    [(_ ,t ,@accessors)
+      (expand-unsafe-get-accessors t accessors)]
+    [_
+      (err "Expected (unsafe-get loadable accessor ...)")]))
+
+(function (expand-unsafe-get-accessors t accessors)
+  (s/match accessors
+    [()
+      (ok t)]
+    [([,index] ,@accessors)
+      (expand-unsafe-get-accessors `(,\unsafe-load-at ,index ,t) accessors)]
+    [_
+      (err "Expected unsafe-get accessor: [index]")]))
+
+(macro (get? s)
+  (s/match s
+    [(_ ,t)
+      (ok `(,\some (,\load ,t)))]
+    [(_ ,t ,@accessors)
+      (expand-get?-accessors t accessors)]
+    [_
+      (err "Expected (get? loadable accessor ...)")]))
+
+(function (expand-get?-accessors t accessors)
+  (s/match accessors
+    [()
+      (ok `(,\some ,t))]
+    [([,index] ,@accessors)
+      (let ([next-t (gensym)])
+        (ok
+          `(match (,\load-at? ,index ,t)
+            [(,\some (let ,next-t))
+              ,(expand-get?-accessors next-t accessors)!]
+            [_
+              ,\none])))]
+    [_
+      (err "Expected get accessor: [index]")]))
+
+(macro (set! s)
+  (s/match s
+    [(_ ,t ,@accessors-value)
+      (match (s/unsnoc accessors-value)!
+        [(some (: (let accessors) (let value)))
+          (match (s/unsnoc accessors)!
+            [(some (: (let accessors) (let accessor)))
+              (expand-set-accessor (expand-get-accessors t accessors)! value accessor)]
+            [none
+              (ok `(,\store! ,value ,t))])]
+        [none
+          (err "Expected (set! storable accessor ... value)")])]
+    [_
+      (err "Expected (set! storable accessor ... value)")]))
+
+(function (expand-set-accessor t value accessor)
+  (s/match accessor
+    [[,index]
+      (ok `(,\store-at! ,index ,value ,t))]
+    [_
+      (err "Expected set! accessor: [index]")]))
+
+(macro (unsafe-set! s)
+  (s/match s
+    [(_ ,t ,@accessors-value)
+      (match (s/unsnoc accessors-value)!
+        [(some (: (let accessors) (let value)))
+          (match (s/unsnoc accessors)!
+            [(some (: (let accessors) (let accessor)))
+              (expand-unsafe-set-accessor (expand-unsafe-get-accessors t accessors)! value accessor)]
+            [none
+              (ok `(,\store! ,value ,t))])]
+        [none
+          (err "Expected (unsafe-set! storable accessor ... value)")])]
+    [_
+      (err "Expected (unsafe-set! storable accessor ... value)")]))
+
+(function (expand-unsafe-set-accessor t value accessor)
+  (s/match accessor
+    [[,index]
+      (ok `(,\unsafe-store-at! ,index ,value ,t))]
+    [_
+      (err "Expected unsafe-set! accessor: [index]")]))
+
+(class (Load T)
+  (function (load t) {(forall A) (-> (T A) A)}))
+
+(class (Store T) (where (Load T))
+  (function (store! a t) {(forall A) (-> A (T A) unit)}))
+
+(class (LoadAt T)
+  (function (load-at i t) {(forall A) (-> U64 (T A) A)}
+    (assert (<bound/lt?> i (load-bound t)) "Out of range")
+    (unsafe-load-at i t))
+
+  (function (load-at? i t) {(forall A) (-> U64 (T A) (Option A))}
+    (if (<bound/lt?> i (load-bound t))
+      (some (unsafe-load-at i t))
+      none))
+
+  ; Caller must ensure that the specified index is in [0,bound)
+  (function (unsafe-load-at i t) {(forall A) (-> U64 (T A) A)})
+
+  (function (load-bound t) {(forall A) (-> (T A) U64)}))
+
+(class (StoreAt T) (where (LoadAt T))
+  (function (store-at! i a t) {(forall A) (-> U64 A (T A) unit)}
+    (assert (<bound/lt?> i (load-bound t)) "Out of range")
+    (unsafe-store-at! i a t))
+
+  ; Caller must ensure that the specified index is in [0,bound)
+  (function (unsafe-store-at! i a t) {(forall A) (-> U64 A (T A) unit)}))
+
+(builtin-op <bound/lt?> {(-> U64 U64 Bool)} "unsigned.lt")

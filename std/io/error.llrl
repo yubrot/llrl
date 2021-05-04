@@ -1,0 +1,122 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-1" _)
+(import "std/rw" UnexpectedEof InvalidData)
+(import "std/hash" Hash hash! Hash.U8)
+(export IoError io-error:_ io-error/_ _.IoError)
+
+; I'm not familiar with error handling in C, so I decided to borrow Rust's definition
+(value-data IoError
+  io-error:closed
+  io-error:not-found
+  io-error:permission-denied
+  io-error:connection-refused
+  io-error:connection-reset
+  io-error:connection-aborted
+  io-error:not-connected
+  io-error:addr-in-use
+  io-error:addr-not-available
+  io-error:broken-pipe
+  io-error:already-exists
+  io-error:invalid-input
+  io-error:invalid-data
+  io-error:timed-out
+  io-error:interrupted
+  io-error:unexpected-eof
+  io-error:other)
+
+(function (io-error/from-current-errno) {(-> IoError)}
+  (io-error/from-errno <current-errno>))
+
+(c-function <current-errno> {I32} "llrt_current_errno")
+
+(function (io-error/from-errno errno) {(-> I32 IoError)}
+  (match errno
+    [1 io-error:permission-denied] ; EPERM: Operation not permitted
+    [2 io-error:not-found] ; ENOENT: No such file or directory
+    [4 io-error:interrupted] ; EINTR: Interrupted system call
+    [13 io-error:permission-denied] ; EACCES: Permission denied
+    [17 io-error:already-exists] ; EEXIST: File exists
+    [22 io-error:invalid-input] ; EINVAL: Invalid argument
+    [32 io-error:broken-pipe] ; EPIPE: Broken pipe
+    [98 io-error:addr-in-use] ; EADDRINUSE: Address already in use
+    [99 io-error:addr-not-available] ; EADDRNOTAVAIL: Cannot assign requested address
+    [103 io-error:connection-aborted] ; ECONNABORTED: Software caused connection abort
+    [104 io-error:connection-reset] ; ECONNRESET: Connection reset by peer
+    [107 io-error:not-connected] ; ENOTCONN: Transport endpoint is not connected
+    [110 io-error:timed-out] ; ETIMEDOUT: Connection timed out
+    [111 io-error:connection-refused] ; ECONNREFUSED: Connection refused
+    [_ io-error:other]))
+
+(instance DeepCopy.IoError (DeepCopy IoError)
+  (transparent-function (deep-copy a) a))
+
+(instance Display.IoError (Display IoError)
+  (function (display! w a)
+    (match a
+      [io-error:closed (display! w "Closed")]
+      [io-error:not-found (display! w "Not found")]
+      [io-error:permission-denied (display! w "Permission denied")]
+      [io-error:connection-refused (display! w "Connection refused")]
+      [io-error:connection-reset (display! w "Connection Reset")]
+      [io-error:connection-aborted (display! w "Connection Aborted")]
+      [io-error:not-connected (display! w "Not Connected")]
+      [io-error:addr-in-use (display! w "Addr in use")]
+      [io-error:addr-not-available (display! w "Addr not available")]
+      [io-error:broken-pipe (display! w "Broken pipe")]
+      [io-error:already-exists (display! w "Already exists")]
+      [io-error:invalid-input (display! w "Invalid input")]
+      [io-error:invalid-data (display! w "Invalid data")]
+      [io-error:timed-out (display! w "Timed out")]
+      [io-error:interrupted (display! w "Interrupted")]
+      [io-error:unexpected-eof (display! w "Unexpected EOF")]
+      [io-error:other (display! w "Other")])))
+
+(instance DebugDisplay.IoError (DebugDisplay IoError)
+  (function (debug-display! w a)
+    (match a
+      [io-error:closed (display! w "io-error:closed")]
+      [io-error:not-found (display! w "io-error:not-found")]
+      [io-error:permission-denied (display! w "io-error:permission-denied")]
+      [io-error:connection-refused (display! w "io-error:connection-refused")]
+      [io-error:connection-reset (display! w "io-error:connection-reset")]
+      [io-error:connection-aborted (display! w "io-error:connection-aborted")]
+      [io-error:not-connected (display! w "io-error:not-connected")]
+      [io-error:addr-in-use (display! w "io-error:addr-in-use")]
+      [io-error:addr-not-available (display! w "io-error:addr-not-available")]
+      [io-error:broken-pipe (display! w "io-error:broken-pipe")]
+      [io-error:already-exists (display! w "io-error:already-exists")]
+      [io-error:invalid-input (display! w "io-error:invalid-input")]
+      [io-error:invalid-data (display! w "io-error:invalid-data")]
+      [io-error:timed-out (display! w "io-error:timed-out")]
+      [io-error:interrupted (display! w "io-error:interrupted")]
+      [io-error:unexpected-eof (display! w "io-error:unexpected-eof")]
+      [io-error:other (display! w "io-error:other")])))
+
+(instance Eq.IoError (Eq IoError)
+  (transparent-function (eq? a b) (<io-error/eq?> a b)))
+
+(builtin-op <io-error/eq?> {(-> IoError IoError Bool)} "integer.eq")
+
+(instance Ord.IoError (Ord IoError)
+  (transparent-function (lt? a b) (<io-error/lt?> a b))
+  (transparent-function (le? a b) (<io-error/le?> a b))
+  (transparent-function (gt? a b) (<io-error/gt?> a b))
+  (transparent-function (ge? a b) (<io-error/ge?> a b)))
+
+(builtin-op <io-error/lt?> {(-> IoError IoError Bool)} "unsigned.lt")
+(builtin-op <io-error/le?> {(-> IoError IoError Bool)} "unsigned.le")
+(builtin-op <io-error/gt?> {(-> IoError IoError Bool)} "unsigned.gt")
+(builtin-op <io-error/ge?> {(-> IoError IoError Bool)} "unsigned.ge")
+
+(instance UnexpectedEof.IoError (UnexpectedEof IoError)
+  (transparent-function unexpected-eof io-error:unexpected-eof))
+
+(instance InvalidData.IoError (InvalidData IoError)
+  (transparent-function invalid-data io-error:invalid-data))
+
+(instance Hash.IoError (Hash IoError)
+  (function (hash! s a)
+    (hash! s (<io-error/hash> a) {U8})))
+
+(builtin-op <io-error/hash> {(forall A B) (-> A B)} "unsigned.ext")

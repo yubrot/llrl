@@ -1,0 +1,58 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-1" _)
+(import "std/string-writer" string-writer)
+(import "std/io/error" _)
+(import "std/io/file" _)
+(export IoError io-error:_ io-error/_ _.IoError)
+(export File file/_ _.File)
+(export stdin stdout stderr print! println! eprint! eprintln! fprint! fprintln!)
+
+; NOTE: Should they be abstracted? Currently we are following the C representation.
+(c-function stdin {File} "llrt_stdin")
+(c-function stdout {File} "llrt_stdout")
+(c-function stderr {File} "llrt_stderr")
+
+; copy-file, rename-file, remove-file, create-dir, remove-dir, open-dir
+
+(macro (print! s)
+  (s/match s
+    [(_ ,@displayables)
+      (ok `(,\display-all! (,\string-writer ,\stdout) ,@displayables) {(,\Result unit ,\IoError)})]
+    [_
+      (err "Expected (print! displayable ...)")]))
+
+(macro (println! s)
+  (s/match s
+    [(_ ,@displayables)
+      (ok `(,\display-all! (,\string-writer ,\stdout) ,@displayables #\\n) {(,\Result unit ,\IoError)})]
+    [_
+      (err "Expected (println! displayable ...)")]))
+
+(macro (eprint! s)
+  (s/match s
+    [(_ ,@displayables)
+      (ok `(,\display-all! (,\string-writer ,\stderr) ,@displayables) {(,\Result unit ,\IoError)})]
+    [_
+      (err "Expected (eprint! displayable ...)")]))
+
+(macro (eprintln! s)
+  (s/match s
+    [(_ ,@displayables)
+      (ok `(,\display-all! (,\string-writer ,\stderr) ,@displayables #\\n) {(,\Result unit ,\IoError)})]
+    [_
+      (err "Expected (eprintln! displayable ...)")]))
+
+(macro (fprint! s)
+  (s/match s
+    [(_ ,iow ,@displayables)
+      (ok `(,\display-all! (,\string-writer ,iow) ,@displayables) {(,\Result unit ,\IoError)})]
+    [_
+      (err "Expected (fprint! iow displayable ...)")]))
+
+(macro (fprintln! s)
+  (s/match s
+    [(_ ,iow ,@displayables)
+      (ok `(,\display-all! (,\string-writer ,iow) ,@displayables #\\n) {(,\Result unit ,\IoError)})]
+    [_
+      (err "Expected (fprintln! iow displayable ...)")]))

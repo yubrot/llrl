@@ -1,0 +1,36 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-0" _)
+(import "std/s" s/map)
+(import "std/never" Never never)
+(import "std/bool" Bool not and)
+(export Eq eq? ne? = Eq._)
+
+(class (Eq A)
+  (function (eq? a b) {(-> A A Bool)})
+  (transparent-function (ne? a b) {(-> A A Bool)}
+    (not (eq? a b))))
+
+(macro (= s)
+  (s/match s
+    [(_)
+      (ok '#t)]
+    [(_ _)
+      (ok '#t)]
+    [(_ ,a ,b)
+      (ok `(,\eq? ,a ,b))]
+    [(_ ,a ,@bs)
+      (ok
+        (let ([tmp-a (gensym)])
+          `(let ([,tmp-a ,a])
+            (,\and ,@(s/map (lambda (b) `(,\eq? ,tmp-a ,b)) bs)!))))]
+    [_
+      (err "Expected (= expr ...)")]))
+
+(instance Eq.Never (Eq Never)
+  (transparent-function (eq? a b) (never a) (never b)))
+
+(instance Eq.Bool (Eq Bool)
+  (transparent-function (eq? a b) (<bool/eq?> a b)))
+
+(builtin-op <bool/eq?> {(-> Bool Bool Bool)} "integer.eq")

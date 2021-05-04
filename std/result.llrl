@@ -1,0 +1,127 @@
+(no-implicit-std)
+
+(import "builtin" Result ok err)
+(import "std/prelude/stage-1" _)
+(export Result ok err try! result/_ _.Result)
+
+(function (result/ok? x) {(forall T E) (-> (Result T E) (Option T))}
+  (match x
+    [(ok (let x)) (some x)]
+    [_ none]))
+
+(function (result/err? x) {(forall T E) (-> (Result T E) (Option E))}
+  (match x
+    [(err (let x)) (some x)]
+    [_ none]))
+
+(function (result/unwrap alt x) {(forall T E) (-> T (Result T E) T)}
+  (match x
+    [(ok (let x)) x]
+    [(err _) alt]))
+
+(function (result/unwrap* altf x) {(forall T E) (-> (-> E T) (Result T E) T)}
+  (match x
+    [(ok (let x)) x]
+    [(err (let e)) (altf e)]))
+
+(function (result/unwrap-err alt x) {(forall T E) (-> E (Result T E) E)}
+  (match x
+    [(ok _) alt]
+    [(err (let e)) e]))
+
+(function (result/unwrap-err* altf x) {(forall T E) (-> (-> T E) (Result T E) E)}
+  (match x
+    [(ok (let x)) (altf x)]
+    [(err (let e)) e]))
+
+(function (result/force x) {(forall T E) (-> (Result T E) T)}
+  (match x
+    [(ok (let x)) x]
+    [(err _) (assert #f "result/force")]))
+
+(function (result/force-err x) {(forall T E) (-> (Result T E) E)}
+  (match x
+    [(ok _) (assert #f "result/force-err")]
+    [(err (let e)) e]))
+
+(function (result/map f x) {(forall TA TB E) (-> (-> TA TB) (Result TA E) (Result TB E))}
+  (match x
+    [(ok (let x)) (ok (f x))]
+    [(err (let e)) (err e)]))
+
+(function (result/map-err f x) {(forall T EA EB) (-> (-> EA EB) (Result T EA) (Result T EB))}
+  (match x
+    [(ok (let x)) (ok x)]
+    [(err (let e)) (err (f e))]))
+
+(function (result/then f x) {(forall TA TB E) (-> (-> TA (Result TB E)) (Result TA E) (Result TB E))}
+  (match x
+    [(ok (let x)) (f x)]
+    [(err (let e)) (err e)]))
+
+(function (result/flatten x) {(forall T E) (-> (Result (Result T E) E) (Result T E))}
+  (match x
+    [(ok (ok (let x))) (ok x)]
+    [(ok (err (let e))) (err e)]
+    [(err (let e)) (err e)]))
+
+(macro (result/and s)
+  (s/match s
+    [(_ ,result ,@results)
+      (ok (expand-and result results))]
+    [_
+      (err "Expected (result/and result result-2 ...)")]))
+
+(function (expand-and r rs)
+  (match rs
+    [(s:cons (let r2) (let rs))
+      `(match ,r
+        [(,\ok _) ,(expand-and r2 rs)]
+        [(,\err (let e)) (,\err e)])]
+    [_
+      r]))
+
+(macro (result/or s)
+  (s/match s
+    [(_ ,result ,@results)
+      (ok (expand-or result results))]
+    [_
+      (err "Expected (result/or result result-2 ...)")]))
+
+(function (expand-or r rs)
+  (match rs
+    [(s:cons (let r2) (let rs))
+      `(match ,r
+        [(,\ok (let x)) (,\ok x)]
+        [(,\err _) ,(expand-or r2 rs)])]
+    [_
+      r]))
+
+(instance DeepCopy.Result (forall T E) (DeepCopy (Result T E)) (where (DeepCopy T) (DeepCopy E))
+  (function (deep-copy a)
+    (match a
+      [(ok (let x)) (ok (deep-copy x))]
+      [(err (let x)) (err (deep-copy x))])))
+
+(instance DebugDisplay.Result (forall T E) (DebugDisplay (Result T E)) (where (DebugDisplay T) (DebugDisplay E))
+  (function (debug-display! w a)
+    (match a
+      [(ok (let x))
+        (display-all! w "(ok " (debug x) ")")]
+      [(err (let x))
+        (display-all! w "(err " (debug x) ")")])))
+
+(instance Eq.Result (forall T E) (Eq (Result T E)) (where (Eq T) (Eq E))
+  (function (eq? a b)
+    (match (: a b)
+      [(: (err (let a)) (err (let b))) (eq? a b)]
+      [(: (ok (let a)) (ok (let b))) (eq? a b)]
+      [_ #f])))
+
+(instance Ord.Result (forall T E) (Ord (Result T E)) (where (Ord T) (Ord E))
+  (function (compare a b)
+    (match (: a b)
+      [(: (ok (let a)) (ok (let b))) (compare a b)]
+      [(: (ok _) (err _)) ordering:greater]
+      [(: (err _) (ok _)) ordering:less]
+      [(: (err (let a)) (err (let b))) (compare a b)])))

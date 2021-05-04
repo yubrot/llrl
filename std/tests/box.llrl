@@ -1,0 +1,38 @@
+(import "std/box" _)
+(import "std/tests/ord" [ord/_ _])
+
+(assert-eq? (box #t) (box #t))
+(assert-ne? (box #t) (box #f))
+
+(assert-eq? (box #f) default)
+
+(ord/test12 (box #f) (box #t))
+
+(assert ~(box #t))
+
+; Box and Ref are guaranteed to involve indirect references.
+
+(value-data Foo (foo (Box Bar)))
+(value-data Bar (bar Foo))
+
+ignore {(-> Foo unit)} ; compiles
+
+(value-data (Tree A)
+  (tree:branch (Box (Tree A)) (Box (Tree A)))
+  (tree:leef A))
+
+(function (sum a)
+  (match a
+    [(tree:branch (box (let a)) (box (let b)))
+      (+ (sum a) (sum b))]
+    [(tree:leef (let a))
+      a]))
+
+(function (branch a b) (tree:branch (box a) (box b)))
+(function (leef a) (tree:leef a))
+
+(assert
+  (= (sum (branch (branch (leef 2) (branch (leef 3) (leef 4))) (branch (leef 5) (leef 6)))) 20))
+
+(assert-eq? (string (box #t)) "#t")
+(assert-eq? (string (debug (box #t))) "(box #t)")

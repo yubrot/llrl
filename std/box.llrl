@@ -1,0 +1,41 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-1" _)
+(import "std/memory" Ptr)
+(export Box box box/_ _.Box)
+
+(builtin-type (Box A) "ptr"
+  [(box A) "ptr"])
+
+; Caller must ensure that the pointer referent is never mutated.
+(builtin-op box/unsafe-ptr {(forall A) (-> (Box A) (Ptr A))} "no-op")
+
+(instance ShallowCopy.Box (forall A) (ShallowCopy (Box A))
+  (transparent-function (shallow-copy a) a)) ; Boxes are immutable and persistent
+
+(instance DeepCopy.Box (forall A) (DeepCopy (Box A)) (where (DeepCopy A))
+  (transparent-function (deep-copy a) (box (deep-copy ~a))))
+
+(instance Default.Box (forall A) (Default (Box A)) (where (Default A))
+  (transparent-function default (box default)))
+
+(instance Display.Box (forall A) (Display (Box A)) (where (Display A))
+  (transparent-function (display! w a) (display! w ~a)))
+
+(instance DebugDisplay.Box (forall A) (DebugDisplay (Box A)) (where (DebugDisplay A))
+  (function (debug-display! w a) (display-all! w "(box " (debug ~a) ")")))
+
+(instance Eq.Box (forall A) (Eq (Box A)) (where (Eq A))
+  (transparent-function (eq? a b) (eq? ~a ~b)))
+
+(instance Ord.Box (forall A) (Ord (Box A)) (where (Ord A))
+  (transparent-function (compare a b) (compare ~a ~b))
+  (transparent-function (lt? a b) (lt? ~a ~b))
+  (transparent-function (le? a b) (le? ~a ~b))
+  (transparent-function (gt? a b) (gt? ~a ~b))
+  (transparent-function (ge? a b) (ge? ~a ~b)))
+
+(instance Load.Box (Load Box)
+  (transparent-function (load t) (<box/load> t)))
+
+(builtin-op <box/load> {(forall A) (-> (Box A) A)} "ptr.load")

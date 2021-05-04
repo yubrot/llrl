@@ -1,0 +1,53 @@
+(no-implicit-std)
+
+(import "builtin" ok err)
+(import "std/boot/0-s" s:_)
+(import "std/boot/1-try" try!)
+(export s/match)
+
+(macro (s/match s)
+  (match s
+    [(s:cons _ (s:cons (let target) (let clauses)))
+      (ok (s:cons 'match (s:cons target (expand-clauses clauses)!)))]
+    [_
+      (err "Expected (s/match target clause ...)")]))
+
+(function (expand-clauses s)
+  (match s
+    [(s:cons (s:cons (let pat) (let body)) (let clauses))
+      (ok (s:cons (s:cons (expand-pat pat) body) (expand-clauses clauses)!))]
+    [(s:nil)
+      (ok (s:nil))]
+    [_
+      (err "Expected (s/match target [pat ...] ...)")]))
+
+(function (expand-pat s)
+  (match s
+    [(s:integer (let signed) (let value))
+      (s:list \s:integer (s:bool signed) (s:integer #f value))]
+    [(s:fpnumber (let value))
+      (s:list \s:fpnumber (s:fpnumber value))]
+    [(s:bool (let value))
+      (s:list \s:bool (s:bool value))]
+    [(let wildcard (s:symbol "_"))
+      wildcard]
+    [(s:symbol (let value))
+      (s:list \s:symbol (s:string value))]
+    [(s:string (let value))
+      (s:list \s:string (s:string value))]
+    [(s:char (let value))
+      (s:list \s:char (s:char value))]
+    [(s:list (s:symbol "unquote") (let var (s:symbol _)))
+      (s:list 'let var)]
+    [(s:list (s:symbol "unquote") (let pat))
+      pat]
+    [(s:list (s:list (s:symbol "unquote-splicing") (let var (s:symbol _))))
+      (s:list 'let var)]
+    [(s:list (s:list (s:symbol "unquote-splicing") (let pat)))
+      pat]
+    [(s:cons (let car) (let cdr))
+      (s:list \s:cons (expand-pat car) (expand-pat cdr))]
+    [(s:nil)
+      (s:list \s:nil)]
+    [(let use (s:use _))
+      use]))

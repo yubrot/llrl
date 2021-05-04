@@ -1,0 +1,26 @@
+(import "std/char" _)
+(import "std/string" _)
+
+(assert-eq? 97 (char/unicode-scalar #\a))
+(assert-eq? 10 (char/unicode-scalar #\\n))
+(assert-eq? 162 (char/unicode-scalar #\¢))
+(assert-eq? 8364 (char/unicode-scalar #\€))
+(assert-eq? 26376 (char/unicode-scalar #\月))
+(assert-eq? 66376 (char/unicode-scalar #\𐍈))
+
+(assert-is? none (char/from-unicode-scalar 120000))
+(assert-is? (some #\日) (char/from-unicode-scalar 26085))
+
+(assert (char/ascii? #\a))
+(assert (char/ascii? #\\n))
+(assert (not (char/ascii? #\星)))
+
+(assert-eq? (array 3 4 1 2) (|> (array #\€ #\𐍈 #\C #\¢) (it/map char/utf-8-length) collect))
+
+(assert-eq? (array "€" "𐍈" "C" "¢") (|> (array #\€ #\𐍈 #\C #\¢) (it/map [^1 (string %1)]) collect))
+
+(assert-eq? #\a #\a)
+(assert-ne? #\a #\b)
+(assert (< #\a #\b))
+(assert (not (< #\a #\a)))
+(assert (not (< #\b #\a)))

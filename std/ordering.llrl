@@ -1,0 +1,63 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-0" _)
+(import "std/assert" assert)
+(import "std/num-literals" I32 Number.I32)
+(import "std/s" s/foldr)
+(import "std/copy" ShallowCopy DeepCopy)
+(import "std/default" Default)
+(import "std/display" Display.String display!)
+(import "std/debug" DebugDisplay)
+(import "std/bool" Bool)
+(import "std/eq" Eq)
+(export Ordering ordering:_ ordering/_ _.Ordering)
+
+(value-data Ordering
+  ordering:less
+  ordering:equal
+  ordering:greater)
+
+(function (ordering/order-value x) {(-> Ordering I32)}
+  (match x
+    [ordering:less -1]
+    [ordering:equal 0]
+    [ordering:greater 1]))
+
+(function (ordering/from-order-value x) {(-> I32 Ordering)}
+  (match x
+    [-1 ordering:less]
+    [0 ordering:equal]
+    [1 ordering:greater]
+    [_ (assert #f "ordering/order-value: Invalid value")]))
+
+(macro (ordering/or s)
+  (s/match s
+    [(_)
+      (ok \ordering:equal)]
+    [(_ ,a ,@bs)
+      (s/foldr or-else a bs)]
+    [_
+      (err "Expected (ordering/or order ...)")]))
+
+(function (or-else a b)
+  `(match ,a
+    [,\ordering:equal ,b]
+    [(let r) r]))
+
+(instance DeepCopy.Ordering (DeepCopy Ordering)
+  (transparent-function (deep-copy a) a))
+
+(instance Default.Ordering (Default Ordering)
+  (transparent-function default ordering:equal))
+
+(instance DebugDisplay.Ordering (DebugDisplay Ordering)
+  (function (debug-display! w a)
+    (match a
+      [ordering:less (display! w "ordering:less")]
+      [ordering:equal (display! w "ordering:equal")]
+      [ordering:greater (display! w "ordering:greater")])))
+
+(instance Eq.Ordering (Eq Ordering)
+  (transparent-function (eq? a b) (<ordering/eq?> a b)))
+
+(builtin-op <ordering/eq?> {(-> Ordering Ordering Bool)} "integer.eq")

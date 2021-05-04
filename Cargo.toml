@@ -1,0 +1,7 @@
+[workspace]
+members = [
+  "llvm0",
+  "llrl0",
+  "rt",
+  "std",
+]

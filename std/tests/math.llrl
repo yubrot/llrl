@@ -1,0 +1,24 @@
+(import "std/math" _)
+(import "std/arithmetic" approx-eq?)
+
+(assert (approx-eq? (sqrt 1.0) 1.0))
+(assert (approx-eq? (sqrt 4.0) 2.0))
+(assert (approx-eq? (sqrt 9.0) 3.0))
+
+(assert (approx-eq? (sin 0.0) 0.0))
+(assert (approx-eq? (sin (/ pi 2)) 1.0))
+(assert (approx-eq? (sin pi) 0.0))
+
+(assert (approx-eq? (cos 0.0) 1.0))
+(assert (approx-eq? (cos (/ pi 2)) 0.0))
+(assert (approx-eq? (cos pi) -1.0))
+
+(assert (approx-eq? (pow 2.0 0.0) 1.0))
+(assert (approx-eq? (pow 2.0 2.0) 4.0))
+(assert (approx-eq? (pow 2.0 5.0) 32.0))
+
+(assert (approx-eq? (exp 1.0) 2.71828182846))
+(assert (approx-eq? (exp 2.0) 7.38905609893))
+
+(assert (approx-eq? (log (exp 1.0)) 1.0))
+(assert (approx-eq? (log (exp 2.0)) 2.0))

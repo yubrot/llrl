@@ -1,0 +1,381 @@
+; Implementation of Strings and Texts, re-exported by std/string and std/text.
+(no-implicit-std)
+
+(import "std/prelude/stage-1" _)
+(import "std/ordering" ordering/from-order-value)
+(import "std/integer" Eq.U8 _.U64)
+(import "std/memory" Ptr ptr/_)
+(import "std/ref" Ref ref _.Ref)
+(import "std/iterator" _)
+(import "std/it" it/_)
+(import "std/result" result/unwrap*)
+(import "std/array" Array array/_ _.Array)
+(import "std/vector" Vector vector/_ _.Vector)
+(import "std/hash" Hash hash! Hash.Array Hash.U8)
+(import "std/internal/utf-8" [utf-8/_ _])
+(import "std/char" Char char/_ _.Char)
+(export String string string/_ _.String)
+(export Text text text/_ _.Text)
+
+(import "builtin" String)
+
+(macro (string s)
+  (s/match s
+    [(_ ,@displayables)
+      (let ([w (gensym)])
+        (ok `(let ([,w ,\text/empty])
+          (match (,\display-all! ,w ,@displayables)
+            [(,\ok unit) (,\text/unsafe-string ,w)]
+            [(,\err (let e)) (,\never e)]))))]
+    [_
+      (err "Expected (string displayable ...)")]))
+
+(function string/empty {String}
+  (string/unsafe-from-array array/empty))
+
+(function (string/bytes s) {(-> String (Iterator U8))}
+  (iterate (string/unsafe-array s)))
+
+(function (string/from-bytes bytes) {(forall T) (-> (T U8) String) (where (Iterate T))}
+  (let1 bytes (collect bytes)
+    (assert (string/valid-sequence? bytes) "string/from-bytes: Invalid UTF-8 sequence")
+    (string/unsafe-from-array bytes)))
+
+(function (string/from-bytes? bytes) {(forall T) (-> (T U8) (Option String)) (where (Iterate T))}
+  (let1 bytes (collect bytes)
+    (if (string/valid-sequence? bytes)
+      (some (string/unsafe-from-array bytes))
+      none)))
+
+; Checks whether the bytes are a valid sequence as a String.
+(function (string/valid-sequence? bytes) {(forall T) (-> (T U8) Bool) (where (Iterate T))}
+  (let1 state (ref none)
+    (for (let c) bytes
+      (let1 r (utf-8/decode-step ~state c)
+        (when (not (utf-8/decode/valid? r)) (return #f))
+        (set! state (utf-8/decode/continue? r))))
+    (is? none ~state)))
+
+; Caller must ensure that the retuned Array is never mutated.
+(function (string/unsafe-array s) {(-> String (Array U8))}
+  (array/unsafe-from-ptr (string/unsafe-ptr s) (string/length s)))
+
+; Caller must ensure that the passed Array is a valid UTF-8 sequence and it is not mutated
+; while the created String is active.
+(function (string/unsafe-from-array bytes) {(-> (Array U8) String)}
+  (string/unsafe-from-ptr (array/ptr bytes) (array/length bytes)))
+
+; Caller must ensure that the specified pointer is valid UTF-8 sequence for the specified length
+; and its referent is not mutated while the created String is active.
+(builtin-op string/unsafe-from-ptr {(-> (Ptr U8) U64 String)} "string.construct")
+
+; Caller must ensure that the pointer referent is never mutated.
+(builtin-op string/unsafe-ptr {(-> String (Ptr U8))} "string.ptr")
+
+(builtin-op string/length {(-> String U64)} "string.length")
+
+(function (string/empty? s) {(-> String Bool)}
+  (= (string/length s) 0))
+
+(function (string/substring start end s) {(-> U64 U64 String String)}
+  (assert (<= start end (string/length s)) "string/substring: !(start <= end <= length)")
+  (assert (string/char-boundary? start s) "string/substring: start is not on char-boundary")
+  (assert (string/char-boundary? end s) "string/substring: end is not on char-boundary")
+  (string/unsafe-substring start end s))
+
+(function (string/take n s) {(-> U64 String String)}
+  (string/substring 0 (min n (string/length s)) s))
+
+(function (string/skip n s) {(-> U64 String String)}
+  (string/substring (min n (string/length s)) (string/length s) s))
+
+; Caller must ensure that the start end the end are on character boundaries.
+(function (string/unsafe-substring start end s) {(-> U64 U64 String String)}
+  (string/unsafe-from-ptr (ptr/add start (string/unsafe-ptr s)) (- end start)))
+
+(function (string/byte-at index s) {(-> U64 String U8)}
+  (get (string/unsafe-array s)[index]))
+
+(function (string/char-boundary? index s) {(-> U64 String Bool)}
+  (if (< 0 index (string/length s))
+    (utf-8/decode/valid? (utf-8/decode-step none (get (string/unsafe-array s)[index])))
+    (or (= 0 index) (= (string/length s) index))))
+
+(function (string/chars s) {(-> String (Iterator Char))}
+  (let* ([it (iterate (string/unsafe-array s))]
+         [(next! state)
+           (match (utf-8/decode-step state (iterator/next! it)?)
+             [(utf-8/decode:continue (let state))
+               (next! (some state))]
+             [(utf-8/decode:produce (let c))
+               (some (char/unsafe-from-unicode-scalar c))]
+             [_
+               (assert #f "Invalid UTF-8 sequence in String")])])
+    (iterator/new [^0 (next! none)])))
+
+(function (string/char-indices s) {(-> String (Iterator (: U64 Char)))}
+  (let* ([it (it/with-index (iterate (string/unsafe-array s)))]
+         [(next! index state)
+           (with1 (: (let i) (let c)) (iterator/next! it)?
+             (match (utf-8/decode-step state c)
+               [(utf-8/decode:continue (let state))
+                 (next! (min i index) (some state))]
+               [(utf-8/decode:produce (let c))
+                 (some (: (min i index) (char/unsafe-from-unicode-scalar c)))]
+               [_
+                 (assert #f "Invalid UTF-8 sequence in String")]))])
+    (iterator/new [^0 (next! (cast -1 {I64}) none)])))
+
+(function (string/from-chars s) {(forall T) (-> (T Char) String) (where (Iterate T))}
+  (text/unsafe-string (text/from-chars s)))
+
+; NOTE: There is a lot of room for optimization in string-related operations.
+
+(function (string/starts-with? prefix s) {(-> String String Bool)}
+  (when (string/empty? prefix) (return #t))
+  (and (<= (string/length prefix) (string/length s))
+       (it/all? (case1 (: (let a) (let b)) (= a b))
+                (it/zip (string/unsafe-array prefix)
+                        (string/unsafe-array s)))))
+
+(function (string/ends-with? suffix s) {(-> String String Bool)}
+  (when (string/empty? suffix) (return #t))
+  (and (<= (string/length suffix) (string/length s))
+       (it/all? (case1 (: (let a) (let b)) (= a b))
+                (it/zip (rev-iterate (string/unsafe-array suffix))
+                        (rev-iterate (string/unsafe-array s))))))
+
+(function (string/contains? part s) {(-> String String Bool)}
+  (when (string/empty? part) (return #t))
+  (for (: (let i) _) (string/char-indices s)
+    (when (< (- (string/length s) i) (string/length part)) (return #f))
+    (when (string/starts-with? part (string/unsafe-substring i (string/length s) s)) (return #t)))
+  #f)
+
+(function (string/find? part s) {(-> String String (Option U64))}
+  (when (string/empty? part) (return (some 0)))
+  (for (: (let i) _) (string/char-indices s)
+    (when (< (- (string/length s) i) (string/length part)) (return none))
+    (when (string/starts-with? part (string/unsafe-substring i (string/length s) s)) (return (some i))))
+  none)
+
+(function (string/replace from to s) {(-> String String String String)}
+  (when (string/empty? from)
+    (let1 buf (text/from-string to)
+      (for (let c) (string/chars s)
+        (text/put! c buf)
+        (text/push! to buf))
+      (return (text/unsafe-string buf))))
+  (match (string/find? from s)
+    [(some (let i))
+      (let ([buf (text/from-string (string/unsafe-substring 0 i s))]
+            [s (ref (string/unsafe-substring (+ i (string/length from)) (string/length s) s))])
+        (text/push! to buf)
+        (while-match1 (some (let i)) (string/find? from ~s)
+          (text/push! (string/unsafe-substring 0 i ~s) buf)
+          (text/push! to buf)
+          (set! s (string/unsafe-substring (+ i (string/length from)) (string/length ~s) ~s)))
+        (text/push! ~s buf)
+        (text/unsafe-string buf))]
+    [none
+      s]))
+
+(function (string/split sep s) {(-> String String (Iterator String))}
+  (when (string/empty? sep)
+    (return (it/map [^1 (string/from-chars (iterator/only %1))] (string/chars s))))
+  (let1 rest (ref (some s))
+    (iterator/new (lambda ()
+      (with1? (some (let s)) ~rest
+        (match (string/find? sep s)
+          [(some (let i))
+            (let ([l (string/unsafe-substring 0 i s)]
+                  [r (string/unsafe-substring (+ i (string/length sep)) (string/length s) s)])
+              (set! rest (some r))
+              l)]
+          [none
+            (set! rest none)
+            s]))))))
+
+(function (string/split-lines s) {(-> String (Iterator String))}
+  (when (string/empty? s) (return iterator/empty))
+  (let1 rest (ref (some s))
+    (iterator/new (lambda ()
+      (with1? (some (let s)) ~rest
+        (match (string/find? "\n" s)
+          [(some (let i))
+            (with1
+              (: (let a) (let b))
+              (if (and (<= 1 i) (= 13 (get (string/unsafe-array s)[(- i 1)]))) ; [i-1]CR [i]LF
+                (: (- i 1) (+ i 1))
+                (: i (+ i 1)))
+              (let ([l (string/unsafe-substring 0 a s)]
+                    [r (string/unsafe-substring b (string/length s) s)])
+                (set! rest (if (string/empty? r) none (some r)))
+                l))]
+          [none
+            (set! rest none)
+            s]))))))
+
+(function (string/reverse s) {(-> String String)}
+  (when (<= (string/length s) 1) (return s))
+  (let1 buf (shallow-copy (string/unsafe-array s))
+    (array/reverse! buf)
+    (string/unsafe-from-array buf)))
+
+(function (string/join sep it) {(forall T) (-> String (T String) String) (where (Iterate T))}
+  (let1 buf text/empty
+    (for (: (let i) (let s)) (it/with-index it)
+      (when (< 0 i) (text/push! sep buf))
+      (text/push! s buf))
+    (text/unsafe-string buf)))
+
+(function (string/c-compatible-ptr s) {(-> String (Ptr U8))}
+  (let1 buf (vector/from-array (string/unsafe-array s))
+    (vector/push! 0 buf) ; Make NULL-terminated & Copy
+    (string/unsafe-ptr (string/unsafe-from-array (vector/buffer buf)))))
+
+; ---------------------------
+
+(value-data Text
+  (text: (Vector U8)))
+
+(macro (text s)
+  (s/match s
+    [(_ ,@displayables)
+      (let ([w (gensym)])
+        (ok `(let ([,w ,\text/empty])
+          (match (,\display-all! ,w ,@displayables)
+            [(,\ok unit) ,w]
+            [(,\err (let e)) (,\never e)]))))]
+    [_
+      (err "Expected (text displayable ...)")]))
+
+(function text/empty {Text}
+  (text/unsafe-from-vector vector/empty))
+
+(function (text/bytes t) {(-> Text (Iterator U8))}
+  (iterate (text/unsafe-vector t)))
+
+(function (text/from-bytes bytes) {(forall T) (-> (T U8) Text) (where (Iterate T))}
+  (let1 bytes (collect bytes)
+    (assert (string/valid-sequence? bytes) "text/from-bytes: Invalid UTF-8 sequence")
+    (text/unsafe-from-vector (vector/from-array bytes))))
+
+(function (text/from-bytes? bytes) {(forall T) (-> (T U8) (Option Text)) (where (Iterate T))}
+  (let1 bytes (collect bytes)
+    (if (string/valid-sequence? bytes)
+      (some (text/unsafe-from-vector (vector/from-array bytes)))
+      none)))
+
+; Caller must ensure that the returned Vector holds a valid UTF-8 sequence while the Text is active.
+(transparent-function (text/unsafe-vector t) {(-> Text (Vector U8))}
+  (match t
+    [(text: (let vec)) vec]))
+
+; Caller must ensure that the passed Vector holds a valid UTF-8 sequence.
+(transparent-function (text/unsafe-from-vector vec) {(-> (Vector U8) Text)}
+  (text: vec))
+
+(function (text/from-string s) {(-> String Text)}
+  ; Equivalent to (|> s string/bytes collect vector/from-array text/unsafe-from-vector)
+  (|> s string/unsafe-array shallow-copy vector/from-array text/unsafe-from-vector))
+
+; Copy the current buffer of the Text as a String.
+(function (text/copy-to-string t) {(-> Text String)}
+  (|> t text/unsafe-vector vector/buffer shallow-copy string/unsafe-from-array))
+
+; Get the current buffer of the Text as a String without consuming it.
+; Caller must ensure that the Vector is not mutated while the obtained String is active.
+(function (text/unsafe-string t) {(-> Text String)}
+  (string/unsafe-from-array (vector/buffer (text/unsafe-vector t))))
+
+(function (text/length s) {(-> Text U64)}
+  (vector/length (text/unsafe-vector s)))
+
+(function (text/empty? s) {(-> Text Bool)}
+  (= (text/length s) 0))
+
+(function (text/push! s t) {(-> String Text unit)}
+  (vector/append! (string/unsafe-array s) (text/unsafe-vector t)))
+
+(function (text/put! c t) {(-> Char Text unit)}
+  (result/unwrap* never (display! t c)))
+
+(function (text/from-chars chars) {(forall T) (-> (T Char) Text) (where (Iterate T))}
+  (let1 t text/empty
+    (for (let c) chars (text/put! c t))
+    t))
+
+(function (text/consume! n t) {(-> U64 Text String)}
+  (assert (string/char-boundary? n (text/unsafe-string t)) "text/consume!: n is not on char-boundary")
+  (string/unsafe-from-array (vector/consume! n (text/unsafe-vector t))))
+
+(function (text/consume-all! t) {(-> Text String)}
+  (string/unsafe-from-array (vector/consume-all! (text/unsafe-vector t))))
+
+(function (text/move! t) {(-> Text Text)}
+  (text/unsafe-from-vector (vector/move! (text/unsafe-vector t))))
+
+; ---------------------------
+
+(instance DeepCopy.String (DeepCopy String)
+  (transparent-function (deep-copy a) a)) ; Strings are immutable
+
+(instance ShallowCopy.Text (ShallowCopy Text)
+  (function (shallow-copy a) (text/unsafe-from-vector (shallow-copy (text/unsafe-vector a)))))
+
+(instance DeepCopy.Text (DeepCopy Text)
+  (function (deep-copy a) (shallow-copy a)))
+
+(instance Default.String (Default String)
+  (transparent-function default string/empty))
+
+(instance Default.Text (Default Text)
+  (transparent-function default text/empty))
+
+; Display.String has been defined in std/display
+
+(instance Display.Text (Display Text)
+  (function (display! w a) (display! w (text/unsafe-string a))))
+
+(instance DebugDisplay.String (DebugDisplay String)
+  (function (debug-display! w a)
+    (display! w "\"")!
+    (for (let c) (string/chars a)
+      (match (char/escape c)
+        [(some (let s)) (display! w s)]
+        [none (display! w c)])!)
+    (display! w "\"")))
+
+(instance DebugDisplay.Text (DebugDisplay Text)
+  (function (debug-display! w a)
+    (display-all! w "(text/from-string " (debug (text/unsafe-string a)) ")")))
+
+(instance Eq.String (Eq String)
+  (transparent-function (eq? a b) (<string/eq?> a b)))
+
+(instance Eq.Text (Eq Text)
+  (function (eq? a b)
+    (= (text/unsafe-string a) (text/unsafe-string b))))
+
+(builtin-op <string/eq?> {(-> String String Bool)} "string.eq")
+
+(instance Ord.String (Ord String)
+  (transparent-function (compare a b) (ordering/from-order-value (<string/cmp> a b))))
+
+(instance Ord.Text (Ord Text)
+  (function (compare a b)
+    (compare (text/unsafe-string a) (text/unsafe-string b))))
+
+(builtin-op <string/cmp> {(-> String String I32)} "string.cmp")
+
+(instance WriteString.Text (forall Never) (WriteString Text Never)
+  (function (write-string! s w) (ok (text/push! s w))))
+
+(instance Hash.String (Hash String)
+  (function (hash! s a)
+    (hash! s (string/unsafe-array a))))
+
+(instance Hash.Text (Hash Text)
+  (function (hash! s a)
+    (hash! s (text/unsafe-string a))))

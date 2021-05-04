@@ -1,0 +1,88 @@
+(no-implicit-std)
+
+(import "builtin" Option some none)
+(import "std/prelude/stage-1" _)
+(import "std/ref" Ref ref _.Ref)
+(import "std/iterator" Iterate iterate RevIterate iterator/empty iterator/only)
+(export Option some none try? option/_ _.Option)
+
+(function (option/unwrap alt x) {(forall A) (-> A (Option A) A)}
+  (match x
+    [(some (let x)) x]
+    [none alt]))
+
+(function (option/unwrap* altf x) {(forall A) (-> (-> A) (Option A) A)}
+  (match x
+    [(some (let x)) x]
+    [none (altf)]))
+
+(function (option/force x) {(forall A) (-> (Option A) A)}
+  (match x
+    [(some (let x)) x]
+    [none (assert #f "option/force")]))
+
+(function (option/map f x) {(forall A B) (-> (-> A B) (Option A) (Option B))}
+  (match x
+    [(some (let x)) (some (f x))]
+    [none none]))
+
+(function (option/filter f x) {(forall A) (-> (-> A Bool) (Option A) (Option A))}
+  (match x
+    [(some (let x)) (if (f x) (some x) none)]
+    [none none]))
+
+(function (option/then f x) {(forall A B) (-> (-> A (Option B)) (Option A) (Option B))}
+  (match x
+    [(some (let x)) (f x)]
+    [none none]))
+
+(function (option/flatten x) {(forall A B) (-> (Option (Option A)) (Option A))}
+  (match x
+    [(some (some (let x))) (some x)]
+    [_ none]))
+
+(function (option/take x) {(forall A) (-> (Ref (Option A)) (Option A))}
+  (match ~x
+    [(some (let a)) (set! x none) (some a)]
+    [none none]))
+
+(instance DeepCopy.Option (forall A) (DeepCopy (Option A)) (where (DeepCopy A))
+  (function (deep-copy a)
+    (match a
+      [(some (let x)) (some (deep-copy x))]
+      [_ a])))
+
+(instance Default.Option (forall A) (Default (Option A))
+  (transparent-function default none))
+
+(instance DebugDisplay.Option (forall A) (DebugDisplay (Option A)) (where (DebugDisplay A))
+  (function (debug-display! w a)
+    (match a
+      [(some (let x))
+        (display-all! w "(some " (debug x) ")")]
+      [none
+        (display-all! w "none")])))
+
+(instance Eq.Option (forall A) (Eq (Option A)) (where (Eq A))
+  (function (eq? a b)
+    (match (: a b)
+      [(: (some (let a)) (some (let b))) (eq? a b)]
+      [(: none none) #t]
+      [_ #f])))
+
+(instance Ord.Option (forall A) (Ord (Option A)) (where (Ord A))
+  (function (compare a b)
+    (match (: a b)
+      [(: (some (let a)) (some (let b))) (compare a b)]
+      [(: (some _) none) ordering:greater]
+      [(: none (some _)) ordering:less]
+      [(: none none) ordering:equal])))
+
+(instance Iterate.Option (Iterate Option)
+  (function (iterate t)
+    (match t
+      [(some (let x)) (iterator/only x)]
+      [none iterator/empty])))
+
+(instance RevIterate.Option (RevIterate Option)
+  (function (rev-iterate t) (iterate t)))

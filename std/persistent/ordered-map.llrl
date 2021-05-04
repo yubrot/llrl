@@ -1,0 +1,318 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-1" _)
+(import "std/s" s/foldl)
+(import "std/ref" Ref ref _.Ref)
+(import "std/iterator" _)
+(import "std/it" it/_ zip-either:_ _.ZipEither)
+(import "std/vector" Vector vector/_ _.Vector)
+(import "std/hash" Hash hash-all!)
+(import "std/tuple" _.Tuple.2)
+(export OrderedMap ordered-map ordered-map/_ _.OrderedMap)
+
+; A persistent red-black tree.
+; the Red-Black Tree implementation is based on http://matt.might.net/articles/red-black-delete/
+(data (OrderedMap K V)
+  :E  ; Black leaf
+  :EE ; Double black leaf
+  (:T Color K V (OrderedMap K V) (OrderedMap K V)))
+
+(value-data Color
+  :R   ; Red
+  :B   ; Black
+  :BB  ; Double black
+  :NB) ; Negative black
+
+(macro (ordered-map s)
+  (s/match s
+    [(_ ,@elems)
+      (s/foldl [^2 `(,\ordered-map/insert-elem ,%2 ,%1)] \ordered-map/empty elems)]
+    [_
+      (err "Expected (ordered-map elem ...)")]))
+
+(function ordered-map/empty {(forall K V) (OrderedMap K V)}
+  :E)
+
+(function (ordered-map/empty? tree) {(forall K V) (-> (OrderedMap K V) Bool)}
+  (is? :E tree))
+
+(function (ordered-map/has? key tree) {(forall K V) (-> K (OrderedMap K V) Bool) (where (Ord K))}
+  (is? (some _) (ordered-map/get? key tree)))
+
+(function (ordered-map/get? key tree) {(forall K V) (-> K (OrderedMap K V) (Option V)) (where (Ord K))}
+  (match tree
+    [(:T _ (let k) (let v) (let l) (let r))
+      (match (compare key k)
+        [ordering:less (ordered-map/get? key l)]
+        [ordering:greater (ordered-map/get? key r)]
+        [ordering:equal (some v)])]
+    [_ none]))
+
+(function (ordered-map/get-min? tree) {(forall K V) (-> (OrderedMap K V) (Option (: K V))) (where (Ord K))}
+  (match tree
+    [(:T _ (let k) (let v) :E _) (some (: k v))]
+    [(:T _ _ _ (let l) _) (ordered-map/get-min? l)]
+    [:E none]
+    [:EE (assert #f)]))
+
+(function (ordered-map/get-max? tree) {(forall K V) (-> (OrderedMap K V) (Option (: K V))) (where (Ord K))}
+  (match tree
+    [(:T _ (let k) (let v) _ :E) (some (: k v))]
+    [(:T _ _ _ _ (let r)) (ordered-map/get-max? r)]
+    [:E none]
+    [:EE (assert #f)]))
+
+(function (ordered-map/insert key value tree) {(forall K V) (-> K V (OrderedMap K V) (OrderedMap K V)) (where (Ord K))}
+  (blacken (insert key value tree)))
+
+(function (ordered-map/insert-elem elem tree) {(forall K V) (-> (: K V) (OrderedMap K V) (OrderedMap K V)) (where (Ord K))}
+  (with1 (: (let key) (let value)) elem
+    (ordered-map/insert key value tree)))
+
+(function (ordered-map/remove key tree) {(forall K V) (-> K (OrderedMap K V) (OrderedMap K V)) (where (Ord K))}
+  (blacken (remove key tree)))
+
+(function (ordered-map/remove-min tree) {(forall K V) (-> (OrderedMap K V) (OrderedMap K V)) (where (Ord K))}
+  (match tree
+    [(:T _ _ _ :E _) (delete tree)]
+    [(:T (let color) (let k) (let v) (let l) (let r)) (bubble color k v (ordered-map/remove-min l) r)]
+    [:E tree]
+    [:EE (assert #f)]))
+
+(function (ordered-map/remove-max tree) {(forall K V) (-> (OrderedMap K V) (OrderedMap K V)) (where (Ord K))}
+  (match tree
+    [(:T _ _ _ _ :E) (delete tree)]
+    [(:T (let color) (let k) (let v) (let l) (let r)) (bubble color k v l (ordered-map/remove-max r))]
+    [:E tree]
+    [:EE (assert #f)]))
+
+(function (ordered-map/union a b) {(forall K V) (-> (OrderedMap K V) (OrderedMap K V) (OrderedMap K V)) (where (Ord K))}
+  (ordered-map/union* [^3 %2] a b))
+
+(function (ordered-map/union* f a b) {(forall K V) (-> (-> K V V V) (OrderedMap K V) (OrderedMap K V) (OrderedMap K V)) (where (Ord K))}
+  (let1 a (ref a)
+    (for (: (let k) (let bv)) (ordered-map/elems b)
+      (set! a (match (ordered-map/get? k ~a)
+        [none
+          (ordered-map/insert k bv ~a)]
+        [(some (let av))
+          (ordered-map/insert k (f k av bv) ~a)])))
+    ~a))
+
+(function (ordered-map/intersection a b) {(forall K V) (-> (OrderedMap K V) (OrderedMap K V) (OrderedMap K V)) (where (Ord K))}
+  (ordered-map/intersection* [^3 %2] a b))
+
+(function (ordered-map/intersection* f a b) {(forall K V) (-> (-> K V V V) (OrderedMap K V) (OrderedMap K V) (OrderedMap K V)) (where (Ord K))}
+  (let1 m (ref ordered-map/empty)
+    (for (: (let k) (let av)) (ordered-map/elems a)
+      (when-match1 (some (let bv)) (ordered-map/get? k b)
+        (set! m (ordered-map/insert k (f k av bv) ~m))))
+    ~m))
+
+(function (ordered-map/difference a b) {(forall K V) (-> (OrderedMap K V) (OrderedMap K V) (OrderedMap K V)) (where (Ord K))}
+  (ordered-map/difference* [^3 none] a b))
+
+(function (ordered-map/difference* f a b) {(forall K V) (-> (-> K V V (Option V)) (OrderedMap K V) (OrderedMap K V) (OrderedMap K V)) (where (Ord K))}
+  (let1 a (ref a)
+    (for (: (let k) (let bv)) (ordered-map/elems b)
+      (set! a (match (ordered-map/get? k ~a)
+        [none
+          (ordered-map/insert k bv ~a)]
+        [(some (let av))
+          (match (f k av bv)
+            [none (ordered-map/remove k ~a)]
+            [(some (let v)) (ordered-map/insert k v ~a)])])))
+    ~a))
+
+; Currently we are unable to make this implementation an instance of std/iterator/Collect.
+; In order to do so, we need to extend llrl type system to support associated types or fundeps.
+(function (ordered-map/collect t) {(forall T K V) (-> (T (: K V)) (OrderedMap K V)) (where (Iterate T) (Ord K))}
+  (let1 tree (ref ordered-map/empty)
+    (for (: (let k) (let v)) t
+      (set! tree (ordered-map/insert k v ~tree)))
+    ~tree))
+
+(function (ordered-map/elems tree) {(forall K V) (-> (OrderedMap K V) (Iterator (: K V)))}
+  (let1 cursor (cursor/new tree)
+    (iterator/new [^0 (cursor/next! cursor)])))
+
+(function (ordered-map/keys tree) {(forall K V) (-> (OrderedMap K V) (Iterator K))}
+  (it/map (case1 (: (let key) _) key) (ordered-map/elems tree)))
+
+(function (ordered-map/values tree) {(forall K V) (-> (OrderedMap K V) (Iterator V))}
+  (it/map (case1 (: _ (let value)) value) (ordered-map/elems tree)))
+
+; ---------------------------
+
+(function (redden tree)
+  (match tree
+    [(:T _ (let k) (let v) (let a) (let b)) (:T :R k v a b)]
+    [_ (assert #f)]))
+
+(function (blacken tree)
+  (match tree
+    [:E :E]
+    [:EE :E]
+    [(:T _ (let k) (let v) (let a) (let b)) (:T :B k v a b)]))
+
+(function (bb? tree)
+  (match tree
+    [:EE #t]
+    [(:T :BB _ _ _ _) #t]
+    [_ #f]))
+
+(function (blacker color)
+  (match color
+    [:NB :R]
+    [:R :B]
+    [:B :BB]
+    [:BB (assert #f)]))
+
+(function (redder color)
+  (match color
+    [:R :NB]
+    [:B :R]
+    [:BB :B]
+    [:NB (assert #f)]))
+
+(function (blacker* tree)
+  (match tree
+    [:E :EE]
+    [(:T (let c) (let k) (let v) (let l) (let r)) (:T (blacker c) k v l r)]
+    [:EE (assert #f)]))
+
+(function (redder* tree)
+  (match tree
+    [:EE :E]
+    [(:T (let c) (let k) (let v) (let l) (let r)) (:T (redder c) k v l r)]
+    [:E (assert #f)]))
+
+(function (insert key value tree)
+  (match tree
+    [(:T (let color) (let k) (let v) (let a) (let b))
+      (match (compare key k)
+        [ordering:less (balance color k v (insert key value a) b)]
+        [ordering:greater (balance color k v a (insert key value b))]
+        [ordering:equal (:T color k value a b)])]
+    [_ (:T :R key value :E :E)]))
+
+(function (remove key tree)
+  (match tree
+    [(:T (let color) (let k) (let v) (let a) (let b))
+      (match (compare key k)
+        [ordering:less (bubble color k v (remove key a) b)]
+        [ordering:greater (bubble color k v a (remove key b))]
+        [ordering:equal (delete tree)])]
+    [_ :E]))
+
+(function (delete tree)
+  (match tree
+    [(:T :R _ _ :E :E) :E]
+    [(:T :B _ _ :E :E) :EE]
+    [(:T :B _ _ :E (:T :R (let k) (let v) (let a) (let b))) (:T :B k v a b)]
+    [(:T :B _ _ (:T :R (let k) (let v) (let a) (let b)) :E) (:T :B k v a b)]
+    [(:T (let color) _ _ (let l) (let r))
+      (match (: (ordered-map/get-max? l) (ordered-map/remove-max l))
+        [(: (some (: (let k) (let v))) (let l)) (bubble color k v l r)]
+        [_ (assert #f)])]
+    [_ :E]))
+
+(function (balance c k v l r)
+  (match (: c k v l r)
+    [(: :B (let zk) (let zv) (:T :R (let yk) (let yv) (:T :R (let xk) (let xv) (let a) (let b)) (let c)) (let d))
+      (:T :R yk yv (:T :B xk xv a b) (:T :B zk zv c d))]
+    [(: :B (let zk) (let zv) (:T :R (let xk) (let xv) (let a) (:T :R (let yk) (let yv) (let b) (let c))) (let d))
+      (:T :R yk yv (:T :B xk xv a b) (:T :B zk zv c d))]
+    [(: :B (let xk) (let xv) (let a) (:T :R (let zk) (let zv) (:T :R (let yk) (let yv) (let b) (let c)) (let d)))
+      (:T :R yk yv (:T :B xk xv a b) (:T :B zk zv c d))]
+    [(: :B (let xk) (let xv) (let a) (:T :R (let yk) (let yv) (let b) (:T :R (let zk) (let zv) (let c) (let d))))
+      (:T :R yk yv (:T :B xk xv a b) (:T :B zk zv c d))]
+    [(: :BB (let zk) (let zv) (:T :R (let yk) (let yv) (:T :R (let xk) (let xv) (let a) (let b)) (let c)) (let d))
+      (:T :B yk yv (:T :B xk xv a b) (:T :B zk zv c d))]
+    [(: :BB (let zk) (let zv) (:T :R (let xk) (let xv) (let a) (:T :R (let yk) (let yv) (let b) (let c))) (let d))
+      (:T :B yk yv (:T :B xk xv a b) (:T :B zk zv c d))]
+    [(: :BB (let xk) (let xv) (let a) (:T :R (let zk) (let zv) (:T :R (let yk) (let yv) (let b) (let c)) (let d)))
+      (:T :B yk yv (:T :B xk xv a b) (:T :B zk zv c d))]
+    [(: :BB (let xk) (let xv) (let a) (:T :R (let yk) (let yv) (let b) (:T :R (let zk) (let zv) (let c) (let d))))
+      (:T :B yk yv (:T :B xk xv a b) (:T :B zk zv c d))]
+    [(: :BB (let xk) (let xv) (let a) (:T :NB (let zk) (let zv) (:T :B (let yk) (let yv) (let b) (let c)) (let d (:T :B _ _ _ _))))
+      (:T :B yk yv (:T :B xk xv a b) (balance :B zk zv c (redden d)))]
+    [(: :BB (let zk) (let zv) (:T :NB (let xk) (let xv) (let a (:T :B _ _ _ _)) (:T :B (let yk) (let yv) (let b) (let c))) (let d))
+      (:T :B yk yv (balance :B xk xv (redden a) b) (:T :B zk zv c d))]
+    [_
+      (:T c k v l r)]))
+
+(function (bubble c k v l r)
+  (if (or (bb? l) (bb? r))
+    (balance (blacker c) k v (redder* l) (redder* r))
+    (balance c k v l r)))
+
+(value-data (Cursor K V)
+  (cursor: (Vector (: K V (OrderedMap K V)))))
+
+(function (cursor/new tree) {(forall K V) (-> (OrderedMap K V) (Cursor K V))}
+  (let1 cursor (cursor: vector/empty)
+    (cursor/push! tree cursor)
+    cursor))
+
+(function (cursor/next! cursor) {(forall K V) (-> (Cursor K V) (Option (: K V)))}
+  (with ([(cursor: (let stack)) cursor]
+         [(: (let key) (let value) (let r)) (vector/pop! stack)?])
+    (cursor/push! r cursor)
+    (some (: key value))))
+
+(function (cursor/push! tree cursor) {(forall K V) (-> (OrderedMap K V) (Cursor K V) unit)}
+  (with1 (cursor: (let stack)) cursor
+    (let1 tree (ref tree)
+      (while-match1 (:T _ (let k) (let v) (let l) (let r)) ~tree
+        (vector/push! (: k v r) stack)
+        (set! tree l)))))
+
+; ---------------------------
+
+(instance ShallowCopy.OrderedMap (forall K V) (ShallowCopy (OrderedMap K V))
+  (function (shallow-copy a) a)) ; Ordered maps are immutable and persistent
+
+(instance DeepCopy.OrderedMap (forall K V) (DeepCopy (OrderedMap K V)) (where (DeepCopy K) (DeepCopy V))
+  (function (deep-copy a)
+    (match a
+      [:E :E]
+      [:EE :EE]
+      [(:T (let c) (let k) (let v) (let a) (let b)) (:T c (deep-copy k) (deep-copy v) (deep-copy a) (deep-copy b))])))
+
+(instance Default.OrderedMap (forall K V) (Default (OrderedMap K V))
+  (transparent-function default ordered-map/empty))
+
+(instance DebugDisplay.OrderedMap (forall K V) (DebugDisplay (OrderedMap K V)) (where (DebugDisplay K) (DebugDisplay V))
+  (function (debug-display! w a)
+    (display! w "(ordered-map")!
+    (for (: (let k) (let v)) (ordered-map/elems a)
+      (display-all! w " (: " (debug k) " " (debug v) ")")!)
+    (display! w ")")))
+
+(instance Eq.OrderedMap (forall K V) (Eq (OrderedMap K V)) (where (Eq K) (Eq V))
+  (function (eq? a b)
+    (for (let z) (it/zip-either (ordered-map/elems a) (ordered-map/elems b))
+      (if-match1 (zip-either:both (let a) (let b)) z
+        (when (ne? a b) (return #f))
+        (return #f)))
+    #t))
+
+(instance Ord.OrderedMap (forall K V) (Ord (OrderedMap K V)) (where (Ord K) (Ord V))
+  (function (compare a b)
+    (for (let z) (it/zip-either (ordered-map/elems a) (ordered-map/elems b))
+      (match z
+        [(zip-either:both (let a) (let b))
+          (match (compare a b)
+            [ordering:equal]
+            [(let o) (return o)])]
+        [(zip-either:left _)
+          (return ordering:greater)]
+        [(zip-either:right _)
+          (return ordering:less)]))
+    ordering:equal))
+
+(instance Hash.OrderedMap (forall K V) (Hash (OrderedMap K V)) (where (Hash K) (Hash V))
+  (function (hash! s a)
+    (for (: (let k) (let v)) (ordered-map/elems a)
+      (hash-all! s k v))))

@@ -1,0 +1,180 @@
+; (no-implicit-std)
+
+(import "std/prelude/stage-1" _)
+(import "std/bits" _)
+(import "std/access" unsafe-get)
+(import "std/memory" ptr/_)
+(import "std/ref" Ref ref _.Ref)
+(import "std/array" Array array/_ _.Array)
+(import "std/hash" _)
+(export XxHasher xx-hasher/_ _.XxHasher)
+
+; xxHash is originally developed by Yann Collet: https://github.com/Cyan4973/xxHash
+; llrl implementation is based on xxhash-rust: https://github.com/DoumanAsh/xxhash-rust
+
+; xxHash Library
+; Copyright (c) 2012-2020 Yann Collet
+; All rights reserved.
+;
+; BSD 2-Clause License (https://www.opensource.org/licenses/bsd-license.php)
+;
+; Redistribution and use in source and binary forms, with or without modification,
+; are permitted provided that the following conditions are met:
+;
+; * Redistributions of source code must retain the above copyright notice, this
+;   list of conditions and the following disclaimer.
+;
+; * Redistributions in binary form must reproduce the above copyright notice, this
+;   list of conditions and the following disclaimer in the documentation and/or
+;   other materials provided with the distribution.
+;
+; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+; ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+; WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+; DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+; ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+; (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+; ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+(data XxHasher
+  (xxh: U64 (Ref State)))
+
+(function (xx-hasher/new) {(-> XxHasher)}
+  (xx-hasher/with-seed (seed/new)))
+
+(function (xx-hasher/with-seed seed) {(-> U64 XxHasher)}
+  (let1 state (state: 0 (initial-v seed) (array/new 0 4) 0)
+    (xxh: seed (ref state))))
+
+(instance DeepCopy.XxHasher (DeepCopy XxHasher)
+  (function (deep-copy a)
+    (with1 (xxh: (let seed) (let state)) a
+      (xxh: seed (ref (deep-copy ~state))))))
+
+(instance DebugDisplay.XxHasher (DebugDisplay XxHasher)
+  (function (debug-display! w a)
+    (display! w "<xxHash>")))
+
+(instance Hasher.XxHasher (Hasher XxHasher)
+  (function (hasher/reset! s)
+    (with ([(xxh: (let seed) (let state)) s]
+           [(state: _ _ (let mem) _) ~state])
+      (set! state (state: 0 (initial-v seed) mem 0))))
+  (function (hasher/finish s)
+    (with1 (xxh: _ (let state)) s
+      (state/digest ~state)))
+  (function (hasher/write! bytes s)
+    (with1 (xxh: _ (let state)) s
+      (set! state (state/update! bytes ~state)))))
+
+; ---------------------------
+
+(c-function seed/new {(-> U64)} "llrt_xxh_seed")
+
+(value-data State
+  (state: U64 (: U64 U64 U64 U64) (Array U64) U64)) ; total-len v mem mem-size
+
+(instance DeepCopy.State (DeepCopy State)
+  (function (deep-copy a)
+    (with1 (state: (let total-len) (let v) (let mem) (let mem-size)) a
+      (state: total-len v (shallow-copy mem) mem-size))))
+
+(function (state/digest state) {(-> State U64)}
+  (with1 (state: (let total-len) (: (let v1) (let v2) (let v3) (let v4)) (let mem) (let mem-size)) state
+    (finalize
+      (+
+        (if (<= chunk-size total-len)
+          (let* ([result (+ (rotl v1 1) (rotl v2 7) (rotl v3 12) (rotl v4 18))]
+                 [result (merge-round result v1)]
+                 [result (merge-round result v2)]
+                 [result (merge-round result v3)]
+                 [result (merge-round result v4)])
+            result)
+          (+ v3 prime-5))
+        total-len)
+      (array/unsafe-from-ptr (ptr/cast (array/ptr mem)) mem-size))))
+
+(function (state/update! input state) {(-> (Array U8) State State)}
+  (with1 (state: (let total-len) (: (let v1) (let v2) (let v3) (let v4)) (let mem) (let mem-size)) state
+    (let ([input (ref input)]
+          [total-len (+ total-len (array/length input))]
+          [v1 (ref v1)]
+          [v2 (ref v2)]
+          [v3 (ref v3)]
+          [v4 (ref v4)]
+          [mem-size (ref mem-size)])
+      (if (< (+ ~mem-size (array/length ~input)) chunk-size)
+        (begin
+          (ptr/copy! (array/ptr ~input) (array/length ~input) (|> mem array/ptr ptr/cast (ptr/add ~mem-size)))
+          (set! mem-size (+ ~mem-size (array/length ~input))))
+        (begin
+          (when (< 0 ~mem-size)
+            (let1 fill-len (- chunk-size ~mem-size)
+              (ptr/copy! (array/ptr ~input) fill-len (|> mem array/ptr ptr/cast (ptr/add ~mem-size)))
+              (set! v1 (round ~v1 (unsafe-get mem[0])))
+              (set! v2 (round ~v2 (unsafe-get mem[1])))
+              (set! v3 (round ~v3 (unsafe-get mem[2])))
+              (set! v4 (round ~v4 (unsafe-get mem[3])))
+              (set! input (array/skip fill-len ~input))
+              (set! mem-size 0)))
+          (while (<= chunk-size (array/length ~input))
+            ; Notice that the input is not aligned for U64 but the mem is.
+            (ptr/copy! (array/ptr ~input) chunk-size (|> mem array/ptr ptr/cast))
+            (set! v1 (round ~v1 (unsafe-get mem[0])))
+            (set! v2 (round ~v2 (unsafe-get mem[1])))
+            (set! v3 (round ~v3 (unsafe-get mem[2])))
+            (set! v4 (round ~v4 (unsafe-get mem[3])))
+            (set! input (array/skip chunk-size ~input)))
+          (when (< 0 (array/length ~input))
+            (ptr/copy! (array/ptr ~input) (array/length ~input) (|> mem array/ptr ptr/cast))
+            (set! mem-size (array/length ~input)))))
+      (state: total-len (: ~v1 ~v2 ~v3 ~v4) mem ~mem-size))))
+
+(function (initial-v seed) {(-> U64 (: U64 U64 U64 U64))}
+  (: (+ seed prime-1 prime-2)
+     (+ seed prime-2)
+     seed
+     (- seed prime-1)))
+
+(function (finalize input d) {(-> U64 (Array U8) U64)}
+  (let ([input (ref input)]
+        [d (ref d)])
+    (while (<= 8 (array/length ~d))
+      (set! input (bw^ ~input (round 0 (|> ~d array/ptr ptr/cast ptr/load) {U64})))
+      (set! d (array/skip 8 ~d))
+      (set! input (+ (* (rotl ~input 27) prime-1) prime-4)))
+    (when (<= 4 (array/length ~d))
+      (set! input (bw^ ~input (* (cast (|> ~d array/ptr ptr/cast ptr/load) {U32}) prime-1)))
+      (set! d (array/skip 4 ~d))
+      (set! input (+ (* (rotl ~input 23) prime-2) prime-3)))
+    (for (let byte) ~d
+      (set! input (bw^ ~input (* (cast byte) prime-5)))
+      (set! input (* (rotl ~input 11) prime-1)))
+    (avalanche ~input)))
+
+(function chunk-size 32)
+(function prime-1 11400714785074694791 {U64})
+(function prime-2 14029467366897019727 {U64})
+(function prime-3 1609587929392839161 {U64})
+(function prime-4 9650029242287828579 {U64})
+(function prime-5 2870177450012600261 {U64})
+
+(function (rotl x b) {(-> U64 U64 U64)}
+  (bw| (bw<< x b) (bw>> x (- 64 b))))
+
+(function (round acc input) {(-> U64 U64 U64)}
+  (* (rotl (+ acc (* input prime-2)) 31) prime-1))
+
+(function (merge-round acc val) {(-> U64 U64 U64)}
+  (+ (* (bw^ acc (round 0 val)) prime-1) prime-4))
+
+(function (avalanche input) {(-> U64 U64)}
+  (let* ([input (bw^ input (bw>> input 33))]
+         [input (* input prime-2)]
+         [input (bw^ input (bw>> input 29))]
+         [input (* input prime-3)]
+         [input (bw^ input (bw>> input 32))])
+    input))

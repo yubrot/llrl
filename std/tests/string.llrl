@@ -1,0 +1,147 @@
+(import "std/string" _)
+(import "std/tests/ord" [ord/_ _])
+
+(assert-eq? "Hello, World!" "Hello, World!")
+(assert-ne? "Hello, World!" "Hello, World")
+
+(ord/test1234 "" "abc" "abcdef" "abcghi")
+
+(assert (string/empty? ""))
+(assert (string/empty? string/empty))
+(assert (not (string/empty? "foo")))
+
+(assert-eq? string/empty default)
+
+(assert-eq? 5 (string/length "hello"))
+
+(assert (string/valid-sequence? (array)))
+(assert (string/valid-sequence? (array 0)))
+(assert (string/valid-sequence? (array 194 162))) ; C2 A2
+(assert (string/valid-sequence? (array 65 66 67 194 162 48 49 50)))
+(assert (not (string/valid-sequence? (array 194)))) ; 2-header
+(assert (not (string/valid-sequence? (array 194 90)))) ; 2-header, latin
+(assert (not (string/valid-sequence? (array 194 194)))) ; 2-header, 2-header
+(assert (not (string/valid-sequence? (array 192 175)))) ; C0 AF: overlong
+(assert (string/valid-sequence? (array 226 130 172))) ; E2 82 AC
+(assert (string/valid-sequence? (array 226 130 172 194 162)))
+(assert (not (string/valid-sequence? (array 226 130)))) ; 3-header, progress
+(assert (not (string/valid-sequence? (array 226 130 50)))) ; 3-header, progress, latin
+(assert (not (string/valid-sequence? (array 226 194)))) ; 3-header, 2-header
+(assert (not (string/valid-sequence? (array 224 130 162)))) ; E0 82 A2: overlong
+(assert (string/valid-sequence? (array 240 144 141 136))) ; F0 90 8D 88
+(assert (string/valid-sequence? (array 226 130 172 240 144 141 136 67 194 162)))
+(assert (not (string/valid-sequence? (array 240 144 141)))) ; 4-header, progress, progress
+(assert (not (string/valid-sequence? (array 240 130 130 172)))) ; F0 82 82 AC: overlong
+(assert (string/valid-sequence? (array 240 144 144 128))) ; F0 90 90 80
+(assert (not (string/valid-sequence? (array 237 160 129 237 176 128)))) ; ED A0 81 ED B0 80: Surrogate pair
+
+(let ([x "abc日本語"])
+  (let ([y (collect (string/bytes x))])
+    (assert-eq? y (array 97 98 99 230 151 165 230 156 172 232 170 158))
+    (assert-eq? 99 (string/byte-at 2 x))
+    (assert-eq? 165 (string/byte-at 5 x))
+    (assert-eq? x (string/from-bytes y))
+    (assert-eq? "abc" (string/substring 0 3 x))
+    (assert-eq? "日本語" (string/substring 3 (string/length x) x))
+    (assert-eq? "abc" (string/take 3 x))
+    (assert-eq? "abc日本語" (string/take 12 x))
+    (assert-eq? "日本語" (string/skip 3 x))
+    (assert-eq? "" (string/skip 12 x))
+    (assert (= (array #t #t #t #t #f #f #t #f #t #f)
+               (|> (array 0 1 2 3 4 5 6 11 12 13) (it/map [^1 (string/char-boundary? %1 x)]) collect)))))
+
+(let ([x "hello"])
+  (let ([ptr (string/unsafe-ptr x)]
+        [len (string/length x)])
+    (assert-eq? "hello" (string/unsafe-from-ptr ptr len))))
+
+(let1 src "ab\n言語€𐍈\t"
+  (assert-eq? (array #\a #\b #\\n #\言 #\語 #\€ #\𐍈 #\\t) (collect (string/chars src)))
+  (assert-eq? src (string/from-chars (string/chars src))))
+
+(assert-eq? (array (: 0 #\a) (: 1 #\日) (: 4 #\本) (: 7 #\語) (: 10 #\b) (: 11 #\c))
+            (collect (string/char-indices "a日本語bc")))
+
+(assert (not (string/starts-with? "abc" "")))
+(assert (not (string/starts-with? "abc" "ab")))
+(assert (string/starts-with? "abc" "abcdef"))
+(assert (not (string/starts-with? "abc" "defabc")))
+(assert (string/starts-with? "abc" "abcabc"))
+
+(assert (not (string/ends-with? "abc" "")))
+(assert (not (string/ends-with? "abc" "abcdef")))
+(assert (string/ends-with? "abc" "defabc"))
+(assert (not (string/ends-with? "abc" "bc")))
+(assert (not (string/ends-with? "abc" "cba")))
+
+(assert (not (string/contains? "abc" "")))
+(assert (not (string/contains? "abc" "ab")))
+(assert (string/contains? "abc" "abcdef"))
+(assert (string/contains? "abc" "defabc"))
+(assert (string/contains? "abc" "fabcde"))
+(assert (string/contains? "abc" "abcabc"))
+
+(assert-eq? none (string/find? "abc" ""))
+(assert-eq? none (string/find? "abc" "ab"))
+(assert-eq? (some 0) (string/find? "abc" "abcdef"))
+(assert-eq? (some 3) (string/find? "abc" "defabc"))
+(assert-eq? (some 1) (string/find? "abc" "fabcde"))
+(assert-eq? (some 0) (string/find? "abc" "abcabc"))
+
+(assert-eq? "xyxyxy" (string/replace "abc" "def" "xyxyxy"))
+(assert-eq? "defxyz" (string/replace "abc" "def" "abcxyz"))
+(assert-eq? "xdefyz" (string/replace "abc" "def" "xabcyz"))
+(assert-eq? "xyzdef" (string/replace "abc" "def" "xyzabc"))
+(assert-eq? "defxdefdefyz" (string/replace "abc" "def" "abcxabcabcyz"))
+(assert-eq? "x" (string/replace "" "x" ""))
+(assert-eq? "xaxbxcx" (string/replace "" "x" "abc"))
+
+(assert-eq? (array) (collect (string/split "" "")))
+(assert-eq? (array "a") (collect (string/split "" "a")))
+(assert-eq? (array "a" "b" "c") (collect (string/split "" "abc")))
+(assert-eq? (array "") (collect (string/split ":" "")))
+(assert-eq? (array "abc") (collect (string/split ":" "abc")))
+(assert-eq? (array "abc" "") (collect (string/split ":" "abc:")))
+(assert-eq? (array "abc" "def") (collect (string/split ":" "abc:def")))
+(assert-eq? (array "" "abc" "def" "") (collect (string/split ":" ":abc:def:")))
+(assert-eq? (array "a" "bc" "de" "f") (collect (string/split "::" "a::bc::de::f")))
+
+(assert-eq? (array) (collect (string/split-lines "")))
+(assert-eq? (array "foo") (collect (string/split-lines "foo")))
+(assert-eq? (array "") (collect (string/split-lines "\n")))
+(assert-eq? (array "foo") (collect (string/split-lines "foo\n")))
+(assert-eq? (array "foo" "bar") (collect (string/split-lines "foo\nbar")))
+(assert-eq? (array "foo" "bar") (collect (string/split-lines "foo\nbar\n")))
+(assert-eq? (array "" "") (collect (string/split-lines "\n\n")))
+(assert-eq? (array "" "foo") (collect (string/split-lines "\nfoo\n")))
+(assert-eq? (array "" "" "") (collect (string/split-lines "\n\n\n")))
+(assert-eq? (array "a" "" "b") (collect (string/split-lines "a\n\nb")))
+(assert-eq? (array "a" "" "b" "" "" "c") (collect (string/split-lines "a\n\nb\n\n\nc")))
+(assert-eq? (array "x" "y" "z") (collect (string/split-lines "x\r\ny\nz")))
+
+(assert-eq? "" (string/reverse ""))
+(assert-eq? "A" (string/reverse "A"))
+(assert-eq? "CBA" (string/reverse "ABC"))
+(assert-eq? "zyx-cba" (string/reverse "abc-xyz"))
+
+(assert-eq? "" (string/join "" (array)))
+(assert-eq? "foo" (string/join "" (array "foo")))
+(assert-eq? "foobar" (string/join "" (array "foo" "bar")))
+(assert-eq? "foobarbaz" (string/join "" (array "foo" "bar" "baz")))
+(assert-eq? "" (string/join "<>" (array)))
+(assert-eq? "foo" (string/join "<>" (array "foo")))
+(assert-eq? "foo<>bar<>baz" (string/join "<>" (array "foo" "bar" "baz")))
+
+(assert-eq? "" (string ""))
+(assert-eq? "hello" (string "hello"))
+(assert-eq? "Hello, World!\n" (string "Hello, World!\n"))
+(assert (= "abc\ndef\tghi" (string "abc
+def	ghi")))
+(assert-eq? "'\"\\" (string "'\"\\"))
+
+(assert-eq? "\"\"" (string (debug "")))
+(assert-eq? "\"hello\"" (string (debug "hello")))
+(assert-eq? "\"Hello, World!\\n\"" (string (debug "Hello, World!\n")))
+(assert (= "\"abc\\ndef\\tghi\"" (string (debug "abc
+def	ghi"))))
+(assert-eq? "\"'\\\"\\\\\"" (string (debug "'\"\\")))

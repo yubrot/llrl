@@ -1,0 +1,3 @@
+(import "std/num-literals" _)
+
+; Nothing to do

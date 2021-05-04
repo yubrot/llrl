@@ -1,0 +1,36 @@
+(import "std/iterator" _)
+(import "std/array" array/_)
+
+(assert-eq? none (iterator/next! iterator/empty))
+
+(let1 it (iterator/only #t)
+  (assert-eq? (some #t) (iterator/next! it))
+  (assert-eq? none (iterator/next! it)))
+
+(let1 it (iterator/forever #t)
+  (assert-eq? (some #t) (iterator/next! it))
+  (assert-eq? (some #t) (iterator/next! it))
+  (assert-eq? (some #t) (iterator/next! it)))
+
+(let1 it (iterator/repeat 2 #t)
+  (assert-eq? (some #t) (iterator/next! it))
+  (assert-eq? (some #t) (iterator/next! it))
+  (assert-eq? none (iterator/next! it)))
+
+(let1 it (iterator/unfold array/split-last? (array 1 2 3))
+  (assert-eq? (some 3) (iterator/next! it))
+  (assert-eq? (some 2) (iterator/next! it))
+  (assert-eq? (some 1) (iterator/next! it))
+  (assert-eq? none (iterator/next! it)))
+
+(let1 it (iterator/range 0 12 3)
+  (assert-eq? (some 0) (iterator/next! it))
+  (assert-eq? (some 3) (iterator/next! it))
+  (assert-eq? (some 6) (iterator/next! it))
+  (assert-eq? (some 9) (iterator/next! it))
+  (assert-eq? none (iterator/next! it)))
+
+(let1 sum (ref 0)
+  (for (let n) (iterator/unfold array/split-last? (array 1 2 3 4 5))
+    (set! sum (+ ~sum n)))
+  (assert-eq? ~sum 15))

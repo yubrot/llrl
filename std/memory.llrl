@@ -1,0 +1,80 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-1" _)
+(import "std/integer" integer/to-string _.U64)
+(import "std/phantom" Phantom phantom:)
+(export Ptr ptr/_ size-of align-of _.Ptr)
+
+(builtin-type (Ptr A) "ptr")
+
+(builtin-op ptr/null {(forall A) (Ptr A)} "ptr.null")
+(builtin-op ptr/load {(forall A) (-> (Ptr A) A)} "ptr.load")
+(builtin-op ptr/store! {(forall A) (-> A (Ptr A) unit)} "ptr.store")
+(builtin-op ptr/offset {(forall A) (-> I64 (Ptr A) (Ptr A))} "ptr.offset")
+(builtin-op ptr/cast {(forall A B) (-> (Ptr A) (Ptr B))} "ptr.cast")
+(builtin-op ptr/copy! {(forall A) (-> (Ptr A) U64 (Ptr A) unit)} "ptr.copy") ; (ptr/copy src len dest)
+(builtin-op ptr/move! {(forall A) (-> (Ptr A) U64 (Ptr A) unit)} "ptr.move") ; (ptr/move src len dest)
+
+(function (ptr/replace! a p) {(forall A) (-> A (Ptr A) A)}
+  (let ([prev-a (ptr/load p)])
+    (ptr/store! a p)
+    prev-a))
+
+(transparent-function (ptr/add v p) {(forall A) (-> U64 (Ptr A) (Ptr A))}
+  (ptr/offset (<index-to-offset> v) p))
+
+(builtin-op <index-to-offset> {(-> U64 I64)} "no-op")
+
+(transparent-function (ptr/load-at index p) {(forall A) (-> U64 (Ptr A) A)}
+  (ptr/load (ptr/add index p)))
+
+(transparent-function (ptr/store-at! index a p) {(forall A) (-> U64 A (Ptr A) unit)}
+  (ptr/store! a (ptr/add index p)))
+
+(function (ptr/replace-at! index a p) {(forall A) (-> U64 A (Ptr A) A)}
+  (let ([prev-a (ptr/load-at index p)])
+    (ptr/store-at! index a p)
+    prev-a))
+
+(builtin-op ptr/address {(forall A) (-> (Ptr A) U64)} "ptr.to-integer")
+(builtin-op ptr/from-address {(forall A) (-> U64 (Ptr A))} "integer.to-ptr")
+
+(macro (size-of s)
+  (s/match s
+    [(_ ,ty)
+      (ok `(,\<size-of> (annotate ,\phantom: (,\Phantom ,ty))))]
+    [_
+      (err "Expected (size-of type)")]))
+
+(macro (align-of s)
+  (s/match s
+    [(_ ,ty)
+      (ok `(,\<align-of> (annotate ,\phantom: (,\Phantom ,ty))))]
+    [_
+      (err "Expected (align-of type)")]))
+
+(builtin-op <size-of> {(forall A) (-> (Phantom A) U64)} "size-of")
+(builtin-op <align-of> {(forall A) (-> (Phantom A) U64)} "align-of")
+
+(instance DeepCopy.Ptr (forall A) (DeepCopy (Ptr A))
+  (transparent-function (deep-copy a) a))
+
+(instance DebugDisplay.Ptr (forall A) (DebugDisplay (Ptr A))
+  (function (debug-display! w a)
+    (display-all! w "(ptr 0x" (integer/to-string 16 (ptr/address a)) ")")))
+
+(instance Eq.Ptr (forall A) (Eq (Ptr A))
+  (transparent-function (eq? a b) (<ptr/eq?> a b)))
+
+(builtin-op <ptr/eq?> {(forall A) (-> (Ptr A) (Ptr A) Bool)} "ptr.eq")
+
+(instance Ord.Ptr (forall A) (Ord (Ptr A))
+  (transparent-function (lt? a b) (<ptr/lt?> a b))
+  (transparent-function (le? a b) (<ptr/le?> a b))
+  (transparent-function (gt? a b) (<ptr/gt?> a b))
+  (transparent-function (ge? a b) (<ptr/ge?> a b)))
+
+(builtin-op <ptr/lt?> {(forall A) (-> (Ptr A) (Ptr A) Bool)} "ptr.lt")
+(builtin-op <ptr/le?> {(forall A) (-> (Ptr A) (Ptr A) Bool)} "ptr.le")
+(builtin-op <ptr/gt?> {(forall A) (-> (Ptr A) (Ptr A) Bool)} "ptr.gt")
+(builtin-op <ptr/ge?> {(forall A) (-> (Ptr A) (Ptr A) Bool)} "ptr.ge")

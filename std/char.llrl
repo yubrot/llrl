@@ -1,0 +1,99 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-1" _)
+(import "std/integer" _.U32)
+(import "std/memory" Ptr)
+(import "std/array" array/_ _.Array)
+(import "std/internal/utf-8" [utf-8/_ _])
+(import "std/hash" Hash hash! Hash.U32)
+(export Char char/_ _.Char)
+
+; In llrl, `Char` represents a single Unicode scalar value.
+(import "builtin" Char)
+
+(builtin-op char/unicode-scalar {(-> Char U32)} "no-op")
+
+(function (char/from-unicode-scalar n) {(-> U32 (Option Char))}
+  (if (and (<= n 111411) (not (<= 55296 n 57343)))
+    (some (char/unsafe-from-unicode-scalar n))
+    none))
+
+; Caller must ensure that the argument is a valid Unicode scalar value.
+(builtin-op char/unsafe-from-unicode-scalar {(-> U32 Char)} "no-op")
+
+(function (char/ascii? c) {(-> Char Bool)}
+  (<= (char/unicode-scalar c) 127))
+
+(function (char/escape c) {(-> Char (Option String))}
+  (match c
+    [#\\t (some "\\t")]
+    [#\\r (some "\\r")]
+    [#\\n (some "\\n")]
+    [#\\" (some "\\\"")]
+    [#\\\ (some "\\\\")]
+    [_ none]))
+
+(function (char/utf-8-length c) {(-> Char U64)}
+  (match (|> c char/unicode-scalar utf-8/encode utf-8/encode/force-success)
+      [(utf-8/complete:latin _) 1]
+      [(utf-8/complete:2 _ _) 2]
+      [(utf-8/complete:3 _ _ _) 3]
+      [(utf-8/complete:4 _ _ _ _) 4]))
+
+(instance DeepCopy.Char (DeepCopy Char)
+  (transparent-function (deep-copy a) a))
+
+(instance Default.Char (Default Char)
+  (transparent-function default (char/unsafe-from-unicode-scalar 0)))
+
+(instance Display.Char (Display Char)
+  (function (display! w a)
+    (let1 tmp (array/unsafe-stackalloc-uninitialized 4)
+      (match (|> a char/unicode-scalar utf-8/encode utf-8/encode/force-success)
+        [(utf-8/complete:latin (let a))
+          (set! tmp[0] a)
+          (display! w (<tmp-string> (array/ptr tmp) 1))]
+        [(utf-8/complete:2 (let a) (let b))
+          (set! tmp[0] a)
+          (set! tmp[1] b)
+          (display! w (<tmp-string> (array/ptr tmp) 2))]
+        [(utf-8/complete:3 (let a) (let b) (let c))
+          (set! tmp[0] a)
+          (set! tmp[1] b)
+          (set! tmp[2] c)
+          (display! w (<tmp-string> (array/ptr tmp) 3))]
+        [(utf-8/complete:4 (let a) (let b) (let c) (let d))
+          (set! tmp[0] a)
+          (set! tmp[1] b)
+          (set! tmp[2] c)
+          (set! tmp[3] d)
+          (display! w (<tmp-string> (array/ptr tmp) 4))]))))
+
+(builtin-op <tmp-string> {(-> (Ptr U8) U64 String)} "string.construct")
+
+(instance DebugDisplay.Char (DebugDisplay Char)
+  (function (debug-display! w a)
+    (display! w "#\\")!
+    (match (char/escape a)
+      [(some (let s)) (display! w s)]
+      [none (display! w a)])))
+
+(instance Eq.Char (Eq Char)
+  (transparent-function (eq? a b) (<char/eq?> a b)))
+
+(builtin-op <char/eq?> {(-> Char Char Bool)} "integer.eq")
+
+(instance Ord.Char (Ord Char)
+  (transparent-function (lt? a b) (<char/lt?> a b))
+  (transparent-function (le? a b) (<char/le?> a b))
+  (transparent-function (gt? a b) (<char/gt?> a b))
+  (transparent-function (ge? a b) (<char/ge?> a b)))
+
+(builtin-op <char/lt?> {(-> Char Char Bool)} "unsigned.lt")
+(builtin-op <char/le?> {(-> Char Char Bool)} "unsigned.le")
+(builtin-op <char/gt?> {(-> Char Char Bool)} "unsigned.gt")
+(builtin-op <char/ge?> {(-> Char Char Bool)} "unsigned.ge")
+
+(instance Hash.Char (Hash Char)
+  (function (hash! s a)
+    (hash! s (char/unicode-scalar a))))

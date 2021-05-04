@@ -1,0 +1,133 @@
+(import "std/array" _)
+
+(assert-eq? 0 (array/length array/empty))
+(assert-eq? 0 (array/length (array/new #f 0)))
+(assert-eq? 3 (array/length (array/new #f 3)))
+
+(assert (array/empty? (array/new #f 0)))
+(assert (not (array/empty? (array/new #f 3))))
+
+(assert-eq? #f (get (array/new #f 3)[0]))
+(assert-eq? #f (get (array/new #f 3)[1]))
+
+(assert-eq? 10 (get (array 10 20 30)[0]))
+(assert-eq? 20 (get (array 10 20 30)[1]))
+(assert-eq? 30 (get (array 10 20 30)[2]))
+
+(assert-eq? (array) default)
+(assert-ne? (array) (array #t))
+(assert-ne? (array #t) (array))
+(assert-ne? (array #t) (array #f))
+(assert-eq? (array #t) (array #t))
+(assert-ne? (array #t #f) (array #t #t))
+(assert-eq? (array #t #f) (array #t #f))
+
+(assert (not (< (array) (array))))
+(assert (< (array) (array 0)))
+(assert (< (array 0) (array 1)))
+(assert (< (array 0) (array 1 0)))
+(assert (< (array 0) (array 0 0)))
+(assert (not (< (array 1) (array 0 1))))
+(assert (< (array 1) (array 1 0)))
+
+(let1 x (array 1 2 3)
+  (assert-eq? 2 ~(array/ref 1 x))
+  (set! (array/ref 2 x) 4)
+  (assert-eq? (array 1 2 4) x))
+
+(let ([x (array/new* [^0 (ref 0)] 3)])
+  (set! (get x[0]) 1)
+  (set! (get x[1]) 2)
+  (assert-eq? x (array (ref 1) (ref 2) (ref 0))))
+
+(let ([x (array 1 2 3 4)])
+  (let ([ptr (array/ptr x)]
+        [len (array/length x)])
+    (assert-eq? x (array/unsafe-from-ptr ptr len))))
+
+(let ([x (array 1 2 3 4)])
+  (assert-eq? (array 1 2) (array/subarray 0 2 x))
+  (assert-eq? (array 3 4) (array/subarray 2 4 x)))
+
+(let ([x (array 1 2 3 4)])
+  (assert-eq? (array 1 2) (array/take 2 x))
+  (assert-eq? (array 1 2 3 4) (array/take 6 x))
+  (assert-eq? (array 3 4) (array/skip 2 x))
+  (assert-eq? (array) (array/skip 6 x)))
+
+(let ([x (array 1 2 3 4)])
+  (set! x[0] 10)
+  (set! x[2] 30)
+  (assert-eq? x (array 10 2 30 4)))
+
+(let ([x (array 1 2 3 4)])
+  (let ([y (deep-copy x)])
+    (set! x[0] 10)
+    (set! x[2] 30)
+    (assert-eq? y (array 1 2 3 4))))
+
+(let ([x (array (array 1 2) (array 3 4))])
+  (let ([y (deep-copy x)]
+        [z (shallow-copy x)])
+    (set! x[0][0] 10)
+    (set! x[1] (array 30 40))
+    (assert-eq? x (array (array 10 2) (array 30 40)))
+    (assert-eq? y (array (array 1 2) (array 3 4)))
+    (assert-eq? z (array (array 10 2) (array 3 4)))))
+
+(let ([x (array (array 1 2 3) (array 4 5 6))])
+  (assert-eq? 2 (get x[0][1]))
+  (assert-eq? 6 (get x[1][2]))
+  (set! x[0][2] 10)
+  (set! x[1][1] 30)
+  (assert-eq? x (array (array 1 2 10) (array 4 30 6))))
+
+(let ([x (array (array 1) (array 2 3))])
+  (assert-eq? (some 1) (get? x[0][0]))
+  (assert-eq? none     (get? x[0][1]))
+  (assert-eq? (some 2) (get? x[1][0]))
+  (assert-eq? (some 3) (get? x[1][1]))
+  (assert-eq? none     (get? x[1][2]))
+  (assert-eq? none     (get? x[2][0])))
+
+(let ([x (array 1 2 3 4)])
+  (assert-eq? (some (: 1 (array 2 3 4))) (array/split-first? x))
+  (assert-eq? (some (: 4 (array 1 2 3))) (array/split-last? x))
+  (assert-eq? none (array/split-first? (array)))
+  (assert-eq? none (array/split-last? (array)))
+  (assert-eq? (some (: (array) (array 1 2 3 4))) (array/split-at? 0 x))
+  (assert-eq? (some (: (array 1 2) (array 3 4))) (array/split-at? 2 x))
+  (assert-eq? (some (: (array 1 2 3) (array 4))) (array/split-at? 3 x))
+  (assert-eq? (some (: (array 1 2 3 4) (array))) (array/split-at? 4 x))
+  (assert-eq? none (array/split-at? 5 x)))
+
+(let ([x (array 1 2 3 4)]
+      [y (array 5 6 7)])
+  (array/copy! y x)
+  (assert-eq? (array 5 6 7 4) x))
+
+(let ([x (array 1 2 3 4)])
+  (array/swap! 1 3 x)
+  (assert-eq? (array 1 4 3 2) x)
+  (array/swap! 0 2 x)
+  (assert-eq? (array 3 4 1 2) x))
+
+(let ([a (array)]
+      [b (array 1)]
+      [c (array 1 2)]
+      [d (array 1 2 3 4 5)]
+      [e (array 1 2 3 4 5 6)])
+  (array/reverse! a)
+  (array/reverse! b)
+  (array/reverse! c)
+  (array/reverse! d)
+  (array/reverse! e)
+  (assert-eq? (array) a)
+  (assert-eq? (array 1) b)
+  (assert-eq? (array 2 1) c)
+  (assert-eq? (array 5 4 3 2 1) d)
+  (assert-eq? (array 6 5 4 3 2 1) e))
+
+(assert-eq? "(array (some #t) (some #f) none)" (string (debug (array (some #t) (some #f) none))))
+
+(assert-eq? (array 1 2 3) (collect (rev-iterate (array 3 2 1))))

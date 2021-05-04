@@ -1,0 +1,54 @@
+(import "std/text" _)
+
+(let ([a text/empty]
+      [b (text/from-string "hello")]
+      [c (text/from-bytes (array 104 101 108 108 111))])
+  (assert-eq? default a)
+  (assert-eq? b c)
+  (assert-ne? a b)
+  (assert (< a b))
+  (assert-eq? (collect (text/bytes b)) (array 104 101 108 108 111))
+  (assert-eq? 0 (text/length a))
+  (assert-eq? 5 (text/length b))
+  (assert (text/empty? a))
+  (assert (not (text/empty? b))))
+
+(let1 a text/empty
+  (text/push! "Hello" a)
+  (assert-eq? a (text/from-string "Hello"))
+  (text/push! ", World!" a)
+  (assert-eq? a (text/from-string "Hello, World!")))
+
+(let1 a (text "foo" "bar" "baz")
+  (assert-eq? a (text "foobarbaz")))
+
+(let1 a (string "foo" (text "bar") "baz")
+  (assert-eq? a "foobarbaz"))
+
+(let* ([a (text "foobar")]
+       [b (text/consume! 3 a)]
+       [c (text/consume-all! a)])
+  (text/push! "baz" a)
+  (assert-eq? a (text "baz"))
+  (assert-eq? b "foo")
+  (assert-eq? c "bar"))
+
+(let* ([a (text "foo")]
+       [b (text/move! a)])
+  (text/push! "bar" a)
+  (text/push! "baz" b)
+  (assert-eq? a (text "bar"))
+  (assert-eq? b (text "foobaz")))
+
+(let* ([a (text "foo")]
+       [b (text/copy-to-string a)])
+  (text/push! "bar" a)
+  (assert-eq? a (text "foobar"))
+  (assert-eq? b "foo"))
+
+(let* ([a (text "foo")]
+       [b (shallow-copy a)])
+  (text/push! "bar" a)
+  (text/push! "baz" b)
+  (assert-eq? a (text "foobar"))
+  (assert-eq? b (text "foobaz")))

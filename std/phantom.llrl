@@ -1,0 +1,6 @@
+(no-implicit-std)
+
+(export Phantom phantom:)
+
+(data (Phantom A)
+  phantom:)

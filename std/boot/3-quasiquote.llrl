@@ -1,0 +1,37 @@
+(no-implicit-std)
+
+(import "builtin" ok err)
+(import "std/boot/0-s" s:_)
+(import "std/boot/1-try" try!)
+(export quasiquote)
+
+(macro (quasiquote s)
+  (match s
+    [(s:list _ (let s))
+      (ok (qq-expand s))]
+    [_
+      (err "Expected `expr")]))
+
+; TODO: nested quasiquotation support
+
+(function (qq-expand s)
+  (match s
+    [(s:list (s:symbol "unquote") (let s))
+      s]
+    [(s:list (s:list (s:symbol "unquote-splicing") (let s)))
+      s]
+    [(s:cons (s:list (s:symbol "unquote-splicing") (let s)) (let rest))
+      (s:list \try! (s:list \qq-append s (qq-expand rest)))]
+    [(s:cons (let car) (let cdr))
+      (s:list \s:cons (qq-expand car) (qq-expand cdr))]
+    [_
+      (s:list 'quote s)]))
+
+(function (qq-append a b)
+  (match a
+    [(s:cons (let car) (let cdr))
+      (ok (s:cons car (qq-append cdr b)!))]
+    [(s:nil)
+      (ok b)]
+    [_
+      (err ",@ expects proper-list")]))

@@ -1,0 +1,109 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-1" _)
+(import "std/s" s/force-proper-list)
+(import "std/integer" Display.U64 Display.I64)
+(import "std/result" result/ok?)
+(import "std/float" Display.F64)
+(import "std/char" DebugDisplay.Char)
+(import "std/string" DebugDisplay.String)
+(export Display.S)
+
+(instance Display.S (Display (Syntax Sexp))
+  (function (display! w s)
+    (match s
+      [(s:integer (let signed) (let value))
+        (if signed
+          (display! w (cast value) {I64})
+          (display! w value))]
+      [(s:fpnumber (let value))
+        (display! w value)]
+      [(s:bool (let value))
+        (display! w value)]
+      [(s:symbol (let value))
+        (display! w value)]
+      [(s:string (let value))
+        (display! w (debug value))]
+      [(s:char (let value))
+        (display! w (debug value))]
+      [(let cons (s:cons (let car) (let cdr)))
+        (match (syntax-sugar/from-s cons)
+          [(some (let ss))
+            (display! w ss)]
+          [none
+            (display-all! w "(" car (tail: cdr) ")")])]
+      [(s:nil)
+        (display! w "()")]
+      [(s:use _)
+        (display! w "<use>")])))
+
+(value-data Tail
+  (tail: (Syntax Sexp)))
+
+(instance Display.Tail (Display Tail)
+  (function (display! w a)
+    (match a
+      [(tail: (s:cons (let car) (let cdr)))
+        (display-all! w " " car (tail: cdr))]
+      [(tail: (s:nil))
+        (ok unit)]
+      [(tail: (let s))
+        (display-all! w " . " s)])))
+
+(value-data SyntaxSugar
+  (ss:quote (Syntax Sexp))
+  (ss:quasiquote (Syntax Sexp))
+  (ss:unquote (Syntax Sexp))
+  (ss:unquote-splicing (Syntax Sexp))
+  (ss:load (Syntax Sexp))
+  (ss:capture (Syntax Sexp))
+  (ss:try? (Syntax Sexp))
+  (ss:try! (Syntax Sexp))
+  (ss:annotate (Syntax Sexp) (Syntax Sexp)))
+
+(function (syntax-sugar/from-s s) {(-> (Syntax Sexp) (Option SyntaxSugar))}
+  (match (result/ok? (s/force-proper-list unit s))?
+    [(s:list (s:symbol "quote") (let s))
+      (some (ss:quote s))]
+    [(s:list (s:symbol "quasiquote") (let s))
+      (some (ss:quasiquote s))]
+    [(s:list (s:symbol "unquote") (let s))
+      (some (ss:unquote s))]
+    [(s:list (s:symbol "unquote-splicing") (let s))
+      (some (ss:unquote-splicing s))]
+    [(s:list (s:symbol "load") (let s))
+      (some (ss:load s))]
+    [(s:list (s:symbol "capture") (let s))
+      (some (ss:capture s))]
+    [(s:list (s:symbol "try?") (let s (s:cons _ _)))
+      (some (ss:try? s))]
+    [(s:list (s:symbol "try!") (let s (s:cons _ _)))
+      (some (ss:try! s))]
+    [(s:cons (s:symbol "annotate") (s:cons (let s) (let ss)))
+      (some (ss:annotate s ss))]
+    [_
+      none]))
+
+(instance Display.SyntaxSugar (Display SyntaxSugar)
+  (function (display! w a)
+    (match a
+      [(ss:quote (let s))
+        (display-all! w "'" s)]
+      [(ss:quasiquote (let s))
+        (display-all! w "`" s)]
+      [(ss:unquote (let s))
+        (display-all! w "," s)]
+      [(ss:unquote-splicing (let s))
+        (display-all! w ",@" s)]
+      [(ss:load (let s))
+        (display-all! w "~" s)]
+      [(ss:capture (let s))
+        (display-all! w "\\" s)]
+      [(ss:try? (let s))
+        (display-all! w s "?")]
+      [(ss:try! (let s))
+        (display-all! w s "!")]
+      [(ss:annotate (let s) (s:cons (let car) (let cdr)))
+        (display-all! w s " {" car (tail: cdr) "}")]
+      [(ss:annotate (let s) _)
+        (display-all! w s " {}")])))

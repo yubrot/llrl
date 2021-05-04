@@ -1,0 +1,23 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-2" _)
+(export _)
+
+; Names and meanings summary.
+; - The names of the type-level declarations start with an uppercase letter.
+; - The names of the functions with side effects are marked with `!` suffix.
+; - `!` is also used for the syntactic sugar of Result's early return.
+; - `$` is used in identifiers of preprocessing macros / directives.
+; - `^` and `%` are used for shortened lambda expressions, see "std/control".
+; - If some function has a variation that takes a function as an argument, the function will have `*` suffix to its name.
+; - `-` is often used as an identifier separator. `_` is not used for this purpose.
+; - The names of the class instances are declared as a concatenation of
+;   the class name, a dot `.`, and the type name (e.g. `I32.Eq`).
+; - A set of functions for a particular type is often named starting with the type name and a slash `/`.
+; - The names of the value constructors are declared as a concatenation of the type name, a colon `:`,
+;   and the constructor name (e.g. `ordering:less`). Frequently used value constructors are not limited to this.
+; - Predicates are named ending with `?` and named not starting with `is-`.
+; - If some function or macro has a variation that returns an optional value, it will have `?` suffix to its name.
+; - `?` is also used for the syntactic sugar of Options's early return.
+; - `~` is used for the syntactic sugar of the load function call.
+; - To distinguish a declaration as non-exported, it is often named starting with `<` and ending with `>`.

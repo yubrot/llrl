@@ -1,0 +1,4 @@
+(import "std/string-reader" _)
+
+(let1 buf (collect (string/bytes "Hello, World!\n")) {(Vector U8)}
+  (assert-eq? (ok "Hello, World!\n") {(Result String IoError)} (read-string-to-end! buf)))

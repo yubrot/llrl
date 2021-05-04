@@ -1,0 +1,185 @@
+(test-module pass
+  (match 0
+    [_]))
+
+(test-module (fail (non-exhaustive _))
+  (match 0
+    [0]))
+
+(test-module (fail (non-exhaustive _))
+  (match 0
+    [0]
+    [1]
+    [2]))
+
+(test-module pass
+  (match 0
+    [0]
+    [1]
+    [2]
+    [_]))
+
+(test-module (fail (non-exhaustive #f))
+  (match #t
+    [#t]))
+
+(test-module pass
+  (match #t
+    [#t]
+    [#f]))
+
+(test-module pass
+  (match unit
+    [unit]))
+
+(test-module pass
+  (match unit
+    [(:)]))
+
+(test-module pass
+  (match (:)
+    [unit]))
+
+(test-module (fail (non-exhaustive (: #f #t) (: #t #f)))
+  (match (: #t #t)
+    [(: #t #t)]
+    [(: #f #f)]))
+
+(test-module (fail (non-exhaustive (: #f #t)))
+  (match (: #t #t)
+    [(: #t #t)]
+    [(: #f #f)]
+    [(: #t #f)]))
+
+(test-module (fail (non-exhaustive (: #t #f)))
+  (match (: #t #t)
+    [(: #t #t)]
+    [(: #f _)]))
+
+(test-module pass
+  (match (: #t #t #t)
+    [(: #t _  #t)]
+    [(: #t #f #f)]
+    [(: #f _  _ )]
+    [(: _  #t _ )]))
+
+(test-module (fail (non-exhaustive c d))
+  (data X a b c d)
+  (match a
+    [a 0]
+    [b 1]))
+
+(test-module (fail (non-exhaustive (s (s z))))
+  (data N (s N) z)
+  (match z
+    [(s (s (s _))) 0]
+    [(s z) 2]
+    [z 3]))
+
+(test-module pass
+  (data N (s N) z)
+  (match z
+    [(s (s (s _))) 0]
+    [(s (s _)) 1]
+    [(s z) 2]
+    [z 3]))
+
+(test-module (fail (non-exhaustive (s z))) ; TODO: cover (s (s z))
+  (data N (s N) z)
+  (match z
+    [(s (s (s _))) 0]
+    [z 1]))
+
+(test-module pass
+  (data (Maybe A)
+    (just A)
+    nothing)
+  (match (: nothing nothing)
+    [(: (just (let a)) _) a]
+    [(: _ (just (let a))) a]
+    [(: nothing nothing) "hello"]))
+
+(test-module (fail (non-exhaustive nothing))
+  (data (Maybe A)
+    (just A)
+    nothing)
+  (match nothing
+    [(let x (just _))]))
+
+(test-module (fail (non-exhaustive (: (just _) (just _)) (: nothing nothing)))
+  (data (Maybe A)
+    (just A)
+    nothing)
+  (match (: nothing nothing)
+    [(: (just _) nothing)]
+    [(: nothing (just _))]))
+
+(test-module (fail (non-exhaustive _))
+  (match "x"
+    ["foo"]
+    ["bar"]))
+
+(test-module (fail (useless "foo"))
+  (match "x"
+    ["foo"]
+    ["bar"]
+    ["foobar"]
+    ["hoge"]
+    ["foo"]
+    ["baz"]
+    [_]))
+
+(test-module (fail (non-exhaustive _))
+  (match #\f
+    [#\a]
+    [#\b]))
+
+(test-module (fail (useless #\\t))
+  (match #\a
+    [#\\t]
+    [#\\r]
+    [#\\n]
+    [#\n]
+    [#\\t]
+    [_]))
+
+(test-module (fail (useless (: _ nothing)))
+  (data (Maybe A)
+    (just A)
+    nothing)
+  (match (: nothing nothing)
+    [(: (just _) _       ) "A"]
+    [(: _        (just _)) "B"]
+    [(: nothing  _       ) "D"]
+    [(: _        nothing ) "C"]))
+
+(test-module pass
+  (data (Maybe A)
+    (just A)
+    nothing)
+  (match (: nothing nothing)
+    [(: (just _) nothing ) "A"]
+    [(: nothing  (just _)) "B"]
+    [(: nothing  nothing ) "D"]
+    [(: (just _) (just _)) "C"]))
+
+(test-module pass
+  (builtin-type (Foo A) "foo"
+    [(foo A) "foo"])
+  (match (foo 0)
+    [(foo _) #t]))
+
+(test-module (fail (non-exhaustive (bar _ _)))
+  (builtin-type (Foo A) "foo"
+    [(foo A) "foo"]
+    [(bar A A) "bar"])
+  (match (foo 0)
+    [(foo _) #t]))
+
+(test-module pass
+  (builtin-type (Foo A) "foo"
+    [(foo A) "foo"]
+    [(bar A A) "bar"])
+  (match (foo 0)
+    [(foo _) #f]
+    [(bar _ _) #t]))

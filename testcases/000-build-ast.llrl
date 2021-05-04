@@ -1,0 +1,428 @@
+; empty
+
+(test-module pass)
+
+; function
+
+(test-module pass
+  (function (f)))
+
+(test-module pass
+  (function (f x)))
+
+(test-module pass
+  (function (f x y)))
+
+(test-module pass
+  (function (f x y)
+    x))
+
+(test-module pass
+  (function (f x y)
+    x
+    y))
+
+(test-module (fail (multiple-declarations f))
+  (function (f))
+  (function (f)))
+
+(test-module pass
+  (function (f x) {(forall A) (-> A A)}
+    x))
+
+(test-module pass
+  (function pi 3.14))
+
+; builtin_op
+
+(test-module pass
+  (builtin-op hello {(-> unit)} "no-op"))
+
+; macro
+
+(test-module pass
+  (macro (f s)
+    (ok '0)))
+
+(test-module (fail cannot-use-macro-defined-in-the-same-module)
+  (macro (f s)
+    (ok '0))
+  (function (g)
+    (f)))
+
+; data
+
+(test-module pass
+  (data Empty))
+
+(test-module pass
+  (value-data Empty))
+
+(test-module pass
+  (c-data Empty))
+
+(test-module pass
+  (data (Proxy A)))
+
+(test-module pass
+  (data (Free F A)))
+
+(test-module pass
+  (data Yes-no
+    yes
+    no))
+
+(test-module pass
+  (data (Yes-no A)
+    (yes A)
+    no))
+
+(test-module (fail (multiple-declarations X))
+  (data X)
+  (data X))
+
+(test-module (fail (multiple-declarations t))
+  (data X
+    t
+    t))
+
+; builtin-type
+
+(test-module pass
+  (builtin-type Int "i32"))
+
+(test-module pass
+  (builtin-type (Ref A) "ptr"))
+
+(test-module pass
+  (builtin-type (Ref A) "ptr"
+    [(ref A) "ptr"]))
+
+(test-module pass
+  (builtin-type (Ref A) "ptr"
+    [null "null"]))
+
+; class
+
+(test-module pass
+  (class Partial))
+
+(test-module pass
+  (sealed-class Partial))
+
+(test-module pass
+  (class (Hello A)))
+
+(test-module pass
+  (class (Hello [A (-> * *)])))
+
+(test-module pass
+  (class (Hello A)
+    (where (World A)))
+  (class (World A)))
+
+(test-module pass
+  (class Partial)
+  (class (Hello A)
+    (where (World A) Partial))
+  (class (World A)))
+
+(test-module (fail (multiple-declarations Partial))
+  (class Partial)
+  (class Partial))
+
+(test-module pass
+  (class (Default A)
+    (function default {A})))
+
+(test-module (fail (multiple-declarations Default))
+  (class (Default A)
+    (function Default {A})))
+
+(test-module (fail (multiple-declarations default))
+  (class (Default A)
+    (function default {A}))
+  (function default))
+
+(test-module (fail class-method-type-scheme-unspecified)
+  (class (Default A)
+    (function default)))
+
+; instance
+
+(test-module pass
+  (class Partial)
+  (instance Partial.Default Partial))
+
+(test-module (fail (multiple-declarations Foo.A))
+  (class (Foo A))
+  (data X)
+  (data Y)
+  (instance Foo.A (Foo X))
+  (instance Foo.A (Foo Y)))
+
+(test-module pass
+  (data X)
+  (class (Foo A))
+  (instance Foo.X (Foo X)))
+
+(test-module pass
+  (class (Foo A))
+  (instance Foo.Default (forall A) (Foo A)))
+
+(test-module pass
+  (class (Foo A))
+  (class (Bar A))
+  (instance Foo.Default (forall A) (Foo A)
+    (where (Bar A))))
+
+(test-module pass
+  (class (Foo A))
+  (instance Foo.Tuple2 (forall A B) (Foo (: A B))
+    (where (Foo A) (Foo B))))
+
+(test-module pass
+  (class (Foo A)
+    (function (foo x) {(-> A unit)}))
+  (instance Foo.Default (forall A) (Foo A)
+    (function (foo x)
+      unit)))
+
+(test-module pass
+  (class (Foo A)
+    (function (foo x) {(-> A unit)}))
+  (instance Foo.Default (forall A) (Foo A)
+    (function (foo x) {(-> A unit)}
+      unit)))
+
+(test-module pass
+  (data (X T) a)
+  (class (Foo A)
+    (function (foo x) {(forall B) (-> B A)}))
+  (instance Foo.X (forall S) (Foo (X S))
+    (function (foo x) {(forall C) (-> C (X S))}
+      a)))
+
+; top-level
+
+(test-module pass
+  (f)
+  (function (f)))
+
+; type
+
+(test-module pass
+  (data Hello)
+  (function (f) {(-> Hello)}
+    (f)))
+
+(test-module pass
+  (data X)
+  (data Y)
+  (data Z)
+  (function (f x y) {(-> X Y Z)}
+    (f x y)))
+
+(test-module pass
+  (function f {unit}
+    f))
+
+(test-module pass
+  (data X)
+  (data Y)
+  (function f {(: X Y)}
+    f))
+
+(test-module pass
+  (data (Hello A))
+  (function f {(Hello unit)}
+    f))
+
+(test-module pass
+  (data (Hello A))
+  (function f {(Hello (Hello (-> unit)))}
+    f))
+
+(test-module pass
+  (data (Hello A))
+  (function f {(forall A) (Hello A)}
+    f))
+
+(test-module pass
+  (data (Hello A))
+  (function f {(forall A B) (: (Hello A) (Hello B))}
+    f)
+  (function g {(forall A B) (-> A B A)}
+    g))
+
+(test-module pass
+  (class (Conv A B))
+  (function (f x) {(forall A B) (-> A B) (where (Conv A B))}
+    (f x)))
+
+; expr
+
+(test-module pass
+  (data X a)
+  (function (f)
+    a))
+
+(test-module pass
+  (data X a)
+  (data Y (b X))
+  (function (f)
+    (b a)))
+
+(test-module pass
+  (data X a b)
+  (function (f)
+    (: a b)))
+
+(test-module pass
+  (data X a b)
+  (function (f x)
+    x)
+  (function (g)
+    (f a)))
+
+(test-module pass
+  (function (f)
+    123
+    -456
+    7.89
+    "hello"
+    #\a
+    #t))
+
+(test-module pass
+  (function (f)
+    '(foo bar baz)))
+
+(test-module pass
+  (data X a b c)
+  (function (f)
+    (begin a b c)))
+
+(test-module pass
+  (data X a b c)
+  (function (f)
+    a {X}))
+
+(test-module (fail cannot-generalize)
+  (function (f)
+    (f) {(forall A) A}))
+
+(test-module pass
+  (function (f)
+    (let ([x 0]
+          [y 1])
+      (: x y))))
+
+(test-module pass
+  (data Hello world)
+  (function (f)
+    (let ([x {Hello} world])
+      x)))
+
+(test-module pass
+  (function (f)
+    (let ([(g x) x])
+      g)))
+
+(test-module pass
+  (function (f)
+    (let ([(g x) {(forall B) (-> B B)} x])
+      g)))
+
+(test-module (fail cannot-generalize)
+  (function (f)
+    (let ([g {(forall B) B} (f)])
+      (f))))
+
+(test-module pass
+  (function (f)
+    (f))
+  (function (g)
+    (if (f) 1 2)))
+
+(test-module pass
+  (function (f)
+    (f))
+  (function (g)
+    (while (f) 1 2 3)))
+
+(test-module pass
+  (function (f)
+    (match 0
+      [_ 1])))
+
+(test-module pass
+  (function (f)
+    (f))
+  (function (g)
+    (return)))
+
+(test-module pass
+  (function (f)
+    (f))
+  (function (g)
+    (return #t)))
+
+; pattern
+
+(test-module pass
+  (function (f)
+    (f))
+  (function (g)
+    (match (f)
+      [123 0]
+      [_ 1])))
+
+(test-module pass
+  (function (f)
+    (f))
+  (function (g)
+    (match (f)
+      [#t 0]
+      [#f 1])))
+
+(test-module pass
+  (function (f)
+    (f))
+  (function (g)
+    (match (f)
+      [(let x) x])))
+
+(test-module pass
+  (function (f)
+    (f))
+  (function (g)
+    (match (f)
+      [(let x 123) x]
+      [_ 0])))
+
+(test-module pass
+  (function (f)
+    (f))
+  (function (g)
+    (match (f)
+      [(: (let x) (let y)) (: y x)])))
+
+(test-module pass
+  (function (f)
+    (f))
+  (data (Yes-no A)
+    (yes A)
+    no)
+  (function (g)
+    (match (f)
+      [(yes (let x)) x]
+      [no (f)])))
+
+; kind
+
+(test-module pass
+  (data (Free [F (-> * *)] [A *])))
+
+(test-module pass
+  (class (Functor [F (-> * *)])))

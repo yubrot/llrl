@@ -1,0 +1,4 @@
+(import "std/syntax" _)
+
+(let ([s (syntax #t)])
+  (assert (syntax/body s)))

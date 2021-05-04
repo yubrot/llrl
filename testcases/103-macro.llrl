@@ -1,0 +1,518 @@
+(test-backend pass
+  (match (syntax (: 1 #t "3"))
+    [(syntax (: 1 #t "3"))
+      #t]
+    [_
+      #f]))
+
+(test-backend pass
+  (match '123
+    [(syntax (sexp:integer #f 123))
+      #t]
+    [_
+      #f]))
+
+(test-backend pass
+  (match '3.5
+    [(syntax (sexp:fpnumber 3.5))
+      #t]
+    [_
+      #f]))
+
+(test-backend pass
+  (match '#f
+    [(syntax (sexp:bool #f))
+      #t]
+    [_
+      #f]))
+
+(test-backend pass
+  (match 'foo
+    [(syntax (sexp:symbol "foo"))
+      #t]
+    [_
+      #f]))
+
+(test-backend pass
+  (match '"Hello, World!"
+    [(syntax (sexp:string "Hello, World!"))
+      #t]
+    [_
+      #f]))
+
+(test-backend pass
+  (match '"Hello, World!\n"
+    [(syntax (sexp:string "Hello, World!"))
+      #f]
+    [_
+      #t]))
+
+(test-backend pass
+  (match '#\a
+    [(syntax (sexp:char #\a))
+      #t]
+    [_
+      #f]))
+
+(test-backend pass
+  (match '(#t . #f)
+    [(syntax (sexp:cons (syntax (sexp:bool #t)) (syntax (sexp:bool #f))))
+      #t]
+    [_
+      #f]))
+
+(test-backend pass
+  (match '(#t #f)
+    [(syntax (sexp:cons (syntax (sexp:bool #t)) (syntax (sexp:cons (syntax (sexp:bool #f)) (syntax sexp:nil)))))
+      #t]
+    [_
+      #f]))
+
+(test-backend pass
+  (match '("Hello," world)
+    [(syntax (sexp:cons (syntax (sexp:string "Hello,")) (syntax (sexp:cons (syntax (sexp:symbol "world")) (syntax sexp:nil)))))
+      #t]
+    [_
+      #f]))
+
+(test-backend pass
+  (function foo)
+  (match \foo
+    [(syntax (sexp:use (let x)))
+      x
+      #t]
+    [_
+      #f]))
+
+(test-backends pass
+  ("~"
+    (import "~/foo" _)
+    (foo))
+  ("~/foo"
+    (macro (foo s)
+      (ok '#t))
+    (export _)))
+
+(test-backends (fail syntax)
+  ("~"
+    (import "~/foo" _)
+    (foo))
+  ("~/foo"
+    (macro (foo s)
+      (ok '()))
+    (export _)))
+
+(test-backends (fail syntax)
+  ("~"
+    (import "~/foo" _)
+    (foo))
+  ("~/foo"
+    (macro (foo s)
+      (ok '(hello . world)))
+    (export _)))
+
+(test-backends (fail (macro-expansion "Hello, World!"))
+  ("~"
+    (import "~/foo" _)
+    (foo))
+  ("~/foo"
+    (macro (foo s)
+      (err "Hello, World!"))
+    (export _)))
+
+(test-backends pass
+  ("~"
+    (import "~/foo" _)
+    (function (bar)
+      #t)
+    ((foo)))
+  ("~/foo"
+    (macro (foo s)
+      (ok 'bar))
+    (export _)))
+
+(test-backends pass
+  ("~"
+    (import "~/foo" _)
+    (match (foo)
+      ["hello" #t]
+      [_ #f]))
+  ("~/foo"
+    (macro (foo s)
+      (ok '"hello"))
+    (export _)))
+
+(test-backends pass
+  ("~"
+    (import "~/foo" _)
+    (match (foo)
+      [#\\n #t]
+      [_ #f]))
+  ("~/foo"
+    (macro (foo s)
+      (ok '#\\n))
+    (export _)))
+
+(test-backends pass
+  ("~"
+    (import "~/foo" _)
+    (match (foo)
+      [-123 #t]
+      [_ #f]))
+  ("~/foo"
+    (macro (foo s)
+      (ok '-123))
+    (export _)))
+
+(test-backends pass
+  ("~"
+    (import "~/foo" _)
+    (match (foo)
+      [3.14 #t]
+      [_ #f]))
+  ("~/foo"
+    (macro (foo s)
+      (ok '3.14))
+    (export _)))
+
+(test-backends pass
+  ("~"
+    (import "~/foo" _)
+    (function (bar)
+      #t)
+    (foo))
+  ("~/foo"
+    (macro (foo s)
+      (ok '(bar)))
+    (export _)))
+
+(test-backends pass
+  ("~"
+    (import "~/foo" foo)
+    (function (id x)
+      x)
+    (let ([a #t]) (foo)))
+  ("~/foo"
+    (macro (foo s)
+      (ok '(id a)))
+    (export _)))
+
+(test-backends (fail (unresolved value id))
+  ("~"
+    (import "~/foo" foo)
+    (let ([a #t]) (foo)))
+  ("~/foo"
+    (function (id x)
+      x)
+    (macro (foo s)
+      (ok '(id a)))
+    (export _)))
+
+(test-backends pass
+  ("~"
+    (import "~/foo" _)
+    (foo))
+  ("~/foo"
+    (macro (foo s)
+      (match s
+        [(syntax (sexp:cons (syntax (sexp:symbol "foo")) (syntax sexp:nil)))
+          (ok '#t)]
+        [_
+          (ok '#f)]))
+    (export _)))
+
+(test-backends pass
+  ("~"
+    (import "~/foo" _)
+    (foo #f))
+  ("~/foo"
+    (macro (foo s)
+      (match s
+        [(syntax (sexp:cons _ (syntax (sexp:cons (syntax (sexp:bool #f)) (syntax sexp:nil)))))
+          (ok '#t)]
+        [_
+          (ok '#f)]))
+    (export _)))
+
+(test-backends pass
+  ("~"
+    (import "~/foo" _)
+    (foo 10000))
+  ("~/foo"
+    (macro (foo s)
+      (match s
+        [(syntax (sexp:cons _ (syntax (sexp:cons (syntax (sexp:integer #f 10000)) (syntax sexp:nil)))))
+          (ok '#t)]
+        [_
+          (ok '#f)]))
+    (export _)))
+
+(test-backends pass
+  ("~"
+    (import "~/foo" _)
+    (foo bar))
+  ("~/foo"
+    (macro (foo s)
+      (match s
+        [(syntax (sexp:cons _ (syntax (sexp:cons (syntax (sexp:symbol "bar")) (syntax sexp:nil)))))
+          (ok '#t)]
+        [_
+          (ok '#f)]))
+    (export _)))
+
+(test-backends pass
+  ("~"
+    (import "~/foo" _)
+    (foo "Hello"))
+  ("~/foo"
+    (macro (foo s)
+      (match s
+        [(syntax (sexp:cons _ (syntax (sexp:cons (syntax (sexp:string "Hello")) (syntax sexp:nil)))))
+          (ok '#t)]
+        [_
+          (ok '#f)]))
+    (export _)))
+
+(test-backends pass
+  ("~"
+    (import "~/foo" _)
+    (foo #\語))
+  ("~/foo"
+    (macro (foo s)
+      (match s
+        [(syntax (sexp:cons _ (syntax (sexp:cons (syntax (sexp:char #\語)) (syntax sexp:nil)))))
+          (ok '#t)]
+        [_
+          (ok '#f)]))
+    (export _)))
+
+(test-backends pass
+  ("~"
+    (import "~/foo" _)
+    (foo ()))
+  ("~/foo"
+    (macro (foo s)
+      (match s
+        [(syntax (sexp:cons _ (syntax (sexp:cons (syntax sexp:nil) (syntax sexp:nil)))))
+          (ok '#t)]
+        [_
+          (ok '#f)]))
+    (export _)))
+
+(test-backends pass
+  ("~"
+    (import "~/foo" _)
+    (foo (a . b)))
+  ("~/foo"
+    (macro (foo s)
+      (match s
+        [(syntax (sexp:cons _ (syntax (sexp:cons (syntax (sexp:cons _ _)) (syntax sexp:nil)))))
+          (ok '#t)]
+        [_
+          (ok '#f)]))
+    (export _)))
+
+(test-backends pass
+  ("~"
+    (import "~/foo" _)
+    (foo if #f #f #t))
+  ("~/foo"
+    (macro (foo s)
+      (match s
+        [(syntax (sexp:cons _ (let x)))
+          (ok x)]
+        [_
+          (err "Expected (foo x ...)")]))
+    (export _)))
+
+(test-backends pass
+  ("~"
+    (import "~/foo" _)
+    (foo))
+  ("~/foo"
+    (macro (foo s)
+      (ok (syntax (sexp:bool #t))))
+    (export _)))
+
+(test-backends pass
+  ("~"
+    (import "~/foo" _)
+    (= (fold + 1 2 3 4) 10))
+  ("~/foo"
+    (macro (fold s)
+      (match s
+        [(syntax (sexp:cons _ (syntax (sexp:cons (let f) (syntax (sexp:cons (let a) (syntax sexp:nil)))))))
+          (ok a)]
+        [(syntax (sexp:cons (let fold) (syntax (sexp:cons (let f) (syntax (sexp:cons (let a) (let b)))))))
+          (ok (syntax (sexp:cons f (syntax (sexp:cons a (syntax (sexp:cons (syntax (sexp:cons fold (syntax (sexp:cons f b)))) '())))))))]
+        [_
+          (err "Expected (fold op x ...)")]))
+    (export fold)))
+
+(test-backends pass
+  ("~"
+    (import "~/foo" fold)
+    (= (fold + 1 2 3 4) 10))
+  ("~/foo"
+    (import "~/bar" [_ s:_])
+    (export fold)
+    (macro (fold s)
+      (match s
+        [(cons _ (cons _ (cons (let x) (nil))))
+          (ok x)]
+        [(cons (let fold) (cons (let op) (cons (let x) (let xs))))
+          (ok (cons op (cons x (cons (cons fold (cons op xs)) (nil)))))]
+        [_
+          (err "Expected (fold op x ...)")])))
+  ("~/bar"
+    (import "builtin" [:_ sexp:_] [S syntax])
+    (export s:_)
+    (macro (s:nil s)
+      (match s
+        [(S (:cons _ (S :nil)))
+          (ok '(syntax sexp:nil))]
+        [_
+          (err "Expected (s:nil)")]))
+    (macro (s:cons s)
+      (match s
+        [(S (:cons _ (S (:cons (let car) (S (:cons (let cdr) (S :nil)))))))
+          (ok (S (:cons 'syntax (S (:cons (S (:cons 'sexp:cons (S (:cons car (S (:cons cdr '())))))) '())))))]
+        [_
+          (err "Expected (s:cons car cdr)")]))))
+
+(test-backends pass
+  ("~"
+    (import "~/foo" _)
+    (foo))
+  ("~/foo"
+    (function bar #t)
+    (macro (foo s)
+      (ok \bar))
+    (export foo)))
+
+(test-backends pass
+  ("~"
+    (import "~/foo" _)
+    (foo))
+  ("~/foo"
+    (function (bar) #t)
+    (macro (foo s)
+      (ok (syntax (sexp:cons \bar '()))))
+    (export foo)))
+
+(test-backends pass
+  ("~"
+    (import "~/foo" fold)
+    (= (fold + 1 2 3 4) 10))
+  ("~/foo"
+    (import "~/bar" [_ s:_])
+    (export fold)
+    (macro (fold s)
+      (match s
+        [(cons _ (cons _ (cons (let x) (nil))))
+          (ok x)]
+        [(cons _ (cons (let op) (cons (let x) (let xs))))
+          (ok (cons op (cons x (cons (cons \fold (cons op xs)) (nil)))))]
+        [_
+          (err "Expected (fold op x ...)")])))
+  ("~/bar"
+    (import "builtin" [:_ sexp:_] [S syntax])
+    (export s:_)
+    (macro (s:nil s)
+      (match s
+        [(S (:cons _ (S :nil)))
+          (ok (S (:cons \S (S (:cons \:nil '())))))]
+        [_
+          (err "Expected (s:nil)")]))
+    (macro (s:cons s)
+      (match s
+        [(S (:cons _ (S (:cons (let car) (S (:cons (let cdr) (S :nil)))))))
+          (ok (S (:cons \S (S (:cons (S (:cons \:cons (S (:cons car (S (:cons cdr '())))))) '())))))]
+        [_
+          (err "Expected (s:cons car cdr)")]))))
+
+(test-backends pass
+  ("~"
+    (import "~/foo" fold)
+    (= (fold + 1 2 3 4) 10))
+  ("~/foo"
+    (import "sexp" s:_)
+    (export fold)
+    (macro (fold s)
+      (match s
+        [(s:list _ _ (let x))
+          (ok x)]
+        [(s:list _ (let op) (let x) (let xs) ...)
+          (ok (s:list op x (s:list \fold op xs ...)))]
+        [_
+          (err "Expected (fold op x ...)")])))
+  ("sexp"
+    (import "sexp/prim" s:_)
+    (export s:_)
+    (macro (s:list x)
+      (match x
+        [(s:cons _ (s:cons (let xs) (s:cons (s:symbol "...") (s:nil))))
+          (ok xs)]
+        [(s:cons _ (s:cons (let x) (let xs)))
+          (ok (s:cons \s:cons (s:cons x (s:cons (s:cons \s:list xs) (s:nil)))))]
+        [_
+          (ok (s:cons \s:nil (s:nil)))])))
+  ("sexp/s"
+    (export s)
+    (macro (s x)
+      (match x
+        [(syntax (sexp:cons _ (syntax (sexp:cons (let con) (syntax sexp:nil)))))
+          (ok (syntax (sexp:cons \syntax (syntax (sexp:cons con '())))))]
+        [(syntax (sexp:cons _ (syntax (sexp:cons (let con) (let args)))))
+          (ok (syntax (sexp:cons \syntax (syntax (sexp:cons (syntax (sexp:cons con args)) '())))))]
+        [_
+          (err "Expected (s con arg ...)")])))
+  ("sexp/prim"
+    (import "sexp/s" s)
+    (export s:_)
+    (macro (s:nil x)
+      (match x
+        [(s sexp:cons _ (s sexp:nil))
+          (ok (s sexp:cons \s (s sexp:cons \sexp:nil '())))]
+        [_
+          (err "Expected (s:nil)")]))
+    (macro (s:symbol x)
+      (match x
+        [(s sexp:cons _ (s sexp:cons (let str) (s sexp:nil)))
+          (ok (s sexp:cons \s (s sexp:cons \sexp:symbol (s sexp:cons str '()))))]
+        [_
+          (err "Expected (s:symbol str)")]))
+    (macro (s:cons x)
+      (match x
+        [(s sexp:cons _ (s sexp:cons (let car) (s sexp:cons (let cdr) (s sexp:nil))))
+          (ok (s sexp:cons \s (s sexp:cons \sexp:cons (s sexp:cons car (s sexp:cons cdr '())))))]
+        [_
+          (err "Expected (s:cons car cdr)")]))))
+
+(test-backends pass
+  ("~"
+    (import "~/foo" foo)
+    (foo)
+    #t)
+  ("~/foo"
+    (export foo)
+    (function (test)
+      (match \test
+        [(syntax (sexp:use (let x))) x]
+        [_ (test)]))
+    (macro (foo s)
+      (ok (syntax (sexp:use (test)))))))
+
+(test-backends fail
+  ("~"
+    (import "~/foo" foo)
+    (foo)
+    #t)
+  ("~/foo"
+    (export foo)
+    (function (test x)
+      (match \x
+        [(syntax (sexp:use (let x))) x]
+        [_ (test x)]))
+    (macro (foo s)
+      (ok (syntax (sexp:use (test #t)))))))

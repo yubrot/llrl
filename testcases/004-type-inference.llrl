@@ -1,0 +1,1069 @@
+; classes hierarchy
+
+(test-module pass
+  (class (Foo A))
+  (class (Bar A) (where (Foo A)))
+  (class (Baz A) (where (Bar A))))
+
+(test-module (fail (cyclic-classes Foo Bar Baz))
+  (class (Foo A) (where (Baz A)))
+  (class (Bar A) (where (Foo A)))
+  (class (Baz A) (where (Bar A))))
+
+(test-module pass
+  (class Foo
+    (function foo {unit (where Bar)}))
+  (class Bar
+    (function bar {unit (where Foo)})))
+
+; overlapping instances
+
+(test-module (fail (overlapping-instances Foo.X Foo.Y))
+  (class Foo)
+  (instance Foo.X Foo)
+  (instance Foo.Y Foo))
+
+(test-module pass
+  (class (Foo A))
+  (data X)
+  (data Y)
+  (instance Foo.X (Foo X))
+  (instance Foo.Y (Foo Y)))
+
+(test-module (fail (overlapping-instances Foo.X Foo.Y))
+  (class (Foo A))
+  (data X)
+  (data Y)
+  (instance Foo.X (Foo X))
+  (instance Foo.Y (forall A) (Foo A)))
+
+(test-module (fail (overlapping-instances Foo.X Foo.Y))
+  (class (Foo A B))
+  (data X)
+  (data Y)
+  (instance Foo.X (forall A) (Foo X A))
+  (instance Foo.Y (forall A) (Foo A Y)))
+
+(test-module pass
+  (class (Foo A B))
+  (data X)
+  (data Y)
+  (instance Foo.X (forall A) (Foo X A))
+  (instance Foo.Y (forall A) (Foo Y A)))
+
+(test-module (fail (overlapping-instances Foo.X Foo.Y))
+  (class (Foo A))
+  (data (X A))
+  (data Y)
+  (instance Foo.X (forall A) (Foo (X A)))
+  (instance Foo.Y (Foo (X Y))))
+
+(test-module (fail (overlapping-instances Foo.X Foo.Y))
+  (class (Foo A))
+  (data (X A))
+  (instance Foo.X (forall A) (Foo (X A)))
+  (instance Foo.Y (forall A B) (Foo (B A))))
+
+(test-modules (fail (overlapping-instances Foo.X Foo.Y))
+  ("~"
+    (import "~/foo" Foo Foo.X)
+    (instance Foo.Y Foo))
+  ("~/foo"
+    (class Foo)
+    (instance Foo.X Foo)
+    (export Foo Foo.X)))
+
+(test-modules pass
+  ("~"
+    (import "~/foo" Foo)
+    (instance Foo.Y Foo))
+  ("~/foo"
+    (class Foo)
+    (instance Foo.X Foo)
+    (export Foo Foo.X)))
+
+(test-modules pass
+  ("~"
+    (import "~/foo" Foo Foo.X)
+    (data Y)
+    (instance Foo.Y (Foo Y)))
+  ("~/foo"
+    (class (Foo A))
+    (data X)
+    (instance Foo.X (Foo X))
+    (export Foo Foo.X)))
+
+(test-modules (fail (overlapping-instances Foo.X Foo.Y))
+  ("~"
+    (import "~/foo" Foo Foo.X X)
+    (instance Foo.Y (Foo X)))
+  ("~/foo"
+    (class (Foo A))
+    (data X)
+    (instance Foo.X (Foo X))
+    (export Foo Foo.X X)))
+
+(test-modules pass
+  ("~"
+    (import "~/foo" Foo Foo.X)
+    (import "~/bar" Foo.Y)) ; overlapping check is deferred
+  ("~/foo"
+    (class Foo)
+    (instance Foo.X Foo)
+    (export Foo Foo.X))
+  ("~/bar"
+    (import "~/foo" Foo)
+    (instance Foo.Y Foo)
+    (export Foo.Y)))
+
+(test-modules (fail (overlapping-instances Foo.X Foo.Y))
+  ("~"
+    (import "~/foo" Foo Foo.X)
+    (import "~/bar" Foo.Y)
+    (data F)
+    (instance Foo.F (Foo F))) ; this enforces overlapping check
+  ("~/foo"
+    (class (Foo A))
+    (data X)
+    (instance Foo.X (Foo X))
+    (export Foo Foo.X X))
+  ("~/bar"
+    (import "~/foo" Foo X)
+    (instance Foo.Y (Foo X))
+    (export Foo.Y)))
+
+(test-modules pass
+  ("~"
+    (import "~/foo" Foo)
+    (import "~/bar" Foo.Y)
+    (data F)
+    (instance Foo.F (Foo F)))
+  ("~/foo"
+    (class (Foo A))
+    (data X)
+    (instance Foo.X (Foo X))
+    (export Foo Foo.X X))
+  ("~/bar"
+    (import "~/foo" Foo X)
+    (instance Foo.Y (Foo X))
+    (export Foo.Y)))
+
+; instances satisfaction
+
+(test-module (fail no-matching-instances)
+  (class Foo)
+  (class Bar (where Foo))
+  (instance Bar.Default Bar))
+
+(test-module pass
+  (class Foo)
+  (class Bar (where Foo))
+  (instance Foo.Default Foo)
+  (instance Bar.Default Bar))
+
+(test-module pass
+  (class (Foo A))
+  (class (Bar A) (where (Foo A)))
+  (data X)
+  (instance Foo.X (Foo X))
+  (instance Bar.X (Bar X)))
+
+(test-module (fail no-matching-instances)
+  (class (Foo A))
+  (class (Bar A) (where (Foo A)))
+  (data X)
+  (instance Bar.X (Bar X)))
+
+(test-module pass
+  (class Foo)
+  (class Bar (where Foo))
+  (instance Bar.Default Bar (where Foo)))
+
+(test-modules (fail no-matching-instances)
+  ("~"
+    (import "~/foo" Foo Bar Bar.Default)
+    (class Baz (where Bar))
+    (instance Baz.Default Baz))
+  ("~/foo"
+    (class Foo)
+    (class Bar (where Foo))
+    (instance Bar.Default Bar (where Foo))
+    (export Foo Bar Bar.Default)))
+
+(test-modules pass
+  ("~"
+    (import "~/foo" Foo Bar Bar.Default)
+    (class Baz (where Bar))
+    (instance Foo.Default Foo)
+    (instance Baz.Default Baz))
+  ("~/foo"
+    (class Foo)
+    (class Bar (where Foo))
+    (instance Bar.Default Bar (where Foo))
+    (export Foo Bar Bar.Default)))
+
+(test-module (fail recursion-limit-exceeded)
+  (class Foo)
+  (class Bar (where Foo))
+  (instance Foo.Default Foo (where Foo))
+  (instance Bar.Default Bar))
+
+(test-module pass
+  (class (Foo A))
+  (class (Bar A) (where (Foo A)))
+  (instance Foo.Pair (forall A B) (Foo (: A B)) (where (Foo A) (Foo B)))
+  (instance Bar.Pair (forall A B) (Bar (: A B)) (where (Bar A) (Bar B))))
+
+(test-module pass
+  (class (Foo A))
+  (class (Bar A) (where (Foo A)))
+  (instance Foo.Pair (forall A B) (Foo (: A B)) (where (Foo A) (Foo B)))
+  (instance Bar.Pair (forall A B) (Bar (: A B)) (where (Bar A) (Foo B))))
+
+(test-module (fail no-matching-instances)
+  (class (Foo A))
+  (class (Bar A) (where (Foo A)))
+  (instance Foo.Pair (forall A B) (Foo (: A B)) (where (Foo A) (Foo B)))
+  (instance Bar.Pair (forall A B) (Bar (: A B)) (where (Bar A))))
+
+(test-module (fail no-matching-instances)
+  (data (L A))
+  (class (Foo A))
+  (class (Bar A) (where (Foo (L A))))
+  (instance Bar.Default (forall A) (Bar A) (where (Foo A))))
+
+(test-module pass
+  (data (L A))
+  (class (Foo A))
+  (class (Bar A) (where (Foo (L A))))
+  (instance Foo.L (forall A) (Foo (L A)) (where (Foo A)))
+  (instance Bar.Default (forall A) (Bar A) (where (Foo A))))
+
+(test-module pass
+  (data (L A))
+  (class (Foo A))
+  (class (Bar A) (where (Foo (L A))))
+  (class (Baz A) (where (Foo (L A))))
+  (instance Baz.Default (forall A) (Baz A) (where (Bar A))))
+
+(test-module pass
+  (data X)
+  (data (L A))
+  (class (Foo A))
+  (instance Foo.X (Foo X))
+  (instance Foo.L (forall A) (Foo (L A)))
+  (class (Bar A) (where (Foo A)))
+  (instance Bar.LX (Bar (L X)))
+  (instance Bar.LLX (Bar (L (L X))))
+  (instance Bar.LLLX (Bar (L (L (L X))))))
+
+(test-module pass
+  (data (L A))
+  (class (Foo A))
+  (instance Foo.L (forall A) (Foo (L A)))
+  (class (Bar A) (where (Foo A)))
+  (instance Bar.LLLLA (forall A) (Bar (L (L (L (L A))))) (where (Foo A))))
+
+(test-module (fail (overlapping-instances Bar.LLLLA Bar.LLLA))
+  (data (L A))
+  (class (Foo A))
+  (instance Foo.L (forall A) (Foo (L A)))
+  (class (Bar A) (where (Foo A)))
+  (instance Bar.LLLA (forall A) (Bar (L (L (L A)))) (where (Foo A)))
+  (instance Bar.LLLLA (forall A) (Bar (L (L (L (L A))))) (where (Foo A))))
+
+(test-module pass
+  (class (Eq A))
+  (class (Ord A) (where (Eq A)))
+
+  (data X)
+  (instance Eq.X (Eq X))
+  (instance Ord.X (Ord X))
+
+  (data Y)
+  (instance Eq.Y (Eq Y))
+  (instance Ord.Y (Ord Y))
+
+  (instance Eq.Pair (forall A B) (Eq (: A B)) (where (Eq A) (Eq B)))
+  (instance Ord.Pair (forall A B) (Ord (: A B)) (where (Ord A) (Ord B)))
+
+  (class (Foo A) (where (Ord A)))
+  (instance Foo.Test (Foo (: (: X Y) (: X (: Y X))))))
+
+(test-module (fail no-matching-instances)
+  (class (Eq A))
+  (class (Ord A) (where (Eq A)))
+
+  (data X)
+  (instance Eq.X (Eq X))
+  (instance Ord.X (Ord X))
+
+  (data Y)
+  (instance Eq.Y (Eq Y))
+
+  (instance Eq.Pair (forall A B) (Eq (: A B)) (where (Eq A) (Eq B)))
+  (instance Ord.Pair (forall A B) (Ord (: A B)) (where (Ord A) (Ord B)))
+
+  (class (Foo A) (where (Ord A)))
+  (instance Foo.Test (Foo (: (: X Y) (: X (: Y X))))))
+
+; expressions
+
+(test-module (pass (type-of function foo {unit}))
+  (function foo))
+
+(test-module (pass (type-of function foo {unit}))
+  (function foo
+    unit))
+
+(test-module (pass (type-of function foo {(: unit)}))
+  (function foo
+    (: unit)))
+
+(test-module (pass (type-of function foo {(: unit unit)}))
+  (function foo
+    (: unit (:))))
+
+(test-module (pass (type-of function foo {(forall _0) _0 (where (Number _0))}))
+  (function foo
+    0))
+
+(test-module (pass (type-of function foo {(forall _0) _0 (where (FPNumber _0))}))
+  (function foo
+    0.0))
+
+(test-module (pass (type-of function foo {Bool}))
+  (function foo
+    #t))
+
+(test-module (pass (type-of function foo {String}))
+  (function foo
+    "foo"))
+
+(test-module (pass (type-of function foo {Char}))
+  (function foo
+    #\a))
+
+(test-module (pass (type-of function foo {(Syntax Sexp)}))
+  (function foo
+    '(bar 123)))
+
+(test-module (pass (type-of function foo {(Syntax Sexp)}))
+  (function foo
+    '((123 . -456) 3.14 (#t #f) foo () "bar" (hello llrl . world))))
+
+(test-module (pass (type-of function foo {(forall _0 _1) (-> (-> _0 _1) _1) (where (Number _0))}))
+  (function (foo f)
+    (f 0)))
+
+(test-module (pass (type-of function foo {(-> unit)}))
+  (function (foo)
+    (begin #f #t unit)))
+
+(test-module (pass (type-of function foo {(forall _0) (-> _0) (where (FPNumber _0))}))
+  (function (foo)
+    0 1.2 3.14))
+
+(test-module (pass (type-of function foo {(-> I32)}))
+  (function (foo)
+    123 {I32}))
+
+(test-module (pass (type-of function foo {(-> U32)}))
+  (function (foo)
+    123 {U32}))
+
+(test-module (pass (type-of function foo {(-> F64)}))
+  (function (foo)
+    123 {F64}))
+
+(test-module (fail no-matching-instances)
+  (function (foo)
+    123 {Bool}))
+
+(test-module (fail unify-type)
+  (function (foo)
+    #t {I32}))
+
+(test-module (pass (type-of function foo {(-> Bool unit)}))
+  (function (foo t)
+    (if t unit unit)))
+
+(test-module (pass (type-of function foo {(-> Bool unit unit)}))
+  (function (foo t a)
+    (if t a unit)))
+
+(test-module (pass (type-of function foo {(forall _0) (-> Bool _0 _0 _0)}))
+  (function (foo t a b)
+    (if t a b)))
+
+(test-module (pass (type-of function foo {(-> Bool Bool Bool)}))
+  (function (foo a b)
+    (if a b a)))
+
+(test-module (pass (type-of function foo {(-> unit)}))
+  (function (foo)
+    (while #t)))
+
+(test-module (pass (type-of function foo {(-> unit)}))
+  (function (foo)
+    (while #t 1 2 3)))
+
+(test-module (pass (type-of function foo {(-> Bool unit)}))
+  (function (foo x)
+    (while x 1 2 3)))
+
+(test-module (pass (type-of function foo {(-> Bool unit)}))
+  (function (foo x)
+    (while x 1 2 3)))
+
+(test-module (fail unify-type)
+  (function (foo)
+    (while unit 1 2 3)))
+
+(test-module (pass (type-of function foo {(-> unit)}))
+  (function (foo)
+    (return)))
+
+(test-module (pass (type-of function foo {(-> Bool)}))
+  (function (foo)
+    (return #t)))
+
+(test-module (fail unify-type)
+  (function (foo)
+    (return) #t))
+
+(test-module (fail unify-type)
+  (function (foo)
+    (return #t) unit))
+
+(test-module pass
+  (function (foo)
+    (return #t) #f))
+
+(test-module (fail unify-type)
+  (function (foo)
+    (return #t) (return unit) (foo)))
+
+(test-module pass
+  (function (foo)
+    (return #t) (return #f) #t))
+
+(test-module (fail (unify-type occurs-check-failed))
+  (function (foo x)
+    (x x)))
+
+(test-module (fail (unify-type occurs-check-failed))
+  (function (foo t a b)
+    (if t a (a b))))
+
+(test-module (fail (unify-type occurs-check-failed))
+  (function (foo t a b)
+    (if t (a b) (b a))))
+
+(test-module (pass (type-of function foo {(forall _0) (-> Bool _0) (where (Number _0) (FPNumber _0))}))
+  (function (foo t)
+    (if t 0 3.14)))
+
+; TODO: Context reduction
+(test-module (pass (type-of function foo {(forall _0) (-> Bool _0) (where (Number _0) (Number _0))}))
+  (function (foo t)
+    (if t 0 0)))
+
+; pattern matching
+
+(test-module (pass (type-of function foo {(forall _0) (-> _0 unit)}))
+  (function (foo x)
+    (match x
+      [_ (:)])))
+
+(test-module (pass (type-of function foo {(forall _0) (-> _0 _0)}))
+  (function (foo x)
+    (match x
+      [(let a) a])))
+
+(test-module (pass (type-of function foo {(forall _0) (-> Bool _0) (where (Number _0) (FPNumber _0))}))
+  (function (foo x)
+    (match x
+      [#t 0]
+      [#f 1.2])))
+
+(test-module (pass (type-of function foo {(forall _0) (-> (Pair Bool _0) _0) (where (Number _0))}))
+  (data (Pair A B)
+    (pair A B))
+  (function (foo x)
+    (match x
+      [(pair #t (let b)) b]
+      [_ 0])))
+
+(test-module (pass (type-of function foo {(-> (Pair Bool Bool) (Pair Bool Bool))}))
+  (data (Pair A B)
+    (pair A B))
+  (function bottom bottom)
+  (function (foo x)
+    (match x
+      [(let p (pair #t #f)) p]
+      [_ bottom])))
+
+(test-module pass
+  (data ABC
+    a
+    (b Bool)
+    (c String String))
+  (function (foo x)
+    (match x
+      [a #t]
+      [(b (let x)) x]
+      [(c _ _) #f])))
+
+(test-module (fail arity-mismatch)
+  (data ABC
+    a
+    (b Bool))
+  (function (foo x)
+    (match x
+      [(a) #t]
+      [_ #f])))
+
+(test-module (fail arity-mismatch)
+  (data ABC
+    a
+    (b Bool))
+  (function (foo x)
+    (match x
+      [b #t]
+      [_ #f])))
+
+(test-module (fail arity-mismatch)
+  (data ABC
+    a
+    (b Bool))
+  (function (foo x)
+    (match x
+      [(b _ _) #t]
+      [_ #f])))
+
+(test-module (fail arity-mismatch)
+  (builtin-type ABC "abc"
+    [a "a"]
+    [(b Bool) "b"])
+  (function (foo x)
+    (match x
+      [(b _ _) #t]
+      [_ #f])))
+
+; functions without type annotation
+
+(test-module (pass (type-of function foo {(forall _0) _0}))
+  (function foo
+    foo))
+
+(test-module (pass (type-of function foo {(-> unit)}))
+  (function (foo)))
+
+(test-module (pass (type-of function foo {(forall _0) (-> _0)}))
+  (function (foo)
+    (foo)))
+
+(test-module (pass (type-of function foo {(forall _0) (-> _0 _0)}))
+  (function (foo x)
+    x))
+
+(test-module (pass (type-of function foo {(forall _0 _1) (-> _0 _1 _0)}))
+  (function (foo x y)
+    x))
+
+(test-module (pass (type-of function foo {(forall _0 _1) (-> (-> _0 _1) _0 _1)}))
+  (function (foo x y)
+    (x y)))
+
+(test-module (pass (type-of function foo {(forall _0 _1) (-> _0 (: _0 _1)) (where (Number _1))}))
+  (function (foo x)
+    (: x 0)))
+
+(test-module
+  (pass (type-of function foo {(forall _0 _1) (-> _0 (: _0 _1)) (where (Number _1))})
+        (type-of function bar {(forall _0) (-> _0 _0)}))
+  (function (foo x)
+    (: (bar x) 0))
+  (function (bar x)
+    x))
+
+; Because of the complexity of the implementation, `Number _1` is also defaulted to `I32` here, even on `foo`.
+(test-module
+  (pass (type-of function foo {(forall _0) (-> _0 (: _0 I32))})
+        (type-of function bar {(forall _0) (-> _0 _0)}))
+  (function (foo x)
+    (: (bar x) 0))
+  (function (bar x)
+    (foo x)
+    x))
+
+(test-module
+  (pass (type-of function foo {(forall _0) (-> _0 (: _0 unit))})
+        (type-of function bar {(forall _0) (-> _0 _0)}))
+  (function bottom
+    bottom)
+  (function (foo x)
+    (: (bar x) bottom))
+  (function (bar x)
+    (foo x)
+    x))
+
+(test-module (pass (type-of function bar {(forall _0 _1) (-> _0 _1) (where (Foo _0 _1))}))
+  (class (Foo A B)
+    (function foo {(-> A B)}))
+  (function (bar x)
+    (foo x)))
+
+(test-module (fail no-matching-instances)
+  (class (Foo A)
+    (function foo {A}))
+  (function bar
+    (if #t foo #f)))
+
+; functions with type annotation
+
+(test-module pass
+  (function foo {Bool}
+    #t))
+
+(test-module (fail unify-type)
+  (function foo {(forall A) A}
+    #t))
+
+(test-module pass
+  (function foo {(forall A) A}
+    foo))
+
+(test-module (fail no-matching-instances)
+  (function foo {(forall A) A}
+    bar)
+  (function bar
+    0))
+
+(test-module pass
+  (function foo {(forall A) A (where (Number A))}
+    bar)
+  (function bar
+    0))
+
+(test-module (pass (type-of function bar {(forall _0) _0}))
+  (function foo {(forall A) A (where (Number A))}
+    bar)
+  (function bar
+    bar))
+
+(test-module pass
+  (class (Foo A))
+  (function (foo x) {(forall A) (-> Bool unit)})
+  (function bar
+    (foo #t)))
+
+; builtin ops
+
+(test-module
+  (pass (type-of function foo {unit})
+        (type-of builtin-op hello {(-> unit)}))
+  (function foo (hello))
+  (builtin-op hello {(-> unit)} "no-op"))
+
+; data types
+
+(test-module
+  (pass (type-of data-value-con x {X})
+        (type-of data-value-con y {(-> Z X)})
+        (type-of data-value-con z {Z}))
+  (data X x (y Z))
+  (data Z z))
+
+(test-module
+  (pass (type-of data-value-con java {(forall A) (Java A)})
+        (type-of data-value-con not-java {(forall A) (-> A (Java A) (Java A))}))
+  (data (Java A)
+    java
+    (not-java A (Java A))))
+
+(test-module (pass (type-of function foo {(Java (: unit (Java unit)))}))
+  (data (Java A)
+    java
+    (not-java A))
+  (function foo
+    (not-java (: unit (not-java unit)))))
+
+; builtin types
+
+(test-module
+  (pass (type-of builtin-value-con foo {(forall A B) (-> A (Foo A B))})
+        (type-of builtin-value-con bar {(forall A B) (-> A B (Foo A B))})
+        (type-of builtin-value-con baz {(forall A B) (Foo A B)}))
+  (builtin-type (Foo A B) "foo"
+    [(foo A) "foo"]
+    [(bar A B) "bar"]
+    [baz "baz"]))
+
+(test-module (pass (type-of function bar {(Foo (: unit unit))}))
+  (builtin-type (Foo A) "foo"
+    [(foo A) "foo"])
+  (function bar
+    (foo (: unit unit))))
+
+; class methods
+
+(test-module (pass (type-of class-method foo {unit (where Foo)}))
+  (class Foo
+    (function foo {unit})))
+
+(test-module (pass (type-of class-method foo {(forall B A) (-> A B unit) (where (Foo A))}))
+  (class (Foo A)
+    (function (foo x y) {(forall B) (-> A B unit)})))
+
+(test-module (pass (type-of class-method bar {(forall B A) (-> A B unit) (where (Foo B) (Bar A))}))
+  (class (Foo A)
+    (function (foo x y) {(forall B) (-> A B unit)}))
+  (class (Bar A) (where (Foo A))
+    (function (bar x y) {(forall B) (-> A B unit) (where (Foo B))})))
+
+(test-module pass
+  (class (Foo A)
+    (function (foo x) {(-> A unit)}))
+  (instance Foo.Pair (forall A B) (Foo (: A B)) (where (Foo A) (Foo B))
+    (function (foo x)))
+  (function (bar x y) {(forall A B) (-> A B unit) (where (Foo A) (Foo B))}
+    (foo (: x y))))
+
+(test-module (fail no-matching-instances)
+  (class (Foo A)
+    (function (foo x) {(-> A unit)}))
+  (instance Foo.Pair (forall A B) (Foo (: A B)) (where (Foo A) (Foo B))
+    (function (foo x)))
+  (function (bar x y) {(forall A B) (-> A B unit) (where (Foo A))}
+    (foo (: x y))))
+
+(test-module (fail recursion-limit-exceeded)
+  (data X x)
+  (data Y)
+  (class (Foo A B)
+    (function (foo x y) {(-> A B unit)}))
+  (instance Foo.X (forall A) (Foo A X) (where (Foo A Y))
+    (function (foo x y)))
+  (instance Foo.Y (forall A) (Foo A Y) (where (Foo A X))
+    (function (foo x y)))
+  (function bar
+    (foo #t x)))
+
+(test-module pass
+  (class (Foo A)
+    (function (foo x) {(-> A unit)}
+      (foo x))))
+
+(test-module (fail no-matching-instances)
+  (class (Foo A)
+    (function (foo x) {(-> A unit)}))
+  (class (Bar A)
+    (function (bar x) {(-> A unit)}
+      (foo x))))
+
+(test-module pass
+  (class (Foo A)
+    (function (foo x) {(-> A unit)}))
+  (class (Bar A) (where (Foo A))
+    (function (bar x) {(-> A unit)}
+      (foo x))))
+
+(test-module pass
+  (class (Foo A)
+    (function (foo x) {(-> A unit)}
+      (bar x)))
+  (class (Bar A) (where (Foo A))
+    (function (bar x) {(-> A unit)}))
+  (instance Bar.Default (forall A) (Bar A) (where (Foo A))
+    (function (bar x))))
+
+(test-module (pass (type-of class-method foo {(forall B A) (-> A B unit) (where (Bar A) (Foo A))}))
+  (class (Foo A)
+    (function (foo x y) {(forall B) (-> A B unit) (where (Bar A))}
+      (bar x)))
+  (class (Bar A)
+    (function (bar x) {(-> A unit)})))
+
+(test-module (fail unify-type)
+  (class (Foo A)
+    (function (foo x) {(-> A A)}
+      #t)))
+
+; instance methods
+
+(test-module
+  (pass (type-of class-method foo {(forall A B) (-> A B) (where (Foo A B))})
+        (type-of instance-method foo {(-> Bool X)}))
+  (data X)
+  (class (Foo A B)
+    (function (foo x) {(-> A B)}))
+  (instance Foo.X (Foo Bool X)
+    (function (foo x)
+      (foo x))))
+
+(test-module (pass (type-of instance-method foo {(-> (X A) B)}))
+  (data (X A))
+  (function bottom bottom)
+  (class (Foo A B)
+    (function (foo x) {(-> A B)}))
+  (instance Foo.X (forall A B) (Foo (X A) B) (where (Foo A B))
+    (function (foo x)
+      (foo x))))
+
+(test-module (pass (type-of instance-method foo {(forall T) (-> Bool T Bool) (where (Foo T))}))
+  (class (Foo A)
+    (function (foo x y) {(forall B) (-> A B A) (where (Foo B))}))
+  (instance Foo.Bool (Foo Bool)
+    (function (foo x y) {(forall T) (-> Bool T Bool) (where (Foo T))}
+      (foo x y))))
+
+(test-module (fail method-type-scheme-mismatch)
+  (class (Foo A)
+    (function (foo x y) {(forall B) (-> A B A) (where (Foo B))}))
+  (instance Foo.Bool (Foo Bool)
+    (function (foo x y) {(forall T) (-> Bool T Bool)}
+      (foo x y))))
+
+(test-module (fail method-type-scheme-mismatch)
+  (class (Foo A)
+    (function (foo x y) {(forall B) (-> A B A) (where (Foo B))}))
+  (instance Foo.Bool (Foo Bool)
+    (function (foo x y) {(forall T S) (-> Bool T Bool) (where (Foo T))}
+      (foo x y))))
+
+(test-module (fail method-type-scheme-mismatch)
+  (class (Foo A)
+    (function (foo x y) {(forall B) (-> A B A) (where (Foo B))}))
+  (instance Foo.Bool (Foo Bool)
+    (function (foo x y) {(forall T) (-> String T Bool) (where (Foo T))}
+      (foo x y))))
+
+(test-module (fail method-type-scheme-mismatch)
+  (class (Foo A)
+    (function (foo x y) {(forall B) (-> A B A) (where (Foo B))}))
+  (instance Foo.Bool (Foo Bool)
+    (function (foo x y) {(forall T) (-> String T Bool) (where (Foo Bool))}
+      (foo x y))))
+
+(test-module pass
+  (class (Foo A)
+    (function (foo x y) {(forall B) (-> A B A) (where (Foo B))}))
+  (instance Foo.Default (forall T) (Foo T)
+    (function (foo x y) {(forall S) (-> T S T) (where (Foo S))}
+      (foo x y))))
+
+(test-module (fail method-type-scheme-mismatch)
+  (class (Foo A)
+    (function (foo x y) {(forall B) (-> A B A) (where (Foo B))}))
+  (instance Foo.Default (forall T) (Foo T)
+    (function (foo x y) {(forall S) (-> S T S) (where (Foo S))}
+      (foo x y))))
+
+; initial expressions
+
+(test-module pass
+  123
+  456)
+
+(test-module fail
+  (class (Foo A)
+    (function (foo x) {(-> A unit)}))
+  (function bottom bottom)
+  (foo bottom))
+
+(test-module (fail cannot-use-return-in-this-context)
+  (return))
+
+; local functions / local variables
+
+(test-module
+  (pass (type-of function foo {(forall _0) (-> _0 _0)})
+        (type-of local-function bar {(forall _1.0) (-> _1.0 _0)}))
+  (function (foo x)
+    (let ([(bar y) x])
+      x)))
+
+(test-module
+  (pass (type-of function foo {(forall _0) (-> _0 _0)})
+        (type-of local-function bar {(-> _0 _0)}))
+  (function (foo x)
+    (let ([(bar y) (if #t y x)])
+      x)))
+
+(test-module pass
+  (function (foo x)
+    (let ([(bar y) (begin 0 y)])
+      x)))
+
+(test-module
+  (pass (type-of function foo {(forall _0) (-> _0 _0)})
+        (type-of local-function bar {(forall _1.0) (-> _1.0 unit) (where (Hello _1.0))}))
+  (class (Hello A)
+    (function (hello x) {(-> A unit)}))
+  (function (foo x)
+    (let ([(bar y) (hello y)])
+      x)))
+
+(test-module
+  (pass (type-of function foo {(forall _0) (-> _0 _0) (where (Hello _0))})
+        (type-of local-function bar {(forall _1.0) (-> _1.0 unit)}))
+  (class (Hello A)
+    (function (hello x) {(-> A unit)}))
+  (function (foo x)
+    (let ([(bar y) (hello x)])
+      x)))
+
+(test-module
+  (pass (type-of local-function bar {(forall _1.0) (-> _1.0 _1.0) (where (Number _1.0))})
+        (type-of local-function baz {(forall _1.0) (-> _1.0 I32 _1.0) (where (Number _1.0))}))
+  (function (foo x)
+    (let ([(bar y) (if #t y (baz y 0))]
+          [(baz y z) (if #t 0 (bar y))])
+      x)))
+
+(test-module
+  (pass (type-of local-function bar {(forall _1.0) (-> _1.0 (: _0 _1.0))})
+        (type-of local-function baz {(forall _2.0) (-> _2.0 (: _0 _1.0 _2.0))}))
+  (function (foo x)
+    (let ([(bar y)
+            (let ([(baz z)
+                    (: x y z)])
+              (: x y))])
+      (: x))))
+
+(test-module (fail no-matching-instances)
+  (function (foo x) {(forall A) (-> A unit)}
+    (let ([(bar y) (if y x 0)]))))
+
+(test-module (fail no-matching-instances)
+  (function (foo x) {(forall A) (-> A unit)}
+    (let ([(bar y) (if y x 0)]))))
+
+(test-module pass
+  (function (foo x) {(forall A) (-> A unit)}
+    (let ([(bar y) {(-> A A)}
+            (if #t x y)]))))
+
+(test-module (fail unify-type)
+  (function (foo x) {(forall A) (-> A unit)}
+    (let ([(bar y) {(forall B) (-> B B)}
+            (if #t x y)]))))
+
+(test-module (fail unify-type)
+  (function (foo x)
+    (let ([(bar y) {(forall B) (-> B B)}
+            (if #t x y)]))))
+
+(test-module (fail no-matching-instances)
+  (class (Foo A B)
+    (function (foo x) {(-> A B)}))
+  (function (bar x) {(forall A) (-> A unit)}
+    (let ([(baz y) {(forall B) (-> B B)}
+            (if #t (foo x) y)]))))
+
+(test-module pass
+  (class (Foo A B)
+    (function (foo x) {(-> A B)}))
+  (function (bar x) {(forall A) (-> A unit)}
+    (let ([(baz y) {(forall B) (-> B B) (where (Foo A B))}
+            (if #t (foo x) y)]))))
+
+(test-module (fail no-matching-instances)
+  (class (Foo A B)
+    (function (foo x) {(-> A B)}))
+  (function (bar x)
+    (let ([(baz y) {(forall B) (-> B B)}
+            (if #t (foo x) y)]))))
+
+(test-module pass
+  (class (Foo A B)
+    (function (foo x) {(-> A B)}))
+  (instance Foo.Any (forall A B) (Foo A B)
+    (function (foo x) (foo x)))
+  (function (bar x)
+    (let ([(baz y) {(forall B) (-> B B)}
+            (if #t (foo x) y)]))))
+
+(test-module
+  (pass (type-of local-function even {(-> N Bool)})
+        (type-of local-function odd {(-> N Bool)})
+        (type-of local-var t {Bool}))
+  (data N
+    z
+    (s N))
+  (let ([(even x) (match x [z #t] [(s (let n)) (odd n)])]
+        [(odd x) (match x [z #f] [(s (let n)) (even n)])]
+        [t (even (s (s (s (s z)))))])
+    t))
+
+(test-module
+  (pass (type-of local-function f {(forall _1.0) (-> _1.0 unit)})
+        (type-of local-function g {(forall _1.0) (-> _1.0 _1.0)}))
+  (function bottom bottom)
+  (let ([x bottom])
+    (let ([(f a) x]
+          [(g a) a])
+      (f #t))))
+
+(test-module (pass (type-of local-var t {(: Bool I32)}))
+  (let ([(f x) x]
+        [t (: (f #t) (f 123))])))
+
+(test-module (fail no-matching-instances)
+  (class Empty
+    (function empty {unit}))
+  (function (foo)
+    (let ([(bar) empty]))))
+
+(test-module (pass (type-of local-function bar {(-> unit)}))
+  (class Empty
+    (function empty {unit}))
+  (function (foo) {(-> unit) (where Empty)}
+    (let ([(bar) empty]))))
+
+(test-module (pass (type-of function foo {(-> unit)}))
+  (class Empty
+    (function empty {unit}))
+  (function (foo)
+    (let ([(bar) {(-> unit) (where Empty)} empty]))))
+
+; ambiguity
+
+; This does not produce cannot-resolve-ambiguity; see type_inference::Context::resolve_ambiguity
+(test-module (fail no-matching-instances)
+  (class (Foo A B)
+    (function foo {(-> A B)}))
+  (function (bar x)
+    (foo x)
+    (:)))
+
+; ditto
+(test-module pass
+  (class (Foo A)
+    (function foo {A}))
+  (instance Foo.Default (forall A) (Foo A)
+    (function foo foo))
+  (function bar foo unit))
+
+; ditto
+(test-module (fail no-matching-instances)
+  (class (Foo A))
+  (function (foo x) {(forall A) (-> Bool unit) (where (Foo A))})
+  (function bar
+    (foo #t)))
+
+; ditto
+(test-module (fail no-matching-instances)
+  (class (Hello A)
+    (function (hello x) {(-> A unit)}))
+  (function (foo x)
+    (let ([(bar y) (begin hello y)])
+      x)))
+
+(test-module (fail cannot-resolve-ambiguity)
+  (data (T F)
+    (t (F unit)))
+  (function bottom bottom)
+  (function foo (t bottom) unit))

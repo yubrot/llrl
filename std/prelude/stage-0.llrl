@@ -1,0 +1,10 @@
+(no-implicit-std)
+
+(import "builtin" Syntax Sexp Bool Option Result Char String ok err some none)
+(import "std/boot/0-s" s:_)
+(import "std/boot/1-try" try? try!)
+(import "std/boot/2-s-match" s/match)
+(import "std/boot/3-quasiquote" quasiquote)
+(import "std/boot/4-gensym" gensym)
+(import "std/boot/5-lambda" lambda)
+(export _)

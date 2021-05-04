@@ -1,0 +1,79 @@
+(test-std
+  (no-implicit-std)
+  #t)
+
+(test-std
+  (no-implicit-std)
+  (import "builtin" Number.U64 FPNumber.F64)
+  (import "std/boot/0-s" _)
+
+  (match '(123 #t (foo 3.14 . "bar"))
+    [(s:list (s:integer #f 123) (s:bool #t) (s:cons (s:symbol "foo") (s:cons (s:fpnumber 3.14) (s:string "bar"))))
+      #t]
+    [_
+      #f]))
+
+(test-std
+  (no-implicit-std)
+  (import "builtin" Number.U64 FPNumber.F64 some none ok err)
+  (import "std/boot/0-s" _)
+  (import "std/boot/1-try" _)
+
+  (function (id a) a)
+  (function (f a b) (some (: (id a)? (id b)?)))
+  (function (g a b) (ok (: (id a)! (id b)!)))
+
+  (function test
+    (: (f (some #t) none) (f none (some #t)) (f (some #t) none) (f (some #t) (some #f))
+           (g (err "left") (err "right")) (g (err "left") (ok #t)) (g (ok #t) (err "right")) (g (ok #t) (ok #f))))
+
+  (match test
+    [(: none none none (some (: #t #f))
+            (err "left") (err "left") (err "right") (ok (: #t #f)))
+      #t]
+    [_
+      #f]))
+
+(test-std
+  (no-implicit-std)
+  (import "builtin" Number.U64 FPNumber.F64)
+  (import "std/boot/0-s" _)
+  (import "std/boot/2-s-match" _)
+
+  (s/match '(#t "foo" bar 12 3.14 baz)
+    [(#t ,a ,(s:symbol (let b)) 12 ,@c)
+      (s/match (s:cons a (s:cons (s:string b) c))
+        [("foo" "bar" 3.14 baz) #t]
+        [_ #f])]
+    [_ #f]))
+
+(test-std
+  (no-implicit-std)
+  (import "builtin" Number.U64 ok)
+  (import "std/boot/2-s-match" _)
+  (import "std/boot/3-quasiquote" _)
+
+  (let ([x '(hello world)]
+        [y '(foo bar)]
+        [(test x y) (ok `(1 ,x 2 ('3 ,@y ,'4 ,@x 5) 6 ,y))])
+    (match (test x y)
+      [(ok (let s))
+        (s/match s
+          [(1 (hello world) 2 ('3 foo bar 4 hello world 5) 6 (foo bar)) #t]
+          [_ #f])]
+      [_ #f])))
+
+(test-std
+  (no-implicit-std)
+  (import "std/boot/5-lambda" _)
+
+  (match (((lambda (a) (lambda (b) (: a b))) #t) #f)
+    [(: #t #f)
+      #t]
+    [_
+      #f]))
+
+(test-std
+  (no-implicit-std)
+  (import "std/prelude/stage-0")
+  #t)

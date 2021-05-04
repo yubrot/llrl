@@ -1,0 +1,23 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-0" _)
+(import "std/never" Never never)
+(import "std/display" _)
+(export Debug debug _.Debug DebugDisplay DebugDisplay._ debug-display!)
+
+; A newtype for debugging display.
+(value-data (Debug A)
+  (debug A))
+
+(instance Display.Debug (forall A) (Display (Debug A)) (where (DebugDisplay A))
+  (transparent-function (display! w a)
+    (match a
+      [(debug (let a)) (debug-display! w a)])))
+
+; A type class that can be displayed as strings for debugging.
+; Values of types that implement DebugDisplay can be displayed by `(debug value)`.
+(class (DebugDisplay A)
+  (function (debug-display! w a) {(forall W Error) (-> W A (Result unit Error)) (where (WriteString W Error))}))
+
+(instance DebugDisplay.Never (DebugDisplay Never)
+  (transparent-function (debug-display! w a) w (never a)))

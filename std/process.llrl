@@ -1,0 +1,15 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-0" _)
+(import "std/assert" assert)
+(import "std/num-literals" I32)
+(export exit)
+
+(function (exit status) {(forall A) (-> I32 A)}
+  (<exit> status)
+  (assert #f))
+
+; TODO: argv
+; TODO: command
+
+(c-function <exit> {(-> I32 unit)} "llrt_exit")

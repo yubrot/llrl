@@ -1,0 +1,77 @@
+(import "std/either" _)
+(import "std/tests/ord" [ord/_ _])
+
+(assert-is? (some 123)
+  (either/left? (left 123)))
+(assert-is? none
+  (either/left? (right "foo")))
+(assert-is? (some "foo")
+  (either/right? (right "foo")))
+(assert-is? none
+  (either/right? (left #f)))
+
+(assert-is? #f
+  (either not id (left #t)))
+(assert-is? #t
+  (either not id (right #t)))
+
+(assert-is? (left "foo")
+  (either/flip (right "foo")))
+(assert-is? (right #t)
+  (either/flip (left #t)))
+
+(assert-is? 123
+  (either/unwrap-left 456 (left 123)))
+(assert-is? 456
+  (either/unwrap-left 456 (right "foo")))
+(assert-is? "foo"
+  (either/unwrap-right "bar" (right "foo")))
+(assert-is? "bar"
+  (either/unwrap-right "bar" (left #f)))
+
+(assert-is? 123
+  (either/unwrap-left* [^1 456] (left 123)))
+(assert-is? 456
+  (either/unwrap-left* [^1 (if %1 456 789)] (right #t)))
+(assert-is? 123
+  (either/unwrap-left* never (left 123)))
+(assert-is? "foo"
+  (either/unwrap-right* [^1 "bar"] (right "foo")))
+(assert-is? "baz"
+  (either/unwrap-right* [^1 (if %1 "bar" "baz")] (left #f)))
+(assert-is? 123
+  (either/unwrap-right* never (right 123)))
+
+(assert-is? (right "right")
+  (either/map-left [^1 (: %1 %1)] (right "right")))
+(assert-is? (left (: #t #t))
+  (either/map-left [^1 (: %1 %1)] (left #t)))
+
+(assert-is? (right (: "right" "right"))
+  (either/map-right [^1 (: %1 %1)] (right "right")))
+(assert-is? (left #t)
+  (either/map-right [^1 (: %1 %1)] (left #t)))
+
+(assert-is? (right "bar")
+  (either/then-left [^1 (if %1 (right "bar") (left #t))] (left #t)))
+(assert-is? (left #t)
+  (either/then-left [^1 (if %1 (right "bar") (left #t))] (left #f)))
+(assert-is? (right "foo")
+  (either/then-left [^1 (if %1 (right "bar") (left #t))] (right "foo")))
+
+(assert-is? (left "bar")
+  (either/then-right [^1 (if %1 (left "bar") (right #t))] (right #t)))
+(assert-is? (right #t)
+  (either/then-right [^1 (if %1 (left "bar") (right #t))] (right #f)))
+(assert-is? (left "foo")
+  (either/then-right [^1 (if %1 (left "bar") (right #t))] (left "foo")))
+
+(assert-eq? (left #f) (left #f))
+(assert-ne? (left #t) (left #f))
+(assert-ne? (right #f) (left #f))
+(assert-eq? (right #t) (right #t))
+
+(ord/test1234 (left #f) (left #t) (right #f) (right #t))
+
+(assert-eq? (string (debug (left #t))) "(left #t)")
+(assert-eq? (string (debug (right #t))) "(right #t)")

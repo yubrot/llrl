@@ -1,0 +1,71 @@
+(import "std/arithmetic" _)
+(export test-signed test-unsigned)
+
+(function (test-signed proxy) {(forall A) (-> A unit) (where (Number A) (Ord A) (Zero A) (One A) (Add A) (Sub A) (Mul A) (Div A) (Rem A))}
+  (assert (= 0 {A} zero))
+  (assert (= 1 {A} one))
+
+  (assert (= 0 {A} (+)))
+  (assert (= 5 {A} (+ 5)))
+  (assert (= -3 {A} (+ -3)))
+  (assert (= 8 {A} (+ 5 3)))
+  (assert (= 12 {A} (+ 5 3 4)))
+
+  (assert (= -5 {A} (- 5)))
+  (assert (= 3 {A} (- -3)))
+  (assert (= 1 {A} (- 5 4)))
+  (assert (= -2 {A} (- 5 4 3)))
+  (assert (= -4 {A} (- 5 4 3 2)))
+
+  (assert (= 1 {A} (*)))
+  (assert (= 5 {A} (* 5)))
+  (assert (= 10 {A} (* 5 2)))
+  (assert (= 30 {A} (* 5 2 3)))
+  (assert (= -30 {A} (* 5 2 -1 3)))
+
+  (assert (= 20 {A} (/ 40 2)))
+  (assert (= 4 {A} (/ 40 2 5)))
+
+  (assert (= 11 {A} (% 11)))
+  (assert (= 4 {A} (% 11 7)))
+  (assert (= 1 {A} (% 11 7 3)))
+
+  (assert (= 0 {A} (abs 0)))
+  (assert (= 5 {A} (abs 5)))
+  (assert (= 4 {A} (abs -4)))
+
+  (assert (= 11 {A} (succ 10)))
+  (assert (= 9 {A} (pred 10))))
+
+(function (test-unsigned proxy) {(forall A) (-> A unit) (where (Number A) (Ord A) (Zero A) (One A) (Add A) (Sub A) (Mul A) (Div A) (Rem A))}
+  (assert (= 0 {A} zero))
+  (assert (= 1 {A} one))
+
+  (assert (= 0 {A} (+)))
+  (assert (= 5 {A} (+ 5)))
+  (assert (= 8 {A} (+ 5 3)))
+  (assert (= 12 {A} (+ 5 3 4)))
+
+  (assert (= 1 {A} (- 5 4)))
+
+  (assert (= 1 {A} (*)))
+  (assert (= 5 {A} (* 5)))
+  (assert (= 10 {A} (* 5 2)))
+  (assert (= 30 {A} (* 5 2 3)))
+
+  (assert (= 20 {A} (/ 40 2)))
+  (assert (= 4 {A} (/ 40 2 5)))
+
+  (assert (= 11 {A} (% 11)))
+  (assert (= 4 {A} (% 11 7)))
+  (assert (= 1 {A} (% 11 7 3)))
+
+  (assert (= 0 {A} (abs 0)))
+  (assert (= 5 {A} (abs 5)))
+
+  (assert (= 11 {A} (succ 10)))
+  (assert (= 9 {A} (pred 10))))
+
+(assert (approx-eq? 1.0 1.0))
+(assert (approx-eq? 1.0 (+ 1.0 1e-11) 1e-10))
+(assert (not (approx-eq? 1.0 (+ 1.0 1e-9) 1e-10)))

@@ -1,0 +1,202 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-1" _)
+(import "std/s" s/foldl)
+(import "std/integer" _.U8 _.U64)
+(import "std/ref" ref _.Ref)
+(import "std/iterator" _)
+(import "std/it" it/_)
+(import "std/vector" Vector vector/_ _.Vector)
+(import "std/hash" Hash hash-all! Hash.U8)
+(import "std/char" Char char/_ _.Char)
+(import "std/string" String string string/_ _.String)
+(import "std/text" _.Text)
+(export path canonicalized-path path/_ PathComponent path-component:_ _.PathComponent)
+
+; NOTE: We currently have no Windows support at all.
+
+(macro (path s)
+  (s/match s
+    [(_ ,a ,@bs)
+      (s/foldl [^2 `(,\path/join ,%1 ,%2)] a bs)]
+    [_
+      (err "Expected (path p ...)")]))
+
+(macro (canonicalized-path s)
+  (s/match s
+    [(_ ,a ,@bs)
+      (ok `(,\canonicalize/complete
+            ,(s/foldl (lambda (buf s) `(,\canonicalize/put! (,\path/components ,s) ,buf))
+                      \canonicalize/init
+                      `(,a ,@bs))!))]
+    [_
+      (err "Expected (canonicalized-path p ...)")]))
+
+(transparent-function path/dir-separator {String}
+  "/")
+
+(function (path/base-name p) {(-> String String)}
+  (when (string/empty? p) (return p))
+  (with1 (: (let l) (let r)) (last-component-start-end p)
+    (if (eq? l r)
+      "/"
+      (string/substring l r p))))
+
+(function (path/dir-name p) {(-> String String)}
+  (with1 (: (let l) _) (last-component-start-end p)
+    (if (<= l 1)
+      (if (path/absolute? p) "/" ".")
+      (string/take (- l 1) p))))
+
+(function (path/extension? p) {(-> String (Option String))}
+  (with1 (: (let l) (let e) (let r)) (last-component-start-dot-end p)
+    (if (< (+ l 1) e)
+      (some (string/substring e r p))
+      none)))
+
+(function (path/with-extension ext p) {(-> (Option String) String String)}
+  (with1 (: (let l) (let e) (let r)) (last-component-start-dot-end p)
+    (string
+      (if (< (+ l 1) e)
+        (string/take (- e 1) p)
+        (string/take r p))
+      (match ext
+        [(some (let ext)) (string #\. ext)]
+        [none ""])
+      (string/skip r p))))
+
+(function (path/default-extension ext p) {(-> String String String)}
+  (with1 (: (let l) (let e) (let r)) (last-component-start-dot-end p)
+    (if (< (+ l 1) e)
+      p
+      (string (string/take r p) #\. ext (string/skip r p)))))
+
+(function (path/absolute? p) {(-> String Bool)}
+  (string/starts-with? "/" p))
+
+(function (path/relative? p) {(-> String Bool)}
+  (not (path/absolute? p)))
+
+(c-function path/cwd {String} "llrt_getcwd")
+
+(value-data PathComponent
+  path-component:root-dir
+  path-component:current-dir
+  path-component:parent-dir
+  (path-component:normal String))
+
+(function (path/components p) {(-> String (Iterator PathComponent))}
+  (let1 rest (ref p)
+    (iterator/new (lambda ()
+      (cond
+        [(string/empty? ~rest)
+          none]
+        [(string/starts-with? "/" ~rest)
+          (set! rest (skip-repeated-dir-separator (string/skip 1 ~rest)))
+          (some path-component:root-dir)]
+        [(string/starts-with? "./" ~rest)
+          (set! rest (skip-repeated-dir-separator (string/skip 2 ~rest)))
+          (some path-component:current-dir)]
+        [(string/starts-with? "../" ~rest)
+          (set! rest (skip-repeated-dir-separator (string/skip 3 ~rest)))
+          (some path-component:parent-dir)]
+        [else
+          (match (string/find? "/" ~rest)
+            [(some (let i))
+              (let1 c (path-component:normal (string/take i ~rest))
+                (set! rest (skip-repeated-dir-separator (string/skip i ~rest)))
+                (some c))]
+            [none
+              (let1 c (match ~rest
+                        ["." path-component:current-dir]
+                        [".." path-component:parent-dir]
+                        [_ (path-component:normal ~rest)])
+                (set! rest "")
+                (some c))])])))))
+
+(function (path/canonicalize p) {(-> String String)}
+  (|> canonicalize/init (canonicalize/put! (path/components p)) canonicalize/complete))
+
+(function canonicalize/init {(Vector String)}
+  (canonicalize/put! (path/components path/cwd) vector/empty))
+
+(function (canonicalize/put! it buf)
+  {(forall T) (-> (T PathComponent) (Vector String) (Vector String)) (where (Iterate T))}
+  (for (let c) it
+    (match c
+      [path-component:root-dir (vector/clear! buf)]
+      [path-component:current-dir]
+      [path-component:parent-dir (ignore (vector/pop! buf))]
+      [(path-component:normal (let s)) (vector/push! s buf)]))
+    buf)
+
+(function (canonicalize/complete buf) {(-> (Vector String) String)}
+  (string/join "/" (it/concat (iterator/only "") buf)))
+
+(function (path/join p q) {(-> String String String)}
+  (cond
+    [(path/absolute? q) q]
+    [(= p "/") (string p q)]
+    [else (string (string/take (last-component-end p) p) #\/ q)]))
+
+(function (skip-repeated-dir-separator s) {(-> String String)}
+  (if (and (<= 1 (string/length s))
+           (= (string/byte-at 0 s) (cast (char/unicode-scalar #\/))))
+    (skip-repeated-dir-separator (string/skip 1 s))
+    s))
+
+; foo/bar/baz.ext/
+;                ^
+(function (last-component-end p) {(-> String U64)}
+  (let1 r (ref (string/length p))
+    (while (and (< 0 ~r) (eq? (string/byte-at (- ~r 1) p) (cast (char/unicode-scalar #\/))))
+      (set! r (- ~r 1)))
+    ~r))
+
+; foo/bar/baz.ext/
+;         ^      ^
+(function (last-component-start-end p) {(-> String (: U64 U64))}
+  (let1 r (last-component-end p)
+    (let1 l (ref r)
+      (while (and (< 0 ~l) (ne? (string/byte-at (- ~l 1) p) (cast (char/unicode-scalar #\/))))
+        (set! l (- ~l 1)))
+      (: ~l r))))
+
+; foo/bar/baz.ext/
+;         ^   ^  ^
+(function (last-component-start-dot-end p) {(-> String (: U64 U64 U64))}
+  (with1 (: (let l) (let r)) (last-component-start-end p)
+    (let1 e (ref r)
+      (while (and (< l ~e) (ne? (string/byte-at (- ~e 1) p) (cast (char/unicode-scalar #\.))))
+        (set! e (- ~e 1)))
+      (: l ~e r))))
+
+; ---------------------------
+
+(instance DeepCopy.PathComponent (DeepCopy PathComponent)
+  (transparent-function (deep-copy a) a))
+
+(instance DebugDisplay.PathComponent (DebugDisplay PathComponent)
+  (function (debug-display! w a)
+    (match a
+      [path-component:root-dir (display! w "path-component:root-dir")]
+      [path-component:current-dir (display! w "path-component:current-dir")]
+      [path-component:parent-dir (display! w "path-component:parent-dir")]
+      [(path-component:normal (let a)) (display-all! w "(path-component:normal " (debug a) ")")])))
+
+(instance Eq.PathComponent (Eq PathComponent)
+  (function (eq? a b)
+    (match (: a b)
+      [(: path-component:root-dir path-component:root-dir) #t]
+      [(: path-component:current-dir path-component:current-dir) #t]
+      [(: path-component:parent-dir path-component:parent-dir) #t]
+      [(: (path-component:normal (let a)) (path-component:normal (let b))) (eq? a b)]
+      [_ #f])))
+
+(instance Hash.PathComponent (Hash PathComponent)
+  (function (hash! s a)
+    (match a
+      [path-component:root-dir (hash-all! s 0 {U8})]
+      [path-component:current-dir (hash-all! s 1 {U8})]
+      [path-component:parent-dir (hash-all! s 2 {U8})]
+      [(path-component:normal (let a)) (hash-all! s 3 {U8} a)])))

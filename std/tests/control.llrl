@@ -1,0 +1,141 @@
+(import "std/control" _)
+(import "std/option" option/_)
+
+(assert (is? (some _) (some #t)))
+(assert (not (is? none (some #t))))
+
+(assert-is? (some #t)
+  (|> #f some (option/map not)))
+
+(let ([(f g) ((g 5) 3)])
+  (assert-is? (: 3 5)
+    (f (lambda (x) (lambda (y) (: y x))))))
+
+(assert-is? (: 2 4)
+  ([^4 (: %2 %4)] 1 2 3 4))
+
+(let* ([a #t]
+       [b (not a)]
+       [c (not b)])
+  (assert c))
+
+(let ([f (case [1 2] [2 3] [_ 1])])
+  (assert-is? (: 2 3 1)
+    (: (f 1) (f 2) (f 3))))
+
+(with ([(: _ (let x)) (: (: 1 2) (: 3 4))]
+       [(: (let x) _) x])
+  (assert-is? 3 x))
+
+(let ([(f a b) (cond [a 0] [b 1] [else 2])])
+  (assert-is? 2 (f #f #f))
+  (assert-is? 0 (f #t #f))
+  (assert-is? 1 (f #f #t))
+  (assert-is? 0 (f #t #t)))
+
+(let ([(f x)
+         (if-match ([(some (let x)) x]
+                    [(some (let x)) x])
+           x
+           #f)])
+  (assert-is? (: #f #f #t)
+    (: (f none) (f (some none)) (f (some (some #t))))))
+
+(let* ([c (ref 0)]
+       [(f)
+         (loop
+           (when (eq? ~c 3) (return #t))
+           (set! c (+ ~c 1)))])
+  (assert (f)))
+
+(let ([(counter x)
+        (let ([x (ref x)])
+          (lambda ()
+            (when? (< 0 ~x)
+              (let ([prev-x ~x])
+                (set! x (- prev-x 1))
+                prev-x))))]
+      [f (counter 5)]
+      [g (counter 3)]
+      [accum (ref 0)])
+  (while-match ([(some (let a)) (f)]
+                [(some (let b)) (g)])
+    (set! accum (+ ~accum (* a b))))
+  (assert-eq? ~accum 26))
+
+(let ([accum (ref 0)])
+  (let ([(f x)
+          (when-match ([(some (let x)) x])
+            (set! accum (+ ~accum x)))])
+    (f none)
+    (assert-eq? ~accum 0)
+    (f (some 3))
+    (assert-eq? ~accum 3)
+    (f (some 5))
+    (assert-eq? ~accum 8)))
+
+(let1 a #t
+  (assert a))
+
+(let ([f (case1 (: (let a) (let b)) (+ a b))])
+  (assert-eq? 5 (f (: 2 3))))
+
+(with1 (: (let a) (let b)) (: 2 3)
+  (assert-eq? 5 (+ a b)))
+
+(let ([tmp (ref 0)])
+  (when #f (set! tmp (+ ~tmp 2)))
+  (assert-eq? 0 ~tmp)
+  (when #t (set! tmp (+ ~tmp 3)))
+  (assert-eq? 3 ~tmp))
+
+(let1 (f x) (if-match1 (some (let a)) x a 5)
+  (assert-eq? 5 (f none))
+  (assert-eq? 3 (f (some 3))))
+
+(let ([(counter x)
+        (let1 x (ref x)
+          (lambda ()
+            (when? (< 0 ~x)
+              (let1 prev-x ~x
+                (set! x (- prev-x 1))
+                prev-x))))]
+      [f (counter 5)]
+      [accum (ref 0)])
+  (while-match1 (some (let a)) (f) (set! accum (+ ~accum a)))
+  (assert-eq? ~accum 15))
+
+(let ([tmp (ref 0)])
+  (when-match1 (some (let n)) none (set! tmp (+ ~tmp n)))
+  (assert-eq? 0 ~tmp)
+  (when-match1 (some (let n)) (some 5) (set! tmp (+ ~tmp n)))
+  (assert-eq? 5 ~tmp))
+
+(let ([(f x) (match? x [1 2] [2 3])])
+  (assert-is? (: (some 2) (some 3) none)
+    (: (f 1) (f 2) (f 3))))
+
+(let ([f (case? [1 2] [2 3])])
+  (assert-is? (: (some 2) (some 3) none)
+    (: (f 1) (f 2) (f 3))))
+
+(let ([(f x)
+         (with? ([(some (let x)) x]
+                 [(some (let x)) x])
+           x)])
+  (assert-is? (: none none (some #t))
+    (: (f none) (f (some none)) (f (some (some #t))))))
+
+(let ([(f a b) (cond? [a 0] [b 1])])
+  (assert-is? none (f #f #f))
+  (assert-is? (some 0) (f #t #f))
+  (assert-is? (some 1) (f #f #t))
+  (assert-is? (some 0) (f #t #t)))
+
+(let ([f (case1? 1 2)])
+  (assert-is? (: (some 2) none none)
+    (: (f 1) (f 2) (f 3))))
+
+(let ([(f x) (with1? (some (let x)) x (not x))])
+  (assert-is? (: none (some #t))
+    (: (f none) (f (some #f)))))

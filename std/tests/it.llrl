@@ -1,0 +1,51 @@
+(import "std/it" _)
+
+(assert-eq? 3 (it/count (array 1 4 9)))
+
+(assert-eq? (some 1) (it/first? (array 1)))
+(assert-eq? none (it/first? (array)))
+
+(assert-eq? (some 0) (it/at 0 (array 0 10 100)))
+(assert-eq? (some 10) (it/at 1 (array 0 10 100)))
+(assert-eq? (some 100) (it/at 2 (array 0 10 100)))
+(assert-eq? none (it/at 3 (array 0 10 100)))
+
+(assert-eq? (array 1 2 3 0 10 100) (collect (it/concat (array 1 2 3) (array 0 10 100))))
+
+(assert-eq? (array (: 1 4) (: 2 5) (: 3 6)) (collect (it/zip (array 1 2 3) (array 4 5 6))))
+
+(assert-eq? (array (zip-either:both 1 4) (zip-either:both 2 5)) (collect (it/zip-either (array 1 2) (array 4 5))))
+(assert-eq? (array (zip-either:both 1 4) (zip-either:both 2 5) (zip-either:right 6)) (collect (it/zip-either (array 1 2) (array 4 5 6))))
+(assert-eq? (array (zip-either:both 1 4) (zip-either:both 2 5) (zip-either:left 3)) (collect (it/zip-either (array 1 2 3) (array 4 5))))
+
+(assert-eq? (array 1 4 9 16) (collect (it/map [^1 (* %1 %1)] (array 1 2 3 4))))
+
+(assert-eq? (array 2 4 6) (collect (it/filter [^1 (= (% %1 2) 0)] (array 1 2 3 4 5 6))))
+
+(assert-eq? (array 1 2 3) (collect (it/filter-map id (array none (some 1) none (some 2) (some 3) none))))
+
+(assert-eq? (array (: 0 #t) (: 1 #f) (: 2 #t)) (collect (it/with-index (array #t #f #t))))
+
+(assert-eq? (array 1 2 3 4) (|> (array 1 2 3 4 5 6 7) (it/take 4) collect))
+(assert-eq? (array 4 5 6 7) (|> (array 1 2 3 4 5 6 7) (it/skip 3) collect))
+
+(assert (= (array 1 2 1 2 3 1 2 3 4)
+           (collect (it/flat-map [^1 (it/take %1 (array 1 2 3 4 5))] (array 2 3 4)))))
+
+(assert-eq? 12345 (it/fold [^2 (+ (* %1 10) %2)] 0 (array 1 2 3 4 5)))
+
+(let ([a (array 7 3 2 0 4 1)]
+      [b (array 1 8 9 4 3 5)])
+  (assert (it/any? [^1 (eq? %1 0)] a))
+  (assert (not (it/any? [^1 (eq? %1 0)] b)))
+  (assert (not (it/all? [^1 (ne? %1 0)] a)))
+  (assert (it/all? [^1 (ne? %1 0)] b)))
+
+(assert-eq? (some (: #t 5)) (it/find? (case1 (: (let b) _) b) (array (: #f 1) (: #f 3) (: #t 5) (: #t 7))))
+
+(assert-eq? (some 3) (it/find-map? id (array none (some 3) (some 5) none)))
+
+(assert-eq? (some 2) (it/find-index? id (array #f #f #t #t #f)))
+
+(assert-eq? 10 (it/sum (array 1 2 3 4)))
+(assert-eq? 24 (it/product (array 1 2 3 4)))

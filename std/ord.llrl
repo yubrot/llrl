@@ -1,0 +1,102 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-0" _)
+(import "std/s" s/foldl)
+(import "std/never" Never never)
+(import "std/bool" Bool &&)
+(import "std/eq" Eq eq? Eq.Bool Eq.Never)
+(import "std/ordering" Ordering ordering:_ Eq.Ordering)
+(export Ord compare lt? le? gt? ge? < > <= >= min max Ord._)
+
+(class (Ord A) (where (Eq A))
+  (function (compare a b) {(-> A A Ordering)}
+    (if (eq? a b)
+      ordering:equal
+      (if (le? a b)
+        ordering:less
+        ordering:greater)))
+  (transparent-function (lt? a b) {(-> A A Bool)}
+    (match (compare a b) [ordering:less #t] [_ #f]))
+  (transparent-function (le? a b) {(-> A A Bool)}
+    (match (compare a b) [ordering:greater #f] [_ #t]))
+  (transparent-function (gt? a b) {(-> A A Bool)}
+    (match (compare a b) [ordering:greater #t] [_ #f]))
+  (transparent-function (ge? a b) {(-> A A Bool)}
+    (match (compare a b) [ordering:less #f] [_ #t])))
+
+(macro (< s) (compare-chain-entry \lt? s))
+(macro (> s) (compare-chain-entry \gt? s))
+(macro (<= s) (compare-chain-entry \le? s))
+(macro (>= s) (compare-chain-entry \ge? s))
+
+(function (compare-chain-entry pred s)
+  (s/match s
+    [(_)
+      (ok '#t)]
+    [(_ _)
+      (ok '#t)]
+    [(_ ,a ,b)
+      (ok `(,pred ,a ,b))]
+    [(_ ,a ,@bs)
+      (ok
+        (let ([tmp-a (gensym)])
+          `(let ([,tmp-a ,a])
+            ,(compare-chain pred tmp-a bs))))]
+    [_
+      (err "Expected (_ expr ...)")]))
+
+(function (compare-chain pred a bs)
+  (s/match bs
+    [(,b)
+      `(,pred ,a ,b)]
+    [(,b ,@bs)
+      (let ([tmp-b (gensym)])
+        `(let ([,tmp-b ,b])
+          (,\&& (,pred ,a ,tmp-b) ,(compare-chain pred tmp-b bs))))]
+    [_
+      '#t]))
+
+(macro (min s)
+  (s/match s
+    [(_ ,expr ,@exprs)
+      (s/foldl (lambda (a b) `(,\min2 ,a ,b)) expr exprs)]
+    [_
+      (err "Expected (min expr ...)")]))
+
+(macro (max s)
+  (s/match s
+    [(_ ,expr ,@exprs)
+      (s/foldl (lambda (a b) `(,\max2 ,a ,b)) expr exprs)]
+    [_
+      (err "Expected (max expr ...)")]))
+
+(function (min2 a b) {(forall A) (-> A A A) (where (Ord A))}
+  (if (le? a b) a b))
+
+(function (max2 a b) {(forall A) (-> A A A) (where (Ord A))}
+  (if (ge? a b) a b))
+
+(instance Ord.Never (Ord Never)
+  (transparent-function (compare a b) (never a) (never b)))
+
+(instance Ord.Bool (Ord Bool)
+  (transparent-function (lt? a b) (<bool/lt?> a b))
+  (transparent-function (le? a b) (<bool/le?> a b))
+  (transparent-function (gt? a b) (<bool/gt?> a b))
+  (transparent-function (ge? a b) (<bool/ge?> a b)))
+
+(builtin-op <bool/lt?> {(-> Bool Bool Bool)} "unsigned.lt")
+(builtin-op <bool/le?> {(-> Bool Bool Bool)} "unsigned.le")
+(builtin-op <bool/gt?> {(-> Bool Bool Bool)} "unsigned.gt")
+(builtin-op <bool/ge?> {(-> Bool Bool Bool)} "unsigned.ge")
+
+(instance Ord.Ordering (Ord Ordering)
+  (transparent-function (lt? a b) (<ordering/lt?> a b))
+  (transparent-function (le? a b) (<ordering/le?> a b))
+  (transparent-function (gt? a b) (<ordering/gt?> a b))
+  (transparent-function (ge? a b) (<ordering/ge?> a b)))
+
+(builtin-op <ordering/lt?> {(-> Ordering Ordering Bool)} "unsigned.lt")
+(builtin-op <ordering/le?> {(-> Ordering Ordering Bool)} "unsigned.le")
+(builtin-op <ordering/gt?> {(-> Ordering Ordering Bool)} "unsigned.gt")
+(builtin-op <ordering/ge?> {(-> Ordering Ordering Bool)} "unsigned.ge")

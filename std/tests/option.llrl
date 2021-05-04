@@ -1,0 +1,56 @@
+(import "std/option" _)
+(import "std/tests/ord" [ord/_ _])
+
+(assert-is? #t
+  (option/unwrap #t none))
+(assert-is? #f
+  (option/unwrap #t (some #f)))
+(assert-is? #t
+  (option/unwrap* [^0 #t] none))
+(assert-is? #f
+  (option/unwrap* [^0 #t] (some #f)))
+
+(assert-is? none
+  (option/map [^1 (: %1 %1)] none))
+(assert-is? (some (: #t #t))
+  (option/map [^1 (: %1 %1)] (some #t)))
+
+(assert-is? (some #t)
+  (option/filter [^1 %1] (some #t)))
+(assert-is? none
+  (option/filter [^1 %1] (some #f)))
+(assert-is? none
+  (option/filter [^1 %1] none))
+
+(assert-is? none
+  (option/then [^1 (if %1 none (some #t))] (some #t)))
+(assert-is? (some #t)
+  (option/then [^1 (if %1 none (some #t))] (some #f)))
+(assert-is? none
+  (option/then [^1 (if %1 none (some #t))] none))
+
+(assert-is? none
+  (option/flatten none))
+(assert-is? none
+  (option/flatten (some none)))
+(assert-is? (some #t)
+  (option/flatten (some (some #t))))
+
+(let1 x (ref (some #t))
+  (assert-is? (some #t) (option/take x))
+  (assert-is? none (option/take x)))
+
+(assert-is? none default)
+
+(assert-eq? none none)
+(assert-eq? (some #t) (some #t))
+(assert-ne? (some #t) (some #f))
+(assert-ne? none (some #f))
+
+(ord/test123 none (some #f) (some #t))
+
+(assert-eq? (string (debug none)) "none")
+(assert-eq? (string (debug (some #t))) "(some #t)")
+
+(assert-eq? (array) (|> none collect))
+(assert-eq? (array #t) (|> (some #t) collect))

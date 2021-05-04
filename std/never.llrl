@@ -1,0 +1,11 @@
+(no-implicit-std)
+
+(import "std/assert" assert)
+(export Never never)
+
+; The bottom type.
+(data Never)
+
+(transparent-function (never a) {(forall A) (-> Never A)}
+  a ; Force the evaluation
+  (assert #f "never"))

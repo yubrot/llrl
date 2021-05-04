@@ -1,0 +1,36 @@
+(import "std/float" _)
+(import "std/tests/ord" [ord/_ _])
+(import "std/tests/arithmetic" [arithmetic/_ _])
+
+(assert-eq? 3.14 {F32} 3.14)
+(assert-eq? 2.718 {F64} 2.718)
+(assert-ne? 2.718 {F64} 2.5)
+
+(assert-eq? 0.0 default)
+
+(ord/test123 -0.5 {F32} 0.5 0.8)
+(ord/test123 0.1 {F64} 10 100000)
+
+(arithmetic/test-signed 0 {F32})
+(arithmetic/test-signed 0 {F64})
+
+(assert-eq? 0.5 (/ 2.0))
+
+(assert-eq? "0" (string 0.0))
+(assert-eq? "123" (string 123.0))
+(assert-eq? "3.14" (string 3.14))
+(assert-eq? "1.875" (string 1.875 {F32}))
+
+(assert-eq? none {(Option F32)} (float/from-string? ""))
+(assert-eq? (some 0.0) {(Option F32)} (float/from-string? "0"))
+(assert-eq? (some 0.0) {(Option F32)} (float/from-string? "0.0"))
+(assert-eq? (some 34.0) {(Option F32)} (float/from-string? "34"))
+(assert-eq? (some 3.14) {(Option F32)} (float/from-string? "3.14"))
+(assert-eq? (some -2.5) {(Option F32)} (float/from-string? "-2.5"))
+(assert-eq? (some 1e+10) {(Option F32)} (float/from-string? "1e+10"))
+(assert-eq? (some -1e-10) {(Option F32)} (float/from-string? "-1e-10"))
+(assert-eq? (some 0.03125e+30) {(Option F64)} (float/from-string? "0.03125e+30"))
+(assert-eq? (some 96.03125e-30) {(Option F64)} (float/from-string? "96.03125e-30"))
+(assert-eq? none {(Option F64)} (float/from-string? "abcdef"))
+(assert-eq? none {(Option F64)} (float/from-string? "3.14@"))
+(assert-eq? none {(Option F64)} (float/from-string? "@3.14"))

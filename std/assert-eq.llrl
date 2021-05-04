@@ -1,0 +1,33 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-1" _)
+(import "std/string" _)
+(export assert-eq? assert-ne?)
+
+(macro (assert-eq? s)
+  (s/match s
+    [(_ ,a ,b)
+      (let ([tmp-a (gensym)]
+            [tmp-b (gensym)])
+        (ok
+          `(let ([,tmp-a ,a]
+                 [,tmp-b ,b])
+            (,\assert
+              (,\eq? ,tmp-a ,tmp-b)
+              (,\string "Assertion failed: " (,\debug ,tmp-a) " != " (,\debug ,tmp-b))))))]
+    [_
+      (err "Expected (assert-eq? a b)")]))
+
+(macro (assert-ne? s)
+  (s/match s
+    [(_ ,a ,b)
+      (let ([tmp-a (gensym)]
+            [tmp-b (gensym)])
+        (ok
+          `(let ([,tmp-a ,a]
+                 [,tmp-b ,b])
+            (,\assert
+              (,\ne? ,tmp-a ,tmp-b)
+              (,\string "Assertion failed: " (,\debug ,tmp-a) " == " (,\debug ,tmp-b))))))]
+    [_
+      (err "Expected (assert-ne? a b)")]))

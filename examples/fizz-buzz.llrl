@@ -1,0 +1,6 @@
+(for (let i) (iterator/range 1 50 1)
+  (match (: (% i 3) (% i 5))
+    [(: 0 0) (println! "FizzBuzz")]
+    [(: 0 _) (println! "Fizz")]
+    [(: _ 0) (println! "Buzz")]
+    [_ (println! i)]))

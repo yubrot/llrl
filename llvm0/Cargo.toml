@@ -1,0 +1,14 @@
+[package]
+authors = ["yubrot <yubrot@gmail.com>"]
+description = "LLVM wrapper for llrl0"
+edition = "2018"
+license = "BSD-3-Clause"
+name = "llvm0"
+repository = "https://github.com/yubrot/llrl"
+version = "0.1.0"
+
+[lib]
+name = "llvm"
+
+[dependencies]
+llvm-sys = "110"

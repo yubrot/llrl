@@ -1,0 +1,128 @@
+(test-backend pass
+  (data Never)
+  (function (never)
+    (never) {Never})
+  never
+  #t)
+
+(test-backend pass
+  (data Unit2 unit2)
+  (match unit2
+    [unit2 #t]))
+
+(test-backend pass
+  (data Ans yes no)
+  (function (ans x)
+    (match x
+      [yes #t]
+      [no #f]))
+  (and (ans yes) (not (ans no))))
+
+(test-backend pass
+  (data ABC a b c)
+  (function (index x)
+    (match x
+      [c 2]
+      [b 1]
+      [a 0]))
+  (= (+ (+ (index a) (index c))
+        (+ (index b) (index c)))
+     5))
+
+(test-backend pass
+  (data (Pair A B) (pair A B))
+  (function (test p)
+    (match p
+      [(pair #t "true") #t]
+      [(pair #f "false") #t]
+      [(pair _ "both") #t]
+      [_ #f]))
+  (let ([x (test (pair #f "false"))]
+        [y (test (pair #t "false"))]
+        [z (test (pair #f "both"))])
+    (and x (and (not y) z))))
+
+(test-backend pass
+  (value-data (TypeDef A) (def A))
+  (def (def (def #t))))
+
+(test-backend pass
+  (data (Maybe A)
+    (just A)
+    nothing)
+  (function (unwrap-or a b)
+    (match a
+      [(just (let b)) b]
+      [nothing b]))
+  (= (+ (unwrap-or (just 12) 34) (unwrap-or nothing 56)) 68))
+
+(test-backend pass
+  (value-data (Maybe A)
+    (just A)
+    nothing)
+  (function (unwrap-or a b)
+    (match a
+      [(just (let b)) b]
+      [nothing b]))
+  (= (+ (unwrap-or (just 12) 34) (unwrap-or nothing 56)) 68))
+
+(test-backend pass
+  (value-data (Maybe A)
+    (just A)
+    nothing)
+  (function (unwrap-or a b)
+    (match a
+      [(just (let b)) b]
+      [nothing b]))
+  (= (+ (unwrap-or (just 12) 34) (unwrap-or nothing 56)) 68))
+
+(test-backend pass
+  (data (Tree A)
+    (branch (Tree A) (Tree A))
+    (leef A))
+  (function (sum a)
+    (match a
+      [(branch (let a) (let b)) (+ (sum a) (sum b))]
+      [(leef (let a)) a]))
+  (function testdata
+    (branch (branch (leef 2) (branch (leef 3) (leef 4))) (branch (leef 5) (leef 6))))
+  (= (sum testdata) 20))
+
+(test-backend pass
+  (data (Tree A) (tree (Node A)))
+  (value-data (Node A)
+    (node:branch (Tree A) (Tree A))
+    (node:leef A))
+  (function (branch a b)
+    (tree (node:branch a b)))
+  (function (leef a)
+    (tree (node:leef a)))
+  (function (sum a)
+    (match a
+      [(tree (node:branch (let a) (let b))) (+ (sum a) (sum b))]
+      [(tree (node:leef (let a))) a]))
+  (= (sum (branch (branch (leef 2) (branch (leef 3) (leef 4))) (branch (leef 5) (leef 6)))) 20))
+
+(test-backend pass
+  (data (List A)
+    (cons A (List A))
+    nil)
+  (function (map f ls)
+    (match ls
+      [nil nil]
+      [(cons (let a) (let b)) (cons (f a) (map f b))]))
+  (function (fold f init ls)
+    (match ls
+      [nil init]
+      [(cons (let a) (let b)) (f a (fold f init b))]))
+  (value-data (ABC A B C)
+    (a A)
+    (ab A B)
+    (abc A B C))
+  (function (test x)
+    (match x
+      [(a (let x)) x]
+      [(ab _ (let x)) x]
+      [(abc _ _ (let x)) x]))
+  (let ([src (cons (a 1) (cons (ab 2 3) (cons (abc 4 5 6) nil)))])
+    (= 10 (fold + 0 (map test src)))))

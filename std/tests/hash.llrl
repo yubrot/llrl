@@ -1,0 +1,99 @@
+(import "std/box" box/unsafe-ptr)
+(import "std/ordered-map" OrderedMap ordered-map/_ _.OrderedMap)
+(import "std/hash" _)
+(import "std/xxhash" _)
+(export h test-hasher)
+
+(function (test-hasher new)
+  (let ([hasher (new)]
+        [a (collect (iterator/range 0 1000000 375)) {(Array U64)}]
+        [b (collect (iterator/range 0 1001000 375)) {(Array U64)}])
+    (assert-ne? (hash hasher #t) (hash hasher #f))
+    (assert-eq? (hash hasher #t) (hash hasher #t))
+    (assert-eq? (hash hasher a) (hash hasher a))
+    (assert-ne? (hash hasher a) (hash hasher b))
+
+    (assert-ne? (hash hasher unit) (hash (new) unit))
+    (assert-ne? (hash hasher a) (hash (new) a)))
+
+  (let* ([chars (collect (string/chars "abcdefghijklmnopqrstuvwxyz")) {(Array Char)}]
+         [words (|> chars
+                    (it/flat-map (case1 (let a) (it/map [^1 (: a %1)] chars)))
+                    (it/flat-map (case1 (: (let a) (let b)) (it/map [^1 (: a b %1)] chars)))
+                    (it/flat-map (case1 (: (let a) (let b) (let c)) (it/map [^1 (: a b c %1)] chars)))
+                    (it/map (case1 (: (let a) (let b) (let c) (let d))
+                      (string a b c d d c b a a a b b c c d d)))
+                    collect) {(Array String)}]
+         [collisions-count (ref 0)])
+      ; 100 iteration
+    (for (let i) (iterator/range 0 100 1)
+      (let* ([tree ordered-map/empty]
+             [hasher (new)])
+        (for (: (let j) (let word)) (it/with-index words)
+          ; p(118, 10000) is almost equal to 0.5 https://en.wikipedia.org/wiki/Birthday_problem
+          (when (eq? (% (+ i j) (/ (* 27 27 27 27) 118)) 0)
+            (let* ([h (% (hash hasher word) 10000)]
+                   [v (match (ordered-map/get? h tree) [none 0] [(some (let n)) (+ n 1)])])
+              (ordered-map/insert! h v tree))))
+        (set! collisions-count (+ ~collisions-count (|> tree ordered-map/values it/sum)))))
+    (assert (< ~collisions-count 65))))
+
+(function (h a)
+  (hash (xx-hasher/with-seed 12345) a))
+
+(assert-eq? (h #t) (h #t))
+(assert-ne? (h #t) (h #f))
+
+(assert-ne? (h ordering:equal) (h ordering:less))
+(assert-ne? (h ordering:equal) (h ordering:greater))
+
+(assert-ne? (h 10 {U8}) (h 12 {U8}))
+(assert-ne? (h 0 {U16}) (h 1 {U16}))
+(assert-ne? (h 100000 {U32}) (h 200000 {U32}))
+(assert-ne? (h 64 {U64}) (h 32 {U64}))
+(assert-ne? (h -5 {I8}) (h 0 {I8}))
+(assert-ne? (h -1 {I16}) (h 1 {I16}))
+(assert-ne? (h 77777 {I32}) (h 77778 {I32}))
+(assert-ne? (h 0 {I64}) (h 1 {I64}))
+(assert-ne? (h 0.5 {F32}) (h 0.25 {F32}))
+(assert-ne? (h 1e+10 {F64}) (h 1e+9 {F64}))
+
+(assert-ne? (h (box/unsafe-ptr (box unit))) (h (box/unsafe-ptr (box unit))))
+
+(assert-ne? (h (box #t)) (h (box #f)))
+(assert-eq? (h (box #f)) (h (box #f)))
+(assert-ne? (h (ref #t)) (h (ref #f)))
+(assert-eq? (h (ref #f)) (h (ref #f)))
+
+(assert-ne? (h none) (h (some unit)))
+(assert-eq? (h (some unit)) (h (some unit)))
+(assert-ne? (h (some #t)) (h (some #f)))
+
+(assert-eq? (h (ok unit)) (h (ok unit)))
+(assert-ne? (h (err unit)) (h (ok unit)))
+(assert-ne? (h (err #t)) (h (err #f)))
+
+(assert-eq? (h (left unit)) (h (left unit)))
+(assert-ne? (h (right unit)) (h (left unit)))
+(assert-ne? (h (right #t)) (h (right #f)))
+
+(assert-ne? (h (array 1 2 3) {(Array U8)}) (h (array 1 3 5) {(Array U8)}))
+(assert-ne? (h (array 1 2) {(Array U16)}) (h (array 1 10) {(Array U16)}))
+(assert-ne? (h (array 0 0 0) {(Array U32)}) (h (array 0 0 0 0) {(Array U32)}))
+(assert-ne? (h (array 1 100 10 1000) {(Array U64)}) (h (array 1 10 100 1000) {(Array U64)}))
+(assert-eq? (h (array 1 8 2 4 5)) (h (array 1 8 2 4 5)))
+
+(assert-eq? (h (vector 1 8 2 4 5)) (h (vector 1 8 2 4 5)))
+(assert-ne? (h (vector 1 8 2 4 5)) (h (vector 1 8 3 4 5)))
+
+(assert-eq? (h #\F) (h #\F))
+(assert-ne? (h #\F) (h #\f))
+
+(assert-ne? (h "") (h "hello"))
+(assert-ne? (h "hello, world!") (h "hello"))
+(assert-ne? (h "foo") (h "bar"))
+(assert-eq? (h "Hello, world!") (h "Hello, world!"))
+
+(assert-ne? (h (text "X")) (h (text "Y")))
+(assert-eq? (h (text "Hello, World!"))
+            (let1 t text/empty (text/push! "Hello" t) (text/push! ", " t) (text/push! "World!" t) (h t)))

@@ -1,0 +1,70 @@
+(import "std/io" stdin stdout)
+
+(function (get-char!) {(-> (Result I32 IoError))}
+  (match (read-u8! stdin)
+    [(ok (let ch)) (ok (cast ch))]
+    [(err io-error:unexpected-eof) (ok -1)]
+    [(err (let e)) (err e)]))
+
+(function (put-char! c) {(-> I32 (Result unit IoError))}
+  (write-u8! (cast c) stdout))
+
+(value-data Cmd
+  cmd:next ; >
+  cmd:prev ; <
+  cmd:incr ; +
+  cmd:decr ; -
+  cmd:put  ; .
+  cmd:get  ; ,
+  (cmd:loop (Array Cmd))) ; [...]
+
+(function (parse-program input) {(forall T) (-> (T Char) (Result (Array Cmd) String)) (where (Iterate T))}
+  (let* ([code (vector vector/empty)]
+         [(current) (get code[(- (vector/length code) 1)])])
+    (for (let c) input (match c
+      [#\> (vector/push! cmd:next (current))]
+      [#\< (vector/push! cmd:prev (current))]
+      [#\+ (vector/push! cmd:incr (current))]
+      [#\- (vector/push! cmd:decr (current))]
+      [#\. (vector/push! cmd:put (current))]
+      [#\, (vector/push! cmd:get (current))]
+      [#\[ (vector/push! vector/empty code)]
+      [#\]
+        (when (eq? (vector/length code) 1) (err "Unexpected ']'")!)
+        (let1 loop-body (|> code vector/pop! option/force vector/buffer)
+          (vector/push! (cmd:loop loop-body) (current)))]
+      [_
+        (err (string "Unknown command: " c))!]))
+    (when (ne? (vector/length code) 1) (err "Expected ']'")!)
+    (ok (vector/buffer (current)))))
+
+(function (run-program program) {(-> (Array Cmd) (Result unit IoError))}
+  (let* ([cursor (ref 0)]
+         [tape vector/empty]
+         [(current)
+            (while (<= (vector/length tape) ~cursor) (vector/push! 0 tape))
+            (vector/ref ~cursor tape)]
+         [(run block)
+            (for (let cmd) block (match cmd
+              [cmd:next (set! cursor (+ ~cursor 1))]
+              [cmd:prev (set! cursor (- ~cursor 1))]
+              [cmd:incr (set! (current) (+ ~(current) 1))]
+              [cmd:decr (set! (current) (- ~(current) 1))]
+              [cmd:put (put-char! ~(current))!]
+              [cmd:get (set! (current) (get-char!)!)]
+              [(cmd:loop (let inner)) (while (ne? ~(current) 0) (run inner)!)]))
+            (ok unit)])
+    (run program)))
+
+(function example-prgoram
+  (string "+++++++++[>++++++++>+++++++++++>+++"
+          "++<<<-]>.>++.+++++++..+++.>-.------"
+          "------.<++++++++.--------.+++.-----"
+          "-.--------.>+."))
+
+(|> example-prgoram
+    string/chars
+    parse-program
+    (result/unwrap* [^1 (assert #f (string "Parse error: " %1))])
+    run-program
+    (result/unwrap* [^1 (assert #f (string "I/O error: " %1))]))

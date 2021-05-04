@@ -1,0 +1,99 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-0" _)
+(import "std/s" s/foldl s/foldr)
+(import "std/control" ^2)
+(import "std/ord" Ord le? lt?)
+(export Zero One Add Sub Mul Div Rem)
+(export zero one add sub mul div rem)
+(export + - * / % approx-eq? abs negate recip succ pred)
+
+(class (Zero A)
+  (function zero {A}))
+
+(class (One A)
+  (function one {A}))
+
+(class (Add A)
+  (function (add a b) {(-> A A A)}))
+
+(class (Sub A)
+  (function (sub a b) {(-> A A A)}))
+
+(class (Mul A)
+  (function (mul a b) {(-> A A A)}))
+
+(class (Div A)
+  (function (div a b) {(-> A A A)}))
+
+(class (Rem A)
+  (function (rem a b) {(-> A A A)}))
+
+(macro (+ s)
+  (s/match s
+    [(_)
+      (ok \zero)]
+    [(_ ,a ,@bs)
+      (s/foldl [^2 `(,\add ,%1 ,%2)] a bs)]
+    [_
+      (err "Expected (+ num ...)")]))
+
+(macro (- s)
+  (s/match s
+    [(_ ,a)
+      (ok `(,\negate ,a))]
+    [(_ ,a ,@bs)
+      (s/foldl [^2 `(,\sub ,%1 ,%2)] a bs)]
+    [_
+      (err "Expected (- num ...)")]))
+
+(macro (* s)
+  (s/match s
+    [(_)
+      (ok \one)]
+    [(_ ,a ,@bs)
+      (s/foldl [^2 `(,\mul ,%1 ,%2)] a bs)]
+    [_
+      (err "Expected (* num ...)")]))
+
+(macro (/ s)
+  (s/match s
+    [(_ ,a)
+      (ok `(,\recip ,a))]
+    [(_ ,a ,@bs)
+      (s/foldl [^2 `(,\div ,%1 ,%2)] a bs)]
+    [_
+      (err "Expected (/ num ...)")]))
+
+(macro (% s)
+  (s/match s
+    [(_ ,a ,@bs)
+      (s/foldl [^2 `(,\rem ,%1 ,%2)] a bs)]
+    [_
+      (err "Expected (% num ...)")]))
+
+(macro (approx-eq? s)
+  (s/match s
+    [(_ ,a ,b)
+      (ok `(,\lt? (,\abs (,\sub ,a ,b)) 1e-10))]
+    [(_ ,a ,b ,eps)
+      (ok `(,\lt? (,\abs (,\sub ,a ,b)) ,eps))]
+    [_
+      (err "Expected (approx-eq? a b epsilon?)")]))
+
+(transparent-function (abs a) {(forall A) (-> A A) (where (Zero A) (Sub A) (Ord A))}
+  (let ([a a]
+        [z zero])
+    (if (le? z a) a (sub z a))))
+
+(transparent-function (negate a) {(forall A) (-> A A) (where (Zero A) (Sub A))}
+  (sub zero a))
+
+(transparent-function (recip a) {(forall A) (-> A A) (where (One A) (Div A))}
+  (div one a))
+
+(transparent-function (succ a) {(forall A) (-> A A) (where (One A) (Add A))}
+  (add a one))
+
+(transparent-function (pred a) {(forall A) (-> A A) (where (One A) (Sub A))}
+  (sub a one))

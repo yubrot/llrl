@@ -1,0 +1,119 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-1" _)
+(import "std/s" s/map)
+(import "std/access" unsafe-get)
+(import "std/integer" _.U64)
+(import "std/memory" Ptr ptr/_ _.Ptr)
+(import "std/box" Box _.Box)
+(import "std/ref" Ref ref _.Ref)
+(import "std/either" Either left right)
+(import "std/array" Array array/_ _.Array)
+(import "std/vector" Vector vector/buffer)
+(export hash Hasher hasher/_ Hash hash! hash-array! hash-all! Hash._)
+
+(function (hash s a) {(forall S A) (-> S A U64) (where (Hash A) (Hasher S))}
+  (hasher/reset! s)
+  (hash! s a) ; -> (hasher/write! ... s) ...
+  (hasher/finish s))
+
+(class (Hasher S)
+  (function (hasher/reset! s) {(-> S unit)})
+  (function (hasher/write! bytes s) {(-> (Array U8) S unit)})
+  (function (hasher/finish s) {(-> S U64)}))
+
+(class (Hash A)
+  (function (hash! s a) {(forall S) (-> S A unit) (where (Hasher S))})
+
+  ; Required for optimizing Hash.U8
+  (function (hash-array! s a) {(forall S) (-> S (Array A) unit) (where (Hasher S))}
+    (let ([i (ref 0)]
+          [l (array/length a)])
+      (while (< ~i l)
+        (hash! s (unsafe-get a[~i]))
+        (set! i (+ ~i 1))))))
+
+(macro (hash-all! s)
+  (s/match s
+    [(_ ,s ,@xs)
+      (ok `(begin ,@(s/map [^1 `(,\hash! ,s ,%1)] xs)!))]
+    [_
+      (err "Expected (hash-all! state a ...)")]))
+
+(instance Hash.Never (Hash Never)
+  (transparent-function (hash! s a)
+    (never a)))
+
+(instance Hash.Bool (Hash Bool)
+  (function (hash! s a)
+    (hash! s (if a 1 0) {U8})))
+
+(instance Hash.Ordering (Hash Ordering)
+  (function (hash! s a)
+    (hash! s (match a [ordering:less 0] [ordering:equal 1] [ordering:greater 2]) {U8})))
+
+(instance Hash.U8 (Hash U8)
+  (function (hash! s a)
+    (let1 tmp (array/unsafe-stackalloc-uninitialized 1)
+      (|> tmp array/ptr ptr/cast (ptr/store! a))
+      (hasher/write! tmp s)))
+
+  (function (hash-array! s a)
+    (hasher/write! a s)))
+
+($$ begin
+  ($for-each [$ty $size] ([U16 2] [U32 4] [U64 8] [I8 1] [I16 2] [I32 4] [I64 8] [F32 4] [F64 8])
+    (instance ($symbol-concat Hash. $ty) (Hash $ty)
+      (function (hash! s a)
+        (let1 tmp (array/unsafe-stackalloc-uninitialized $size)
+          (|> tmp array/ptr ptr/cast (ptr/store! a))
+          (hasher/write! tmp s))))))
+
+(instance Hash.Ptr (forall A) (Hash (Ptr A))
+  (function (hash! s a)
+    (hash! s (ptr/address a))))
+
+(instance Hash.Box (forall A) (Hash (Box A)) (where (Hash A))
+  (function (hash! s a)
+    (hash! s ~a)))
+
+(instance Hash.Ref (forall A) (Hash (Ref A)) (where (Hash A))
+  (function (hash! s a)
+    (hash! s ~a)))
+
+(instance Hash.Option (forall A) (Hash (Option A)) (where (Hash A))
+  (function (hash! s a)
+    (match a
+      [none
+        (hash! s 0 {U8})]
+      [(some (let a))
+        (hash! s 1 {U8})
+        (hash! s a)])))
+
+(instance Hash.Result (forall T E) (Hash (Result T E)) (where (Hash T) (Hash E))
+  (function (hash! s a)
+    (match a
+      [(err (let a))
+        (hash! s 0 {U8})
+        (hash! s a)]
+      [(ok (let a))
+        (hash! s 1 {U8})
+        (hash! s a)])))
+
+(instance Hash.Either (forall L R) (Hash (Either L R)) (where (Hash L) (Hash R))
+  (function (hash! s a)
+    (match a
+      [(left (let a))
+        (hash! s 0 {U8})
+        (hash! s a)]
+      [(right (let a))
+        (hash! s 1 {U8})
+        (hash! s a)])))
+
+(instance Hash.Array (forall A) (Hash (Array A)) (where (Hash A))
+  (function (hash! s a)
+    (hash-array! s a)))
+
+(instance Hash.Vector (forall A) (Hash (Vector A)) (where (Hash A))
+  (function (hash! s a)
+    (hash! s (vector/buffer a))))

@@ -1,0 +1,29 @@
+(no-implicit-std)
+
+(import "builtin" some none ok err)
+(import "std/boot/0-s" s:_)
+(export try? try!)
+
+(macro (try? s)
+  (match s
+    [(s:list _ (let x))
+      (ok
+        (s:list 'match x
+          [s:list (s:list \some '(let x))
+            'x]
+          [s:list \none
+            (s:list 'return \none)]))]
+    [_
+      (err "Expected (try? expr)")]))
+
+(macro (try! s)
+  (match s
+    [(s:list _ (let x))
+      (ok
+        (s:list 'match x
+          [s:list (s:list \ok '(let x))
+            'x]
+          [s:list (s:list \err '(let e))
+            (s:list 'return (s:list \err 'e))]))]
+    [_
+      (err "Expected (try! expr)")]))

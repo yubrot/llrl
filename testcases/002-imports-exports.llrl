@@ -1,0 +1,329 @@
+; empty
+
+(test-modules pass
+  ("~"
+    (import "~/foo"))
+  ("~/foo"))
+
+(test-modules pass
+  ("~"
+    (export))
+  ("~/foo"))
+
+; syntax
+
+(test-modules (fail syntax)
+  ("~"
+    (import "~/foo" 123))
+  ("~/foo"))
+
+(test-modules (fail syntax)
+  ("~"
+    (export "hoge")))
+
+; unresolved
+
+(test-modules (fail (unresolved import-target x))
+  ("~"
+    (import "~/foo" x))
+  ("~/foo"))
+
+(test-modules (fail (unresolved import-target x))
+  ("~"
+    (import "~/foo" x))
+  ("~/foo"
+    (function (x))))
+
+(test-modules (fail (unresolved export-target x))
+  ("~"
+    (export x)))
+
+; import-export relation
+
+(test-modules pass
+  ("~"
+    (import "~/foo" x))
+  ("~/foo"
+    (export x)
+    (function (x))))
+
+(test-modules (fail (unresolved import-target x))
+  ("~"
+    (import "~/foo" x))
+  ("~/foo"
+    (export)
+    (function (x))))
+
+; renaming
+
+(test-modules (fail (unresolved import-target y))
+  ("~"
+    (import "~/foo" [x y]))
+  ("~/foo"
+    (export x)
+    (function (x))))
+
+(test-modules (fail (unresolved export-target y))
+  ("~"
+    (function (x))
+    (export [x y])))
+
+(test-modules pass
+  ("~"
+    (function (x))
+    (export [y x])))
+
+(test-modules pass
+  ("~"
+    (import "~/foo" y)
+    (y))
+  ("~/foo"
+    (function (x))
+    (export [y x])))
+
+(test-modules (fail (unresolved import-target x))
+  ("~"
+    (import "~/foo" x))
+  ("~/foo"
+    (function (x))
+    (export [y x])))
+
+; conflict
+
+(test-modules pass
+  ("~"
+    (function (f))
+    (export f f)))
+
+(test-modules pass
+  ("~"
+    (function (f))
+    (export [a f] [a f])))
+
+(test-modules (fail (conflicting-exports a))
+  ("~"
+    (function (f))
+    (function (g))
+    (export [a f] [a g])))
+
+(test-modules pass
+  ("~"
+    (import "~/foo" f g)
+    (export [a f] [a g]))
+  ("~/foo"
+    (function (a))
+    (export [f a] [g a])))
+
+(test-modules (fail (conflicting-exports a))
+  ("~"
+    (import "~/foo" f g)
+    (export [a f] [a g]))
+  ("~/foo"
+    (function (f))
+    (function (g))
+    (export f g)))
+
+(test-modules pass
+  ("~"
+    (import "~/foo" f g)
+    (export [a f] [b g]))
+  ("~/foo"
+    (function (f))
+    (function (g))
+    (export f g)))
+
+(test-modules (fail (multiple-declarations x))
+  ("~"
+    (import "~/foo" [x f] [x g]))
+  ("~/foo"
+    (function (f))
+    (function (g))
+    (export f g)))
+
+(test-modules pass
+  ("~"
+    (import "~/foo" [x f] [x g]))
+  ("~/foo"
+    (function (f))
+    (export f [g f])))
+
+; chained relation
+
+(test-modules pass
+  ("~"
+    (import "~/foo" x))
+  ("~/foo"
+    (import "~/bar" x)
+    (export x))
+  ("~/bar"
+    (function (x))
+    (export x)))
+
+(test-modules pass
+  ("~"
+    (import "~/foo" z))
+  ("~/foo"
+    (import "~/bar" [z y])
+    (export z))
+  ("~/bar"
+    (function (x))
+    (export [y x])))
+
+(test-modules pass
+  ("~"
+    (import "~/foo" [a x] [b y] [a z]))
+  ("~/foo"
+    (import "~/bar" a b c)
+    (export [x a] [y b] [z c]))
+  ("~/bar"
+    (function (x))
+    (function (y))
+    (export [a x] [b y] [c x])))
+
+; wildcard
+
+(test-modules pass
+  ("~"
+    (import "~/foo" a b)
+    (begin a b))
+  ("~/foo"
+    (data X a b)
+    (export _)))
+
+(test-modules pass
+  ("~"
+    (import "~/foo" x:a x:b)
+    (begin x:a x:b))
+  ("~/foo"
+    (data X x:a x:b)
+    (export x:_)))
+
+(test-modules (fail (unresolved import-target a))
+  ("~"
+    (import "~/foo" a b)
+    (begin a b))
+  ("~/foo"
+    (data X x:a x:b)
+    (export x:_)))
+
+(test-modules pass
+  ("~"
+    (import "~/foo" a b)
+    (begin a b))
+  ("~/foo"
+    (data X x:a x:b)
+    (export [_ x:_])))
+
+(test-modules (fail (unresolved import-target c))
+  ("~"
+    (import "~/foo" a b c)
+    (begin a b c))
+  ("~/foo"
+    (data X x:a x:b y:c)
+    (export [_ x:_])))
+
+(test-modules (fail (unresolved import-target c))
+  ("~"
+    (import "~/foo" a b c)
+    (begin a b c))
+  ("~/foo"
+    (data X x:a x:b c)
+    (export [_ x:_])))
+
+(test-modules (fail (unresolved import-target a))
+  ("~"
+    (import "~/foo" a b)
+    (begin a b))
+  ("~/foo"
+    (data X x:a x:b)
+    (export [y:_ x:_])))
+
+(test-modules pass
+  ("~"
+    (import "~/foo" y:a y:b)
+    (begin y:a y:b))
+  ("~/foo"
+    (data X x:a x:b)
+    (export [y:_ x:_])))
+
+(test-modules (fail (unresolved import-target x:a))
+  ("~"
+    (import "~/foo" x:a x:b)
+    (begin x:a x:b))
+  ("~/foo"
+    (data X x:a x:b)
+    (export [x:_ y:_]))) ; This never fails, but there's no target to match
+
+(test-modules pass
+  ("~"
+    (import "~/foo" x:a x:b)
+    (begin x:a x:b))
+  ("~/foo"
+    (data X a b)
+    (export [x:_ _])))
+
+(test-modules pass
+  ("~"
+    (import "~/foo" x:_)
+    (begin x:a x:b))
+  ("~/foo"
+    (data X x:a x:b)
+    (export _)))
+
+(test-modules (fail (unresolved value a))
+  ("~"
+    (import "~/foo" x:_)
+    (begin a b))
+  ("~/foo"
+    (data X x:a x:b)
+    (export _)))
+
+(test-modules pass
+  ("~"
+    (import "~/foo" [_ x:_])
+    (begin a b))
+  ("~/foo"
+    (data X x:a x:b)
+    (export _)))
+
+(test-modules (fail (unresolved value a))
+  ("~"
+    (import "~/foo" [_ x:_])
+    (begin a b))
+  ("~/foo"
+    (data X a b)
+    (export _)))
+
+(test-modules pass
+  ("~"
+    (import "~/foo" _)
+    (begin a b))
+  ("~/foo"
+    (data X a b)
+    (export _)))
+
+(test-modules pass
+  ("~"
+    (import "~/foo" [_ foo/_])
+    (begin a b))
+  ("~/foo"
+    (data X a b)
+    (export [foo/_ _])))
+
+(test-modules pass
+  ("~"
+    (import "~/foo" a b c)
+    (begin (a) (b) (c)))
+  ("~/foo"
+    (import "~/foo/hoge" _)
+    (import "~/foo/fuga" _)
+    (import "~/foo/piyo" _)
+    (export _))
+  ("~/foo/hoge"
+    (function (a))
+    (function (b))
+    (export _))
+  ("~/foo/fuga"
+    (function (c))
+    (export _))
+  ("~/foo/piyo"))

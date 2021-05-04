@@ -1,0 +1,22 @@
+(import "std/tuple" _)
+(import "std/tests/ord" [ord/_ _])
+(import "std/tests/hash" h)
+
+(assert-eq? unit unit)
+(assert-eq? (: "1" 2 (some #t)) (: "1" 2 (some #t)))
+(assert-ne? (: "1" 2 (some #t)) (: "1" 2 (some #f)))
+
+(assert (not (< unit unit)))
+(assert (not (> unit unit)))
+
+(ord/test123 (: -1) (: 0) (: 1))
+(ord/test1234 (: 0 0) (: 0 1) (: 1 0) (: 1 1))
+(ord/test1234 (: 0 0 0) (: 0 2 0) (: 1 0 0) (: 1 0 1))
+
+(assert-eq? (string (debug (: #t ordering:equal unit))) "(: #t ordering:equal unit)")
+
+(assert-eq? (h unit) (h unit))
+(assert-eq? (h (: #t #f)) (h (: #t #f)))
+(assert-ne? (h (: #f #t)) (h (: #t #f)))
+(assert-ne? (h (: #f #t #f)) (h (: #f #f #f)))
+(assert-eq? (h (: #t #t #t #t)) (h (: #t #t #t #t)))

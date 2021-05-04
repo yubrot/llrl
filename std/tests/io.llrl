@@ -1,0 +1,8 @@
+(import "std/io" _)
+(import "std/tests/hash" h)
+
+(assert-ne? io-error:not-found io-error:permission-denied)
+
+(assert-ne? ordering:equal (compare io-error:connection-refused io-error:connection-reset))
+
+(assert-ne? (h io-error:unexpected-eof) (h io-error:invalid-data))

@@ -1,0 +1,44 @@
+(no-implicit-std)
+
+(import "builtin" Bool)
+(import "std/prelude/stage-0" _)
+(import "std/s" s/foldr)
+(import "std/copy" ShallowCopy DeepCopy)
+(import "std/default" Default)
+(import "std/display" Display Display.String display!)
+(import "std/debug" DebugDisplay)
+(export Bool not && || and or _.Bool)
+
+(builtin-op not {(-> Bool Bool)} "not")
+(builtin-op && {(-> Bool Bool Bool)} "and")
+(builtin-op || {(-> Bool Bool Bool)} "or")
+
+(macro (and s)
+  (s/match s
+    [(_)
+      (ok '#t)]
+    [(_ ,a ,@bs)
+      (s/foldr (lambda (a b) `(,\&& ,a ,b)) a bs)]
+    [_
+      (err "Expected (and cond ...)")]))
+
+(macro (or s)
+  (s/match s
+    [(_)
+      (ok '#f)]
+    [(_ ,a ,@bs)
+      (s/foldr (lambda (a b) `(,\|| ,a ,b)) a bs)]
+    [_
+      (err "Expected (or cond ...)")]))
+
+(instance DeepCopy.Bool (DeepCopy Bool)
+  (transparent-function (deep-copy a) a))
+
+(instance Default.Bool (Default Bool)
+  (transparent-function default #f))
+
+(instance Display.Bool (Display Bool)
+  (function (display! w a) (display! w (if a "#t" "#f"))))
+
+(instance DebugDisplay.Bool (DebugDisplay Bool)
+  (transparent-function (debug-display! w a) (display! w a)))

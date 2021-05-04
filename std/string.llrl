@@ -1,0 +1,10 @@
+; llrl Strings are represented as pairs of a string length, and an UTF-8 sequence stored in
+; a contiguous memory. String literals are guaranteed to be null-terminated, otherwise
+; the string must be passed to C functions through a string/c-compatible-ptr that explicitly converts strings
+; to be null-terminated. String pointers referents must be treated as immutable.
+(no-implicit-std)
+
+(import "std/internal/string-text" String string string/_ _.String)
+(export _)
+
+; NOTE: We don't have an UTF-16 support at the moment (It is not required for self-hosting)

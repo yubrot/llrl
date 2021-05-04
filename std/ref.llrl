@@ -1,0 +1,47 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-1" _)
+(import "std/memory" Ptr)
+(export Ref ref ref/_ _.Ref)
+
+(builtin-type (Ref A) "ptr"
+  [(ref A) "ptr"])
+
+(builtin-op ref/ptr {(forall A) (-> (Ref A) (Ptr A))} "no-op")
+
+; Caller must ensure that the specified pointer is valid.
+(builtin-op ref/unsafe-from-ptr {(forall A) (-> (Ptr A) (Ref A))} "no-op")
+
+(instance ShallowCopy.Ref (forall A) (ShallowCopy (Ref A))
+  (transparent-function (shallow-copy a) (ref ~a)))
+
+(instance DeepCopy.Ref (forall A) (DeepCopy (Ref A)) (where (DeepCopy A))
+  (transparent-function (deep-copy a) (ref (deep-copy ~a))))
+
+(instance Default.Ref (forall A) (Default (Ref A)) (where (Default A))
+  (transparent-function default (ref default)))
+
+(instance Display.Ref (forall A) (Display (Ref A)) (where (Display A))
+  (transparent-function (display! w a) (display! w ~a)))
+
+(instance DebugDisplay.Ref (forall A) (DebugDisplay (Ref A)) (where (DebugDisplay A))
+  (function (debug-display! w a) (display-all! w "(ref " (debug ~a) ")")))
+
+(instance Eq.Ref (forall A) (Eq (Ref A)) (where (Eq A))
+  (transparent-function (eq? a b) (eq? ~a ~b)))
+
+(instance Ord.Ref (forall A) (Ord (Ref A)) (where (Ord A))
+  (transparent-function (compare a b) (compare ~a ~b))
+  (transparent-function (lt? a b) (lt? ~a ~b))
+  (transparent-function (le? a b) (le? ~a ~b))
+  (transparent-function (gt? a b) (gt? ~a ~b))
+  (transparent-function (ge? a b) (ge? ~a ~b)))
+
+(instance Load.Ref (Load Ref)
+  (transparent-function (load t) (<ref/load> t)))
+
+(instance Store.Ref (Store Ref)
+  (transparent-function (store! a t) (<ref/store> a t)))
+
+(builtin-op <ref/load> {(forall A) (-> (Ref A) A)} "ptr.load")
+(builtin-op <ref/store> {(forall A) (-> A (Ref A) unit)} "ptr.store")

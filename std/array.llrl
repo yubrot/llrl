@@ -1,0 +1,5 @@
+; A fixed-length data sequence, where each element is stored in a contiguous memory.
+(no-implicit-std)
+
+(import "std/internal/array-vector" Array array array/_ _.Array)
+(export _)

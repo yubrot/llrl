@@ -1,0 +1,47 @@
+(import "std/s" _)
+
+(assert-is? (ok _) (s/force-proper-list #f '()))
+(assert-is? (err _) (s/force-proper-list #f 'a))
+(assert-is? (err _) (s/force-proper-list #f '(a . b)))
+(assert-is? (ok _) (s/force-proper-list #f '(a)))
+(assert-is? (ok _) (s/force-proper-list #f '(a b)))
+
+(assert-is? (ok (s:list (s:string "hello") (s:bool #f) (s:bool #t)))
+  (s/reverse '(#t #f "hello")))
+
+(assert-is? (ok (s:list (s:bool #f) (s:bool #t) (s:string "hello")))
+  (s/append '(#f) '(#t "hello")))
+
+(let ([(f x) (ok `(,x ,x))])
+  (assert-is? (ok (s:list (s:list (s:bool #t) (s:bool #t))
+                          (s:list (s:bool #f) (s:bool #f))
+                          (s:list (s:string "hello") (s:string "hello"))))
+    (s/traverse f '(#t #f "hello"))))
+
+(let ([(f x) `(,x ,x)])
+  (assert-is? (ok (s:list (s:list (s:bool #t) (s:bool #t))
+                          (s:list (s:bool #f) (s:bool #f))
+                          (s:list (s:string "hello") (s:string "hello"))))
+    (s/map f '(#t #f "hello"))))
+
+(assert-is? (ok (s:bool #f))
+  (s/foldl [^2 (s:list %1 %2)] '#f '()))
+(assert-is? (ok (s:list (s:list (s:bool #f) (s:bool #t)) (s:string "hello")))
+  (s/foldl [^2 (s:list %1 %2)] '#f '(#t "hello")))
+
+(assert-is? (ok (s:bool #f))
+  (s/foldr [^2 (s:list %1 %2)] '#f '()))
+(assert-is? (ok (s:list (s:bool #f) (s:list (s:bool #t) (s:string "hello"))))
+  (s/foldr [^2 (s:list %1 %2)] '#f '(#t "hello")))
+
+(assert-is? (ok 0) (s/length '()))
+(assert-is? (ok 3) (s/length '(foo bar baz)))
+
+(assert-is? (ok none)
+  (s/unsnoc '()))
+(assert-is? (ok (some (: (s:nil) (s:symbol "foo"))))
+  (s/unsnoc '(foo)))
+(assert-is? (ok (some (: (s:list (s:symbol "foo")) (s:symbol "bar"))))
+  (s/unsnoc '(foo bar)))
+(assert-is? (ok (some (: (s:list (s:symbol "foo") (s:symbol "bar")) (s:symbol "baz"))))
+  (s/unsnoc '(foo bar baz)))

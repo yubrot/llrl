@@ -1,0 +1,107 @@
+(no-implicit-std)
+
+(import "builtin" Sexp U64 Number.U64)
+(import "std/prelude/stage-0" _)
+(export Sexp s:_ s/_ quasiquote gensym)
+
+; Variations with `unchecked` in the suffix do not check that the given S-expression is in proper list form.
+
+(function (s/force-proper-list error s) {(forall E) (-> E (Syntax Sexp) (Result (Syntax Sexp) E))}
+  (force-proper-list s error s))
+
+(function (force-proper-list result error s)
+  (match s
+    [(s:cons _ (let s))
+      (force-proper-list result error s)]
+    [(s:nil)
+      (ok result)]
+    [_
+      (err error)]))
+
+(function (s/reverse s) {(-> (Syntax Sexp) (Result (Syntax Sexp) String))}
+  (ok (s/reverse-unchecked (s:nil) (s/force-proper-list "s/reverse expects proper-list" s)!)))
+
+(function (s/reverse-unchecked accum s) {(-> (Syntax Sexp) (Syntax Sexp) (Syntax Sexp))}
+  (match s
+    [(s:cons (let car) (let cdr))
+      (s/reverse-unchecked (s:cons car accum) cdr)]
+    [_
+      accum]))
+
+(function (s/append a b) {(-> (Syntax Sexp) (Syntax Sexp) (Result (Syntax Sexp) String))}
+  (ok (s/append-unchecked (s/force-proper-list "s/append expects proper-list" a)! b)))
+
+(function (s/append-unchecked a b)
+  (match a
+    [(s:cons (let car) (let cdr))
+      (s:cons car (s/append-unchecked cdr b))]
+    [_
+      b]))
+
+(function (s/traverse f s) {(-> (-> (Syntax Sexp) (Result (Syntax Sexp) String)) (Syntax Sexp) (Result (Syntax Sexp) String))}
+  (s/traverse-unchecked f (s/force-proper-list "s/traverse expects proper-list" s)!))
+
+(function (s/traverse-unchecked f s) {(-> (-> (Syntax Sexp) (Result (Syntax Sexp) String)) (Syntax Sexp) (Result (Syntax Sexp) String))}
+  (match s
+    [(s:cons (let car) (let cdr))
+      (ok (s:cons (f car)! (s/traverse-unchecked f cdr)!))]
+    [_
+      (ok (s:nil))]))
+
+(function (s/map f s) {(-> (-> (Syntax Sexp) (Syntax Sexp)) (Syntax Sexp) (Result (Syntax Sexp) String))}
+  (ok (s/map-unchecked f (s/force-proper-list "s/map expects proper-list" s)!)))
+
+(function (s/map-unchecked f s) {(-> (-> (Syntax Sexp) (Syntax Sexp)) (Syntax Sexp) (Syntax Sexp))}
+  (match s
+    [(s:cons (let car) (let cdr))
+      (s:cons (f car) (s/map-unchecked f cdr))]
+    [_
+      (s:nil)]))
+
+(function (s/foldl f a b) {(-> (-> (Syntax Sexp) (Syntax Sexp) (Syntax Sexp)) (Syntax Sexp) (Syntax Sexp) (Result (Syntax Sexp) String))}
+  (ok (s/foldl-unchecked f a (s/force-proper-list "s/foldl expects proper-list" b)!)))
+
+(function (s/foldl-unchecked f a b) {(-> (-> (Syntax Sexp) (Syntax Sexp) (Syntax Sexp)) (Syntax Sexp) (Syntax Sexp) (Syntax Sexp))}
+  (match b
+    [(s:cons (let b) (let c))
+      (s/foldl-unchecked f (f a b) c)]
+    [_
+      a]))
+
+(function (s/foldr f a b) {(-> (-> (Syntax Sexp) (Syntax Sexp) (Syntax Sexp)) (Syntax Sexp) (Syntax Sexp) (Result (Syntax Sexp) String))}
+  (ok (s/foldr-unchecked f a (s/force-proper-list "s/foldr expects proper-list" b)!)))
+
+(function (s/foldr-unchecked f a b) {(-> (-> (Syntax Sexp) (Syntax Sexp) (Syntax Sexp)) (Syntax Sexp) (Syntax Sexp) (Syntax Sexp))}
+  (match b
+    [(s:cons (let b) (let c))
+      (f a (s/foldr-unchecked f b c))]
+    [_
+      a]))
+
+(function (s/length s) {(-> (Syntax Sexp) (Result U64 String))}
+  (ok (s/length-unchecked 0 (s/force-proper-list "s/length expects proper-list" s)!)))
+
+(function (s/length-unchecked acc s) {(-> U64 (Syntax Sexp) U64)}
+  (match s
+    [(s:cons _ (let s))
+      (s/length-unchecked (<u64/add> acc 1) s)]
+    [_
+      acc]))
+
+(builtin-op <u64/add> {(-> U64 U64 U64)} "unsigned.add")
+
+(function (s/unsnoc s) {(-> (Syntax Sexp) (Result (Option (: (Syntax Sexp) (Syntax Sexp))) String))}
+  (ok (s/unsnoc-unchecked (s/force-proper-list "s/unsnoc expects proper-list" s)!)))
+
+(function (s/unsnoc-unchecked s) {(-> (Syntax Sexp) (Option (: (Syntax Sexp) (Syntax Sexp))))}
+  (let ([(go accum a b)
+          (match b
+            [(s:cons (let b) (let c))
+              (go (s:cons a accum) b c)]
+            [_
+              (: (s/reverse-unchecked (s:nil) accum) a)])])
+    (match s
+      [(s:cons (let car) (let cdr))
+        (some (go (s:nil) car cdr))]
+      [_
+        none])))

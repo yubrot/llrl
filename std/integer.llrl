@@ -1,0 +1,169 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-1" _)
+(export Integer integer/_ Signed Unsigned Integer._ Signed._ Unsigned._)
+(export ShallowCopy._ DeepCopy._ Default._ Display._ DebugDisplay._ Eq._ Ord._ Zero._ One._ Add._ Sub._ Mul._ Div._ Rem._)
+
+(sealed-class (Integer A)
+  (function integer/min {A})
+  (function integer/max {A})
+  (function (integer/to-string radix value) {(-> U8 A String)})
+  (function (integer/from-string? radix s) {(-> U8 String (Option A))}))
+
+(sealed-class (Signed A) (where (Integer A)))
+(sealed-class (Unsigned A) (where (Integer A)))
+
+($$ begin
+  ($for-each $ty (I8 I16 I32 I64 U8 U16 U32 U64)
+    (instance ($symbol-concat ShallowCopy. $ty) (ShallowCopy $ty)
+      (transparent-function (shallow-copy a) a))
+
+    (instance ($symbol-concat DeepCopy. $ty) (DeepCopy $ty)
+      (transparent-function (deep-copy a) a))
+
+    (instance ($symbol-concat Default. $ty) (Default $ty)
+      (transparent-function default 0))
+
+    (instance ($symbol-concat Display. $ty) (Display $ty)
+      (function (display! w a) (display! w (integer/to-string 10 a))))
+
+    (instance ($symbol-concat DebugDisplay. $ty) (DebugDisplay $ty)
+      (transparent-function (debug-display! w a) (display! w a)))
+
+    (instance ($symbol-concat Eq. $ty) (Eq $ty)
+      (transparent-function (eq? a b) (<integer/eq?> a b)))
+
+    (instance ($symbol-concat Zero. $ty) (Zero $ty)
+      (transparent-function zero 0))
+
+    (instance ($symbol-concat One. $ty) (One $ty)
+      (transparent-function one 1))))
+
+($$ begin
+  ($for-each $ty (I8 I16 I32 I64)
+    (instance ($symbol-concat Integer. $ty) (Integer $ty)
+      (transparent-function integer/min ($symbol-concat < $ty /min>))
+      (transparent-function integer/max ($symbol-concat < $ty /max>))
+
+      (function (integer/to-string radix value)
+        (assert (<= 2 radix 36) "!(2 <= radix <= 36)")
+        (<i64-to-string> radix (cast value)))
+
+      (transparent-function (integer/from-string? radix value)
+        (match (<string-to-i64> radix value)
+          [(<result>: 0 _)
+            none]
+          [(<result>: _ (let value))
+            (if (<= (cast integer/min {$ty}) value (cast integer/max {$ty}))
+              (some (cast value))
+              none)])))
+
+    (instance ($symbol-concat Signed. $ty) (Signed $ty))
+
+    (instance ($symbol-concat Ord. $ty) (Ord $ty)
+      (transparent-function (lt? a b) (<signed/lt?> a b))
+      (transparent-function (le? a b) (<signed/le?> a b))
+      (transparent-function (gt? a b) (<signed/gt?> a b))
+      (transparent-function (ge? a b) (<signed/ge?> a b)))
+
+    (instance ($symbol-concat Add. $ty) (Add $ty)
+      (transparent-function (add a b) (<signed/add> a b)))
+
+    (instance ($symbol-concat Sub. $ty) (Sub $ty)
+      (transparent-function (sub a b) (<signed/sub> a b)))
+
+    (instance ($symbol-concat Mul. $ty) (Mul $ty)
+      (transparent-function (mul a b) (<signed/mul> a b)))
+
+    (instance ($symbol-concat Div. $ty) (Div $ty)
+      (transparent-function (div a b) (<signed/div> a b)))
+
+    (instance ($symbol-concat Rem. $ty) (Rem $ty)
+      (transparent-function (rem a b) (<signed/rem> a b)))))
+
+($$ begin
+  ($for-each $ty (U8 U16 U32 U64)
+    (instance ($symbol-concat Integer. $ty) (Integer $ty)
+      (transparent-function integer/min ($symbol-concat < $ty /min>))
+      (transparent-function integer/max ($symbol-concat < $ty /max>))
+
+      (function (integer/to-string radix value)
+        (assert (<= 2 radix 36) "!(2 <= radix <= 36)")
+        (<u64-to-string> radix (cast value)))
+
+      (transparent-function (integer/from-string? radix value)
+        (match (<string-to-u64> radix value)
+          [(<result>: 0 _)
+            none]
+          [(<result>: _ (let value))
+            (if (<= (cast integer/min {$ty}) value (cast integer/max {$ty}))
+              (some (cast value))
+              none)])))
+
+    (instance ($symbol-concat Unsigned. $ty) (Unsigned $ty))
+
+    (instance ($symbol-concat Ord. $ty) (Ord $ty)
+      (transparent-function (lt? a b) (<unsigned/lt?> a b))
+      (transparent-function (le? a b) (<unsigned/le?> a b))
+      (transparent-function (gt? a b) (<unsigned/gt?> a b))
+      (transparent-function (ge? a b) (<unsigned/ge?> a b)))
+
+    (instance ($symbol-concat Add. $ty) (Add $ty)
+      (transparent-function (add a b) (<unsigned/add> a b)))
+
+    (instance ($symbol-concat Sub. $ty) (Sub $ty)
+      (transparent-function (sub a b) (<unsigned/sub> a b)))
+
+    (instance ($symbol-concat Mul. $ty) (Mul $ty)
+      (transparent-function (mul a b) (<unsigned/mul> a b)))
+
+    (instance ($symbol-concat Div. $ty) (Div $ty)
+      (transparent-function (div a b) (<unsigned/div> a b)))
+
+    (instance ($symbol-concat Rem. $ty) (Rem $ty)
+      (transparent-function (rem a b) (<unsigned/rem> a b)))))
+
+($$ begin
+  ($for-each
+    [$ty $min $max]
+    ([I8 -128 127]
+     [I16 -32768 32767]
+     [I32 -2147483648 2147483647]
+     [I64 -9223372036854775808 9223372036854775807]
+     [U8 0 255]
+     [U16 0 65535]
+     [U32 0 4294967295]
+     [U64 0 18446744073709551615])
+    (transparent-function ($symbol-concat < $ty /min>) {$ty} $min)
+    (transparent-function ($symbol-concat < $ty /max>) {$ty} $max)))
+
+(builtin-op <integer/eq?> {(forall A) (-> A A Bool) (where (Integer A))} "integer.eq")
+
+(builtin-op <signed/lt?> {(forall A) (-> A A Bool) (where (Signed A))} "signed.lt")
+(builtin-op <signed/le?> {(forall A) (-> A A Bool) (where (Signed A))} "signed.le")
+(builtin-op <signed/gt?> {(forall A) (-> A A Bool) (where (Signed A))} "signed.gt")
+(builtin-op <signed/ge?> {(forall A) (-> A A Bool) (where (Signed A))} "signed.ge")
+
+(builtin-op <unsigned/lt?> {(forall A) (-> A A Bool) (where (Unsigned A))} "unsigned.lt")
+(builtin-op <unsigned/le?> {(forall A) (-> A A Bool) (where (Unsigned A))} "unsigned.le")
+(builtin-op <unsigned/gt?> {(forall A) (-> A A Bool) (where (Unsigned A))} "unsigned.gt")
+(builtin-op <unsigned/ge?> {(forall A) (-> A A Bool) (where (Unsigned A))} "unsigned.ge")
+
+(builtin-op <signed/add> {(forall A) (-> A A A) (where (Signed A))} "signed.add")
+(builtin-op <signed/sub> {(forall A) (-> A A A) (where (Signed A))} "signed.sub")
+(builtin-op <signed/mul> {(forall A) (-> A A A) (where (Signed A))} "signed.mul")
+(builtin-op <signed/div> {(forall A) (-> A A A) (where (Signed A))} "signed.div")
+(builtin-op <signed/rem> {(forall A) (-> A A A) (where (Signed A))} "signed.rem")
+
+(builtin-op <unsigned/add> {(forall A) (-> A A A) (where (Unsigned A))} "unsigned.add")
+(builtin-op <unsigned/sub> {(forall A) (-> A A A) (where (Unsigned A))} "unsigned.sub")
+(builtin-op <unsigned/mul> {(forall A) (-> A A A) (where (Unsigned A))} "unsigned.mul")
+(builtin-op <unsigned/div> {(forall A) (-> A A A) (where (Unsigned A))} "unsigned.div")
+(builtin-op <unsigned/rem> {(forall A) (-> A A A) (where (Unsigned A))} "unsigned.rem")
+
+(c-function <i64-to-string> {(-> U8 I64 String)} "llrt_i64_to_string")
+(c-function <u64-to-string> {(-> U8 U64 String)} "llrt_u64_to_string")
+
+(c-data (<Result> A) (<result>: I32 A))
+(c-function <string-to-i64> {(-> U8 String (<Result> I64))} "llrt_string_to_i64")
+(c-function <string-to-u64> {(-> U8 String (<Result> U64))} "llrt_string_to_u64")

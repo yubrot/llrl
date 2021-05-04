@@ -1,0 +1,310 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-0" _)
+(import "std/assert" assert)
+(import "std/s" s/traverse)
+(export ignore id is? |> lambda ^_ loop)
+(export let* case with cond if-match while-match when-match)
+(export let1 case1 with1 when if-match1 while-match1 when-match1)
+(export match? case? with? cond?)
+(export with1? case1? when?)
+
+; base        1            ?      1?
+; ----------- ------------ ------ ---------
+; if          /            /      /
+; while       /            /      /
+; match       with1 *1     match? with1? *1
+; let         let1         /      /
+; let*        let1         /      /
+; case        case1        case?  case1?
+; with        with1        with?  with1?
+; cond        when *2      cond?  when?
+; if-match    if-match1    /      /
+; while-match while-match1 /      /
+; when-match  when-match1  /      /
+; ----------- ------------ ------ ---------
+; *1 The order of the arguments is different
+; *2 The result is ignored
+
+(function (ignore x) {(forall A) (-> A unit)}
+  unit)
+
+(function (id x) {(forall A) (-> A A)}
+  x)
+
+(macro (is? s)
+  (s/match s
+    [(_ ,pat ,target)
+      (ok `(match ,target [,pat #t] [_ #f]))]
+    [_
+      (err "Expected (is? pat target)")]))
+(macro (|> s)
+  (s/match s
+    [(_ ,target ,@forms)
+      (expand-thread target forms)]
+    [_
+      (err "Expected (|> target form ...)")]))
+
+(function (expand-thread target forms)
+  (s/match forms
+    [((,callee ,@args) ,@forms)
+      (expand-thread `(,callee ,@args ,target) forms)]
+    [(() ,@forms)
+      (expand-thread `(,target) forms)]
+    [(,callee ,@forms)
+      (expand-thread `(,callee ,target) forms)]
+    [()
+      (ok target)]
+    [_
+      (err "Expected threading form")]))
+
+(macro [^0 s]
+  (s/match s
+    [(_ ,@body) (ok (short-lambda '() body))]
+    [_ (err "Expected [^0 body ...]")]))
+
+(macro [^1 s]
+  (s/match s
+    [(_ ,@body) (ok (short-lambda '(%1) body))]
+    [_ (err "Expected [^1 body ...]")]))
+
+(macro [^2 s]
+  (s/match s
+    [(_ ,@body) (ok (short-lambda '(%1 %2) body))]
+    [_ (err "Expected [^2 body ...]")]))
+
+(macro [^3 s]
+  (s/match s
+    [(_ ,@body) (ok (short-lambda '(%1 %2 %3) body))]
+    [_ (err "Expected [^3 body ...]")]))
+
+(macro [^4 s]
+  (s/match s
+    [(_ ,@body) (ok (short-lambda '(%1 %2 %3 %4) body))]
+    [_ (err "Expected [^4 body ...]")]))
+
+(macro [^5 s]
+  (s/match s
+    [(_ ,@body) (ok (short-lambda '(%1 %2 %3 %4 %5) body))]
+    [_ (err "Expected [^5 body ...]")]))
+
+(macro [^6 s]
+  (s/match s
+    [(_ ,@body) (ok (short-lambda '(%1 %2 %3 %4 %5 %6) body))]
+    [_ (err "Expected [^6 body ...]")]))
+
+(function (short-lambda args body)
+  (let ([tmp-f (gensym)])
+    `(let ([(,tmp-f ,@args) ,@body]) ,tmp-f)))
+
+(macro (loop s)
+  (s/match s
+    [(_ ,@body)
+      (ok `(begin (while #t ,@body #t) (,\assert #f)))]
+    [_
+      (err "Expected (loop body ...)")]))
+
+(macro (let* s)
+  (s/match s
+    [(_ (,@binds) ,@body)
+      (expand-let* binds `(begin ,@body))]
+    [_
+      (err "Expected (let* (bind ...) body ...)")]))
+
+(macro (case s)
+  (s/match s
+    [(_ ,@clauses)
+      (ok (expand-case clauses))]
+    [_
+      (err "Expected (case clause ...)")]))
+
+(macro (with s)
+  (s/match s
+    [(_ (,@binds) ,@body)
+      (expand-exhaustive-matches binds `(begin ,@body))]
+    [_
+      (err "Expected (with (bind ...) body ...)")]))
+
+(macro (cond s)
+  (s/match s
+    [(_ ,@clauses)
+      (expand-cond clauses)]
+    [_
+      (err "Expected (cond clause ...)")]))
+
+(macro (if-match s)
+  (s/match s
+    [(_ (,@binds) ,then ,else)
+      (expand-matches binds then else)]
+    [_
+      (err "Expected (if-match (bind ...) then else)")]))
+
+(macro (while-match s)
+  (s/match s
+    [(_ (,@binds) ,@body)
+      (ok `(while ,(expand-matches binds `(begin ,@body #t) '#f)!))]
+    [_
+      (err "Expected (while-match (bind ...) body ...)")]))
+
+(macro (when-match s)
+  (s/match s
+    [(_ (,@binds) ,@body)
+      (expand-matches binds `(begin ,@body unit) 'unit)]
+    [_
+      (err "Expected (when-match (bind ...) body ...)")]))
+
+(macro (let1 s)
+  (s/match s
+    [(_ ,var-or-fun ,init ,@body)
+      (ok `(let ([,var-or-fun ,init]) ,@body))]
+    [_
+      (err "Expected (let1 var-or-fun init body ...)")]))
+
+(macro (case1 s)
+  (s/match s
+    [(_ ,pat ,@body)
+      (ok (expand-case `([,pat ,@body])))]
+    [_
+      (err "Expected (case1 pat body ...)")]))
+
+(macro (with1 s)
+  (s/match s
+    [(_ ,pat ,init ,@body)
+      (ok `(match ,init [,pat ,@body]))]
+    [_
+      (err "Expected (with1 pat init body ...)")]))
+
+(macro (when s)
+  (s/match s
+    [(_ ,cond ,@body)
+      (ok `(if ,cond (begin ,@body unit) unit))]
+    [_
+      (err "Expected (when cond body ...)")]))
+
+(macro (if-match1 s)
+  (s/match s
+    [(_ ,pat ,init ,then ,else)
+      (ok `(match ,init [,pat ,then] [_ ,else]))]
+    [_
+      (err "Expected (if-match1 pat init then else)")]))
+
+(macro (while-match1 s)
+  (s/match s
+    [(_ ,pat ,init ,@body)
+      (ok `(while (match ,init [,pat ,@body #t] [_ #f])))]
+    [_
+      (err "Expected (while-match1 pat init body ...)")]))
+
+(macro (when-match1 s)
+  (s/match s
+    [(_ ,pat ,init ,@body)
+      (ok `(match ,init [,pat ,@body unit] [_]))]
+    [_
+      (err "Expected (when-match1 pat init body ...)")]))
+
+(macro (match? s)
+  (s/match s
+    [(_ ,target ,@clauses)
+      (ok `(match ,target ,@(s/traverse optional-clause clauses)! [_ ,\none]))]
+    [_
+      (err "Expected (match? target clause ...)")]))
+
+(macro (case? s)
+  (s/match s
+    [(_ ,@clauses)
+      (ok (expand-case `(,@(s/traverse optional-clause clauses)! [_ ,\none])))]
+    [_
+      (err "Expected (case? clause ...)")]))
+
+(macro (with? s)
+  (s/match s
+    [(_ (,@binds) ,@body)
+      (expand-matches binds `(,\some (begin ,@body)) \none)]
+    [_
+      (err "Expected (with? (bind ...) body ...)")]))
+
+(macro (cond? s)
+  (s/match s
+    [(_ ,@clauses)
+      (expand-cond? clauses)]
+    [_
+      (err "Expected (cond? clause ...)")]))
+
+(macro (with1? s)
+  (s/match s
+    [(_ ,pat ,init ,@body)
+      (ok `(match ,init [,pat (,\some (begin ,@body))] [_ ,\none]))]
+    [_
+      (err "Expected (with1? pat init body ...)")]))
+
+(macro (case1? s)
+  (s/match s
+    [(_ ,pat ,@body)
+      (ok (expand-case `([,pat (,\some (begin ,@body))] [_ ,\none])))]
+    [_
+      (err "Expected (case1? pat body ...)")]))
+
+(macro (when? s)
+  (s/match s
+    [(_ ,cond ,@body)
+      (ok `(if ,cond (,\some (begin ,@body)) ,\none))]
+    [_
+      (err "Expected (when? cond body ...)")]))
+
+(function (expand-let* binds body)
+  (s/match binds
+    [()
+      (ok body)]
+    [([,var-or-fun ,@init] ,@binds)
+      (ok `(let ([,var-or-fun ,@init]) ,(expand-let* binds body)!))]
+    [_
+      (err "Expected let* binding: [var-or-fun init ...]")]))
+
+(function (expand-case clauses)
+  (let ([tmp-f (gensym)]
+        [tmp-arg (gensym)])
+    `(let ([(,tmp-f ,tmp-arg) (match ,tmp-arg ,@clauses)])
+      ,tmp-f)))
+
+(function (expand-cond clauses)
+  (s/match clauses
+    [([else ,@body])
+      (ok `(begin ,@body))]
+    [([,pred ,@body] ,@clauses)
+      (ok `(if ,pred (begin ,@body) ,(expand-cond clauses)!))]
+    [_
+      (err "Expected cond clause: [pred-or-else body ...]")]))
+
+(function (expand-exhaustive-matches binds then)
+  (s/match binds
+    [()
+      (ok then)]
+    [([,pat ,@init] ,@binds)
+      (ok `(match (begin ,@init) [,pat ,(expand-exhaustive-matches binds then)!]))]
+    [_
+      (err "Expected match binding: [pat init ...]")]))
+
+(function (expand-matches binds then else)
+  (s/match binds
+    [()
+      (ok then)]
+    [([,pat ,@init] ,@binds)
+      (ok `(match (begin ,@init) [,pat ,(expand-matches binds then else)!] [_ ,else]))]
+    [_
+      (err "Expected match binding: [pat init ...]")]))
+
+(function (optional-clause s)
+  (s/match s
+    [[,pat ,@body]
+      (ok `[,pat (,\some (begin ,@body))])]
+    [_
+      (err "Expected match clause: [pat body ...]")]))
+
+(function (expand-cond? clauses)
+  (s/match clauses
+    [([,pred ,@body] ,@clauses)
+      (ok `(if ,pred (,\some (begin ,@body)) ,(expand-cond? clauses)!))]
+    [()
+      (ok \none)]
+    [_
+      (err "Expected cond? clause: [pred body ...]")]))

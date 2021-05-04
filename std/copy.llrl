@@ -1,0 +1,18 @@
+(no-implicit-std)
+
+(import "std/never" Never never)
+(export ShallowCopy shallow-copy ShallowCopy._ DeepCopy deep-copy DeepCopy._)
+
+; A value of a type that implements ShallowCopy has some indirect reference and
+; it can be duplicated by producing a new value.
+(class (ShallowCopy A)
+  (function (shallow-copy a) {(-> A A)}))
+
+; deep-copy recursively duplicates all the data that makes up a value, unless it is specifically
+; implemented as intended to be shared.
+; Any destructive changes to the data after the copy will usually not affect the original data.
+(class (DeepCopy A)
+  (function (deep-copy a) {(-> A A)}))
+
+(instance DeepCopy.Never (DeepCopy Never)
+  (transparent-function (deep-copy a) (never a)))

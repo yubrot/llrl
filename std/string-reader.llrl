@@ -1,0 +1,16 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-1" _)
+(import "std/rw" Read read-bytes-to-end! InvalidData invalid-data)
+(import "std/array" _.Array)
+(import "std/vector" vector/_)
+(import "std/string" _)
+(export read-string-to-end!)
+
+(function (read-string-to-end! r)
+  {(forall R Error) (-> R (Result String Error)) (where (Read R Error) (InvalidData Error))}
+  (let1 buf vector/empty
+    (read-bytes-to-end! buf r)!
+    (if (string/valid-sequence? (vector/buffer buf))
+      (ok (string/unsafe-from-array (vector/buffer buf)))
+      (err invalid-data))))

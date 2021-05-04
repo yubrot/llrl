@@ -1,0 +1,42 @@
+(import "std/memory" _)
+(import "std/box" box/unsafe-ptr)
+(import "std/ref" ref/ptr)
+(import "std/string" string/unsafe-ptr)
+(import "std/array" array/ptr)
+
+(assert-eq? 123 (|> 123 box box/unsafe-ptr ptr/load))
+
+(let ([x (ref 123)])
+  (ptr/store! 456 (ref/ptr x))
+  (assert-eq? 456 ~x))
+
+(assert-eq? ptr/null ptr/null)
+(assert-ne? ptr/null (|> 123 box box/unsafe-ptr))
+
+(let ([x "Hello"])
+  (assert-eq? (|> x string/unsafe-ptr) (|> x string/unsafe-ptr (ptr/offset 0)))
+  (assert (< (|> x string/unsafe-ptr) (|> x string/unsafe-ptr (ptr/offset 1))))
+  (assert-eq? 72 (|> x string/unsafe-ptr (ptr/offset 0) ptr/load))
+  (assert-eq? 101 (|> x string/unsafe-ptr (ptr/offset 1) ptr/load))
+  (assert-eq? 108 (|> x string/unsafe-ptr (ptr/offset 2) ptr/load))
+  (assert-eq? 108 (|> x string/unsafe-ptr (ptr/offset 3) ptr/load))
+  (assert-eq? 111 (|> x string/unsafe-ptr (ptr/offset 4) ptr/load))
+  (assert-eq? 0 (|> x string/unsafe-ptr (ptr/offset 5) ptr/load)))
+
+(assert-eq? -1 {I8} (|> 255 {U8} box box/unsafe-ptr ptr/cast ptr/load))
+
+(let ([x (array 1 {I32} 2 3)])
+  (assert-eq? 1 (|> x array/ptr (ptr/add 0) ptr/load))
+  (assert-eq? 2 (|> x array/ptr (ptr/add 1) ptr/load))
+  (assert-eq? 3 (|> x array/ptr (ptr/add 2) ptr/load))
+  (assert-eq? 2 (|> x array/ptr ptr/address (+ 4) ptr/from-address ptr/load)))
+
+(assert-eq? 1 (size-of I8))
+(assert-eq? 2 (size-of U16))
+(assert-eq? 4 (size-of I32))
+(assert-eq? 8 (size-of U64))
+
+(assert-eq? 1 (align-of (: I8 I8 I8)))
+(assert-eq? 2 (align-of (: I8 I16 I8)))
+(assert-eq? 4 (align-of (: I32 I16 I8)))
+(assert-eq? 8 (align-of (: I32 I16 I64)))

@@ -1,0 +1,7 @@
+(no-implicit-std)
+
+(export Default default)
+
+; A type class that regards a specific value as its default value.
+(class (Default A)
+  (function default {A}))

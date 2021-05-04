@@ -1,0 +1,17 @@
+[package]
+authors = ["yubrot <yubrot@gmail.com>"]
+build = "build.rs"
+description = "llrl standard library"
+edition = "2018"
+keywords = ["compiler"]
+license = "BSD-3-Clause"
+name = "llstd"
+repository = "https://github.com/yubrot/llrl"
+version = "0.1.0"
+
+[lib]
+name = "llstd"
+path = "llstd.rs"
+
+[build-dependencies]
+walkdir = "2"

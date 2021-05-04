@@ -1,0 +1,80 @@
+(test-std
+  (no-implicit-std)
+  (import "std/assert" _)
+  (assert #t)
+  (assert #t "Never fails")
+  (assert-is? #f #f)
+  (assert-is? #f #f "Never fails")
+  #t)
+
+(test-std
+  (no-implicit-std)
+  (import "std/prelude/stage-1")
+  #t)
+
+(test-std
+  (no-implicit-std)
+  (import "std/prelude/stage-2")
+  #t)
+
+(test-std
+  #t)
+
+(test-std
+  ; stage-1
+  (import "std/tests/num-literals")
+  (import "std/tests/syntax")
+  (import "std/tests/s")
+  (import "std/tests/never")
+  (import "std/tests/preprocess")
+  (import "std/tests/control")
+  (import "std/tests/copy")
+  (import "std/tests/default")
+  (import "std/tests/display")
+  (import "std/tests/debug")
+  (import "std/tests/bool")
+  (import "std/tests/eq")
+  (import "std/tests/ordering")
+  (import "std/tests/ord")
+  (import "std/tests/arithmetic")
+  (import "std/tests/access")
+  (import "std/tests/cast")
+  #t)
+
+(test-std
+  ; stage-2
+  (import "std/tests/integer")
+  (import "std/tests/float")
+  (import "std/tests/bits")
+  (import "std/tests/memory")
+  (import "std/tests/box")
+  (import "std/tests/ref")
+  (import "std/tests/iterator")
+  (import "std/tests/it")
+  (import "std/tests/option")
+  (import "std/tests/result")
+  (import "std/tests/either")
+  (import "std/tests/array")
+  (import "std/tests/vector")
+  (import "std/tests/rw")
+  (import "std/tests/hash")
+  (import "std/tests/char")
+  (import "std/tests/string")
+  (import "std/tests/text")
+  (import "std/tests/string-reader")
+  (import "std/tests/string-writer")
+  (import "std/tests/tuple")
+  (import "std/tests/s-display")
+  (import "std/tests/io")
+  #t)
+
+(test-std
+  (import "std/phantom")
+  (import "std/process")
+  (import "std/tests/real")
+  (import "std/tests/math")
+  (import "std/tests/path")
+  (import "std/tests/ordered-map")
+  (import "std/tests/persistent/ordered-map")
+  (import "std/tests/hash-map")
+  #t)

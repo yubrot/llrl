@@ -1,0 +1,430 @@
+; data type
+
+(test-module (pass (kind-of data Empty *))
+  (data Empty))
+
+(test-module (pass (kind-of data Empty *))
+  (data (Empty)))
+
+(test-module (pass (kind-of data Foo (-> * *)))
+  (data (Foo A)))
+
+(test-module (pass (kind-of data Foo (-> * * *)))
+  (data (Foo A B)))
+
+(test-module (pass (kind-of data Foo (-> * *)))
+  (data (Foo [A *])))
+
+(test-module (pass (kind-of data Foo (-> (-> * *) *)))
+  (data (Foo [A (-> * *)])))
+
+(test-module pass
+  (data (Foo [A *])
+    (foo A)))
+
+(test-module (fail unify-kind)
+  (data (Foo [A (-> * *)])
+    (foo A)))
+
+(test-module (pass (kind-of data Foo (-> * *)))
+  (data (Foo A)
+    (foo A)))
+
+(test-module (pass (kind-of data Foo (-> * * *)))
+  (data (Foo A B)
+    (foo (-> A A))))
+
+(test-module (pass (kind-of data Foo (-> (-> * *) * *)))
+  (data (Foo [M (-> * *)] [A *])
+    (foo (M A))))
+
+(test-module (pass (kind-of data Foo (-> (-> * *) * *)))
+  (data (Foo [M (-> * *)] A)
+    (foo (M A))))
+
+(test-module (pass (kind-of data Foo (-> (-> * *) * *)))
+  (data (Foo M [A *])
+    (foo (M A))))
+
+(test-module (pass (kind-of data Foo (-> (-> * *) * *)))
+  (data (Foo M A)
+    (foo (M A))))
+
+(test-module (fail unify-kind)
+  (data (Foo [M *] [A *])
+    (foo (M A))))
+
+(test-module (pass (kind-of data Foo (-> (-> (-> * *) *) (-> * *) *)))
+  (data (Foo M [A (-> * *)])
+    (foo (M A))))
+
+(test-module (fail (unify-kind occurs-check-failed))
+  (data (Foo M)
+    (foo (M M))))
+
+(test-module (pass (kind-of data Foo (-> (-> (-> * *) *) (-> * *) * *)))
+  (data (Foo F A B)
+    (foo (F A))
+    (bar (A B))))
+
+(test-module
+  (pass (kind-of data Foo *)
+        (kind-of data Bar (-> (-> * *) *)))
+  (data Foo)
+  (data (Bar A)
+    (bar (A Foo))))
+
+(test-module
+  (pass (kind-of data Foo (-> * *))
+        (kind-of data Bar (-> (-> (-> * *) *) *)))
+  (data (Foo A))
+  (data (Bar A)
+    (bar (A Foo))))
+
+(test-module (fail unify-kind)
+  (data (Foo A))
+  (data (Bar A))
+  (data Baz
+    (baz (Foo Bar))))
+
+(test-module pass
+  (data (Foo [A (-> * *)]))
+  (data (Bar A))
+  (data Baz
+    (baz (Foo Bar))))
+
+(test-module (pass (kind-of data Free (-> (-> * *) * *)))
+  (data (Free F A)
+    (free (F (Free F A)))))
+
+(test-module
+  (pass (kind-of data Foo (-> (-> * *) *))
+        (kind-of data Bar (-> (-> * *) *)))
+  (data (Foo A)
+    (foo (Bar A)))
+  (data (Bar A)
+    (bar (A (Foo A)))))
+
+; builtin type
+
+(test-module (pass (kind-of builtin-type Foo (-> * *)))
+  (builtin-type (Foo A) "foo"))
+
+(test-module (pass (kind-of builtin-type Foo (-> (-> * *) *)))
+  (builtin-type (Foo [A (-> * *)]) "foo"))
+
+(test-module (pass (kind-of builtin-type Foo (-> * * *)))
+  (builtin-type (Foo A B) "foo"))
+
+(test-module (pass (kind-of builtin-type Foo (-> * * *)))
+  (builtin-type (Foo A B) "foo"
+    [(foo A) "foo"]))
+
+; If the builtin-type type parameter's kind is not *, it must always be explicit.
+(test-module (fail unify-kind)
+  (builtin-type (Foo F A) "foo"
+    [(foo (F A)) "foo"]))
+
+(test-module pass
+  (builtin-type (Foo [F (-> * *)] A) "foo"
+    [(foo (F A)) "foo"]))
+
+(test-module (fail unify-kind)
+  (builtin-type (Foo [F (-> * *)]) "foo"
+    [(foo F) "foo"]))
+
+(test-module (fail unify-kind)
+  (data (Foo F)
+    (foo (F unit)))
+  (builtin-type (Bar F) "bar"
+    [(bar (Foo F)) "bar"]))
+
+; function
+
+(test-module (pass (kind-of function foo Value))
+  (function (foo) {(-> unit)}
+    (foo)))
+
+(test-module (pass (kind-of function foo (-> * * Value)))
+  (function foo {(forall A B) (-> A B)}
+    foo))
+
+(test-module (pass (kind-of function foo (-> (-> * *) * Value)))
+  (function foo {(forall A B) (A B)}
+    foo))
+
+(test-module (pass (kind-of function foo (-> * Value)))
+  (data (Foo A))
+  (function foo {(forall A) (Foo A)}
+    foo))
+
+(test-module (pass (kind-of function foo (-> (-> * *) Value)))
+  (data (Foo [A (-> * *)]))
+  (function foo {(forall A) (Foo A)}
+    foo))
+
+(test-module (pass (kind-of function foo (-> * Satisfaction Value)))
+  (class (Foo A))
+  (function (foo x) {(forall A) (-> A unit) (where (Foo A))}))
+
+(test-module (fail unsupported-kind)
+  (function (foo x) {(forall A [B Constraint]) (-> A unit)}))
+
+(test-module (fail unify-kind)
+  (function (foo) {(forall M A) (M A)}
+    (let ([(bar) {(forall B) (-> (A B))} (bar)])
+      foo)))
+
+(test-module (pass (kind-of function foo (-> (-> (-> * *) *) (-> * *) Value)))
+  (function foo {(forall M [A (-> * *)]) (M A)}
+    (let ([(bar) {(forall B) (-> (A B))} (bar)])
+      foo)))
+
+; local variables
+
+(test-module pass
+  (data X a)
+  (function foo
+    (let ([bar {X} a]))))
+
+(test-module (fail unify-kind)
+  (data (X A) a)
+  (function bottom bottom)
+  (function foo
+    (let ([bar {X} bottom]))))
+
+(test-module pass
+  (data X a)
+  (function foo
+    a {X}))
+
+(test-module (fail unify-kind)
+  (data (X A) a)
+  (function bottom bottom)
+  (function foo
+    bottom {X}))
+
+; builtin_op
+
+(test-module (pass (kind-of builtin-op hello Value))
+  (builtin-op hello {(-> unit)} "no-op"))
+
+(test-module (pass (kind-of builtin-op hello (-> * Value)))
+  (builtin-op hello {(forall A) (-> A)} "no-op"))
+
+; macro
+
+(test-module (pass (kind-of macro foo Macro))
+  (macro (foo s)
+    (ok s)))
+
+; class
+
+(test-module (pass (kind-of class Foo Constraint))
+  (class Foo))
+
+(test-module (pass (kind-of class Foo Constraint))
+  (class (Foo)))
+
+(test-module (pass (kind-of class Foo (-> * Constraint)))
+  (class (Foo A)))
+
+(test-module (pass (kind-of class Foo (-> * Constraint)))
+  (class (Foo A)
+    (function (foo x) {(-> A A)})))
+
+(test-module (pass (kind-of class Foo (-> (-> * *) Constraint)))
+  (class (Foo A)
+    (function foo {(forall B) (A B)})))
+
+(test-module (pass (kind-of class Foo (-> * Constraint)))
+  (class (Foo A)
+    (function foo {(forall B) (B A)})))
+
+(test-module (fail unify-kind)
+  (class Foo)
+  (class (Bar A) (where (Foo A))))
+
+(test-module
+  (pass (kind-of class Foo (-> * Constraint))
+        (kind-of class Bar (-> * Constraint)))
+  (class (Foo A))
+  (class (Bar A) (where (Foo A))))
+
+(test-module
+  (pass (kind-of class Foo (-> (-> * *) Constraint))
+        (kind-of class Bar (-> (-> * *) Constraint)))
+  (class (Foo [A (-> * *)]))
+  (class (Bar A) (where (Foo A))))
+
+(test-module (fail unify-kind)
+  (class (Foo A))
+  (class (Bar [A (-> * *)]) (where (Foo A))))
+
+(test-module (fail unify-kind)
+  (class (Foo A))
+  (class (Bar A) (where Foo)))
+
+(test-module (fail unify-kind)
+  (class (Foo A))
+  (class (Bar A) (where (Foo A A))))
+
+(test-module
+  (pass (kind-of class Foo (-> (-> * *) Constraint))
+        (kind-of class-method foo Value)
+        (kind-of class Bar (-> (-> * *) Constraint)))
+  (class (Foo A)
+    (function foo {(A unit)}))
+  (class (Bar A) (where (Foo A))))
+
+(test-module (fail (unify-kind occurs-check-failed))
+  (class (Foo A B)
+    (function foo {(A B)})
+    (function bar {(B A)})))
+
+(test-module
+  (pass (kind-of class Foo (-> (-> * *) (-> * *) Constraint))
+        (kind-of class-method foo Value)
+        (kind-of class-method bar Value))
+  (class (Foo A B)
+    (function foo {(A unit)})
+    (function bar {(B unit)})))
+
+(test-module (fail unify-kind)
+  ; Foo depends on Bar but Bar does not; B is defaulted to `*` and then inferring Foo fails
+  (class (Foo A)
+    (function foo {(forall B) (B A) (where (Bar B))}))
+  (class (Bar B)
+    (function bar {(forall M) (M B)})))
+
+(test-module
+  (pass (kind-of class Foo (-> * Constraint))
+        (kind-of class-method foo (-> (-> * *) Satisfaction Value))
+        (kind-of class Bar (-> (-> * *) Constraint))
+        (kind-of class-method bar (-> (-> (-> * *) * *) * Satisfaction Value)))
+  (class (Foo A)
+    (function foo {(forall B) (B A) (where (Bar B))}))
+  (class (Bar B)
+    (function bar {(forall M A) (M B A) (where (Foo A))})))
+
+; instance
+
+(test-module (pass (kind-of instance Foo.Default (-> * Satisfaction)))
+  (class (Foo A))
+  (instance Foo.Default (forall A) (Foo A)))
+
+(test-module (pass (kind-of instance Foo.Default (-> (-> * *) Satisfaction)))
+  (class (Foo [A (-> * *)]))
+  (instance Foo.Default (forall A) (Foo A)))
+
+(test-module (fail unify-kind)
+  (class (Foo A))
+  (instance Foo.Default (forall [A (-> * *)]) (Foo A)))
+
+(test-module (fail unify-kind)
+  (class (Foo A))
+  (class (Bar [A (-> * *)]))
+  (instance Foo.Default (forall A) (Foo A) (where (Bar A))))
+
+(test-module (pass (kind-of instance Foo.Default (-> (-> * *) Satisfaction Satisfaction)))
+  (class (Foo [A (-> * *)]))
+  (class (Bar [A (-> * *)]))
+  (instance Foo.Default (forall A) (Foo A) (where (Bar A))))
+
+(test-module
+  (pass (kind-of instance Foo.X Satisfaction)
+        (kind-of instance Foo.Tuple2 (-> * * Satisfaction Satisfaction Satisfaction)))
+  (class (Foo A))
+  (data X)
+  (instance Foo.X (Foo X))
+  (instance Foo.Tuple2 (forall A B) (Foo (: A B)) (where (Foo A) (Foo B))))
+
+(test-module (fail unify-kind)
+  (class (Foo A))
+  (data (X A))
+  (instance Foo.Default (Foo X)))
+
+(test-module
+  (pass (kind-of class Foo (-> (-> * *) * Constraint))
+        (kind-of instance Foo.Default (-> (-> * *) * Satisfaction)))
+  (class (Foo F A)
+    (function (foo x) {(-> A (F A))}))
+  (instance Foo.Default (forall F A) (Foo F A)
+    (function (foo x) (foo x))))
+
+(test-module
+  (pass (kind-of data Num *)
+        (kind-of class Concat (-> * Constraint))
+        (kind-of instance Concat.Num Satisfaction))
+  (data Num
+    z
+    (s Num))
+  (class (Concat A)
+    (function (concat x y) {(-> A A A)}))
+  (instance Concat.Num (Concat Num)
+    (function (concat x y) x)))
+
+(test-module
+  (pass (kind-of data List (-> * *))
+        (kind-of class Fold (-> (-> * *) Constraint))
+        (kind-of class-method fold (-> * Satisfaction Value))
+        (kind-of instance Fold.List Satisfaction))
+  (data (List A)
+    nil
+    (cons A (List A)))
+  (class (Concat A)
+    (function (concat x y) {(-> A A A)}))
+  (class (Fold F)
+    (function (fold f) {(forall A) (-> (F A) A) (where (Concat A))}))
+  (instance Fold.List (Fold List)
+    (function (fold f)
+      (fold f))))
+
+(test-module
+  (pass (kind-of class Foo (-> * Constraint))
+        (kind-of class-method foo (-> * Value))
+        (kind-of instance Foo.Pair (-> * * Satisfaction Satisfaction Satisfaction))
+        (kind-of instance-method foo (-> * Value)))
+  (class (Foo A)
+    (function (foo a b) {(forall B) (-> A B A)}))
+  (instance Foo.Pair (forall A B) (Foo (: A B)) (where (Foo A) (Foo B))
+    (function (foo a b) {(forall C) (-> (: A B) C (: A B))}
+      a)))
+
+; external
+
+(test-modules pass
+  ("~"
+    (import "~/foo" Foo)
+    (data (X A)
+      (x A))
+    (instance Foo.X (Foo X)
+      (function (foo a)
+        (x a))))
+  ("~/foo"
+    (class (Foo M)
+      (function (foo x) {(forall A) (-> A (M A))}))
+    (export Foo)))
+
+(test-modules (fail unify-kind)
+  ("~"
+    (import "~/foo" Foo)
+    (data X)
+    (instance Foo.X (Foo X)))
+  ("~/foo"
+    (class (Foo [M (-> * *)]))
+    (export Foo)))
+
+(test-modules pass
+  ("~"
+    (import "~/foo" (foo/_ _))
+    (data Y)
+    (class (Bar A))
+    (instance Foo.Y (foo/Foo Y))
+    (instance Bar.X (Bar foo/X))
+    (instance Bar.Y (Bar Y)))
+  ("~/foo"
+    (data X)
+    (class (Foo A))
+    (instance Foo.X (Foo X))
+    (export Foo X Foo.X)))

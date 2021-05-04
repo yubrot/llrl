@@ -1,0 +1,348 @@
+(test-backend pass
+  #t)
+
+(test-backend pass
+  #f
+  #t)
+
+(test-backend pass
+  (begin #f #f #t))
+
+(test-backend pass
+  (if #t #t #f))
+
+(test-backend pass
+  (if #f #f #t))
+
+(test-backend pass
+  (function (a) #t)
+  (a))
+
+(test-backend pass
+  (function (a x) x)
+  (a #t))
+
+(test-backend pass
+  (function (a x y) x)
+  (a #t #f))
+
+(test-backend pass
+  (function (a x y) y)
+  (a #f #t))
+
+(test-backend pass
+  (function (a x y z) (if x y z))
+  (a #t #t #f))
+
+(test-backend pass
+  (function (a x y z) (if x y z))
+  (a #f #f #t))
+
+(test-backend pass
+  (function (a x y z) (if x y z))
+  (a #f #f #t))
+
+(test-backend pass
+  (function a #t)
+  a)
+
+(test-backend pass
+  (function (bottom) (bottom))
+  bottom
+  #t)
+
+(test-backend pass
+  (function bottom bottom)
+  (if #t #t bottom))
+
+(test-backend pass
+  (function bottom bottom)
+  (if #f bottom #t))
+
+(test-backend pass
+  (function (f x y) y)
+  (function (g x y) x)
+  (f (g #f #f) (g #t #f)))
+
+(test-backend pass
+  (function (f x y) y)
+  (function (g x y) x)
+  (f #f (g (f #f #t) #f)))
+
+(test-backend pass
+  (not #f))
+
+(test-backend pass
+  (not (not #t)))
+
+(test-backend pass
+  (not (not (not #f))))
+
+(test-backend pass
+  (and #t #t))
+
+(test-backend pass
+  (not (and #t #f)))
+
+(test-backend pass
+  (not (and #f #t)))
+
+(test-backend pass
+  (not (and #f #f)))
+
+(test-backend pass
+  (or #t #f))
+
+(test-backend pass
+  (or #t #f))
+
+(test-backend pass
+  (or #f #t))
+
+(test-backend pass
+  (not (or #f #f)))
+
+(test-backend pass
+  (let ([x #t])
+    x))
+
+(test-backend pass
+  (let ([x #t]
+        [y #f])
+    x))
+
+(test-backend pass
+  (let ([x #f]
+        [y #t])
+    y))
+
+(test-backend pass
+  (function (f x y) y)
+  (function (g x y) x)
+  (let ([x (f #f #t)]
+        [y (g #t #f)])
+    (and x y)))
+
+(test-backend pass
+  (function (f x y) y)
+  (function (g x y) x)
+  (let ([x (f #f #t)]
+        [y (g #f #t)])
+    (let ([x (f x y)]
+          [y (g x y)])
+      (and (not x) y))))
+
+(test-backend pass
+  (= 10000 10000))
+
+(test-backend pass
+  (not (= 10000 10001)))
+
+(test-backend pass
+  (= (+ 10000 1) 10001))
+
+(test-backend pass
+  (function (fact x)
+    (if (= x 0)
+      1
+      (* x (fact (+ x -1)))))
+  (= (fact 5) 120))
+
+(test-backend pass
+  (function bottom bottom)
+  (function (f)
+    (return #t)
+    bottom)
+  (f))
+
+(test-backend pass
+  (function (bottom a) (bottom a))
+  (function (f)
+    (bottom (return #t)))
+  (f))
+
+(test-backend pass
+  (function (f x)
+    (not (if x (return #t) #f)))
+  (and (f #t) (f #f)))
+
+(test-backend pass
+  (match #f
+    [_ #t]))
+
+(test-backend pass
+  (match #f
+    [#t #f]
+    [#f #t]))
+
+(test-backend pass
+  (match #f
+    [#f #t]
+    [#t #f]))
+
+(test-backend pass
+  (match #t
+    [#f #f]
+    [#t #t]))
+
+(test-backend pass
+  (function (xor a b)
+    (match (: a b)
+      [(: #f #t) #t]
+      [(: #t #f) #t]
+      [_ #f]))
+  (and (and (xor #t #f) (xor #f #t))
+       (not (or (xor #t #t) (xor #f #f)))))
+
+(test-backend pass
+  (match 0
+    [1 #f]
+    [-1 #f]
+    [_ #t]))
+
+(test-backend pass
+  (match -1
+    [1 #f]
+    [-1 #t]
+    [_ #f]))
+
+(test-backend pass
+  (match 123 {U32}
+    [123 #t]
+    [_ #f]))
+
+(test-backend pass
+  (match 3.5
+    [3.0 #f]
+    [4.0 #f]
+    [_ #t]))
+
+(test-backend pass
+  (match "hello"
+    ["world" #f]
+    [_ #t]))
+
+(test-backend pass
+  (match "hello"
+    ["world" #f]
+    ["hello" #t]
+    [_ #f]))
+
+(test-backend pass
+  (match #\a
+    [#\b #f]
+    [_ #t]))
+
+(test-backend pass
+  (match #\a
+    [#\b #f]
+    [#\a #t]
+    [_ #f]))
+
+(test-backend pass
+  (match unit
+    [unit #t]))
+
+(test-backend pass
+  (match (: #f #t)
+    [(: #f #f) #f]
+    [(: #t #f) #f]
+    [(: #f #t) #t]
+    [(: #t #t) #f]))
+
+(test-backend pass
+  (function (f a b c d)
+    (match (: a b c d)
+      [(: 0 (let a) _ _) a]
+      [(: 1 _ (let a) _) a]
+      [(: 2 _ _ (let a)) a]
+      [(: _ _ _ _)       #f]))
+  (and (f 0 #t #f #f) (and (f 1 #f #t #f) (f 2 #f #f #t))))
+
+(test-backend pass
+  (function (twice f x)
+    (f (f x)))
+  (twice not #t))
+
+(test-backend pass
+  (function (f x y)
+    (match (: x y)
+      [(: #t #f) #t]
+      [_ #f]))
+  (function (flip f x y)
+    (f y x))
+  (flip f #f #t))
+
+(test-backend pass
+  (function (f x y)
+    (match (: x y)
+      [(: #t #f) #t]
+      [_ #f]))
+  (function (flip f x y)
+    (f y x))
+  (flip f #f #t))
+
+(test-backend pass
+  (not
+    (let ([(twice f x) (f (f x))])
+      (twice not #f))))
+
+(test-backend pass
+  (function (even-odd t f)
+    (let ([(even x) (if (= x 0) t (odd (+ x -1)))]
+          [(odd x) (if (= x 0) f (even (+ x -1)))])
+      (: even odd)))
+  (match (even-odd "true" "false")
+    [(: (let even) (let odd))
+      (match (: (even 5) (odd 3))
+        [(: "false" "true") #t]
+        [_ #f])]))
+
+(test-backend pass
+  (function (succ x)
+    (+ x 1))
+  (let ([(x f a) (f a)]
+        [(y f a) (f (f a))]
+        [(z f a) (x f (y f a))])
+    (= (z succ 3) 6)))
+
+(test-backend pass
+  (function (succ x)
+    (+ x 1))
+  (function (twice f)
+    (let ([(g x) (f (f x))])
+      g))
+  (let ([f (twice succ)])
+    (match (: (f 2) (f 3))
+      [(: 4 5) #t]
+      [_ #f])))
+
+(test-backend pass
+  (function (test f)
+    (let ([x (f #t 1 2)]
+          [y (f #f 10 20)])
+      (let ([(cont f) (f x y)])
+        cont)))
+  (let ([(select t a b) (if t a b)]
+        [check +])
+    (= ((test select) check) 21)))
+
+(test-backend pass
+  (let ([(fact x)
+          (if (= x 0)
+            1
+            (* x (fact (+ x -1))))])
+    (= (fact 5) 120)))
+
+(test-backend pass
+  (function (f x)
+    (let ([(f y)
+            (let ([(f g) (g x y)])
+              f)])
+      f))
+  (let ([g (f 1)])
+    (let ([h (g 2)])
+      (let ([(pair a b) (: a b)])
+        (match (h pair)
+          [(: 1 2) #t]
+          [_ #f])))))

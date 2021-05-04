@@ -1,0 +1,9 @@
+(import "std/string-writer" _)
+
+(let1 buf vector/empty {(Vector U8)}
+  (assert-eq? (ok unit) (write-bytes! (array 0 1) buf))
+  (assert-eq? (ok unit) (write-string! "abc" (string-writer buf)))
+  (assert-eq? (ok unit) (write-bytes! (array 2 3) buf))
+  (assert-eq? (ok unit) (write-string! "def" (string-writer buf)))
+  (assert-eq? (ok unit) (write-bytes! (array 4 5) buf))
+  (assert-eq? (vector 0 1 97 98 99 2 3 100 101 102 4 5) buf))

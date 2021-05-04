@@ -1,0 +1,10 @@
+(import "std/eq" _)
+
+(assert (=))
+(assert (= #f))
+(assert (= #f #f))
+(assert (not (= #t #f)))
+(assert (not (= #f #t #t)))
+(assert (not (= #t #t #f)))
+(assert (not (= #t #f #t)))
+(assert (= #f #f #f))

@@ -1,0 +1,23 @@
+(import "std/bool" _)
+
+(assert #t)
+(assert (not #f))
+
+(assert (and #t #t))
+(assert (not (and #t #f)))
+(assert (not (and #f #t)))
+(assert (not (and #f #f)))
+(assert (not (and #t #f #t)))
+(assert (and #t #t #t))
+
+(assert (or #t #t))
+(assert (or #t #f))
+(assert (or #f #t))
+(assert (not (or #f #f)))
+(assert (or #f #t #f))
+(assert (or #t #t #t))
+(assert (not (or #f #f #f)))
+
+(let ([a #t]
+      [b #f])
+  (assert-eq? (string "a = " a ", b = " b) "a = #t, b = #f"))

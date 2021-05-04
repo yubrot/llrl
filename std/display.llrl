@@ -1,0 +1,36 @@
+(no-implicit-std)
+
+(import "builtin" U8)
+(import "std/prelude/stage-0" _)
+(import "std/never" Never never)
+(export WriteString write-string! Display Display._ display! display-all!)
+
+; A type class that can write strings.
+(class (WriteString W Error)
+  (function (write-string! s w) {(-> String W (Result unit Error))}))
+
+; A type class that can be displayed as strings.
+(class (Display A)
+  (function (display! w a) {(forall W Error) (-> W A (Result unit Error)) (where (WriteString W Error))}))
+
+(macro (display-all! s)
+  (s/match s
+    [(_ ,w ,@displayables)
+      (ok (expand-display-all w displayables))]
+    [_
+      (err "Expected (display-all! w displayable ...)")]))
+
+(function (expand-display-all w displayables)
+  (match displayables
+    [(s:cons (let x) (let xs))
+      `(match (,\display! ,w ,x)
+        [(,\ok unit) ,(expand-display-all w xs)]
+        [(,\err (let e)) (,\err e)])]
+    [_
+      `(,\ok unit)]))
+
+(instance Display.Never (Display Never)
+  (transparent-function (display! w a) w (never a)))
+
+(instance Display.String (Display String)
+  (transparent-function (display! w a) (write-string! a w)))

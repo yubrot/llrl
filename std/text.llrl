@@ -1,0 +1,5 @@
+; A growable, mutable String.
+(no-implicit-std)
+
+(import "std/internal/string-text" Text text text/_ _.Text)
+(export _)

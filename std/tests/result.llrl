@@ -1,0 +1,89 @@
+(import "std/result" _)
+(import "std/tests/ord" [ord/_ _])
+
+(assert-is? (some 123)
+  (result/ok? (ok 123)))
+(assert-is? none
+  (result/ok? (err "foo")))
+(assert-is? (some "foo")
+  (result/err? (err "foo")))
+(assert-is? none
+  (result/err? (ok #f)))
+
+(assert-is? 123
+  (result/unwrap 456 (ok 123)))
+(assert-is? 456
+  (result/unwrap 456 (err "foo")))
+(assert-is? "foo"
+  (result/unwrap-err "bar" (err "foo")))
+(assert-is? "bar"
+  (result/unwrap-err "bar" (ok #f)))
+
+(assert-is? 123
+  (result/unwrap* [^1 456] (ok 123)))
+(assert-is? 456
+  (result/unwrap* [^1 (if %1 456 789)] (err #t)))
+(assert-is? "foo"
+  (result/unwrap-err* [^1 "bar"] (err "foo")))
+(assert-is? "baz"
+  (result/unwrap-err* [^1 (if %1 "bar" "baz")] (ok #f)))
+
+(assert-is? (err "error")
+  (result/map [^1 (: %1 %1)] (err "error")))
+(assert-is? (ok (: #t #t))
+  (result/map [^1 (: %1 %1)] (ok #t)))
+
+(assert-is? (err (: "error" "error"))
+  (result/map-err [^1 (: %1 %1)] (err "error")))
+(assert-is? (ok #t)
+  (result/map-err [^1 (: %1 %1)] (ok #t)))
+
+(assert-is? (err "bar")
+  (result/then [^1 (if %1 (err "bar") (ok #t))] (ok #t)))
+(assert-is? (ok #t)
+  (result/then [^1 (if %1 (err "bar") (ok #t))] (ok #f)))
+(assert-is? (err "foo")
+  (result/then [^1 (if %1 (err "bar") (ok #t))] (err "foo")))
+
+(assert-is? (err "bar")
+  (result/flatten (err "bar")))
+(assert-is? (err "foo")
+  (result/flatten (ok (err "foo"))))
+(assert-is? (ok #t)
+  (result/flatten (ok (ok #t))))
+
+(assert-is? (err "left")
+  (result/and (err "left") (err "right")))
+(assert-is? (err "right")
+  (result/and (ok #t) (err "right")))
+(assert-is? (err "left")
+  (result/and (err "left") (ok #f)))
+(assert-is? (ok #f)
+  (result/and (ok #t) (ok #f)))
+(assert-is? (ok "C")
+  (result/and (ok "A") (ok "B") (ok "C")))
+(assert-is? (err "C")
+  (result/and (ok "A") (ok "B") (err "C") (ok "D")))
+
+(assert-is? (err "right")
+  (result/or (err "left") (err "right")))
+(assert-is? (ok #t)
+  (result/or (ok #t) (err "right")))
+(assert-is? (ok #f)
+  (result/or (err "left") (ok #f)))
+(assert-is? (ok #t)
+  (result/or (ok #t) (ok #f)))
+(assert-is? (err "c")
+  (result/or (err "a") (err "b") (err "c")))
+(assert-is? (ok "c")
+  (result/or (err "a") (err "b") (ok "c") (err "d")))
+
+(assert-eq? (err #f) (err #f))
+(assert-ne? (err #t) (err #f))
+(assert-ne? (ok #f) (err #f))
+(assert-eq? (ok #t) (ok #t))
+
+(ord/test1234 (err #f) (err #t) (ok #f) (ok #t))
+
+(assert-eq? (string (debug (ok #t))) "(ok #t)")
+(assert-eq? (string (debug (err #t))) "(err #t)")

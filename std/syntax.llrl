@@ -1,0 +1,8 @@
+(no-implicit-std)
+
+(import "builtin" Syntax syntax)
+(export Syntax syntax syntax/_)
+
+(function (syntax/body s) {(forall A) (-> (Syntax A) A)}
+  (match s
+    [(syntax (let body)) body]))

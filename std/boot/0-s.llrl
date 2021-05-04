@@ -1,0 +1,81 @@
+(no-implicit-std)
+
+(import "builtin" syntax sexp:_ ok err)
+(export s:_)
+
+(macro (s:integer s)
+  (match s
+    [(syntax (sexp:cons _ (syntax (sexp:cons (let signed) (syntax (sexp:cons (let value) (syntax sexp:nil)))))))
+      (ok (syntax (sexp:cons \syntax (syntax (sexp:cons (syntax (sexp:cons \sexp:integer (syntax (sexp:cons signed (syntax (sexp:cons value (syntax sexp:nil))))))) (syntax sexp:nil))))))]
+    [_
+      (err "Expected (s:integer signed value)")]))
+
+(macro (s:fpnumber s)
+  (match s
+    [(syntax (sexp:cons _ (syntax (sexp:cons (let value) (syntax sexp:nil)))))
+      (ok (syntax (sexp:cons \syntax (syntax (sexp:cons (syntax (sexp:cons \sexp:fpnumber (syntax (sexp:cons value (syntax sexp:nil))))) (syntax sexp:nil))))))]
+    [_
+      (err "Expected (s:fpnumber value)")]))
+
+(macro (s:bool s)
+  (match s
+    [(syntax (sexp:cons _ (syntax (sexp:cons (let value) (syntax sexp:nil)))))
+      (ok (syntax (sexp:cons \syntax (syntax (sexp:cons (syntax (sexp:cons \sexp:bool (syntax (sexp:cons value (syntax sexp:nil))))) (syntax sexp:nil))))))]
+    [_
+      (err "Expected (s:bool value)")]))
+
+(macro (s:symbol s)
+  (match s
+    [(syntax (sexp:cons _ (syntax (sexp:cons (let value) (syntax sexp:nil)))))
+      (ok (syntax (sexp:cons \syntax (syntax (sexp:cons (syntax (sexp:cons \sexp:symbol (syntax (sexp:cons value (syntax sexp:nil))))) (syntax sexp:nil))))))]
+    [_
+      (err "Expected (s:symbol value)")]))
+
+(macro (s:string s)
+  (match s
+    [(syntax (sexp:cons _ (syntax (sexp:cons (let value) (syntax sexp:nil)))))
+      (ok (syntax (sexp:cons \syntax (syntax (sexp:cons (syntax (sexp:cons \sexp:string (syntax (sexp:cons value (syntax sexp:nil))))) (syntax sexp:nil))))))]
+    [_
+      (err "Expected (s:string value)")]))
+
+(macro (s:char s)
+  (match s
+    [(syntax (sexp:cons _ (syntax (sexp:cons (let value) (syntax sexp:nil)))))
+      (ok (syntax (sexp:cons \syntax (syntax (sexp:cons (syntax (sexp:cons \sexp:char (syntax (sexp:cons value (syntax sexp:nil))))) (syntax sexp:nil))))))]
+    [_
+      (err "Expected (s:char value)")]))
+
+(macro (s:cons s)
+  (match s
+    [(syntax (sexp:cons _ (syntax (sexp:cons (let car) (syntax (sexp:cons (let cdr) (syntax sexp:nil)))))))
+      (ok (syntax (sexp:cons \syntax (syntax (sexp:cons (syntax (sexp:cons \sexp:cons (syntax (sexp:cons car (syntax (sexp:cons cdr (syntax sexp:nil))))))) (syntax sexp:nil))))))]
+    [_
+      (err "Expected (s:cons car cdr)")]))
+
+(macro (s:nil s)
+  (match s
+    [(syntax (sexp:cons _ (syntax sexp:nil)))
+      (ok (syntax (sexp:cons \syntax (syntax (sexp:cons \sexp:nil (syntax sexp:nil))))))]
+    [_
+      (err "Expected (s:nil)")]))
+
+(macro (s:use s)
+  (match s
+    [(syntax (sexp:cons _ (syntax (sexp:cons (let value) (syntax sexp:nil)))))
+      (ok (syntax (sexp:cons \syntax (syntax (sexp:cons (syntax (sexp:cons \sexp:use (syntax (sexp:cons value (syntax sexp:nil))))) (syntax sexp:nil))))))]
+    [_
+      (err "Expected (s:use value)")]))
+
+(macro (s:list s)
+  (match s
+    [(syntax (sexp:cons _ (let s)))
+      (ok (expand-list s))]
+    [_
+      (err "Expected (s:list s ...)")]))
+
+(function (expand-list s)
+  (match s
+    [(syntax (sexp:cons (let car) (let cdr)))
+      (syntax (sexp:cons \syntax (syntax (sexp:cons (syntax (sexp:cons \sexp:cons (syntax (sexp:cons car (syntax (sexp:cons (expand-list cdr) (syntax sexp:nil))))))) (syntax sexp:nil)))))]
+    [_
+      (syntax (sexp:cons \syntax (syntax (sexp:cons \sexp:nil (syntax sexp:nil)))))]))

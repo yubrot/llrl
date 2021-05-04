@@ -1,0 +1,92 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-1" _)
+(import "std/ordering" ordering/or)
+(import "std/hash" Hash hash-all!)
+(export ShallowCopy._ DeepCopy._ Default._ DebugDisplay._ Eq._ Ord._ Hash._)
+
+(instance DeepCopy.unit (DeepCopy unit)
+  (transparent-function (deep-copy a) a))
+
+(instance Default.unit (Default unit)
+  (transparent-function default unit))
+
+(instance DebugDisplay.unit (DebugDisplay unit)
+  (function (debug-display! w a) (display! w "unit")))
+
+(instance Eq.unit (Eq unit)
+  (transparent-function (eq? a b) a b #t))
+
+(instance Ord.unit (Ord unit)
+  (transparent-function (compare a b) a b ordering:equal))
+
+(instance Hash.unit (Hash unit)
+  (transparent-function (hash! s a)))
+
+($$ begin
+  ($for-each
+    [$ty $params]
+    ([Tuple.1 (A)]
+     [Tuple.2 (A B)]
+     [Tuple.3 (A B C)]
+     [Tuple.4 (A B C D)]
+     [Tuple.5 (A B C D E)]
+     [Tuple.6 (A B C D E F)]
+     [Tuple.7 (A B C D E F G)]
+     [Tuple.8 (A B C D E F G H)]
+     [Tuple.9 (A B C D E F G H I)]
+     [Tuple.10 (A B C D E F G H I J)]
+     [Tuple.11 (A B C D E F G H I J K)]
+     [Tuple.12 (A B C D E F G H I J K L)]
+     [Tuple.13 (A B C D E F G H I J K L M)]
+     [Tuple.14 (A B C D E F G H I J K L M N)]
+     [Tuple.15 (A B C D E F G H I J K L M N O)]
+     [Tuple.16 (A B C D E F G H I J K L M N O P)])
+    (instance ($symbol-concat DeepCopy. $ty)
+              (forall ($for-each $p $params $p))
+              (DeepCopy (: ($for-each $p $params $p)))
+              (where ($for-each $p $params (DeepCopy $p)))
+      (transparent-function (deep-copy a)
+        (with1 (: ($for-each $p $params (let ($symbol-concat a. $p)))) a
+          (: ($for-each $p $params (deep-copy ($symbol-concat a. $p)))))))
+
+    (instance ($symbol-concat Default. $ty)
+              (forall ($for-each $p $params $p))
+              (Default (: ($for-each $p $params $p)))
+              (where ($for-each $p $params (Default $p)))
+      (transparent-function default
+        (: ($for-each $p $params default))))
+
+    (instance ($symbol-concat DebugDisplay. $ty)
+              (forall ($for-each $p $params $p))
+              (DebugDisplay (: ($for-each $p $params $p)))
+              (where ($for-each $p $params (DebugDisplay $p)))
+      (function (debug-display! w a)
+        (with1 (: ($for-each $p $params (let ($symbol-concat a. $p)))) a
+          (display-all! w "(:" ($for-each $p $params " " (debug ($symbol-concat a. $p))) ")"))))
+
+    (instance ($symbol-concat Eq. $ty)
+              (forall ($for-each $p $params $p))
+              (Eq (: ($for-each $p $params $p)))
+              (where ($for-each $p $params (Eq $p)))
+      (transparent-function (eq? a b)
+        (with ([(: ($for-each $p $params (let ($symbol-concat a. $p)))) a]
+               [(: ($for-each $p $params (let ($symbol-concat b. $p)))) b])
+          (and ($for-each $p $params (eq? ($symbol-concat a. $p) ($symbol-concat b. $p)))))))
+
+    (instance ($symbol-concat Ord. $ty)
+              (forall ($for-each $p $params $p))
+              (Ord (: ($for-each $p $params $p)))
+              (where ($for-each $p $params (Ord $p)))
+      (transparent-function (compare a b)
+        (with ([(: ($for-each $p $params (let ($symbol-concat a. $p)))) a]
+               [(: ($for-each $p $params (let ($symbol-concat b. $p)))) b])
+          (ordering/or ($for-each $p $params (compare ($symbol-concat a. $p) ($symbol-concat b. $p)))))))
+
+    (instance ($symbol-concat Hash. $ty)
+              (forall ($for-each $p $params $p))
+              (Hash (: ($for-each $p $params $p)))
+              (where ($for-each $p $params (Hash $p)))
+      (transparent-function (hash! s a)
+        (with1 (: ($for-each $p $params (let ($symbol-concat a. $p)))) a
+          (hash-all! s ($for-each $p $params ($symbol-concat a. $p))))))))

@@ -1,0 +1,5 @@
+; A growable array data structure.
+(no-implicit-std)
+
+(import "std/internal/array-vector" Vector vector vector/_ _.Vector)
+(export _)

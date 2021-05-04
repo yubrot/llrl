@@ -1,0 +1,85 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-1" _)
+(import "std/integer" _.U64)
+(import "std/memory" ptr/_ _.Ptr)
+(import "std/ref" ref _.Ref)
+(import "std/array" Array array/_)
+(import "std/vector" Vector vector/_)
+(export Read read-_ Read._ Write write-_ flush! Write._)
+(export UnexpectedEof unexpected-eof UnexpectedEof._)
+(export InvalidData invalid-data InvalidData._)
+
+; Functions that exist only on the read side:
+; * read-into-buf!
+; * read-bytes-to-end!
+; * read-string-to-end! (defined in std/string-reader)
+; Functions that exist only on the write side:
+; * flush!
+
+; A type class that can read bytes.
+(class (Read R Error)
+  ; (ok 0) .. reached eof
+  ; (ok n) .. n bytes read
+  (function (read-into-buf! buf r) {(-> (Array U8) R (Result U64 Error))}))
+
+(instance Read.Vector (forall A) (Read (Vector U8) A)
+  (function (read-into-buf! bytes r)
+    (let1 bytes-read (vector/consume! (min (array/length bytes) (vector/length r)) r)
+      (array/copy! bytes-read bytes)
+      (ok (array/length bytes-read)))))
+
+; A type class that can write bytes.
+(class (Write W Error)
+  (function (write-bytes! bytes w) {(-> (Array U8) W (Result unit Error))})
+  (function (flush! w) {(-> W (Result unit Error))}))
+
+(instance Write.Vector (forall Never) (Write (Vector U8) Never)
+  (function (write-bytes! bytes w) (ok (vector/append! bytes w)))
+  (function (flush! w) (ok unit)))
+
+(class (UnexpectedEof E)
+  (function unexpected-eof {E}))
+
+(instance UnexpectedEof.Never (UnexpectedEof Never)
+  (function unexpected-eof
+    (assert #f "Unexpected eof")))
+
+(function (read-bytes-to-end! buf r) {(forall R Error) (-> (Vector U8) R (Result U64 Error)) (where (Read R Error))}
+  (let ([tmp (array/unsafe-stackalloc-uninitialized 4096)]
+        [total-len (ref 0)])
+    (while
+      (let1 len (read-into-buf! tmp r)!
+        (set! total-len (+ ~total-len len))
+        (vector/append! (array/take len tmp) buf)
+        (ne? len 0)))
+    (ok ~total-len)))
+
+(function (read-bytes! bytes r) {(forall R Error) (-> (Array U8) R (Result unit Error)) (where (Read R Error) (UnexpectedEof Error))}
+  (if (eq? (read-into-buf! bytes r)! (array/length bytes))
+    (ok unit)
+    (err unexpected-eof)))
+
+(class (InvalidData E)
+  (function invalid-data {E}))
+
+(instance InvalidData.Never (InvalidData Never)
+  (function invalid-data
+    (assert #f "Invalid data")))
+
+; TODO: Endianness support
+($$ begin
+  ($for-each [$name $ty $size]
+             ([u8! U8 1] [u16! U16 2] [u32! U32 4] [u64! U64 8]
+              [i8! I8 1] [i16! I16 2] [i32! I32 4] [i64! I64 8])
+    (function (($symbol-concat read- $name) r)
+      {(forall R Error) (-> R (Result $ty Error)) (where (Read R Error) (UnexpectedEof Error))}
+      (let1 tmp (array/unsafe-stackalloc-uninitialized $size)
+        (read-bytes! tmp r)!
+        (|> tmp array/ptr ptr/cast ptr/load ok)))
+
+    (function (($symbol-concat write- $name) value w)
+      {(forall W Error) (-> $ty W (Result unit Error)) (where (Write W Error))}
+      (let1 tmp (array/unsafe-stackalloc-uninitialized $size)
+        (|> tmp array/ptr ptr/cast (ptr/store! value))
+        (write-bytes! tmp w)))))

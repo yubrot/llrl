@@ -1,0 +1,10 @@
+(no-implicit-std)
+
+(import "builtin" String)
+(import "std/boot/0-s" s:symbol)
+(export gensym)
+
+(function (gensym)
+  (s:symbol (<genid>)))
+
+(builtin-op <genid> {(-> String)} "string.genid")

@@ -1,0 +1,23 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-1" _)
+(import "std/rw" Write write-bytes! flush!)
+(import "std/string" _)
+(export StringWriter string-writer _.StringWriter)
+
+; A newtype to treat types that implement std/rw/Write as std/display/WriteString.
+(value-data (StringWriter W)
+  (string-writer W))
+
+(instance DebugDisplay.StringWriter (forall W) (DebugDisplay (StringWriter W)) (where (DebugDisplay W))
+  (function (debug-display! w a) (display-all! w "(string-writer " (debug a) ")")))
+
+(instance WriteString.StringWriter (forall W Error) (WriteString (StringWriter W) Error) (where (Write W Error))
+  (function (write-string! s w)
+    (with1 (string-writer (let w)) w (write-bytes! (string/unsafe-array s) w))))
+
+(instance Write.StringWriter (forall W Error) (Write (StringWriter W) Error) (where (Write W Error))
+  (function (write-bytes! bytes w)
+    (with1 (string-writer (let w)) w (write-bytes! bytes w)))
+  (function (flush! w)
+    (with1 (string-writer (let w)) w (flush! w))))

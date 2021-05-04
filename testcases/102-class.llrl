@@ -1,0 +1,137 @@
+(test-backend pass
+  (class (Add A)
+    (function (add a b) {(-> A A A)}))
+  (instance Add.I32 (Add I32)
+    (function (add a b) (+ a b)))
+  (= 8 (add 3 5)))
+
+(test-backend pass
+  (class (Add A)
+    (function (add a b) {(-> A A A)}))
+  (instance Add.I32 (Add I32)
+    (function (add a b)
+      (+ a b)))
+  (instance Add.Tuple2 (forall A B) (Add (: A B)) (where (Add A) (Add B))
+    (function (add a b)
+      (match (: a b)
+        [(: (: (let a1) (let a2)) (: (let b1) (let b2)))
+          (: (add a1 b1) (add a2 b2))])))
+  (match (add (: 3 4) (: 9 1))
+    [(: 12 5) #t]
+    [(: _ _) #f]))
+
+(test-backend pass
+  (class (Add A)
+    (function (add a b) {(-> A A A)}))
+  (instance Add.Bool (Add Bool)
+    (function (add a b)
+      (or a b)))
+  (instance Add.I32 (Add I32)
+    (function (add a b)
+      (+ a b)))
+  (instance Add.Tuple2 (forall A B) (Add (: A B)) (where (Add A) (Add B))
+    (function (add a b)
+      (match (: a b)
+        [(: (: (let a1) (let a2)) (: (let b1) (let b2)))
+          (: (add a1 b1) (add a2 b2))])))
+  (match (add (: (: 3 #t) 2) (: (: 1 #f) 7))
+    [(: (: 4 #t) 9) #t]
+    [(: _ _) #f]))
+
+(test-backend pass
+  (class (Foo A)
+    (function (foo x) {(-> Bool A)})
+    (function (bar x) {(-> Bool A)}
+      (foo (not x))))
+  (instance Foo.String (Foo String)
+    (function (foo x)
+      (if x "foo" "bar")))
+  (instance Foo.I32 (Foo I32)
+    (function (foo x)
+      (if x 1 2))
+    (function (bar x)
+      (if x 3 4)))
+  (match (: (bar #t) (foo #f) (bar #t))
+    [(: "bar" 2 3) #t]
+    [_ #f]))
+
+(test-backend pass
+  (class (Foo A)
+    (function (foo x) {(-> Bool A)}))
+  (class (Bar A)
+    (function (bar x) {(-> Bool A) (where (Foo A))}
+      (foo (not x))))
+  (instance Foo.String (Foo String)
+    (function (foo x)
+      (if x "foo" "bar")))
+  (instance Bar.String (Bar String))
+  (instance Foo.I32 (Foo I32)
+    (function (foo x)
+      (if x 1 2)))
+  (instance Bar.I32 (Bar I32)
+    (function (bar x)
+      (if x 3 4)))
+  (match (: (bar #t) (foo #f) (bar #t))
+    [(: "bar" 2 3) #t]
+    [_ #f]))
+
+(test-backend pass
+  (class (Foo A B)
+    (function (foo a b c) {(forall C D) (-> A B C (: A B C D)) (where (Bar C D))}))
+  (class (Bar A B)
+    (function (bar a) {(-> A B)}))
+  (instance Foo.Default (forall A) (Foo A String)
+    (function (foo a b c)
+      (: a b c (bar c))))
+  (instance Bar.Default (forall A) (Bar A unit)
+    (function (bar a)
+      unit))
+  (match (foo 12 "foo" #t)
+    [(: 12 "foo" #t unit) #t]
+    [_ #f]))
+
+(test-backend pass
+  (class (Hello A)
+    (function (hello a b) {(forall B) (-> A B (: I32 B))}))
+  (class (World A) (where (Hello A))
+    (function (world a) {(-> A (: I32 I32))}
+      (hello a 12)))
+  (instance Hello.Bool (Hello Bool)
+    (function (hello a b)
+      (: (if a 34 56) b)))
+  (instance World.Bool (World Bool))
+  (function (hello-world a) {(forall A) (-> A (: I32 I32)) (where (World A))}
+    (hello a 78))
+  (match (: (world #t) (hello-world #f))
+    [(: (: 34 12) (: 56 78)) #t]
+    [_ #f]))
+
+(test-backend pass
+  (class (Functor F)
+    (function (fmap f a) {(forall A B) (-> (-> A B) (F A) (F B))}))
+  (class (Applicative F) (where (Functor F))
+    (function (pure a) {(forall A) (-> A (F A))})
+    (function (ap f a) {(forall A B) (-> (F (-> A B)) (F A) (F B))}))
+  (value-data (Maybe A)
+    (just A)
+    nothing)
+  (instance Functor.Maybe (Functor Maybe)
+    (function (fmap f a)
+      (match a
+        [(just (let a)) (just (f a))]
+        [nothing nothing])))
+  (instance Applicative.Maybe (Applicative Maybe)
+    (function (pure a)
+      (just a))
+    (function (ap f a)
+      (match (: f a)
+        [(: (just (let f)) (just (let a))) (just (f a))]
+        [_ nothing])))
+  (function (lift2 f a b)
+    (ap (fmap f a) b))
+  (function (f a)
+    (let ([(g b) (+ a b)])
+      g))
+  (match (: (lift2 f nothing nothing) (lift2 f (just 1) nothing) (lift2 f (just 2) (just 3)))
+    [(: nothing nothing (just 5)) #t]
+    [_ #f]))

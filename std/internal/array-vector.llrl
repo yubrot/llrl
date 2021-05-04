@@ -1,0 +1,444 @@
+; Implementation of Arrays and Vectors, re-exported by std/array and std/vector.
+(no-implicit-std)
+
+(import "std/prelude/stage-1" _)
+(import "std/s" s/length)
+(import "std/integer" _.U64)
+(import "std/access" unsafe-get unsafe-set!)
+(import "std/memory" Ptr ptr/_)
+(import "std/ref" Ref ref ref/_ _.Ref)
+(import "std/iterator" _)
+(export Array array array/_ _.Array)
+(export Vector vector vector/_ _.Vector)
+
+(builtin-type (Array A) "array")
+
+(macro (array s)
+  (s/match s
+    [(_)
+      (ok \array/empty)]
+    [(_ ,@elems)
+      (ok
+        (let ([tmp-a (gensym)])
+          `(let ([,tmp-a (,\array/unsafe-alloc-uninitialized ,(s:integer #f (s/length elems)!))])
+            ,@(expand-array-init tmp-a 0 elems)
+            ,tmp-a)))]
+    [_
+      (err "Expected (array elem ...)")]))
+
+(function (expand-array-init array i elems) {(-> (Syntax Sexp) U64 (Syntax Sexp) (Syntax Sexp))}
+  (match elems
+    [(s:cons (let elem) (let elems))
+      (s:cons `(,\unsafe-set! ,array[,(s:integer #f i)] ,elem)
+              (expand-array-init array (+ i 1) elems))]
+    [_
+      (s:nil)]))
+
+(transparent-function (array/new init length) {(forall A) (-> A U64 (Array A))}
+  (let ([t (array/unsafe-alloc-uninitialized length)])
+    (array/fill! init t)
+    t))
+
+(transparent-function (array/new* initf length) {(forall A) (-> (-> A) U64 (Array A))}
+  (let ([t (array/unsafe-alloc-uninitialized length)])
+    (array/fill!* initf t)
+    t))
+
+(function array/empty {(forall A) (Array A)}
+  (array/unsafe-from-ptr ptr/null 0))
+
+; Caller must ensure that no one loads an uninitialized index.
+(builtin-op array/unsafe-alloc-uninitialized {(forall A) (-> U64 (Array A))} "array.alloc")
+
+; Caller must ensure that no one loads an uninitialized index and the returned Array never escapes.
+(builtin-op array/unsafe-stackalloc-uninitialized {(forall A) (-> U64 (Array A))} "array.stackalloc")
+
+; Caller must ensure that the specified pointer is valid for the specified length.
+(builtin-op array/unsafe-from-ptr {(forall A) (-> (Ptr A) U64 (Array A))} "array.construct")
+
+(builtin-op array/ptr {(forall A) (-> (Array A) (Ptr A))} "array.ptr")
+
+(builtin-op array/length {(forall A) (-> (Array A) U64)} "array.length")
+
+(function (array/empty? t) {(forall A) (-> (Array A) Bool)}
+  (= (array/length t) 0))
+
+(function (array/ref index t) {(forall A) (-> U64 (Array A) (Ref A))}
+  (assert (<= index (array/length t)) "array/ref: out of range")
+  (ref/unsafe-from-ptr (ptr/add index (array/ptr t))))
+
+(function (array/subarray start end t) {(forall A) (-> U64 U64 (Array A) (Array A))}
+  (assert (<= start end (array/length t)) "array/subarray: !(start <= end <= length)")
+  (array/unsafe-from-ptr (ptr/add start (array/ptr t)) (- end start)))
+
+(function (array/take n t) {(forall A) (-> U64 (Array A) (Array A))}
+  (array/subarray 0 (min n (array/length t)) t))
+
+(function (array/skip n t) {(forall A) (-> U64 (Array A) (Array A))}
+  (array/subarray (min n (array/length t)) (array/length t) t))
+
+(function (array/split-at index t) {(forall A) (-> U64 (Array A) (: (Array A) (Array A)))}
+  (assert (<= index (array/length t)) "array/split-at: out of range")
+  (: (array/subarray 0 index t) (array/subarray index (array/length t) t)))
+
+(function (array/split-first t) {(forall A) (-> (Array A) (: A (Array A)))}
+  (assert (not (array/empty? t)) "array/split-first: empty array")
+  (: (unsafe-get t[0]) (array/subarray 1 (array/length t) t)))
+
+(function (array/split-last t) {(forall A) (-> (Array A) (: A (Array A)))}
+  (assert (not (array/empty? t)) "array/split-first: empty array")
+  (let ([l-1 (- (array/length t) 1)])
+    (: (unsafe-get t[l-1]) (array/subarray 0 l-1 t))))
+
+(function (array/split-at? index t) {(forall A) (-> U64 (Array A) (Option (: (Array A) (Array A))))}
+  (if (<= index (array/length t)) (some (array/split-at index t)) none))
+
+(function (array/split-first? t) {(forall A) (-> (Array A) (Option (: A (Array A))))}
+  (if (not (array/empty? t)) (some (array/split-first t)) none))
+
+(function (array/split-last? t) {(forall A) (-> (Array A) (Option (: A (Array A))))}
+  (if (not (array/empty? t)) (some (array/split-last t)) none))
+
+(function (array/fill! elem t) {(forall A) (-> A (Array A) unit)}
+  (let ([i (ref 0)]
+        [l (array/length t)])
+    (while (< ~i l)
+      (unsafe-set! t[~i] elem)
+      (set! i (+ ~i 1)))))
+
+(function (array/fill!* elemf t) {(forall A) (-> (-> A) (Array A) unit)}
+  (let ([i (ref 0)]
+        [l (array/length t)])
+    (while (< ~i l)
+      (unsafe-set! t[~i] (elemf))
+      (set! i (+ ~i 1)))))
+
+(function (array/copy! src dest) {(forall A) (-> (Array A) (Array A) unit)}
+  (assert (<= (array/length src) (array/length dest)) "array/copy!: src is larger than dest")
+  (ptr/copy! (array/ptr src) (array/length src) (array/ptr dest)))
+
+(function (array/swap! a b t) {(forall A) (-> U64 U64 (Array A) unit)}
+  (assert (< a (array/length t)) "array/swap: Out of range")
+  (assert (< b (array/length t)) "array/swap: Out of range")
+  (when (ne? a b)
+    (let ([ta (unsafe-get t[a])]
+          [tb (unsafe-get t[b])])
+      (unsafe-set! t[a] tb)
+      (unsafe-set! t[b] ta))))
+
+(function (array/reverse! t) {(forall A) (-> (Array A) unit)}
+  (let ([i (ref 0)]
+        [l (/ (array/length t) 2)]
+        [r (- (array/length t) 1)])
+    (while (< ~i l)
+      (array/swap! ~i (- r ~i) t)
+      (set! i (+ ~i 1)))))
+
+; ---------------------------
+
+(value-data (Vector A)
+  (vector: (Ref (VectorBody A))))
+
+(value-data (VectorBody A)
+  (vector-body: (Ptr A) U64 U64))
+
+(macro (vector s)
+  (s/match s
+    [(_ ,@elems)
+      (ok `(,\vector/from-array (,\array ,@elems)))]
+    [_
+      (err "Expected (vector elem ...)")]))
+
+(function (vector/new init length) {(forall A) (-> A U64 (Vector A))}
+  (vector/from-array (array/new init length)))
+
+(function (vector/new* initf length) {(forall A) (-> (-> A) U64 (Vector A))}
+  (vector/from-array (array/new* initf length)))
+
+(function vector/empty {(forall A) (Vector A)}
+  (vector/from-array array/empty))
+
+(function (vector/from-array a) {(forall A) (-> (Array A) (Vector A))}
+  (let ([ptr (array/ptr a)]
+        [len (array/length a)])
+    (vector/unsafe-from-ptr ptr len len)))
+
+(transparent-function (vector/with-capacity capacity) {(forall A) (-> U64 (Vector A))}
+  (let1 c capacity
+    (vector/unsafe-from-ptr (array/ptr (array/unsafe-alloc-uninitialized c)) 0 c)))
+
+; Caller must ensure that the returned Vector never escapes.
+(transparent-function (vector/unsafe-stackalloc-with-capacity capacity) {(forall A) (-> U64 (Vector A))}
+  (let1 c capacity
+    (vector/unsafe-from-ptr (array/ptr (array/unsafe-stackalloc-uninitialized c)) 0 c)))
+
+; Caller must ensure that the specified pointer is valid for the specified capacity and
+; the pointer is loadable up to the specified length and `len <= cap` is satisfied.
+(transparent-function (vector/unsafe-from-ptr ptr len cap) {(forall A) (-> (Ptr A) U64 U64 (Vector A))}
+  (vector: (ref (vector-body: ptr len cap))))
+
+(transparent-function (vector/ptr v) {(forall A) (-> (Vector A) (Ptr A))}
+  (match v
+    [(vector: (ref (vector-body: (let ptr) _ _))) ptr]))
+
+(transparent-function (vector/length v) {(forall A) (-> (Vector A) U64)}
+  (match v
+    [(vector: (ref (vector-body: _ (let len) _))) len]))
+
+(transparent-function (vector/capacity v) {(forall A) (-> (Vector A) U64)}
+  (match v
+    [(vector: (ref (vector-body: _ _ (let cap)))) cap]))
+
+(function (vector/free v) {(forall A) (-> (Vector A) U64)}
+  (match v
+    [(vector: (ref (vector-body: _ (let len) (let cap)))) (- cap len)]))
+
+; Get the current buffer of the vector, with the length set to the number of initialized elements.
+(function (vector/buffer v) {(forall A) (-> (Vector A) (Array A))}
+  (match v
+    [(vector: (ref (vector-body: (let ptr) (let len) _))) (array/unsafe-from-ptr ptr len)]))
+
+; Get the current buffer of the vector, with the length set to the capacity.
+; Caller must ensure that no one loads an uninitialized index.
+(function (vector/unsafe-buffer-uninitialized v) {(forall A) (-> (Vector A) (Array A))}
+  (match v
+    [(vector: (ref (vector-body: (let ptr) _ (let cap)))) (array/unsafe-from-ptr ptr cap)]))
+
+(function (vector/empty? t) {(forall A) (-> (Vector A) Bool)}
+  (= (vector/length t) 0))
+
+(function (vector/ref index t) {(forall A) (-> U64 (Vector A) (Ref A))}
+  (array/ref index (vector/buffer t)))
+
+(function (vector/fill! elem t) {(forall A) (-> A (Vector A) unit)}
+  (array/fill! elem (vector/buffer t)))
+
+(function (vector/fill!* elemf t) {(forall A) (-> (-> A) (Vector A) unit)}
+  (array/fill!* elemf (vector/buffer t)))
+
+(function (vector/swap! a b t) {(forall A) (-> U64 U64 (Vector A) unit)}
+  (assert (< a (vector/length t)) "vector/swap: Out of range")
+  (assert (< b (vector/length t)) "vector/swap: Out of range")
+  (array/swap! a b (vector/buffer t)))
+
+; Grows
+
+(function (vector/reverse! t) {(forall A) (-> (Vector A) unit)}
+  (array/reverse! (vector/buffer t)))
+
+(function (vector/reserve-capacity! required-cap exact? t) {(forall A) (-> U64 Bool (Vector A) unit)}
+  (with1 (vector: (let body (ref (vector-body: (let ptr) (let len) (let cap))))) t
+    (when (< cap required-cap)
+      (let* ([new-cap (if exact? required-cap (max required-cap (* 2 (max 2 cap))))]
+             [new-ptr (array/ptr (array/unsafe-alloc-uninitialized new-cap))])
+        (ptr/copy! ptr len new-ptr)
+        (set! body (vector-body: new-ptr len new-cap))))))
+
+(function (vector/reserve-free! required-free exact? t) {(forall A) (-> U64 Bool (Vector A) unit)}
+  (vector/reserve-capacity! (+ (vector/length t) required-free) exact? t))
+
+(function (vector/append! array t) {(forall A) (-> (Array A) (Vector A) unit)}
+  (vector/reserve-free! (array/length array) #f t)
+  (with1 (vector: (let body (ref (vector-body: (let ptr) (let len) (let cap))))) t
+    (ptr/copy! (array/ptr array) (array/length array) (ptr/add len ptr))
+    (set! body (vector-body: ptr (+ len (array/length array)) cap))))
+
+(function (vector/push! value t) {(forall A) (-> A (Vector A) unit)}
+  (vector/reserve-free! 1 #f t)
+  (with1 (vector: (let body (ref (vector-body: (let ptr) (let len) (let cap))))) t
+    (ptr/store-at! len value ptr)
+    (set! body (vector-body: ptr (+ len 1) cap))))
+
+(function (vector/insert! index value t) {(forall A) (-> U64 A (Vector A) unit)}
+  (vector/reserve-free! 1 #f t)
+  (with1 (vector: (let body (ref (vector-body: (let ptr) (let len) (let cap))))) t
+    (assert (<= index len) "vector/insert!: Out of range")
+    (ptr/move! (ptr/add index ptr) (- len index) (ptr/add (+ index 1) ptr))
+    (ptr/store-at! index value ptr)
+    (set! body (vector-body: ptr (+ len 1) cap))))
+
+; Shrinks
+
+(function (vector/pop! t) {(forall A) (-> (Vector A) (Option A))}
+  (with1 (vector: (let body (ref (vector-body: (let ptr) (let len) (let cap))))) t
+    (when? (ne? len 0)
+      (set! body (vector-body: ptr (- len 1) cap))
+      (ptr/load-at (- len 1) ptr))))
+
+(function (vector/swap-remove! index t) {(forall A) (-> U64 (Vector A) A)}
+  (with1 (vector: (let body (ref (vector-body: (let ptr) (let len) (let cap))))) t
+    (assert (< index len) "vector/swap-remove!: Out of range")
+    (let* ([len-1 (- len 1)]
+           [removing-value (ptr/load-at index ptr)])
+      (when (ne? index len-1)
+        (ptr/store-at! index (ptr/load-at len-1 ptr) ptr))
+      (set! body (vector-body: ptr len-1 cap))
+      removing-value)))
+
+(function (vector/remove! index t) {(forall A) (-> U64 (Vector A) A)}
+  (with1 (vector: (let body (ref (vector-body: (let ptr) (let len) (let cap))))) t
+    (assert (< index len) "vector/remove!: Out of range")
+    (let* ([len-1 (- len 1)]
+           [removing-value (ptr/load-at index ptr)])
+      (ptr/move! (ptr/add (+ index 1) ptr) (- len-1 index) (ptr/add index ptr))
+      (set! body (vector-body: ptr len-1 cap))
+      removing-value)))
+
+(function (vector/truncate! set-len t) {(forall A) (-> U64 (Vector A) unit)}
+  (with1 (vector: (let body (ref (vector-body: (let ptr) (let len) (let cap))))) t
+    (when (< set-len len)
+      (set! body (vector-body: ptr set-len cap)))))
+
+(function (vector/clear! t) {(forall A) (-> (Vector A) unit)}
+  (vector/truncate! 0 t))
+
+; Consumes
+
+(function (vector/consume! n t) {(forall A) (-> U64 (Vector A) (Array A))}
+  (when (= n 0) (return array/empty))
+  (with1 (vector: (let body (ref (vector-body: (let ptr) (let len) (let cap))))) t
+    (assert (<= n len) "vector/consume!: Out of range")
+    (set! body (vector-body: (ptr/add n ptr) (- len n) (- cap n)))
+    (array/unsafe-from-ptr ptr n)))
+
+(function (vector/consume-all! t) {(forall A) (-> (Vector A) (Array A))}
+  (with1 (vector: (let body (ref (vector-body: (let ptr) (let len) (let cap))))) t
+    (set! body (vector-body: (ptr/add len ptr) 0 (- cap len)))
+    (array/unsafe-from-ptr ptr len)))
+
+(function (vector/move! t) {(forall A) (-> (Vector A) (Vector A))}
+  (with1 (vector: (let body)) t
+    (let1 moved-vec (vector: (ref ~body))
+      (set! body (vector-body: ptr/null 0 0))
+      moved-vec)))
+
+; ---------------------------
+
+(instance ShallowCopy.Array (forall A) (ShallowCopy (Array A))
+  (function (shallow-copy a)
+    ; Equivalent to (collect a)
+    (let ([b (array/unsafe-alloc-uninitialized (array/length a))])
+      (ptr/copy! (array/ptr a) (array/length a) (array/ptr b))
+      b)))
+
+(instance DeepCopy.Array (forall A) (DeepCopy (Array A)) (where (DeepCopy A))
+  (function (deep-copy a)
+    (let ([i (ref 0)]
+          [l (array/length a)]
+          [b (array/unsafe-alloc-uninitialized (array/length a))])
+      (while (< ~i l)
+        (unsafe-set! b[~i] (deep-copy (unsafe-get a[~i])))
+        (set! i (+ ~i 1)))
+      b)))
+
+(instance ShallowCopy.Vector (forall A) (ShallowCopy (Vector A))
+  (function (shallow-copy a) (vector/from-array (shallow-copy (vector/buffer a)))))
+
+(instance DeepCopy.Vector (forall A) (DeepCopy (Vector A)) (where (DeepCopy A))
+  (function (deep-copy a) (vector/from-array (deep-copy (vector/buffer a)))))
+
+(instance Default.Array (forall A) (Default (Array A))
+  (transparent-function default array/empty))
+
+(instance Default.Vector (forall A) (Default (Vector A))
+  (transparent-function default vector/empty))
+
+(instance DebugDisplay.Array (forall A) (DebugDisplay (Array A)) (where (DebugDisplay A))
+  (function (debug-display! w a)
+    (display! w "(array")!
+    (for (let e) a (display-all! w " " (debug e))!)
+    (display! w ")")))
+
+(instance DebugDisplay.Vector (forall A) (DebugDisplay (Vector A)) (where (DebugDisplay A))
+  (function (debug-display! w a)
+    (display! w "(vector")!
+    (for (let e) a (display-all! w " " (debug e))!)
+    (display! w ")")))
+
+(instance Eq.Array (forall A) (Eq (Array A)) (where (Eq A))
+  (function (eq? a b)
+    (if (= (array/length a) (array/length b))
+      (let ([i (ref 0)]
+            [l (array/length a)])
+        (while (< ~i l)
+          (if (= (unsafe-get a[~i]) (unsafe-get b[~i]))
+            (set! i (+ ~i 1))
+            (return #f)))
+        #t)
+      #f)))
+
+(instance Eq.Vector (forall A) (Eq (Vector A)) (where (Eq A))
+  (function (eq? a b)
+    (= (vector/buffer a) (vector/buffer b))))
+
+(instance Ord.Array (forall A) (Ord (Array A)) (where (Ord A))
+  (function (compare a b)
+    (let* ([la (array/length a)]
+           [lb (array/length b)]
+           [i (ref 0)]
+           [l (min la lb)])
+      (while (< ~i l)
+        (match (compare (unsafe-get a[~i]) (unsafe-get b[~i]))
+          [ordering:equal (set! i (+ ~i 1))]
+          [(let o) (return o)]))
+      (compare la lb))))
+
+(instance Ord.Vector (forall A) (Ord (Vector A)) (where (Ord A))
+  (function (compare a b)
+    (compare (vector/buffer a) (vector/buffer b))))
+
+(instance LoadAt.Array (LoadAt Array)
+  (transparent-function (unsafe-load-at i t) (<array/load> i t))
+  (transparent-function (load-bound t) (array/length t)))
+
+(instance LoadAt.Vector (LoadAt Vector)
+  (transparent-function (unsafe-load-at i t) (ptr/load-at i (vector/ptr t)))
+  (transparent-function (load-bound t) (vector/length t)))
+
+(builtin-op <array/load> {(forall A) (-> U64 (Array A) A)} "array.load")
+
+(instance StoreAt.Array (StoreAt Array)
+  (transparent-function (unsafe-store-at! i a t) (<array/store> i a t)))
+
+(instance StoreAt.Vector (StoreAt Vector)
+  (transparent-function (unsafe-store-at! i a t) (ptr/store-at! i a (vector/ptr t))))
+
+(builtin-op <array/store> {(forall A) (-> U64 A (Array A) unit)} "array.store")
+
+(instance Iterate.Array (Iterate Array)
+  (function (iterate t)
+    ; Equivalent to (iterator/unfold array/split-first? t)
+    (let ([i (ref 0)]
+          [l (array/length t)])
+      (iterator/new (lambda ()
+        (when? (< ~i l)
+          (let1 a (unsafe-get t[~i])
+            (set! i (+ ~i 1))
+            a)))))))
+
+(instance RevIterate.Array (RevIterate Array)
+  (function (rev-iterate t)
+    ; Equivalent to (iterator/unfold array/split-last? t)
+    (let1 i (ref (array/length t))
+      (iterator/new (lambda ()
+        (when? (< 0 ~i)
+          (set! i (- ~i 1))
+          (unsafe-get t[~i])))))))
+
+(instance Iterate.Vector (Iterate Vector)
+  (function (iterate t)
+    (iterate (vector/buffer t))))
+
+(instance RevIterate.Vector (RevIterate Vector)
+  (function (rev-iterate t)
+    (rev-iterate (vector/buffer t))))
+
+(instance Collect.Array (Collect Array)
+  (function (collect t)
+    (vector/buffer (collect t))))
+
+(instance Collect.Vector (Collect Vector)
+  (function (collect t)
+    (let1 dest vector/empty
+      (for (let x) t (vector/push! x dest))
+      dest)))

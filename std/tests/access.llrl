@@ -1,0 +1,3 @@
+(import "std/access" _)
+
+; Macros are tested in std/tests/array

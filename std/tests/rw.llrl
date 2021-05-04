@@ -1,0 +1,38 @@
+(import "std/rw" _)
+(import "std/io" IoError io-error:_ _.IoError)
+
+(let1 buf vector/empty {(Vector U8)}
+  (assert-eq? (ok unit) (write-bytes! (array 1 2 3) buf))
+  (assert-eq? (ok unit) (write-bytes! (array 4 5 6 7) buf))
+  (assert-eq? (ok unit) (flush! buf))
+  (assert-eq? buf (vector 1 2 3 4 5 6 7))
+  (let1 tmp (array/new 0 4)
+    (assert-eq? (ok 4) (read-into-buf! tmp buf))
+    (assert-eq? (array 1 2 3 4) tmp)
+    (assert-eq? (vector 5 6 7) buf)
+    (assert-eq? (ok 3) (read-into-buf! tmp buf))
+    (assert-eq? (vector) buf)
+    (assert-eq? (array 5 6 7 4) tmp)
+    (assert-eq? (ok 0) (read-into-buf! tmp buf))))
+
+(let* ([raw (|> (iterator/range 0 10000 1) (it/map cast) collect) {(Array U8)}]
+       [a (vector/from-array raw)]
+       [b vector/empty])
+  (assert-eq? (ok 10000) (read-bytes-to-end! b a))
+  (assert-eq? (vector/from-array raw) b)
+  (assert-eq? (vector) a))
+
+; NOTE: Linux-x64's endianness is little endian
+(let1 a (vector 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16) {(Vector U8)}
+  (assert-eq? (ok 1) {(Result U8 IoError)} (read-u8! a)) ; 0x01
+  (assert-eq? (ok 770) {(Result U16 IoError)} (read-u16! a)) ; 0x0302
+  (assert-eq? (ok 117835012) {(Result U32 IoError)} (read-u32! a)) ; 0x07060504
+  (assert-eq? (ok 1084818905618843912) {(Result U64 IoError)} (read-u64! a)) ; 0x0f0e0d0c0b0a0908
+  (assert-eq? (err io-error:unexpected-eof) (read-u16! a)))
+
+(let1 a (vector) {(Vector U8)}
+  (assert-eq? (ok unit) {(Result unit IoError)} (write-u8! 2 a)) ; 0x02
+  (assert-eq? (ok unit) {(Result unit IoError)} (write-u16! 1030 a)) ; 0x0406
+  (assert-eq? (ok unit) {(Result unit IoError)} (write-u32! 16975111 a)) ; 0x01030507
+  (assert-eq? (ok unit) {(Result unit IoError)} (write-u64! 145247719462864649 a)) ; 0x0204060803050709
+  (assert-eq? (vector 2 6 4 7 5 3 1 9 7 5 3 8 6 4 2) a))

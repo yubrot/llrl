@@ -1,0 +1,92 @@
+(import "std/ord" _)
+(export test1234 test123 test12)
+
+(assert (<))
+(assert (< 1))
+(assert (< 1 2))
+(assert (< 1 2 3))
+(assert (< 1 2 3 4))
+(assert (not (< 1 3 2)))
+(assert (not (< 3 2 1)))
+(assert (not (< 3 1 2)))
+(assert (not (< 1 1)))
+
+(assert (<= 1 1))
+(assert (<= 1 1 2))
+(assert (<= 1 1 2 4))
+(assert (not (<= 3 4 5 4)))
+
+(assert (> 3 2))
+(assert (> 3 -1 -5 -8))
+(assert (not (> 0 0)))
+
+(assert (>= 0 0))
+(assert (>= 0 -1))
+(assert (>= 0 -1 -1 -2 -2))
+
+(assert-eq? 0 (min 0))
+(assert-eq? 0 (min 0 1))
+(assert-eq? 0 (min 0 1 2 1 3))
+(assert-eq? 0 (min 1 2 1 0))
+(assert-eq? 1 (min 4 2 1 3))
+
+(assert-eq? 0 (max 0))
+(assert-eq? 1 (max 0 1))
+(assert-eq? 3 (max 0 1 2 1 3))
+(assert-eq? 2 (max 1 2 1 0))
+(assert-eq? 4 (max 4 2 1 3))
+
+(test12 #f #t)
+(test123 ordering:less ordering:equal ordering:greater)
+
+(function (test1234 a b c d)
+  (assert (< a b c d))
+  (test3 a b c) (test3 a b d) (test3 a c d) (test3 b c d)
+  (test2 a b) (test2 a c) (test2 a d) (test2 b c) (test2 b d) (test2 c d)
+  (test1 a) (test1 b) (test1 c) (test1 d))
+
+(function (test123 a b c)
+  (assert (< a b c))
+  (test3 a b c)
+  (test2 a b) (test2 a c) (test2 b c)
+  (test1 a) (test1 b) (test1 c))
+
+(function (test12 a b)
+  (assert (< a b))
+  (test2 a b)
+  (test1 a) (test1 b))
+
+(function (test3 a b c)
+  (test-transitivity a b c)
+  (test-transitivity a c b)
+  (test-transitivity b a c)
+  (test-transitivity b c a)
+  (test-transitivity c a b)
+  (test-transitivity c b a))
+
+(function (test2 a b)
+  (test-transitivity a a b) (test-transitivity a b a) (test-transitivity b a a)
+  (test-antisymmetry a b) (test-antisymmetry b a)
+  (test-operators a b) (test-operators b a))
+
+(function (test1 a)
+  (test-transitivity a a a)
+  (test-reflexivity a)
+  (test-antisymmetry a a))
+
+(function (test-transitivity a b c)
+  (when (and (<= a b) (<= b c)) (assert (<= a c))))
+
+(function (test-reflexivity a)
+  (assert (<= a a)))
+
+(function (test-antisymmetry a b)
+  (when (and (<= a b) (<= b a)) (assert (= a b))))
+
+(function (test-operators a b)
+  (assert-eq? (>= a b) (<= b a))
+  (assert-eq? (< a b) (and (<= a b) (ne? a b)))
+  (assert-eq? (> a b) (< b a))
+  (assert-eq? (< a b) (= (compare a b) ordering:less))
+  (assert-eq? (> a b) (= (compare a b) ordering:greater))
+  (assert-eq? (= a b) (= (compare a b) ordering:equal)))

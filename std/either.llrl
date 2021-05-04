@@ -1,0 +1,107 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-1" _)
+(export Either left right either either/_ _.Either)
+
+(value-data (Either L R)
+  (left L)
+  (right R))
+
+(function (either/left? x) {(forall L R) (-> (Either L R) (Option L))}
+  (match x
+    [(left (let x)) (some x)]
+    [_ none]))
+
+(function (either/right? x) {(forall L R) (-> (Either L R) (Option R))}
+  (match x
+    [(right (let x)) (some x)]
+    [_ none]))
+
+(function (either lf rf x) {(forall L R A) (-> (-> L A) (-> R A) (Either L R) A)}
+  (match x
+    [(left (let x)) (lf x)]
+    [(right (let x)) (rf x)]))
+
+(function (either/flip x) {(forall L R) (-> (Either L R) (Either R L))}
+  (match x
+    [(left (let x)) (right x)]
+    [(right (let x)) (left x)]))
+
+(function (either/unwrap-left alt x) {(forall L R) (-> L (Either L R) L)}
+  (match x
+    [(left (let x)) x]
+    [(right _) alt]))
+
+(function (either/unwrap-left* altf x) {(forall L R) (-> (-> R L) (Either L R) L)}
+  (match x
+    [(left (let x)) x]
+    [(right (let x)) (altf x)]))
+
+(function (either/unwrap-right alt x) {(forall L R) (-> R (Either L R) R)}
+  (match x
+    [(left _) alt]
+    [(right (let x)) x]))
+
+(function (either/unwrap-right* altf x) {(forall L R) (-> (-> L R) (Either L R) R)}
+  (match x
+    [(left (let x)) (altf x)]
+    [(right (let x)) x]))
+
+(function (either/force-left x) {(forall L R) (-> (Either L R) L)}
+  (match x
+    [(left (let x)) x]
+    [(right _) (assert #f "either/force-left")]))
+
+(function (either/force-right x) {(forall L R) (-> (Either L R) R)}
+  (match x
+    [(left _) (assert #f "either/force-right")]
+    [(right (let x)) x]))
+
+(function (either/map-left f x) {(forall LA LB R) (-> (-> LA LB) (Either LA R) (Either LB R))}
+  (match x
+    [(left (let x)) (left (f x))]
+    [(right (let x)) (right x)]))
+
+(function (either/map-right f x) {(forall L RA RB) (-> (-> RA RB) (Either L RA) (Either L RB))}
+  (match x
+    [(left (let x)) (left x)]
+    [(right (let x)) (right (f x))]))
+
+(function (either/then-left f x) {(forall LA LB R) (-> (-> LA (Either LB R)) (Either LA R) (Either LB R))}
+  (match x
+    [(left (let x)) (f x)]
+    [(right (let x)) (right x)]))
+
+(function (either/then-right f x) {(forall L RA RB) (-> (-> RA (Either L RB)) (Either L RA) (Either L RB))}
+  (match x
+    [(left (let x)) (left x)]
+    [(right (let x)) (f x)]))
+
+(instance DeepCopy.Either (forall L R) (DeepCopy (Either L R)) (where (DeepCopy L) (DeepCopy R))
+  (function (deep-copy a)
+    (match a
+      [(left (let x)) (left (deep-copy x))]
+      [(right (let x)) (right (deep-copy x))])))
+
+(instance DebugDisplay.Either (forall L R) (DebugDisplay (Either L R)) (where (DebugDisplay L) (DebugDisplay R))
+  (function (debug-display! w a)
+    (match a
+      [(left (let x))
+        (display-all! w "(left " (debug x) ")")]
+      [(right (let x))
+        (display-all! w "(right " (debug x) ")")])))
+
+(instance Eq.Either (forall L R) (Eq (Either L R)) (where (Eq L) (Eq R))
+  (function (eq? a b)
+    (match (: a b)
+      [(: (left (let a)) (left (let b))) (eq? a b)]
+      [(: (right (let a)) (right (let b))) (eq? a b)]
+      [_ #f])))
+
+(instance Ord.Either (forall L R) (Ord (Either L R)) (where (Ord L) (Ord R))
+  (function (compare a b)
+    (match (: a b)
+      [(: (right (let a)) (right (let b))) (compare a b)]
+      [(: (right _) (left _)) ordering:greater]
+      [(: (left _) (right _)) ordering:less]
+      [(: (left (let a)) (left (let b))) (compare a b)])))

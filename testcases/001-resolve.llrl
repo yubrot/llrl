@@ -1,0 +1,501 @@
+; function
+
+(test-module pass
+  (function (f)
+    (g))
+  (function (g)
+    (f)))
+
+(test-module (fail (unresolved value h))
+  (function (f)
+    (g))
+  (function (g)
+    (h)))
+
+; function.params
+
+(test-module pass
+  (function (f x)
+    x))
+
+(test-module (fail (duplicated-identifier x))
+  (function (f x x)
+    x))
+
+(test-module (fail (unresolved value x))
+  (function (f x)
+    x)
+  x)
+
+(test-module (fail (unresolved value x))
+  (function (f x)
+    x)
+  (function (g y)
+    x))
+
+; function.scheme.ty_params
+
+(test-module pass
+  (function (f x) {(forall A) (-> A A)}
+    x))
+
+(test-module (fail (duplicated-identifier A))
+  (function (f x) {(forall A A) (-> A A)}
+    x))
+
+(test-module (fail (unresolved type A))
+  (function (f x) {(-> A A)}
+    x))
+
+(test-module pass
+  (function (f x) {(forall A) (-> A A)}
+    (let ([y {A} x]) ; llrl supports scoped type variables
+      y)))
+
+(test-module (fail (unresolved type B))
+  (class (Hello A))
+  (function (f x) {(forall A) (-> A A) (where (Hello B))}
+    x))
+
+; builtin_op
+
+(test-module pass
+  (builtin-op hello {(-> unit)} "no-op")
+  (function (f)
+    (hello)))
+
+; builtin_op.scheme
+
+(test-module pass
+  (builtin-op hello {(forall A) (-> A)} "no-op"))
+
+(test-module (fail (duplicated-identifier A))
+  (builtin-op hello {(forall A A) (-> A)} "no-op"))
+
+(test-module (fail (unresolved type B))
+  (builtin-op hello {(forall A) (-> B)} "no-op"))
+
+; macro
+; NOTE: macros are not usable at the same module
+
+; macro.params
+
+(test-module pass
+  (macro (m x)
+    (ok x)))
+
+(test-module (fail (unresolved value x))
+  (macro (m x)
+    (ok x))
+  x)
+
+(test-module (fail (unresolved value x))
+  (macro (m x)
+    (ok x))
+  (macro (n y)
+    (ok x)))
+
+; data_type_con
+
+(test-module pass
+  (data Hello world)
+  (function (f) {(-> Hello)}
+    world))
+
+; data_type_con.params
+
+(test-module pass
+  (data (Hello A)
+    (world A)))
+
+(test-module (fail (unresolved type A))
+  (data Hello
+    (world A)))
+
+(test-module (fail (unresolved type A))
+  (data (Hello A))
+  (data World
+    (foo A)))
+
+(test-module (fail (duplicated-identifier A))
+  (data (Hello A A)))
+
+; builtin_type_con
+
+(test-module pass
+  (builtin-type Int "i32")
+  (function (f) {(-> Int)}
+    (f)))
+
+; builtin_type_con.params
+
+(test-module pass
+  (builtin-type (Ref A) "ptr"))
+
+(test-module (fail (duplicated-identifier A))
+  (builtin-type (Ref A A) "ptr"))
+
+(test-module pass
+  (builtin-type (Ref A) "ptr"
+    [(ref A) "ptr"]))
+
+(test-module (fail (unresolved type A))
+  (builtin-type (Hello A) "ptr")
+  (builtin-type Ref "i32"
+    [(ref A) "ptr"]))
+
+; class_con
+
+(test-module (fail (unresolved class Hello))
+  (class (World A) (where (Hello A))))
+
+(test-module pass
+  (class (Hello A))
+  (function (f x) {(forall A) (-> A A) (where (Hello A))}
+    x))
+
+(test-module (fail (unresolved class World))
+  (class (Hello A))
+  (function (f x) {(forall A) (-> A A) (where (World A))}
+    x))
+
+(test-module pass
+  (class (Hello A)
+    (function (world x) {(-> A A)}))
+  (function (f x)
+    (world x)))
+
+; class_con.params
+
+(test-module pass
+  (class (Hello B))
+  (class (World A) (where (Hello A))))
+
+(test-module (fail (duplicated-identifier A))
+  (class (Hello A A)))
+
+(test-module (fail (unresolved type B))
+  (class (Hello B))
+  (class (World A) (where (Hello B))))
+
+(test-module pass
+  (class (Hello A)
+    (function world {A})))
+
+(test-module (fail (unresolved type B))
+  (class (Hello B))
+  (class (World A)
+    (function f {B})))
+
+(test-module pass
+  (function (g)
+    (g))
+  (class (Hello A)
+    (function f {A}
+      (let ([y {A} (g)])
+        y))))
+
+; class_method.params
+
+(test-module pass
+  (class (Hello A)
+    (function (f x) {(-> A A)}
+      x)))
+
+(test-module (fail (duplicated-identifier x))
+  (class (Hello A)
+    (function (f x x) {(-> A A A)}
+      x)))
+
+; class_method.scheme.ty_params
+
+(test-module pass
+  (class (Hello A)
+    (function (f x y) {(forall B) (-> A B A)}
+      (let ([s {A} x]
+            [t {B} y])
+        s))))
+
+; instance_con
+
+(test-module (fail (unresolved class Unknown))
+  (instance Unknown.Default Unknown))
+
+(test-module pass
+  (class Foo)
+  (instance Foo.Default Foo))
+
+(test-module pass
+  (class Foo)
+  (class Bar)
+  (instance Foo.Default Foo (where Bar)))
+
+(test-module (fail (unresolved class Bar))
+  (class Foo)
+  (instance Foo.Default Foo (where Bar)))
+
+(test-module (fail (unresolved type X))
+  (class (Foo A))
+  (instance Foo.Default (Foo X)))
+
+(test-module pass
+  (data X)
+  (class (Foo A))
+  (instance Foo.X (Foo X)))
+
+(test-modules pass
+  ("~"
+    (import "~/foo" Foo)
+    (instance Foo.Default Foo))
+  ("~/foo"
+    (class Foo)
+    (export Foo)))
+
+(test-modules (fail cannot-declare-sealed-class-instance-in-another-module)
+  ("~"
+    (import "~/foo" Foo)
+    (instance Foo.Default Foo))
+  ("~/foo"
+    (sealed-class Foo)
+    (export Foo)))
+
+; instance_con.ty_params
+
+(test-module pass
+  (class (Foo A))
+  (instance Foo.Default (forall X) (Foo X)))
+
+(test-module (fail (duplicated-identifier X))
+  (class (Foo A))
+  (instance Foo.Default (forall X X) (Foo X)))
+
+(test-module pass
+  (class (Foo A))
+  (class (Bar A))
+  (instance Foo.Default (forall X) (Foo X) (where (Bar X))))
+
+(test-module (fail (unresolved type Y))
+  (class (Foo A))
+  (class (Bar A))
+  (instance Foo.Default (forall X) (Foo X) (where (Bar Y))))
+
+(test-module pass
+  (class (Foo A)
+    (function foo {A}))
+  (instance Foo.Default (forall X) (Foo X)
+    (function foo {X}
+      foo)))
+
+(test-module (fail (unresolved type A))
+  (class (Foo A)
+    (function foo {A}))
+  (instance Foo.Default (forall X) (Foo X)
+    (function foo {A}
+      foo)))
+
+; instance_method.params
+
+(test-module pass
+  (class (Foo A)
+    (function (foo x) {(-> A A)}))
+  (instance Foo.Default (forall A) (Foo A)
+    (function (foo x)
+      x)))
+
+(test-module pass
+  (class (Foo A)
+    (function (foo x) {(-> A A)}))
+  (instance Foo.Default (forall A) (Foo A)
+    (function (foo y)
+      y)))
+
+(test-module (fail (unresolved value x))
+  (class (Foo A)
+    (function (foo x) {(-> A A)}))
+  (instance Foo.Default (forall A) (Foo A)
+    (function (foo y)
+      x)))
+
+; instance_method.scheme.ty_params
+
+(test-module pass
+  (class (Foo A)
+    (function (foo x) {(forall B) (-> B A)}))
+  (instance Foo.Default (forall A) (Foo A)
+    (function (foo x) {(forall C) (-> C A)}
+      (foo x))))
+
+(test-module pass
+  (class (Foo A)
+    (function (foo x y) {(forall B) (-> A B A)}))
+  (instance Foo.Default (forall A) (Foo A)
+    (function (foo x y) {(forall C) (-> A C A)}
+      (let ([a {A} x]
+            [c {C} y])
+        a))))
+
+; instance_method.class_method
+
+(test-module pass
+  (class (Foo A)
+    (function foo {A})
+    (function bar {A})
+    (function baz {A}))
+  (instance Foo.Default (forall A) (Foo A)
+    (function foo bar)
+    (function bar baz)
+    (function baz foo)))
+
+(test-module (fail (unresolved class-method bar))
+  (class (Foo A)
+    (function foo {A})
+    (function bar {A})
+    (function baz {A}))
+  (instance Foo.Default (forall A) (Foo A)
+    (function foo bar)
+    (function baz foo)))
+
+(test-module (fail (unresolved class-method hoge))
+  (class (Foo A)
+    (function foo {A})
+    (function bar {A})
+    (function baz {A}))
+  (instance Foo.Default (forall A) (Foo A)
+    (function foo bar)
+    (function bar baz)
+    (function hoge baz)
+    (function baz foo)))
+
+(test-module (fail (unresolved class-method bar))
+  (class (Foo A)
+    (function foo {A})
+    (function bar {A})
+    (function baz {A}))
+  (instance Foo.Default (forall A) (Foo A)
+    (function foo bar)
+    (function bar baz)
+    (function bar baz)
+    (function baz foo)))
+
+(test-module (fail arity-mismatch)
+  (class (Foo A)
+    (function foo {(-> A)}))
+  (instance Foo.Default (forall A) (Foo A)
+    (function (foo)
+      (foo))))
+
+(test-module (fail arity-mismatch)
+  (class (Foo A)
+    (function (foo) {(-> A)}))
+  (instance Foo.Default (forall A) (Foo A)
+    (function foo
+      foo)))
+
+; expr
+
+(test-module (fail (duplicated-identifier x))
+  (let ([x 0]
+        [x 1])
+    x))
+
+(test-module (fail (duplicated-identifier x))
+  (let ([x 0]
+        [(x a) 1])
+    x))
+
+(test-module pass
+  (let ([(f x y) x])
+    (f 1 2)))
+
+(test-module (fail (unresolved value x))
+  (let ([(f x y) x])
+    x))
+
+(test-module (fail (unresolved value x))
+  (let ([x x])
+    x))
+
+(test-module pass
+  (let ([(f) (f)])
+    f))
+
+(test-module pass
+  (let ([(f) (g)]
+        [(g) (f)])
+    f))
+
+(test-module pass
+  (let ([(f) (g)]
+        [(g) (f)]
+        [h f])
+    h))
+
+(test-module (fail (unresolved value f))
+  (let ([f 0]
+        [(g) f])
+    0))
+
+(test-module (fail (duplicated-identifier x))
+  (let ([(f x x) x])
+    0))
+
+(test-module pass
+  (data Hello x y z)
+  (let ([a x]
+        [b y])
+    (let ([c (: a y)]
+          [d (: b z)])
+      (: a b c d))))
+
+(test-module (fail (unresolved value c))
+  (data Hello x y z)
+  (let ([a x]
+        [b y])
+    (let ([c (: a y)]
+          [d (: b z)])
+      (: a b c d))
+    (: a b c d)))
+
+(test-module pass
+  (data Hello x y)
+  (function (f) (f))
+  (match (f)
+    [x 0]
+    [y 1]))
+
+(test-module (fail (unresolved constructor z))
+  (data Hello x y)
+  (function (f) (f))
+  (function (g) x)
+  (match (f)
+    [x 0]
+    [y 1]
+    [z 2]))
+
+(test-module pass
+  (data Hello x y)
+  (function (f) (f))
+  (match (f)
+    [(let x) x]))
+
+(test-module pass
+  (function (f) (f))
+  (match (f)
+    [(let x)
+      (match (f)
+        [(let y) (: x y)])]))
+
+(test-module (fail (unresolved value y))
+  (function (f) (f))
+  (match (f)
+    [(let x)
+      (match (f)
+        [(let y) (: x y)])
+      (: x y)]))
+
+(test-module pass
+  (function (f x) {(forall A) (-> A A)}
+    (let ([(g x y) {(forall B) (-> A B B)} y])
+      (g x x))))
+
+; shadowing: TODO

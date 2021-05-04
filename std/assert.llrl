@@ -1,0 +1,31 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-0" _)
+(export assert assert-is?)
+
+(macro (assert s)
+  (s/match s
+    [(_ #f)
+      (ok `(,\<panic> ,\default-msg))]
+    [(_ #f ,msg)
+      (ok `(,\<panic> ,msg))]
+    [(_ ,cond)
+      (ok `(if ,cond unit (,\<panic> ,\default-msg)))]
+    [(_ ,cond ,msg)
+      (ok `(if ,cond unit (,\<panic> ,msg)))]
+    [_
+      (err "Expected (assert cond msg?)")]))
+
+(macro (assert-is? s)
+  (s/match s
+    [(_ ,pat ,target)
+      (ok `(match ,target [,pat] [_ (,\<panic> ,\default-msg)]))]
+    [(_ ,pat ,target ,msg)
+      (ok `(match ,target [,pat] [_ (,\<panic> ,msg)]))]
+    [_
+      (err "Expected (assert-is? pat target msg?)")]))
+
+(function default-msg
+  "Assertion failed")
+
+(builtin-op <panic> {(forall A) (-> String A)} "panic")

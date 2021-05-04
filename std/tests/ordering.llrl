@@ -1,0 +1,22 @@
+(import "std/ordering" _)
+
+(assert-eq? ordering:less ordering:less)
+(assert-eq? ordering:equal ordering:equal)
+(assert-eq? ordering:greater ordering:greater)
+(assert-ne? ordering:less ordering:equal)
+(assert-ne? ordering:less ordering:greater)
+
+(assert-eq? ordering:less (ordering/from-order-value (ordering/order-value ordering:less)))
+(assert-eq? ordering:equal (ordering/from-order-value (ordering/order-value ordering:equal)))
+(assert-eq? ordering:greater (ordering/from-order-value (ordering/order-value ordering:greater)))
+
+(assert-eq? ordering:equal (ordering/or))
+(assert-eq? ordering:less (ordering/or ordering:less))
+(assert-eq? ordering:less (ordering/or ordering:less ordering:greater))
+(assert-eq? ordering:greater (ordering/or ordering:equal ordering:greater))
+(assert-eq? ordering:greater (ordering/or ordering:equal ordering:greater ordering:less))
+(assert-eq? ordering:less (ordering/or ordering:equal ordering:equal ordering:less))
+
+(assert-eq? (string (debug ordering:less)) "ordering:less")
+(assert-eq? (string (debug ordering:equal)) "ordering:equal")
+(assert-eq? (string (debug ordering:greater)) "ordering:greater")
