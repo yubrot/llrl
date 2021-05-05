@@ -1,5 +1,5 @@
 (import "std/hash-map" _)
-(import "std/ordered-map" _)
+(import "std/ord-map" _)
 
 (assert-eq? (next-power-of-two 2) 2)
 (assert-eq? (next-power-of-two 3) 4)
@@ -40,12 +40,12 @@
   (assert-eq? none (hash-map/get? 4 table)))
 
 (let1 table (hash-map (: 1 "A") (: 3 "B") (: 2 "C"))
-  (assert-eq? (ordered-map (: 1 "A") (: 2 "C") (: 3 "B"))
-              (|> table hash-map/elems ordered-map/collect))
-  (assert-eq? (ordered-map (: 1 unit) (: 2 unit) (: 3 unit))
-              (|> table hash-map/keys (it/map [^1 (: %1 unit)]) ordered-map/collect))
-  (assert-eq? (ordered-map (: "A" unit) (: "B" unit) (: "C" unit))
-              (|> table hash-map/values (it/map [^1 (: %1 unit)]) ordered-map/collect)))
+  (assert-eq? (ord-map (: 1 "A") (: 2 "C") (: 3 "B"))
+              (|> table hash-map/elems ord-map/collect))
+  (assert-eq? (ord-map (: 1 unit) (: 2 unit) (: 3 unit))
+              (|> table hash-map/keys (it/map [^1 (: %1 unit)]) ord-map/collect))
+  (assert-eq? (ord-map (: "A" unit) (: "B" unit) (: "C" unit))
+              (|> table hash-map/values (it/map [^1 (: %1 unit)]) ord-map/collect)))
 
 (function size 1000)
 
@@ -62,8 +62,8 @@
     (for (let i) (p)
       (hash-map/insert! i (* i 2) table))
     (assert-eq?
-      (|> (iterator/range 0 size 1) (it/map [^1 (: %1 (* %1 2))]) ordered-map/collect)
-      (|> table hash-map/elems ordered-map/collect))))
+      (|> (iterator/range 0 size 1) (it/map [^1 (: %1 (* %1 2))]) ord-map/collect)
+      (|> table hash-map/elems ord-map/collect))))
 
 (for (: (let i) (let p)) (it/with-index patterns)
   (for (: (let j) (let q)) (it/with-index patterns)
