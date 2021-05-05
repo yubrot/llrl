@@ -413,8 +413,15 @@ impl Rewrite for RtPat {
                     rewriter.rewrite(p)?;
                 }
                 Self::Wildcard => {}
-                Self::Ptr(x) => {
+                Self::Deref(x) => {
                     rewriter.rewrite(x)?;
+                }
+                Self::NonNull(ty, x) => {
+                    rewriter.rewrite(ty)?;
+                    rewriter.rewrite(x)?;
+                }
+                Self::Null(ty) => {
+                    rewriter.rewrite(ty)?;
                 }
                 Self::Data(ty, _index, args) => {
                     rewriter.rewrite(ty)?;

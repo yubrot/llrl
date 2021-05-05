@@ -3,9 +3,11 @@
 (import "std/prelude/stage-1" _)
 (import "std/integer" integer/to-string _.U64)
 (import "std/phantom" Phantom phantom:)
-(export Ptr ptr/_ size-of align-of _.Ptr)
+(export Ptr ptr:_ ptr/_ size-of align-of _.Ptr)
 
-(builtin-type (Ptr A) "ptr")
+(builtin-type (Ptr A) "ptr"
+  [ptr:null "null"]
+  [(ptr:non-null A) "non-null"])
 
 (builtin-op ptr/null {(forall A) (Ptr A)} "ptr.null")
 (builtin-op ptr/load {(forall A) (-> (Ptr A) A)} "ptr.load")

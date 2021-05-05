@@ -869,6 +869,8 @@ fn builtin_rt(unit: &TextualUnit, name: &str, mut ct_args: Vec<Ct>, mut args: Ve
         ("string.ptr", _, [a]) => Rt::unary(Unary::StringPtr, take(a)),
         ("string.length", _, [a]) => Rt::unary(Unary::StringLength, take(a)),
         ("ptr", [_], [a]) => Rt::alloc(Location::Heap, take(a)),
+        ("non-null", [_], [a]) => Rt::alloc(Location::Heap, take(a)),
+        ("null", [ty], []) => Rt::nullary(Nullary::Null(take(ty))),
         ("ptr.eq", _, [a, b]) => Rt::binary(Binary::PtrEq, take(a), take(b)),
         ("ptr.lt", _, [a, b]) => Rt::binary(Binary::PtrLt, take(a), take(b)),
         ("ptr.le", _, [a, b]) => Rt::binary(Binary::PtrLe, take(a), take(b)),
@@ -907,7 +909,9 @@ fn builtin_rt_pat(name: &str, mut ct_args: Vec<Ct>, mut args: Vec<RtPat>) -> RtP
     use std::mem::take;
 
     match (name, ct_args.as_mut_slice(), args.as_mut_slice()) {
-        ("ptr", [_], [a]) => RtPat::ptr(take(a)),
+        ("ptr", [_], [a]) => RtPat::deref(take(a)),
+        ("non-null", [ty], [a]) => RtPat::non_null(take(ty), take(a)),
+        ("null", [ty], []) => RtPat::Null(take(ty)),
         ("syntax", [ty], [a]) => RtPat::Syntax(take(ty), Box::new(take(a))),
         (name, _, _) => panic!(
             "Unsupported builtin-pattern {} (ct_args={}, args={})",

@@ -414,8 +414,15 @@ impl Traverse for RtPat {
                     traverser.traverse(p)?;
                 }
                 Self::Wildcard => {}
-                Self::Ptr(x) => {
+                Self::Deref(x) => {
                     traverser.traverse(x)?;
+                }
+                Self::NonNull(ty, x) => {
+                    traverser.traverse(ty)?;
+                    traverser.traverse(x)?;
+                }
+                Self::Null(ty) => {
+                    traverser.traverse(ty)?;
                 }
                 Self::Data(ty, _index, args) => {
                     traverser.traverse(ty)?;

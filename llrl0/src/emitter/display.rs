@@ -366,7 +366,9 @@ impl fmt::Display for RtPat {
             Self::Var(id, ty, None) => write!(f, "{}: {}", id, ty),
             Self::Var(id, ty, Some(pat)) => write!(f, "as({}, {}): {}", id, pat, ty),
             Self::Wildcard => write!(f, "_"),
-            Self::Ptr(pat) => write!(f, "ptr({})", pat),
+            Self::Deref(pat) => write!(f, "deref({})", pat),
+            Self::NonNull(ty, pat) => write!(f, "non-null[{}]({})", ty, pat),
+            Self::Null(ty) => write!(f, "null[{}]", ty),
             Self::Syntax(ty, body) => write!(f, "syntax[{}]({})", ty, body),
             Self::Data(ty, index, args) => {
                 write!(f, "{}@{}({})", ty, index, args.iter().format(", "))

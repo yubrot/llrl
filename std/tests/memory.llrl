@@ -13,6 +13,12 @@
 (assert-eq? ptr/null ptr/null)
 (assert-ne? ptr/null (|> 123 box box/unsafe-ptr))
 
+(assert-is? ptr:null ptr/null)
+(assert (not (is? ptr:null (|> 123 box box/unsafe-ptr))))
+(assert-is? (ptr:non-null 123) (|> 123 box box/unsafe-ptr))
+(assert (not (is? (ptr:non-null 123) ptr/null)))
+(assert (not (is? (ptr:non-null 456) (|> 123 box box/unsafe-ptr))))
+
 (let ([x "Hello"])
   (assert-eq? (|> x string/unsafe-ptr) (|> x string/unsafe-ptr (ptr/offset 0)))
   (assert (< (|> x string/unsafe-ptr) (|> x string/unsafe-ptr (ptr/offset 1))))

@@ -275,9 +275,16 @@ impl FlattenPat {
                     }
                 }
                 RtPat::Wildcard => {}
-                RtPat::Ptr(pat) => {
-                    pats.push_back(FlattenPat::new(path.clone(), Condition::Box));
+                RtPat::Deref(pat) => {
+                    pats.push_back(FlattenPat::new(path.clone(), Condition::Deref));
                     visit(*pat, path.child(0), pats, params);
+                }
+                RtPat::NonNull(ty, pat) => {
+                    pats.push_back(FlattenPat::new(path.clone(), Condition::NonNull(ty)));
+                    visit(*pat, path.child(0), pats, params);
+                }
+                RtPat::Null(ty) => {
+                    pats.push_back(FlattenPat::new(path.clone(), Condition::Null(ty)));
                 }
                 RtPat::Data(_, _, _) => panic!("Found RtPat::Data at branch_expander"),
                 RtPat::Struct(ty, args) => {
@@ -313,7 +320,9 @@ impl FlattenPat {
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Hash)]
 enum Condition {
     Bind(RtId),
-    Box,
+    Deref,
+    NonNull(Ct),
+    Null(Ct),
     Struct(Ct),
     Reinterpret(Ct, Ct),
     Syntax(Ct),
@@ -328,7 +337,20 @@ impl Condition {
     fn get_test(&self, var: RtId) -> Option<Rt> {
         match self {
             Condition::Bind(_) => None,
-            Condition::Box => None,
+            Condition::Deref => None,
+            Condition::NonNull(ty) => Some(Rt::unary(
+                Unary::Not,
+                Rt::binary(
+                    Binary::PtrEq,
+                    Rt::Local(var),
+                    Rt::nullary(Nullary::Null(ty.clone())),
+                ),
+            )),
+            Condition::Null(ty) => Some(Rt::binary(
+                Binary::PtrEq,
+                Rt::Local(var),
+                Rt::nullary(Nullary::Null(ty.clone())),
+            )),
             Condition::Struct(_) => None,
             Condition::Reinterpret(_, _) => None,
             Condition::Syntax(_) => None,
@@ -350,7 +372,7 @@ impl Condition {
     fn get_child(&self, condition_satisfied_var: RtId, index: usize) -> Option<Rt> {
         let v = Rt::Local(condition_satisfied_var);
         match self {
-            Self::Box => {
+            Self::Deref | Self::NonNull(_) => {
                 assert_eq!(index, 0);
                 Some(Rt::unary(Unary::Load, v))
             }

@@ -546,7 +546,9 @@ pub struct RtClause {
 pub enum RtPat {
     Var(RtId, Ct, Option<Box<RtPat>>),
     Wildcard,
-    Ptr(Box<RtPat>),
+    Deref(Box<RtPat>),
+    NonNull(Ct, Box<RtPat>),
+    Null(Ct),
     Data(Ct, usize, Vec<RtPat>), // erased by data_expander
     Struct(Ct, Vec<RtPat>),
     Reinterpret(Ct, Ct, Box<RtPat>),
@@ -555,8 +557,12 @@ pub enum RtPat {
 }
 
 impl RtPat {
-    pub fn ptr(pat: Self) -> Self {
-        Self::Ptr(Box::new(pat))
+    pub fn deref(pat: Self) -> Self {
+        Self::Deref(Box::new(pat))
+    }
+
+    pub fn non_null(ty: Ct, pat: Self) -> Self {
+        Self::NonNull(ty, Box::new(pat))
     }
 }
 

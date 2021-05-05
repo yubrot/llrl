@@ -206,7 +206,7 @@ impl DataExpansion {
             // ptr(#id(<args>))
             Self::BoxedStruct(id) => {
                 debug_assert_eq!(index, 0);
-                RtPat::ptr(RtPat::Struct(Ct::Id(*id), args))
+                RtPat::deref(RtPat::Struct(Ct::Id(*id), args))
             }
             // #id(<args>)
             Self::Struct(id) => {
@@ -365,7 +365,7 @@ impl TaggedDataBody {
         match self {
             Self::Alias(i, _) if index != *i => RtPat::Wildcard,
             Self::Struct(i, _) if index != *i => RtPat::Wildcard,
-            _ => RtPat::ptr(self.to_pat(index, args)),
+            _ => RtPat::deref(self.to_pat(index, args)),
         }
     }
 }
