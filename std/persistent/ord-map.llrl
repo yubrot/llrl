@@ -33,14 +33,14 @@
 (function ord-map/empty {(forall K V) (OrdMap K V)}
   :E)
 
-(function (ord-map/empty? tree) {(forall K V) (-> (OrdMap K V) Bool)}
-  (is? :E tree))
+(function (ord-map/empty? map) {(forall K V) (-> (OrdMap K V) Bool)}
+  (is? :E map))
 
-(function (ord-map/has? key tree) {(forall K V) (-> K (OrdMap K V) Bool) (where (Ord K))}
-  (is? (some _) (ord-map/get? key tree)))
+(function (ord-map/has? key map) {(forall K V) (-> K (OrdMap K V) Bool) (where (Ord K))}
+  (is? (some _) (ord-map/get? key map)))
 
-(function (ord-map/get? key tree) {(forall K V) (-> K (OrdMap K V) (Option V)) (where (Ord K))}
-  (match tree
+(function (ord-map/get? key map) {(forall K V) (-> K (OrdMap K V) (Option V)) (where (Ord K))}
+  (match map
     [(:T _ (let k) (let v) (let l) (let r))
       (match (compare key k)
         [ordering:less (ord-map/get? key l)]
@@ -48,42 +48,42 @@
         [ordering:equal (some v)])]
     [_ none]))
 
-(function (ord-map/get-min? tree) {(forall K V) (-> (OrdMap K V) (Option (: K V))) (where (Ord K))}
-  (match tree
+(function (ord-map/get-min? map) {(forall K V) (-> (OrdMap K V) (Option (: K V))) (where (Ord K))}
+  (match map
     [(:T _ (let k) (let v) :E _) (some (: k v))]
     [(:T _ _ _ (let l) _) (ord-map/get-min? l)]
     [:E none]
     [:EE (assert #f)]))
 
-(function (ord-map/get-max? tree) {(forall K V) (-> (OrdMap K V) (Option (: K V))) (where (Ord K))}
-  (match tree
+(function (ord-map/get-max? map) {(forall K V) (-> (OrdMap K V) (Option (: K V))) (where (Ord K))}
+  (match map
     [(:T _ (let k) (let v) _ :E) (some (: k v))]
     [(:T _ _ _ _ (let r)) (ord-map/get-max? r)]
     [:E none]
     [:EE (assert #f)]))
 
-(function (ord-map/insert key value tree) {(forall K V) (-> K V (OrdMap K V) (OrdMap K V)) (where (Ord K))}
-  (blacken (insert key value tree)))
+(function (ord-map/insert key value map) {(forall K V) (-> K V (OrdMap K V) (OrdMap K V)) (where (Ord K))}
+  (blacken (insert key value map)))
 
-(function (ord-map/insert-elem elem tree) {(forall K V) (-> (: K V) (OrdMap K V) (OrdMap K V)) (where (Ord K))}
+(function (ord-map/insert-elem elem map) {(forall K V) (-> (: K V) (OrdMap K V) (OrdMap K V)) (where (Ord K))}
   (with1 (: (let key) (let value)) elem
-    (ord-map/insert key value tree)))
+    (ord-map/insert key value map)))
 
-(function (ord-map/remove key tree) {(forall K V) (-> K (OrdMap K V) (OrdMap K V)) (where (Ord K))}
-  (blacken (remove key tree)))
+(function (ord-map/remove key map) {(forall K V) (-> K (OrdMap K V) (OrdMap K V)) (where (Ord K))}
+  (blacken (remove key map)))
 
-(function (ord-map/remove-min tree) {(forall K V) (-> (OrdMap K V) (OrdMap K V)) (where (Ord K))}
-  (match tree
-    [(:T _ _ _ :E _) (delete tree)]
+(function (ord-map/remove-min map) {(forall K V) (-> (OrdMap K V) (OrdMap K V)) (where (Ord K))}
+  (match map
+    [(:T _ _ _ :E _) (delete map)]
     [(:T (let color) (let k) (let v) (let l) (let r)) (bubble color k v (ord-map/remove-min l) r)]
-    [:E tree]
+    [:E map]
     [:EE (assert #f)]))
 
-(function (ord-map/remove-max tree) {(forall K V) (-> (OrdMap K V) (OrdMap K V)) (where (Ord K))}
-  (match tree
-    [(:T _ _ _ _ :E) (delete tree)]
+(function (ord-map/remove-max map) {(forall K V) (-> (OrdMap K V) (OrdMap K V)) (where (Ord K))}
+  (match map
+    [(:T _ _ _ _ :E) (delete map)]
     [(:T (let color) (let k) (let v) (let l) (let r)) (bubble color k v l (ord-map/remove-max r))]
-    [:E tree]
+    [:E map]
     [:EE (assert #f)]))
 
 (function (ord-map/union a b) {(forall K V) (-> (OrdMap K V) (OrdMap K V) (OrdMap K V)) (where (Ord K))}
@@ -127,36 +127,36 @@
 ; Currently we are unable to make this implementation an instance of std/iterator/Collect.
 ; In order to do so, we need to extend llrl type system to support associated types or fundeps.
 (function (ord-map/collect t) {(forall T K V) (-> (T (: K V)) (OrdMap K V)) (where (Iterate T) (Ord K))}
-  (let1 tree (ref ord-map/empty)
+  (let1 map (ref ord-map/empty)
     (for (: (let k) (let v)) t
-      (set! tree (ord-map/insert k v ~tree)))
-    ~tree))
+      (set! map (ord-map/insert k v ~map)))
+    ~map))
 
-(function (ord-map/elems tree) {(forall K V) (-> (OrdMap K V) (Iterator (: K V)))}
-  (let1 cursor (cursor/new tree)
+(function (ord-map/elems map) {(forall K V) (-> (OrdMap K V) (Iterator (: K V)))}
+  (let1 cursor (cursor/new map)
     (iterator/new [^0 (cursor/next! cursor)])))
 
-(function (ord-map/keys tree) {(forall K V) (-> (OrdMap K V) (Iterator K))}
-  (it/map (case1 (: (let key) _) key) (ord-map/elems tree)))
+(function (ord-map/keys map) {(forall K V) (-> (OrdMap K V) (Iterator K))}
+  (it/map (case1 (: (let key) _) key) (ord-map/elems map)))
 
-(function (ord-map/values tree) {(forall K V) (-> (OrdMap K V) (Iterator V))}
-  (it/map (case1 (: _ (let value)) value) (ord-map/elems tree)))
+(function (ord-map/values map) {(forall K V) (-> (OrdMap K V) (Iterator V))}
+  (it/map (case1 (: _ (let value)) value) (ord-map/elems map)))
 
 ; ---------------------------
 
-(function (redden tree)
-  (match tree
+(function (redden map)
+  (match map
     [(:T _ (let k) (let v) (let a) (let b)) (:T :R k v a b)]
     [_ (assert #f)]))
 
-(function (blacken tree)
-  (match tree
+(function (blacken map)
+  (match map
     [:E :E]
     [:EE :E]
     [(:T _ (let k) (let v) (let a) (let b)) (:T :B k v a b)]))
 
-(function (bb? tree)
-  (match tree
+(function (bb? map)
+  (match map
     [:EE #t]
     [(:T :BB _ _ _ _) #t]
     [_ #f]))
@@ -175,20 +175,20 @@
     [:BB :B]
     [:NB (assert #f)]))
 
-(function (blacker* tree)
-  (match tree
+(function (blacker* map)
+  (match map
     [:E :EE]
     [(:T (let c) (let k) (let v) (let l) (let r)) (:T (blacker c) k v l r)]
     [:EE (assert #f)]))
 
-(function (redder* tree)
-  (match tree
+(function (redder* map)
+  (match map
     [:EE :E]
     [(:T (let c) (let k) (let v) (let l) (let r)) (:T (redder c) k v l r)]
     [:E (assert #f)]))
 
-(function (insert key value tree)
-  (match tree
+(function (insert key value map)
+  (match map
     [(:T (let color) (let k) (let v) (let a) (let b))
       (match (compare key k)
         [ordering:less (balance color k v (insert key value a) b)]
@@ -196,17 +196,17 @@
         [ordering:equal (:T color k value a b)])]
     [_ (:T :R key value :E :E)]))
 
-(function (remove key tree)
-  (match tree
+(function (remove key map)
+  (match map
     [(:T (let color) (let k) (let v) (let a) (let b))
       (match (compare key k)
         [ordering:less (bubble color k v (remove key a) b)]
         [ordering:greater (bubble color k v a (remove key b))]
-        [ordering:equal (delete tree)])]
+        [ordering:equal (delete map)])]
     [_ :E]))
 
-(function (delete tree)
-  (match tree
+(function (delete map)
+  (match map
     [(:T :R _ _ :E :E) :E]
     [(:T :B _ _ :E :E) :EE]
     [(:T :B _ _ :E (:T :R (let k) (let v) (let a) (let b))) (:T :B k v a b)]
@@ -250,9 +250,9 @@
 (value-data (Cursor K V)
   (cursor: (Vector (: K V (OrdMap K V)))))
 
-(function (cursor/new tree) {(forall K V) (-> (OrdMap K V) (Cursor K V))}
+(function (cursor/new map) {(forall K V) (-> (OrdMap K V) (Cursor K V))}
   (let1 cursor (cursor: vector/empty)
-    (cursor/push! tree cursor)
+    (cursor/push! map cursor)
     cursor))
 
 (function (cursor/next! cursor) {(forall K V) (-> (Cursor K V) (Option (: K V)))}
@@ -261,12 +261,12 @@
     (cursor/push! r cursor)
     (some (: key value))))
 
-(function (cursor/push! tree cursor) {(forall K V) (-> (OrdMap K V) (Cursor K V) unit)}
+(function (cursor/push! map cursor) {(forall K V) (-> (OrdMap K V) (Cursor K V) unit)}
   (with1 (cursor: (let stack)) cursor
-    (let1 tree (ref tree)
-      (while-match1 (:T _ (let k) (let v) (let l) (let r)) ~tree
+    (let1 map (ref map)
+      (while-match1 (:T _ (let k) (let v) (let l) (let r)) ~map
         (vector/push! (: k v r) stack)
-        (set! tree l)))))
+        (set! map l)))))
 
 ; ---------------------------
 

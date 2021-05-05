@@ -31,10 +31,10 @@
   (s/match s
     [(_ ,@elems)
       (ok
-        (let1 tmp-table (gensym)
-          `(let ([,tmp-table ,\hash-map/empty])
-            ,@(s/map [^1 `(,\hash-map/insert-elem! ,%1 ,tmp-table)] elems)!
-            ,tmp-table)))]
+        (let1 tmp-map (gensym)
+          `(let ([,tmp-map ,\hash-map/empty])
+            ,@(s/map [^1 `(,\hash-map/insert-elem! ,%1 ,tmp-map)] elems)!
+            ,tmp-map)))]
     [_
       (err "Expected (hash-map elem ...)")]))
 
@@ -51,16 +51,16 @@
       (array/ptr (array/unsafe-alloc-uninitialized cap))
       (array/ptr (array/unsafe-alloc-uninitialized cap)))))))
 
-(function (hash-map/length table) {(forall K V) (-> (HashMap K V) U64)}
-  (with1 (m: (ref (m-body: _ (let len) _ _ _ _))) table
+(function (hash-map/length map) {(forall K V) (-> (HashMap K V) U64)}
+  (with1 (m: (ref (m-body: _ (let len) _ _ _ _))) map
     len))
 
-(function (hash-map/empty? table) {(forall K V) (-> (HashMap K V) Bool)}
-  (eq? 0 (hash-map/length table)))
+(function (hash-map/empty? map) {(forall K V) (-> (HashMap K V) Bool)}
+  (eq? 0 (hash-map/length map)))
 
-(function (hash-map/reserve-capacity! required-cap table) {(forall K V) (-> U64 (HashMap K V) unit) (where (Eq K))}
+(function (hash-map/reserve-capacity! required-cap map) {(forall K V) (-> U64 (HashMap K V) unit) (where (Eq K))}
   (let1 required-cap (next-power-of-two required-cap)
-    (with ([(m: (let body)) table]
+    (with ([(m: (let body)) map]
            [(m-body: (let hasher) (let len) (let cap) (let hashes) (let keys) (let values)) ~body])
       (when (<= required-cap cap) (return))
       (set! body (m-body:
@@ -73,33 +73,33 @@
       (let1 i (ref 0)
         (while (< ~i cap)
           (when (exists? (ptr/load-at ~i hashes))
-            (insert! (ptr/load-at ~i hashes) (ptr/load-at ~i keys) (ptr/load-at ~i values) table))
+            (insert! (ptr/load-at ~i hashes) (ptr/load-at ~i keys) (ptr/load-at ~i values) map))
           (set! i (+ ~i 1)))))))
 
-(function (hash-map/get? key table) {(forall K V) (-> K (HashMap K V) (Option V)) (where (Eq K) (Hash K))}
-  (with1 (m: (ref (m-body: (let hasher) _ _ _ _ (let values)))) table
-    (let1 i (lookup? (put-existing-flag (hash hasher key)) key table)?
+(function (hash-map/get? key map) {(forall K V) (-> K (HashMap K V) (Option V)) (where (Eq K) (Hash K))}
+  (with1 (m: (ref (m-body: (let hasher) _ _ _ _ (let values)))) map
+    (let1 i (lookup? (put-existing-flag (hash hasher key)) key map)?
       (some (ptr/load-at i values)))))
 
-(function (hash-map/has? key table) {(forall K V) (-> K (HashMap K V) Bool) (where (Eq K) (Hash K))}
-  (with1 (m: (ref (m-body: (let hasher) _ _ _ _ _))) table
-    (is? (some _) (lookup? (put-existing-flag (hash hasher key)) key table))))
+(function (hash-map/has? key map) {(forall K V) (-> K (HashMap K V) Bool) (where (Eq K) (Hash K))}
+  (with1 (m: (ref (m-body: (let hasher) _ _ _ _ _))) map
+    (is? (some _) (lookup? (put-existing-flag (hash hasher key)) key map))))
 
-(function (hash-map/insert! key value table) {(forall K V) (-> K V (HashMap K V) (Option V)) (where (Eq K) (Hash K))}
-  (with1 (m: (ref (m-body: (let hasher) (let len) _ _ _ _))) table
-    (hash-map/reserve-capacity! (appropriate-minimal-capacity (+ len 1)) table)
-    (insert! (put-existing-flag (hash hasher key)) key value table)))
+(function (hash-map/insert! key value map) {(forall K V) (-> K V (HashMap K V) (Option V)) (where (Eq K) (Hash K))}
+  (with1 (m: (ref (m-body: (let hasher) (let len) _ _ _ _))) map
+    (hash-map/reserve-capacity! (appropriate-minimal-capacity (+ len 1)) map)
+    (insert! (put-existing-flag (hash hasher key)) key value map)))
 
-(function (hash-map/insert-elem! elem table) {(forall K V) (-> (: K V) (HashMap K V) (Option V)) (where (Eq K) (Hash K))}
+(function (hash-map/insert-elem! elem map) {(forall K V) (-> (: K V) (HashMap K V) (Option V)) (where (Eq K) (Hash K))}
   (with1 (: (let key) (let value)) elem
-    (hash-map/insert! key value table)))
+    (hash-map/insert! key value map)))
 
-(function (hash-map/remove! key table) {(forall K V) (-> K (HashMap K V) (Option V)) (where (Eq K) (Hash K))}
-  (with1 (m: (ref (m-body: (let hasher) (let len) _ _ _ _))) table
-    (remove! (put-existing-flag (hash hasher key)) key table)))
+(function (hash-map/remove! key map) {(forall K V) (-> K (HashMap K V) (Option V)) (where (Eq K) (Hash K))}
+  (with1 (m: (ref (m-body: (let hasher) (let len) _ _ _ _))) map
+    (remove! (put-existing-flag (hash hasher key)) key map)))
 
-(function (hash-map/clear! table) {(forall K V) (-> (HashMap K V) unit)}
-  (with ([(m: (let body)) table]
+(function (hash-map/clear! map) {(forall K V) (-> (HashMap K V) unit)}
+  (with ([(m: (let body)) map]
          [(m-body: (let hasher) (let len) (let cap) (let hashes) (let keys) (let values)) ~body])
     (let1 i (ref 0)
       (while (< ~i cap)
@@ -110,13 +110,13 @@
 ; Currently we are unable to make this implementation an instance of std/iterator/Collect.
 ; In order to do so, we need to extend llrl type system to support associated types or fundeps.
 (function (hash-map/collect t) {(forall T K V) (-> (T (: K V)) (HashMap K V)) (where (Iterate T) (Eq K) (Hash K))}
-  (let1 table hash-map/empty
+  (let1 map hash-map/empty
     (for (: (let k) (let v)) t
-      (hash-map/insert! k v table))
-    table))
+      (hash-map/insert! k v map))
+    map))
 
-(function (hash-map/elems table) {(forall K V) (-> (HashMap K V) (Iterator (: K V)))}
-  (with ([(m: (let body)) table]
+(function (hash-map/elems map) {(forall K V) (-> (HashMap K V) (Iterator (: K V)))}
+  (with ([(m: (let body)) map]
          [(m-body: (let hasher) (let len) (let cap) (let hashes) (let keys) (let values)) ~body]
          [(let i) (ref 0)])
     (iterator/new (lambda ()
@@ -128,16 +128,16 @@
           (set! i (+ ~i 1))
           (: (ptr/load-at index keys) (ptr/load-at index values))))))))
 
-(function (hash-map/keys table) {(forall K V) (-> (HashMap K V) (Iterator K))}
-  (it/map (case1 (: (let key) _) key) (hash-map/elems table)))
+(function (hash-map/keys map) {(forall K V) (-> (HashMap K V) (Iterator K))}
+  (it/map (case1 (: (let key) _) key) (hash-map/elems map)))
 
-(function (hash-map/values table) {(forall K V) (-> (HashMap K V) (Iterator V))}
-  (it/map (case1 (: _ (let value)) value) (hash-map/elems table)))
+(function (hash-map/values map) {(forall K V) (-> (HashMap K V) (Iterator V))}
+  (it/map (case1 (: _ (let value)) value) (hash-map/elems map)))
 
 ; ---------------------------
 
-(function (lookup? hash key table) {(forall K V) (-> U64 K (HashMap K V) (Option U64)) (where (Eq K))}
-  (with1 (m: (ref (m-body: _ _ (let cap) (let hashes) (let keys) (let values)))) table
+(function (lookup? hash key map) {(forall K V) (-> U64 K (HashMap K V) (Option U64)) (where (Eq K))}
+  (with1 (m: (ref (m-body: _ _ (let cap) (let hashes) (let keys) (let values)))) map
     (let1 i (ref (hash-ideal-index hash cap))
       (loop
         (let1 h (ptr/load-at ~i hashes)
@@ -151,8 +151,8 @@
             [else
               (set! i (% (+ ~i 1) cap))]))))))
 
-(function (insert! hash key value table) {(forall K V) (-> U64 K V (HashMap K V) (Option V)) (where (Eq K))}
-  (with ([(m: (let body)) table]
+(function (insert! hash key value map) {(forall K V) (-> U64 K V (HashMap K V) (Option V)) (where (Eq K))}
+  (with ([(m: (let body)) map]
          [(m-body: (let hasher) (let len) (let cap) (let hashes) (let keys) (let values)) ~body])
     (let* ([hash (ref hash)]
            [key (ref key)]
@@ -182,10 +182,10 @@
               (set! body (m-body: hasher (+ len 1) cap hashes keys values))
               (return none))))))))
 
-(function (remove! hash key table) {(forall K V) (-> U64 K (HashMap K V) (Option V)) (where (Eq K))}
-  (with ([(let i) (lookup? hash key table)?]
+(function (remove! hash key map) {(forall K V) (-> U64 K (HashMap K V) (Option V)) (where (Eq K))}
+  (with ([(let i) (lookup? hash key map)?]
          [(let j) (ref i)]
-         [(m: (let body)) table]
+         [(m: (let body)) map]
          [(m-body: (let hasher) (let len) (let cap) (let hashes) (let keys) (let values)) ~body]
          [(let removed-value) (ptr/load-at i values)])
     (while

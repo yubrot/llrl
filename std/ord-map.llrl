@@ -25,102 +25,102 @@
   (s/match s
     [(_ ,@elems)
       (ok
-        (let1 tmp-tree (gensym)
-          `(let ([,tmp-tree ,\ord-map/empty])
-            ,@(s/map [^1 `(,\ord-map/insert-elem! ,%1 ,tmp-tree)] elems)!
-            ,tmp-tree)))]
+        (let1 tmp-map (gensym)
+          `(let ([,tmp-map ,\ord-map/empty])
+            ,@(s/map [^1 `(,\ord-map/insert-elem! ,%1 ,tmp-map)] elems)!
+            ,tmp-map)))]
     [_
       (err "Expected (ord-map elem ...)")]))
 
 (function ord-map/empty {(forall K V) (OrdMap K V)}
   (m: (ref (m-body: 0 (node/new-leaf)))))
 
-(function (ord-map/length tree) {(forall K V) (-> (OrdMap K V) U64)}
-  (with1 (m: (ref (m-body: (let length) _))) tree
+(function (ord-map/length map) {(forall K V) (-> (OrdMap K V) U64)}
+  (with1 (m: (ref (m-body: (let length) _))) map
     length))
 
-(function (ord-map/empty? tree) {(forall K V) (-> (OrdMap K V) Bool)}
-  (eq? 0 (ord-map/length tree)))
+(function (ord-map/empty? map) {(forall K V) (-> (OrdMap K V) Bool)}
+  (eq? 0 (ord-map/length map)))
 
-(function (ord-map/get? key tree) {(forall K V) (-> K (OrdMap K V) (Option V)) (where (Ord K))}
-  (with1 (m: (ref (m-body: _ (let root)))) tree
+(function (ord-map/get? key map) {(forall K V) (-> K (OrdMap K V) (Option V)) (where (Ord K))}
+  (with1 (m: (ref (m-body: _ (let root)))) map
     (node/get? key root)))
 
-(function (ord-map/has? key tree) {(forall K V) (-> K (OrdMap K V) Bool) (where (Ord K))}
-  (is? (some _) (ord-map/get? key tree)))
+(function (ord-map/has? key map) {(forall K V) (-> K (OrdMap K V) Bool) (where (Ord K))}
+  (is? (some _) (ord-map/get? key map)))
 
-(function (ord-map/get-min? tree) {(forall K V) (-> (OrdMap K V) (Option (: K V))) (where (Ord K))}
-  (with1 (m: (ref (m-body: (let length) (let root)))) tree
+(function (ord-map/get-min? map) {(forall K V) (-> (OrdMap K V) (Option (: K V))) (where (Ord K))}
+  (with1 (m: (ref (m-body: (let length) (let root)))) map
     (if (eq? 0 length)
       none
       (some (node/get-min root)))))
 
-(function (ord-map/get-max? tree) {(forall K V) (-> (OrdMap K V) (Option (: K V))) (where (Ord K))}
-  (with1 (m: (ref (m-body: (let length) (let root)))) tree
+(function (ord-map/get-max? map) {(forall K V) (-> (OrdMap K V) (Option (: K V))) (where (Ord K))}
+  (with1 (m: (ref (m-body: (let length) (let root)))) map
     (if (eq? 0 length)
       none
       (some (node/get-max root)))))
 
-(function (ord-map/insert! key value tree) {(forall K V) (-> K V (OrdMap K V) (Option V)) (where (Ord K))}
-  (with1 (m: (let tree-body (ref (m-body: (let length) (let root))))) tree
+(function (ord-map/insert! key value map) {(forall K V) (-> K V (OrdMap K V) (Option V)) (where (Ord K))}
+  (with1 (m: (let map-body (ref (m-body: (let length) (let root))))) map
     (match (node/insert! key value root)
       [(:replace (let v))
         (some v)]
       [:fit
-        (set! tree-body (m-body: (+ length 1) root))
+        (set! map-body (m-body: (+ length 1) root))
         none]
       [(:split (let key) (let value) (let right-node))
-        (set! tree-body (m-body: (+ length 1) (node/new-root key value root right-node)))
+        (set! map-body (m-body: (+ length 1) (node/new-root key value root right-node)))
         none])))
 
-(function (ord-map/insert-elem! elem tree) {(forall K V) (-> (: K V) (OrdMap K V) (Option V)) (where (Ord K))}
+(function (ord-map/insert-elem! elem map) {(forall K V) (-> (: K V) (OrdMap K V) (Option V)) (where (Ord K))}
   (with1 (: (let key) (let value)) elem
-    (ord-map/insert! key value tree)))
+    (ord-map/insert! key value map)))
 
-(function (ord-map/remove! key tree) {(forall K V) (-> K (OrdMap K V) (Option V)) (where (Ord K))}
-  (with ([(m: (let tree-body (ref (m-body: (let length) (let root))))) tree]
+(function (ord-map/remove! key map) {(forall K V) (-> K (OrdMap K V) (Option V)) (where (Ord K))}
+  (with ([(m: (let map-body (ref (m-body: (let length) (let root))))) map]
          [(: _ (let removed-value)) (node/remove! key root)?])
-    (set! tree-body (m-body: (- length 1) (node/simplify-root root)))
+    (set! map-body (m-body: (- length 1) (node/simplify-root root)))
     (some removed-value)))
 
-(function (ord-map/remove-min! tree) {(forall K V) (-> (OrdMap K V) (Option (: K V))) (where (Ord K))}
-  (with1 (m: (let tree-body (ref (m-body: (let length) (let root))))) tree
+(function (ord-map/remove-min! map) {(forall K V) (-> (OrdMap K V) (Option (: K V))) (where (Ord K))}
+  (with1 (m: (let map-body (ref (m-body: (let length) (let root))))) map
     (if (eq? 0 length)
       none
       (let1 elem (node/remove-smallest-elem! root)
-        (set! tree-body (m-body: (- length 1) (node/simplify-root root)))
+        (set! map-body (m-body: (- length 1) (node/simplify-root root)))
         (some elem)))))
 
-(function (ord-map/remove-max! tree) {(forall K V) (-> (OrdMap K V) (Option (: K V))) (where (Ord K))}
-  (with1 (m: (let tree-body (ref (m-body: (let length) (let root))))) tree
+(function (ord-map/remove-max! map) {(forall K V) (-> (OrdMap K V) (Option (: K V))) (where (Ord K))}
+  (with1 (m: (let map-body (ref (m-body: (let length) (let root))))) map
     (if (eq? 0 length)
       none
       (let1 elem (node/remove-largest-elem! root)
-        (set! tree-body (m-body: (- length 1) (node/simplify-root root)))
+        (set! map-body (m-body: (- length 1) (node/simplify-root root)))
         (some elem)))))
 
-(function (ord-map/clear! tree) {(forall K V) (-> (OrdMap K V) unit)}
-  (with1 (m: (let tree-body)) tree
-    (set! tree-body (m-body: 0 (node/new-leaf)))))
+(function (ord-map/clear! map) {(forall K V) (-> (OrdMap K V) unit)}
+  (with1 (m: (let map-body)) map
+    (set! map-body (m-body: 0 (node/new-leaf)))))
 
 ; Currently we are unable to make this implementation an instance of std/iterator/Collect.
 ; In order to do so, we need to extend llrl type system to support associated types or fundeps.
 (function (ord-map/collect t) {(forall T K V) (-> (T (: K V)) (OrdMap K V)) (where (Iterate T) (Ord K))}
-  (let1 tree ord-map/empty
+  (let1 map ord-map/empty
     (for (: (let k) (let v)) t
-      (ord-map/insert! k v tree))
-    tree))
+      (ord-map/insert! k v map))
+    map))
 
-(function (ord-map/elems tree) {(forall K V) (-> (OrdMap K V) (Iterator (: K V)))}
-  (with1 (m: (ref (m-body: _ (let root)))) tree
+(function (ord-map/elems map) {(forall K V) (-> (OrdMap K V) (Iterator (: K V)))}
+  (with1 (m: (ref (m-body: _ (let root)))) map
     (let1 cursor (cursor/new root)
       (iterator/new [^0 (cursor/next! cursor)]))))
 
-(function (ord-map/keys tree) {(forall K V) (-> (OrdMap K V) (Iterator K))}
-  (it/map (case1 (: (let key) _) key) (ord-map/elems tree)))
+(function (ord-map/keys map) {(forall K V) (-> (OrdMap K V) (Iterator K))}
+  (it/map (case1 (: (let key) _) key) (ord-map/elems map)))
 
-(function (ord-map/values tree) {(forall K V) (-> (OrdMap K V) (Iterator V))}
-  (it/map (case1 (: _ (let value)) value) (ord-map/elems tree)))
+(function (ord-map/values map) {(forall K V) (-> (OrdMap K V) (Iterator V))}
+  (it/map (case1 (: _ (let value)) value) (ord-map/elems map)))
 
 ; ---------------------------
 

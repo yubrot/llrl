@@ -27,15 +27,15 @@
          [collisions-count (ref 0)])
       ; 100 iteration
     (for (let i) (iterator/range 0 100 1)
-      (let* ([tree ord-map/empty]
+      (let* ([map ord-map/empty]
              [hasher (new)])
         (for (: (let j) (let word)) (it/with-index words)
           ; p(118, 10000) is almost equal to 0.5 https://en.wikipedia.org/wiki/Birthday_problem
           (when (eq? (% (+ i j) (/ (* 27 27 27 27) 118)) 0)
             (let* ([h (% (hash hasher word) 10000)]
-                   [v (match (ord-map/get? h tree) [none 0] [(some (let n)) (+ n 1)])])
-              (ord-map/insert! h v tree))))
-        (set! collisions-count (+ ~collisions-count (|> tree ord-map/values it/sum)))))
+                   [v (match (ord-map/get? h map) [none 0] [(some (let n)) (+ n 1)])])
+              (ord-map/insert! h v map))))
+        (set! collisions-count (+ ~collisions-count (|> map ord-map/values it/sum)))))
     (assert (< ~collisions-count 65))))
 
 (function (h a)

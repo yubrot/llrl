@@ -27,11 +27,11 @@
   (assert-eq? none (ord-map/get? none c))
   (assert-eq? none (ord-map/get? (some #t) c)))
 
-(let1 tree (ord-map/collect (array (: 1 "one") (: 2 "two") (: 3 "three")))
-  (assert-eq? (some "one") (ord-map/get? 1 tree))
-  (assert-eq? (some "two") (ord-map/get? 2 tree))
-  (assert-eq? (some "three") (ord-map/get? 3 tree))
-  (assert-eq? none (ord-map/get? 4 tree)))
+(let1 map (ord-map/collect (array (: 1 "one") (: 2 "two") (: 3 "three")))
+  (assert-eq? (some "one") (ord-map/get? 1 map))
+  (assert-eq? (some "two") (ord-map/get? 2 map))
+  (assert-eq? (some "three") (ord-map/get? 3 map))
+  (assert-eq? none (ord-map/get? 4 map)))
 
 (let* ([a (ord-map (: 1 2) (: 3 4) (: 5 6))]
        [b (ord-map (: 3 3) (: 4 4) (: 5 6))])
@@ -53,23 +53,23 @@
     [^0 (it/map [^1 (% (* %1 41) size)] (iterator/range 0 size 1))]))
 
 (for (let p) patterns
-  (let1 tree (ref ord-map/empty)
+  (let1 map (ref ord-map/empty)
     (for (let i) (p)
-      (set! tree (ord-map/insert i (* i 2) ~tree)))
+      (set! map (ord-map/insert i (* i 2) ~map)))
     (assert-eq?
       (|> (iterator/range 0 size 1) (it/map [^1 (: %1 (* %1 2))]) collect)
-      (collect (ord-map/elems ~tree)) {(Array (: I32 I32))})))
+      (collect (ord-map/elems ~map)) {(Array (: I32 I32))})))
 
 (for (: (let i) (let p)) (it/with-index patterns)
   (for (: (let j) (let q)) (it/with-index patterns)
-    (let ([tree (ref ord-map/empty)]
+    (let ([map (ref ord-map/empty)]
           [exclude-index (+ (* (cast i) 10) (cast j))])
       (for (let i) (it/filter [^1 (ne? %1 exclude-index)] (q))
-        (set! tree (ord-map/insert i (* i 2) ~tree)))
+        (set! map (ord-map/insert i (* i 2) ~map)))
       (for (let i) (q)
-        (assert-eq? (ord-map/get? i ~tree) (if (eq? i exclude-index) none (some (* i 2))))
-        (set! tree (ord-map/remove i ~tree)))
-      (assert (ord-map/empty? ~tree)))))
+        (assert-eq? (ord-map/get? i ~map) (if (eq? i exclude-index) none (some (* i 2))))
+        (set! map (ord-map/remove i ~map)))
+      (assert (ord-map/empty? ~map)))))
 
 (assert (ord-map/empty? default))
 
