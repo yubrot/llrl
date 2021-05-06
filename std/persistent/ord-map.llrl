@@ -2,6 +2,7 @@
 
 (import "std/prelude/stage-1" _)
 (import "std/s" s/foldl)
+(import "std/memory" Ptr ptr:_ ptr/_ _.Ptr)
 (import "std/ref" Ref ref _.Ref)
 (import "std/iterator" _)
 (import "std/it" it/_ zip-either:_ _.ZipEither)
@@ -10,18 +11,8 @@
 (import "std/tuple" _.Tuple.2)
 (export OrdMap ord-map ord-map/_ _.OrdMap)
 
-; A persistent red-black tree.
-; the Red-Black Tree implementation is based on http://matt.might.net/articles/red-black-delete/
-(data (OrdMap K V)
-  :E  ; Black leaf
-  :EE ; Double black leaf
-  (:T Color K V (OrdMap K V) (OrdMap K V)))
-
-(value-data Color
-  :R   ; Red
-  :B   ; Black
-  :BB  ; Double black
-  :NB) ; Negative black
+(value-data (OrdMap K V)
+  (m: (Unboxed K V)))
 
 (macro (ord-map s)
   (s/match s
@@ -31,60 +22,56 @@
       (err "Expected (ord-map elem ...)")]))
 
 (function ord-map/empty {(forall K V) (OrdMap K V)}
-  :E)
+  (m: :leaf))
 
 (function (ord-map/empty? map) {(forall K V) (-> (OrdMap K V) Bool)}
-  (is? :E map))
+  (is? (m: :leaf) map))
 
 (function (ord-map/has? key map) {(forall K V) (-> K (OrdMap K V) Bool) (where (Ord K))}
   (is? (some _) (ord-map/get? key map)))
 
 (function (ord-map/get? key map) {(forall K V) (-> K (OrdMap K V) (Option V)) (where (Ord K))}
-  (match map
-    [(:T _ (let k) (let v) (let l) (let r))
-      (match (compare key k)
-        [ordering:less (ord-map/get? key l)]
-        [ordering:greater (ord-map/get? key r)]
-        [ordering:equal (some v)])]
-    [_ none]))
+  (with1 (m: (let node)) map
+    (lookup? key node)))
 
-(function (ord-map/get-min? map) {(forall K V) (-> (OrdMap K V) (Option (: K V))) (where (Ord K))}
-  (match map
-    [(:T _ (let k) (let v) :E _) (some (: k v))]
-    [(:T _ _ _ (let l) _) (ord-map/get-min? l)]
-    [:E none]
-    [:EE (assert #f)]))
+(function (ord-map/get-min? map) {(forall K V) (-> (OrdMap K V) (Option (: K V)))}
+  (with1 (m: (let node)) map
+    (get-min? node)))
 
-(function (ord-map/get-max? map) {(forall K V) (-> (OrdMap K V) (Option (: K V))) (where (Ord K))}
-  (match map
-    [(:T _ (let k) (let v) _ :E) (some (: k v))]
-    [(:T _ _ _ _ (let r)) (ord-map/get-max? r)]
-    [:E none]
-    [:EE (assert #f)]))
+(function (ord-map/get-max? map) {(forall K V) (-> (OrdMap K V) (Option (: K V)))}
+  (with1 (m: (let node)) map
+    (get-max? node)))
 
 (function (ord-map/insert key value map) {(forall K V) (-> K V (OrdMap K V) (OrdMap K V)) (where (Ord K))}
-  (blacken (insert key value map)))
+  (with ([(m: (let node)) map]
+         [(: (let node) _) (blacken (unboxed (insert key value node)))])
+    (m: node)))
 
 (function (ord-map/insert-elem elem map) {(forall K V) (-> (: K V) (OrdMap K V) (OrdMap K V)) (where (Ord K))}
   (with1 (: (let key) (let value)) elem
     (ord-map/insert key value map)))
 
 (function (ord-map/remove key map) {(forall K V) (-> K (OrdMap K V) (OrdMap K V)) (where (Ord K))}
-  (blacken (remove key map)))
+  (with ([(m: (let node)) map]
+         [(: (let node) _ _) (remove key node)]
+         [(: (let node) _) (blacken (unboxed node))])
+    (m: node)))
 
-(function (ord-map/remove-min map) {(forall K V) (-> (OrdMap K V) (OrdMap K V)) (where (Ord K))}
+(function (ord-map/remove-min map) {(forall K V) (-> (OrdMap K V) (OrdMap K V))}
   (match map
-    [(:T _ _ _ :E _) (delete map)]
-    [(:T (let color) (let k) (let v) (let l) (let r)) (bubble color k v (ord-map/remove-min l) r)]
-    [:E map]
-    [:EE (assert #f)]))
+    [(m: :leaf) map]
+    [(m: (let node))
+      (with ([(: (let node) _ _ _) (remove-min node)]
+             [(: (let node) _) (blacken (unboxed node))])
+        (m: node))]))
 
-(function (ord-map/remove-max map) {(forall K V) (-> (OrdMap K V) (OrdMap K V)) (where (Ord K))}
+(function (ord-map/remove-max map) {(forall K V) (-> (OrdMap K V) (OrdMap K V))}
   (match map
-    [(:T _ _ _ _ :E) (delete map)]
-    [(:T (let color) (let k) (let v) (let l) (let r)) (bubble color k v l (ord-map/remove-max r))]
-    [:E map]
-    [:EE (assert #f)]))
+    [(m: :leaf) map]
+    [(m: (let node))
+      (with ([(: (let node) _ _ _) (remove-max node)]
+             [(: (let node) _) (blacken (unboxed node))])
+        (m: node))]))
 
 (function (ord-map/union a b) {(forall K V) (-> (OrdMap K V) (OrdMap K V) (OrdMap K V)) (where (Ord K))}
   (ord-map/union* [^3 %2] a b))
@@ -144,116 +131,218 @@
 
 ; ---------------------------
 
-(function (redden map)
-  (match map
-    [(:T _ (let k) (let v) (let a) (let b)) (:T :R k v a b)]
-    [_ (assert #f)]))
+; The Red-black tree implementation is based on Okasaki's red-black tree.
 
-(function (blacken map)
-  (match map
-    [:E :E]
-    [:EE :E]
-    [(:T _ (let k) (let v) (let a) (let b)) (:T :B k v a b)]))
+(value-data Color
+  :red
+  :black)
 
-(function (bb? map)
-  (match map
-    [:EE #t]
-    [(:T :BB _ _ _ _) #t]
-    [_ #f]))
+(value-data (Unboxed K V)
+  :leaf
+  (:tree (: Color K V (Boxed K V) (Boxed K V))))
 
-(function (blacker color)
-  (match color
-    [:NB :R]
-    [:R :B]
-    [:B :BB]
-    [:BB (assert #f)]))
+(value-data (Boxed K V)
+  (boxed: (Ptr (: Color K V (Boxed K V) (Boxed K V)))))
 
-(function (redder color)
-  (match color
-    [:R :NB]
-    [:B :R]
-    [:BB :B]
-    [:NB (assert #f)]))
+; to resolve type ambiguities
+(builtin-op boxed {(forall K V) (-> (Boxed K V) (Boxed K V))} "no-op")
+(builtin-op unboxed {(forall K V) (-> (Unboxed K V) (Unboxed K V))} "no-op")
 
-(function (blacker* map)
-  (match map
-    [:E :EE]
-    [(:T (let c) (let k) (let v) (let l) (let r)) (:T (blacker c) k v l r)]
-    [:EE (assert #f)]))
+(class (Node T)
+  (function leaf {(forall K V) (T K V)})
+  (function (tree color k v l r) {(forall K V) (-> Color K V (Boxed K V) (Boxed K V) (T K V))}))
 
-(function (redder* map)
-  (match map
-    [:EE :E]
-    [(:T (let c) (let k) (let v) (let l) (let r)) (:T (redder c) k v l r)]
-    [:E (assert #f)]))
+(instance Node.Unboxed (Node Unboxed)
+  (transparent-function leaf :leaf)
+  (transparent-function (tree color k v l r) (:tree (: color k v l r))))
 
-(function (insert key value map)
-  (match map
-    [(:T (let color) (let k) (let v) (let a) (let b))
-      (match (compare key k)
-        [ordering:less (balance color k v (insert key value a) b)]
-        [ordering:greater (balance color k v a (insert key value b))]
-        [ordering:equal (:T color k value a b)])]
-    [_ (:T :R key value :E :E)]))
+(instance Node.Boxed (Node Boxed)
+  (transparent-function leaf (boxed: ptr:null))
+  (transparent-function (tree color k v l r) (boxed: (ptr:non-null (: color k v l r)))))
 
-(function (remove key map)
-  (match map
-    [(:T (let color) (let k) (let v) (let a) (let b))
-      (match (compare key k)
-        [ordering:less (bubble color k v (remove key a) b)]
-        [ordering:greater (bubble color k v a (remove key b))]
-        [ordering:equal (delete map)])]
-    [_ :E]))
+(class (NodeAdjust T S)
+  (function (adjust t) {(forall K V) (-> (T K V) (S K V))}))
 
-(function (delete map)
-  (match map
-    [(:T :R _ _ :E :E) :E]
-    [(:T :B _ _ :E :E) :EE]
-    [(:T :B _ _ :E (:T :R (let k) (let v) (let a) (let b))) (:T :B k v a b)]
-    [(:T :B _ _ (:T :R (let k) (let v) (let a) (let b)) :E) (:T :B k v a b)]
-    [(:T (let color) _ _ (let l) (let r))
-      (match (: (ord-map/get-max? l) (ord-map/remove-max l))
-        [(: (some (: (let k) (let v))) (let l)) (bubble color k v l r)]
-        [_ (assert #f)])]
-    [_ :E]))
+(instance NodeAdjust.Identity (forall T) (NodeAdjust T T)
+  (transparent-function (adjust t) t))
 
-(function (balance c k v l r)
-  (match (: c k v l r)
-    [(: :B (let zk) (let zv) (:T :R (let yk) (let yv) (:T :R (let xk) (let xv) (let a) (let b)) (let c)) (let d))
-      (:T :R yk yv (:T :B xk xv a b) (:T :B zk zv c d))]
-    [(: :B (let zk) (let zv) (:T :R (let xk) (let xv) (let a) (:T :R (let yk) (let yv) (let b) (let c))) (let d))
-      (:T :R yk yv (:T :B xk xv a b) (:T :B zk zv c d))]
-    [(: :B (let xk) (let xv) (let a) (:T :R (let zk) (let zv) (:T :R (let yk) (let yv) (let b) (let c)) (let d)))
-      (:T :R yk yv (:T :B xk xv a b) (:T :B zk zv c d))]
-    [(: :B (let xk) (let xv) (let a) (:T :R (let yk) (let yv) (let b) (:T :R (let zk) (let zv) (let c) (let d))))
-      (:T :R yk yv (:T :B xk xv a b) (:T :B zk zv c d))]
-    [(: :BB (let zk) (let zv) (:T :R (let yk) (let yv) (:T :R (let xk) (let xv) (let a) (let b)) (let c)) (let d))
-      (:T :B yk yv (:T :B xk xv a b) (:T :B zk zv c d))]
-    [(: :BB (let zk) (let zv) (:T :R (let xk) (let xv) (let a) (:T :R (let yk) (let yv) (let b) (let c))) (let d))
-      (:T :B yk yv (:T :B xk xv a b) (:T :B zk zv c d))]
-    [(: :BB (let xk) (let xv) (let a) (:T :R (let zk) (let zv) (:T :R (let yk) (let yv) (let b) (let c)) (let d)))
-      (:T :B yk yv (:T :B xk xv a b) (:T :B zk zv c d))]
-    [(: :BB (let xk) (let xv) (let a) (:T :R (let yk) (let yv) (let b) (:T :R (let zk) (let zv) (let c) (let d))))
-      (:T :B yk yv (:T :B xk xv a b) (:T :B zk zv c d))]
-    [(: :BB (let xk) (let xv) (let a) (:T :NB (let zk) (let zv) (:T :B (let yk) (let yv) (let b) (let c)) (let d (:T :B _ _ _ _))))
-      (:T :B yk yv (:T :B xk xv a b) (balance :B zk zv c (redden d)))]
-    [(: :BB (let zk) (let zv) (:T :NB (let xk) (let xv) (let a (:T :B _ _ _ _)) (:T :B (let yk) (let yv) (let b) (let c))) (let d))
-      (:T :B yk yv (balance :B xk xv (redden a) b) (:T :B zk zv c d))]
+(instance NodeAdjust.Box (NodeAdjust Unboxed Boxed)
+  (transparent-function (adjust t)
+    (match t
+      [:leaf (boxed: ptr:null)]
+      [(:tree (let t)) (boxed: (ptr:non-null t))])))
+
+(instance NodeAdjust.Unbox (NodeAdjust Boxed Unboxed)
+  (transparent-function (adjust t)
+    (match t
+      [(boxed: ptr:null) :leaf]
+      [(boxed: (ptr:non-null (let t))) (:tree t)])))
+
+(transparent-function (blacken node)
+  {(forall K V T S) (-> (T K V) (: (S K V) Bool)) (where (NodeAdjust T Unboxed) (NodeAdjust T S) (Node S))}
+  (let1 node node
+    (match (adjust node)
+      [(:tree (: :red (let k) (let v) (let l) (let r)))
+        (: (tree :black k v l r) #f)]
+      [_
+        (: (adjust node) #t)])))
+
+(transparent-function (balance-left k v l r)
+  {(forall K V T S U) (-> K V (T K V) (S K V) (U K V)) (where (NodeAdjust T Unboxed) (NodeAdjust T Boxed) (NodeAdjust S Boxed) (Node U))}
+  (let1 l l
+    (match (adjust l)
+      [(:tree (: :red (let ky) (let vy) (boxed: (ptr:non-null (: :red (let kx) (let vx) (let a) (let b)))) (let c)))
+        (tree :red ky vy (tree :black kx vx a b) (tree :black k v c (adjust r)))]
+      [(:tree (: :red (let kx) (let vx) (let a) (boxed: (ptr:non-null (: :red (let ky) (let vy) (let b) (let c))))))
+        (tree :red ky vy (tree :black kx vx a b) (tree :black k v c (adjust r)))]
+      [_
+        (tree :black k v (adjust l) (adjust r))])))
+
+(transparent-function (balance-right k v l r)
+  {(forall K V T S U) (-> K V (T K V) (S K V) (U K V)) (where (NodeAdjust S Unboxed) (NodeAdjust T Boxed) (NodeAdjust S Boxed) (Node U))}
+  (let1 r r
+    (match (adjust r)
+      [(:tree (: :red (let kz) (let vz) (boxed: (ptr:non-null (: :red (let ky) (let vy) (let b) (let c)))) (let d)))
+        (tree :red ky vy (tree :black k v (adjust l) b) (tree :black kz vz c d))]
+      [(:tree (: :red (let ky) (let vy) (let b) (boxed: (ptr:non-null (: :red (let kz) (let vz) (let c) (let d))))))
+        (tree :red ky vy (tree :black k v (adjust l) b) (tree :black kz vz c d))]
+      [_
+        (tree :black k v (adjust l) (adjust r))])))
+
+(transparent-function (bubble-left color k v l r d)
+  {(forall K V T S U) (-> Color K V (T K V) (S K V) Bool (: (U K V) Bool)) (where (NodeAdjust T Unboxed) (NodeAdjust T Boxed) (NodeAdjust S Boxed) (Node U))}
+  (if d
+    (match (: color (adjust l))
+      [(: :red (:tree (: :black (let kx) (let vx) (let a) (let b))))
+        (: (balance-left k v (unboxed (tree :red kx vx a b)) r) #f)]
+      [(: :black (:tree (: :black (let kx) (let vx) (let a) (let b))))
+        (: (balance-left k v (unboxed (tree :red kx vx a b)) r) #t)]
+      [(: :black (:tree (: :red (let kx) (let vx) (let a) (boxed: (ptr:non-null (: :black (let ky) (let vy) (let b) (let c)))))))
+        (: (tree :black kx vx a (balance-left k v (unboxed (tree :red ky vy b c)) r)) #f)]
+      [_
+        (assert #f)])
+    (: (tree color k v (adjust l) (adjust r)) #f)))
+
+(transparent-function (bubble-right color k v l r d)
+  {(forall K V T S U) (-> Color K V (T K V) (S K V) Bool (: (U K V) Bool)) (where (NodeAdjust S Unboxed) (NodeAdjust T Boxed) (NodeAdjust S Boxed) (Node U))}
+  (if d
+    (match (: color (adjust r))
+      [(: :red (:tree (: :black (let ky) (let vy) (let b) (let c))))
+        (: (balance-right k v l (unboxed (tree :red ky vy b c))) #f)]
+      [(: :black (:tree (: :black (let ky) (let vy) (let b) (let c))))
+        (: (balance-right k v l (unboxed (tree :red ky vy b c))) #t)]
+      [(: :black (:tree (: :red (let kz) (let vz) (boxed: (ptr:non-null (: :black (let ky) (let vy) (let b) (let c)))) (let d))))
+        (: (tree :black kz vz (balance-right k v l (unboxed (tree :red ky vy b c))) d) #f)]
+      [_
+        (assert #f)])
+    (: (tree color k v (adjust l) (adjust r)) #f)))
+
+(function (insert k v node)
+  {(forall K V T S) (-> K V (T K V) (S K V)) (where (Ord K) (NodeAdjust T Unboxed) (Node S))}
+  (match (adjust node)
+    [:leaf
+      (tree :red k v leaf leaf)]
+    [(:tree (: :black (let ky) (let vy) (let l) (let r)))
+      (match (compare k ky)
+        [ordering:less (balance-left ky vy (unboxed (insert k v l)) r)]
+        [ordering:greater (balance-right ky vy l (unboxed (insert k v r)))]
+        [ordering:equal (tree :black k v l r)])]
+    [(:tree (: :red (let ky) (let vy) (let l) (let r)))
+      (match (compare k ky)
+        [ordering:less (tree :red ky vy (insert k v l) r)]
+        [ordering:greater (tree :red ky vy l (insert k v r))]
+        [ordering:equal (tree :red k v l r)])]))
+
+(function (lookup? k node)
+  {(forall K V T) (-> K (T K V) (Option V)) (where (Ord K) (NodeAdjust T Unboxed))}
+  (match (adjust node)
+    [:leaf
+      none]
+    [(:tree (: _ (let kx) (let vx) (let l) (let r)))
+      (match (compare k kx)
+        [ordering:less (lookup? k l)]
+        [ordering:greater (lookup? k r)]
+        [ordering:equal (some vx)])]))
+
+(function (get-min? node)
+  {(forall K V T) (-> (T K V) (Option (: K V))) (where (NodeAdjust T Unboxed))}
+  (match (adjust node)
+    [:leaf none]
+    [(:tree (: _ (let k) (let v) (boxed: ptr:null) _)) (some (: k v))]
+    [(:tree (: _ _ _ (let l) _)) (get-min? l)]))
+
+(function (get-max? node)
+  {(forall K V T) (-> (T K V) (Option (: K V))) (where (NodeAdjust T Unboxed))}
+  (match (adjust node)
+    [:leaf none]
+    [(:tree (: _ (let k) (let v) _ (boxed: ptr:null))) (some (: k v))]
+    [(:tree (: _ _ _ _ (let r))) (get-max? r)]))
+
+(function (remove k node)
+  {(forall K V T S) (-> K (T K V) (: (S K V) (Option V) Bool)) (where (Ord K) (NodeAdjust T Unboxed) (NodeAdjust Boxed S) (Node S))}
+  (match (adjust node)
+    [:leaf
+      (: leaf none #f)]
+    [(:tree (: (let color) (let kx) (let vx) (let l) (let r)))
+      (match (compare k kx)
+        [ordering:less
+          (with ([(: (let l) (let v) (let d)) (remove k l)]
+                 [(: (let m) (let d)) (bubble-right color kx vx (boxed l) r d)])
+            (: m v d))]
+        [ordering:greater
+          (with ([(: (let r) (let v) (let d)) (remove k r)]
+                 [(: (let m) (let d)) (bubble-left color kx vx l (boxed r) d)])
+            (: m v d))]
+        [ordering:equal
+          (with1 (: (let m) (let d))
+                 (if (is? (boxed: ptr:null) r)
+                   (if (is? :black color)
+                     (blacken l)
+                     (: (adjust l) #f))
+                   (with1 (: (let r) (let ky) (let vy) (let d)) (remove-min r)
+                     (bubble-left color ky vy l (boxed r) d)))
+            (: m (some vx) d))])]))
+
+(function (remove-min node)
+  {(forall K V T S) (-> (T K V) (: (S K V) K V Bool)) (where (NodeAdjust T Unboxed) (NodeAdjust Boxed S) (Node S))}
+  (match (adjust node)
+    [(:tree (: :black (let k) (let v) (boxed: ptr:null) (boxed: ptr:null)))
+      (: leaf k v #t)]
+    [(:tree (: :black (let k) (let v) (boxed: ptr:null) (boxed: (ptr:non-null (: :red (let kx) (let vx) (let l) (let r))))))
+      (: (tree :black kx vx l r) k v #f)]
+    [(:tree (: :red (let k) (let v) (boxed: ptr:null) (let r)))
+      (: (adjust r) k v #f)]
+    [(:tree (: (let color) (let kx) (let vx) (let l) (let r)))
+      (with ([(: (let l) (let k) (let v) (let d)) (remove-min l)]
+             [(: (let m) (let d)) (bubble-right color kx vx (boxed l) r d)])
+        (: m k v d))]
     [_
-      (:T c k v l r)]))
+      (assert #f)]))
 
-(function (bubble c k v l r)
-  (if (or (bb? l) (bb? r))
-    (balance (blacker c) k v (redder* l) (redder* r))
-    (balance c k v l r)))
+(function (remove-max node)
+  {(forall K V T S) (-> (T K V) (: (S K V) K V Bool)) (where (NodeAdjust T Unboxed) (NodeAdjust Boxed S) (Node S))}
+  (match (adjust node)
+    [(:tree (: :black (let k) (let v) (boxed: ptr:null) (boxed: ptr:null)))
+      (: leaf k v #t)]
+    [(:tree (: :black (let k) (let v) (boxed: (ptr:non-null (: :red (let kx) (let vx) (let l) (let r)))) (boxed: ptr:null)))
+      (: (tree :black kx vx l r) k v #f)]
+    [(:tree (: :red (let k) (let v) (let l) (boxed: ptr:null)))
+      (: (adjust l) k v #f)]
+    [(:tree (: (let color) (let kx) (let vx) (let l) (let r)))
+      (with ([(: (let r) (let k) (let v) (let d)) (remove-max r)]
+             [(: (let m) (let d)) (bubble-left color kx vx l (boxed r) d)])
+        (: m k v d))]
+    [_
+      (assert #f)]))
 
 (value-data (Cursor K V)
-  (cursor: (Vector (: K V (OrdMap K V)))))
+  (cursor: (Vector (: K V (Unboxed K V)))))
 
 (function (cursor/new map) {(forall K V) (-> (OrdMap K V) (Cursor K V))}
-  (let1 cursor (cursor: vector/empty)
-    (cursor/push! map cursor)
-    cursor))
+  (with1 (m: (let node)) map
+    (let1 cursor (cursor: vector/empty)
+      (cursor/push! (adjust node) cursor)
+      cursor)))
 
 (function (cursor/next! cursor) {(forall K V) (-> (Cursor K V) (Option (: K V)))}
   (with ([(cursor: (let stack)) cursor]
@@ -261,12 +350,12 @@
     (cursor/push! r cursor)
     (some (: key value))))
 
-(function (cursor/push! map cursor) {(forall K V) (-> (OrdMap K V) (Cursor K V) unit)}
+(function (cursor/push! node cursor) {(forall K V) (-> (Unboxed K V) (Cursor K V) unit)}
   (with1 (cursor: (let stack)) cursor
-    (let1 map (ref map)
-      (while-match1 (:T _ (let k) (let v) (let l) (let r)) ~map
-        (vector/push! (: k v r) stack)
-        (set! map l)))))
+    (let1 node (ref node)
+      (while-match1 (:tree (: _ (let k) (let v) (let l) (let r))) ~node
+        (vector/push! (: k v (adjust r)) stack)
+        (set! node (adjust l))))))
 
 ; ---------------------------
 
@@ -275,10 +364,24 @@
 
 (instance DeepCopy.OrdMap (forall K V) (DeepCopy (OrdMap K V)) (where (DeepCopy K) (DeepCopy V))
   (function (deep-copy a)
+    (with1 (m: (let node)) a
+      (m: (deep-copy node)))))
+
+(instance DeepCopy.Unboxed (forall K V) (DeepCopy (Unboxed K V)) (where (DeepCopy K) (DeepCopy V))
+  (function (deep-copy a)
     (match a
-      [:E :E]
-      [:EE :EE]
-      [(:T (let c) (let k) (let v) (let a) (let b)) (:T c (deep-copy k) (deep-copy v) (deep-copy a) (deep-copy b))])))
+      [:leaf
+        leaf]
+      [(:tree (: (let c) (let k) (let v) (let l) (let r)))
+        (tree c (deep-copy k) (deep-copy v) (deep-copy l) (deep-copy r))])))
+
+(instance DeepCopy.Boxed (forall K V) (DeepCopy (Boxed K V)) (where (DeepCopy K) (DeepCopy V))
+  (function (deep-copy a)
+    (match a
+      [(boxed: ptr:null)
+        leaf]
+      [(boxed: (ptr:non-null (: (let c) (let k) (let v) (let l) (let r))))
+        (tree c (deep-copy k) (deep-copy v) (deep-copy l) (deep-copy r))])))
 
 (instance Default.OrdMap (forall K V) (Default (OrdMap K V))
   (transparent-function default ord-map/empty))
