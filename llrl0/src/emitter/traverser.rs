@@ -348,6 +348,7 @@ impl Traverse for Unary {
             ITrunc(ty) => {
                 traverser.traverse(ty)?;
             }
+            IPopCount => {}
             SExt(ty) | SToF(ty) => {
                 traverser.traverse(ty)?;
             }

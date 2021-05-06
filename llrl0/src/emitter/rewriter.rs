@@ -347,6 +347,7 @@ impl Rewrite for Unary {
             ITrunc(ty) => {
                 rewriter.rewrite(ty)?;
             }
+            IPopCount => {}
             SExt(ty) | SToF(ty) => {
                 rewriter.rewrite(ty)?;
             }

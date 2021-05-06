@@ -168,6 +168,11 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
                         self.builder.build_bit_cast(x, ty)
                     }
                     PtrToI => self.builder.build_ptr_to_int(x, llvm_type!(*self.ctx, u64)),
+                    IToPtr(ty) => {
+                        let ty = self.ctx.llvm_type(ty);
+                        self.builder
+                            .build_int_to_ptr(x, llvm_type!(*self.ctx, (ptr { ty })))
+                    }
                     IComplement => {
                         let int_ty = x
                             .get_type()
@@ -180,10 +185,19 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
                         let ty = self.ctx.llvm_type(ty);
                         self.builder.build_trunc(x, ty)
                     }
-                    IToPtr(ty) => {
-                        let ty = self.ctx.llvm_type(ty);
-                        self.builder
-                            .build_int_to_ptr(x, llvm_type!(*self.ctx, (ptr { ty })))
+                    IPopCount => {
+                        let int_ty = x
+                            .get_type()
+                            .as_type_of::<LLVMIntegerType>()
+                            .expect("Integer type");
+                        let function = match int_ty.bit_width() {
+                            8 => self.module.ctpop_i8(),
+                            16 => self.module.ctpop_i16(),
+                            32 => self.module.ctpop_i32(),
+                            64 => self.module.ctpop_i64(),
+                            _ => panic!("popcount is not defined for type: {}", int_ty),
+                        };
+                        self.builder.build_call(function, &[x])
                     }
                     SExt(ty) => {
                         let ty = self.ctx.llvm_type(ty);

@@ -442,9 +442,10 @@ pub enum Unary {
     Panic,                 // (string) -> !
     BitCast(Ct),           // ('a) -> 'b
     PtrToI,                // (ptr('a)) -> u64
+    IToPtr(Ct),            // (u64) -> ptr('a)
     IComplement,           // (iX) -> iX
     ITrunc(Ct),            // (iX) -> iX
-    IToPtr(Ct),            // (u64) -> ptr('a)
+    IPopCount,             // (iX) -> iX
     SExt(Ct),              // (sX) -> iX
     UExt(Ct),              // (uX) -> iX
     SToF(Ct),              // (uX) -> fX

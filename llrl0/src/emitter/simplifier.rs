@@ -814,6 +814,7 @@ fn builtin_rt(unit: &TextualUnit, name: &str, mut ct_args: Vec<Ct>, mut args: Ve
         ("integer.or", _, [a, b]) => Rt::binary(Binary::IOr, take(a), take(b)),
         ("integer.xor", _, [a, b]) => Rt::binary(Binary::IXor, take(a), take(b)),
         ("integer.complement", _, [a]) => Rt::unary(Unary::IComplement, take(a)),
+        ("integer.popcount", _, [a]) => Rt::unary(Unary::IPopCount, take(a)),
         ("integer.trunc", [_, ty], [a]) => Rt::unary(Unary::ITrunc(take(ty)), take(a)),
         ("signed.lt", _, [a, b]) => Rt::binary(Binary::SLt, take(a), take(b)),
         ("signed.le", _, [a, b]) => Rt::binary(Binary::SLe, take(a), take(b)),

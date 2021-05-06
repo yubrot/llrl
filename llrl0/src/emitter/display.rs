@@ -251,6 +251,7 @@ impl fmt::Display for Unary {
             IToPtr(ty) => write!(f, "integer-to-ptr[{}]", ty),
             IComplement => write!(f, "integer-complement"),
             ITrunc(ty) => write!(f, "integer-trunc[{}]", ty),
+            IPopCount => write!(f, "integer-popcount"),
             SExt(ty) => write!(f, "signed-ext[{}]", ty),
             UExt(ty) => write!(f, "unsinged-ext[{}]", ty),
             SToF(ty) => write!(f, "signed-to-float[{}]", ty),

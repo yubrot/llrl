@@ -33,3 +33,8 @@
 
 (assert-eq? (bw! 1) -2)
 (assert-eq? (bw! -4) 3)
+
+(assert-eq? (popcount 0 {U8}) 0)
+(assert-eq? (popcount 3 {U16}) 2)
+(assert-eq? (popcount 31 {I32}) 5)
+(assert-eq? (popcount -1 {I64}) 64)

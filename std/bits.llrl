@@ -4,7 +4,7 @@
 (import "std/num-literals" _)
 (import "std/preprocess" $$)
 (import "std/integer" Integer Integer._)
-(export Bits bw<< bw>> bw& bw| bw^ bw! Bits._)
+(export Bits bw<< bw>> bw& bw| bw^ bw! popcount Bits._)
 
 (class (Bits A)
   (function (bw<< a b) {(-> A A A)})
@@ -12,7 +12,8 @@
   (function (bw& a b) {(-> A A A)})
   (function (bw| a b) {(-> A A A)})
   (function (bw^ a b) {(-> A A A)})
-  (function (bw! a) {(-> A A)}))
+  (function (bw! a) {(-> A A)})
+  (function (popcount a) {(-> A A)}))
 
 ($$ begin
   ($for-each $ty (I8 I16 I32 I64)
@@ -22,7 +23,8 @@
       (transparent-function (bw& a b) (<integer/and> a b))
       (transparent-function (bw| a b) (<integer/or> a b))
       (transparent-function (bw^ a b) (<integer/xor> a b))
-      (transparent-function (bw! a) (<integer/complement> a))))
+      (transparent-function (bw! a) (<integer/complement> a))
+      (transparent-function (popcount a) (<integer/popcount> a))))
 
   ($for-each $ty (U8 U16 U32 U64)
     (instance ($symbol-concat Bits. $ty) (Bits $ty)
@@ -31,7 +33,8 @@
       (transparent-function (bw& a b) (<integer/and> a b))
       (transparent-function (bw| a b) (<integer/or> a b))
       (transparent-function (bw^ a b) (<integer/xor> a b))
-      (transparent-function (bw! a) (<integer/complement> a)))))
+      (transparent-function (bw! a) (<integer/complement> a))
+      (transparent-function (popcount a) (<integer/popcount> a)))))
 
 (builtin-op <integer/shl> {(forall A) (-> A A A) (where (Integer A))} "integer.shl")
 (builtin-op <integer/ashr> {(forall A) (-> A A A) (where (Integer A))} "integer.ashr")
@@ -40,3 +43,4 @@
 (builtin-op <integer/or> {(forall A) (-> A A A) (where (Integer A))} "integer.or")
 (builtin-op <integer/xor> {(forall A) (-> A A A) (where (Integer A))} "integer.xor")
 (builtin-op <integer/complement> {(forall A) (-> A A) (where (Integer A))} "integer.complement")
+(builtin-op <integer/popcount> {(forall A) (-> A A) (where (Integer A))} "integer.popcount")

@@ -478,6 +478,10 @@ impl<'ctx: 'm, 'm> ModuleArtifact<'ctx, 'm> {
     get_intrinsic_function!('ctx, 'm, exp_f64, "llvm.exp.f64", (function(double) double));
     get_intrinsic_function!('ctx, 'm, log_f32, "llvm.log.f32", (function(float) float));
     get_intrinsic_function!('ctx, 'm, log_f64, "llvm.log.f64", (function(double) double));
+    get_intrinsic_function!('ctx, 'm, ctpop_i8, "llvm.ctpop.i8", (function(i8) i8));
+    get_intrinsic_function!('ctx, 'm, ctpop_i16, "llvm.ctpop.i16", (function(i16) i16));
+    get_intrinsic_function!('ctx, 'm, ctpop_i32, "llvm.ctpop.i32", (function(i32) i32));
+    get_intrinsic_function!('ctx, 'm, ctpop_i64, "llvm.ctpop.i64", (function(i64) i64));
     get_intrinsic_function!('ctx, 'm, memcpy_i64, "llvm.memcpy.p0i8.p0i8.i64", (function((ptr i8) (ptr i8) i64 i1) void));
     get_intrinsic_function!('ctx, 'm, memmove_i64, "llvm.memmove.p0i8.p0i8.i64", (function((ptr i8) (ptr i8) i64 i1) void));
 }
@@ -532,6 +536,10 @@ pub struct IntrinsicFunctions<'ctx: 'm, 'm> {
     exp_f64: Option<LLVMFunction<'ctx, 'm>>,
     log_f32: Option<LLVMFunction<'ctx, 'm>>,
     log_f64: Option<LLVMFunction<'ctx, 'm>>,
+    ctpop_i8: Option<LLVMFunction<'ctx, 'm>>,
+    ctpop_i16: Option<LLVMFunction<'ctx, 'm>>,
+    ctpop_i32: Option<LLVMFunction<'ctx, 'm>>,
+    ctpop_i64: Option<LLVMFunction<'ctx, 'm>>,
     memcpy_i64: Option<LLVMFunction<'ctx, 'm>>,
     memmove_i64: Option<LLVMFunction<'ctx, 'm>>,
 }
