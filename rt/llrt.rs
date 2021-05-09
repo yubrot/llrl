@@ -71,6 +71,8 @@ extern "C" {
     pub fn llrt_panic(a: RtString) -> !;
     pub fn llrt_exit(exitcode: i32);
 
+    pub fn llrt_time() -> f64;
+
     pub fn llrt_getcwd() -> RtString;
 
     pub fn llrt_string_genid() -> RtString;

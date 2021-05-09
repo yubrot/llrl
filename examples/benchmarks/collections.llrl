@@ -1,0 +1,37 @@
+(import "std/process" time)
+(import "std/hash-map" [mutable/_ _])
+(import "std/ord-map" [mutable/_ _])
+(import "std/persistent/hash-map" [persistent/_ _])
+(import "std/persistent/ord-map" [persistent/_ _])
+
+(function size 10000000)
+
+(function (benchmark title f)
+  (println! title)
+  (let1 t (time)
+    (f)
+    (let1 t (- (time) t) (println! "elapsed = " t))))
+
+(benchmark "std/hash-map" (lambda ()
+  (let1 map mutable/hash-map/empty
+    (for (let i) (iterator/range 0 size 1) (mutable/hash-map/insert! i (* i 2) map))
+    (for (let i) (iterator/range 0 size 1) (assert-eq? (some (* i 2)) (mutable/hash-map/get? i map)))
+    (for (let i) (iterator/range 0 size 1) (mutable/hash-map/remove! i map)))))
+
+(benchmark "std/ord-map" (lambda ()
+  (let1 map mutable/ord-map/empty
+    (for (let i) (iterator/range 0 size 1) (mutable/ord-map/insert! i (* i 2) map))
+    (for (let i) (iterator/range 0 size 1) (assert-eq? (some (* i 2)) (mutable/ord-map/get? i map)))
+    (for (let i) (iterator/range 0 size 1) (mutable/ord-map/remove! i map)))))
+
+(benchmark "std/persistent/hash-map" (lambda ()
+  (let1 map (ref persistent/hash-map/empty)
+    (for (let i) (iterator/range 0 size 1) (set! map (persistent/hash-map/insert i (* i 2) ~map)))
+    (for (let i) (iterator/range 0 size 1) (assert-eq? (some (* i 2)) (persistent/hash-map/get? i ~map)))
+    (for (let i) (iterator/range 0 size 1) (set! map (persistent/hash-map/remove i ~map))))))
+
+(benchmark "std/persistent/ord-map" (lambda ()
+  (let1 map (ref persistent/ord-map/empty)
+    (for (let i) (iterator/range 0 size 1) (set! map (persistent/ord-map/insert i (* i 2) ~map)))
+    (for (let i) (iterator/range 0 size 1) (assert-eq? (some (* i 2)) (persistent/ord-map/get? i ~map)))
+    (for (let i) (iterator/range 0 size 1) (set! map (persistent/ord-map/remove i ~map))))))

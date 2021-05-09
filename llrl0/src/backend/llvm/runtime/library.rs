@@ -21,6 +21,7 @@ impl<'ctx: 'm, 'm> RtLibrary<'ctx, 'm> {
             use llrt::*;
             llvm::add_symbol("llrt_panic", llrt_panic as *mut ());
             llvm::add_symbol("llrt_exit", llrt_exit as *mut ());
+            llvm::add_symbol("llrt_time", llrt_time as *mut ());
             llvm::add_symbol("llrt_getcwd", llrt_getcwd as *mut ());
             llvm::add_symbol("llrt_string_genid", llrt_string_genid as *mut ());
             llvm::add_symbol("llrt_string_eq", llrt_string_eq as *mut ());

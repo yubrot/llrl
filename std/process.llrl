@@ -2,8 +2,8 @@
 
 (import "std/prelude/stage-0" _)
 (import "std/assert" assert)
-(import "std/num-literals" I32)
-(export exit)
+(import "std/num-literals" I32 F64)
+(export exit time)
 
 (function (exit status) {(forall A) (-> I32 A)}
   (<exit> status)
@@ -11,5 +11,7 @@
 
 ; TODO: argv
 ; TODO: command
+
+(c-function time {(-> F64)} "llrt_time")
 
 (c-function <exit> {(-> I32 unit)} "llrt_exit")

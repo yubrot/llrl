@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <gc/gc.h>
 #include <sys/random.h>
+#include <sys/time.h>
 
 typedef struct {
   char *ptr;
@@ -21,6 +22,12 @@ noreturn void llrt_panic(rt_string msg) {
     fputs("\n", stderr);
   }
   abort();
+}
+
+double llrt_time() {
+  struct timeval t;
+  gettimeofday(&t, NULL);
+  return t.tv_sec + t.tv_usec * 1e-6;
 }
 
 void llrt_exit(int32_t exitcode) {
