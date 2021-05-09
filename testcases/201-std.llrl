@@ -77,4 +77,5 @@
   (import "std/tests/ord-map")
   (import "std/tests/persistent/ord-map")
   (import "std/tests/hash-map")
+  (import "std/tests/persistent/hash-map")
   #t)

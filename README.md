@@ -67,7 +67,7 @@ The goal of llrl is not to create a modern, practical programming language. Inst
     - [ ] Hash set
     - [x] Persistent ordered map (Red-black tree)
     - [ ] Persistent ordered set
-    - [ ] Persistent hash map (HAMT)
+    - [x] Persistent hash map (HAMT)
     - [ ] Persistent hash set
     - [ ] Persistent sequence (rrb-vector)
   - [x] Arithmetic operations

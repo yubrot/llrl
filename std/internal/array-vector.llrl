@@ -125,6 +125,7 @@
 (function (array/remove index t) {(forall A) (-> U64 (Array A) (Array A))}
   (assert (and (not (array/empty? t))
                (<= 0 index (- (array/length t) 1))) "array/remove: out of range")
+  (when (eq? (array/length t) 1) (return array/empty))
   (let* ([l (array/length t)]
          [s (array/unsafe-alloc-uninitialized (- l 1))]
          [tp (array/ptr t)]
@@ -134,6 +135,8 @@
     s))
 
 (function (array/concat a b) {(forall A) (-> (Array A) (Array A) (Array A))}
+  (when (array/empty? a) (return b))
+  (when (array/empty? b) (return a))
   (let1 s (array/unsafe-alloc-uninitialized (+ (array/length a) (array/length b)))
     (array/copy! a s)
     (array/copy! b (array/skip (array/length a) s))

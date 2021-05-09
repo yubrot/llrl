@@ -76,6 +76,17 @@
 (assert-eq? (string (debug (ord-map (: 1 2) (: 3 4) (: 7 8) (: 5 6))))
             "(ord-map (: 1 2) (: 3 4) (: 5 6) (: 7 8))")
 
+(let1 map (ref ord-map/empty)
+  (for (let i) (iterator/range 0 1000 1)
+    (set! map (ord-map/insert i (ref (* i 2)) ~map)))
+  (let1 m (deep-copy ~map)
+    (for (let i) (iterator/range 0 1000 1)
+      (when-match1 (some (let a)) (ord-map/get? i ~map)
+        (set! a 0)))
+    (assert-eq?
+      (|> (iterator/range 0 1000 1) (it/map [^1 (: %1 (* %1 2))]) ord-map/collect)
+      (|> m ord-map/elems (it/map (case1 (: (let a) (let b)) (: a ~b))) ord-map/collect))))
+
 (assert-eq? (ord-map) (ord-map))
 (assert-ne? (ord-map) (ord-map (: 1 0)))
 (assert-eq? (ord-map (: 1 0)) (ord-map (: 1 0)))
