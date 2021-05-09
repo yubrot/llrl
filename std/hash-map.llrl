@@ -250,20 +250,18 @@
 (instance ShallowCopy.HashMap (forall K V) (ShallowCopy (HashMap K V))
   (function (shallow-copy a)
     (with1 (m: (ref (m-body: (let hasher) (let len) (let cap) (let hashes) (let keys) (let values)))) a
-      (let ([new-hasher (deep-copy hasher)]
-            [new-hashes (array/ptr (array/unsafe-alloc-uninitialized cap))]
+      (let ([new-hashes (array/ptr (array/unsafe-alloc-uninitialized cap))]
             [new-keys (array/ptr (array/unsafe-alloc-uninitialized cap))]
             [new-values (array/ptr (array/unsafe-alloc-uninitialized cap))])
         (ptr/copy! hashes cap new-hashes)
         (ptr/copy! keys cap new-keys)
         (ptr/copy! values cap new-values)
-        (m: (ref (m-body: new-hasher len cap new-hashes new-keys new-values)))))))
+        (m: (ref (m-body: hasher len cap new-hashes new-keys new-values)))))))
 
 (instance DeepCopy.HashMap (forall K V) (DeepCopy (HashMap K V)) (where (DeepCopy K) (DeepCopy V))
   (function (deep-copy a)
     (with1 (m: (ref (m-body: (let hasher) (let len) (let cap) (let hashes) (let keys) (let values)))) a
-      (let ([new-hasher (deep-copy hasher)]
-            [new-hashes (array/ptr (array/unsafe-alloc-uninitialized cap))]
+      (let ([new-hashes (array/ptr (array/unsafe-alloc-uninitialized cap))]
             [new-keys (array/ptr (array/unsafe-alloc-uninitialized cap))]
             [new-values (array/ptr (array/unsafe-alloc-uninitialized cap))])
         (ptr/copy! hashes cap new-hashes)
@@ -273,7 +271,7 @@
               (ptr/store-at! ~i (deep-copy (ptr/load-at ~i keys)) new-keys)
               (ptr/store-at! ~i (deep-copy (ptr/load-at ~i values)) new-values))
             (set! i (+ ~i 1))))
-      (m: (ref (m-body: new-hasher len cap new-hashes new-keys new-values)))))))
+      (m: (ref (m-body: hasher len cap new-hashes new-keys new-values)))))))
 
 (instance Default.HashMap (forall K V) (Default (HashMap K V))
   (transparent-function default hash-map/empty))

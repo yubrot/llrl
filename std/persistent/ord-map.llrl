@@ -2,7 +2,7 @@
 
 (import "std/prelude/stage-1" _)
 (import "std/s" s/foldl)
-(import "std/memory" Ptr ptr:_ ptr/_ _.Ptr)
+(import "std/memory" Ptr ptr:_ _.Ptr)
 (import "std/ref" Ref ref _.Ref)
 (import "std/iterator" _)
 (import "std/it" it/_ zip-either:_ _.ZipEither)
@@ -54,10 +54,13 @@
     (ord-map/insert key value map)))
 
 (function (ord-map/remove key map) {(forall K V) (-> K (OrdMap K V) (OrdMap K V)) (where (Ord K))}
-  (with ([(m: (let node)) map]
-         [(: (let node) _ _) (remove key node)]
-         [(: (let node) _) (blacken (unboxed node))])
-    (m: node)))
+  (with1 (m: (let node)) map
+    (match (remove key node)
+      [(some (: (let node) _ _))
+        (with1 (: (let node) _) (blacken (unboxed node))
+          (m: node))]
+      [none
+        map])))
 
 (function (ord-map/remove-min map) {(forall K V) (-> (OrdMap K V) (OrdMap K V))}
   (match map
@@ -279,18 +282,18 @@
     [(:tree (: _ _ _ _ (let r))) (get-max? r)]))
 
 (function (remove k node)
-  {(forall K V T S) (-> K (T K V) (: (S K V) (Option V) Bool)) (where (Ord K) (NodeAdjust T Unboxed) (NodeAdjust Boxed S) (Node S))}
+  {(forall K V T S) (-> K (T K V) (Option (: (S K V) V Bool))) (where (Ord K) (NodeAdjust T Unboxed) (NodeAdjust Boxed S) (Node S))}
   (match (adjust node)
     [:leaf
-      (: leaf none #f)]
+      none]
     [(:tree (: (let color) (let kx) (let vx) (let l) (let r)))
-      (match (compare k kx)
+      (some (match (compare k kx)
         [ordering:less
-          (with ([(: (let l) (let v) (let d)) (remove k l)]
+          (with ([(: (let l) (let v) (let d)) (remove k l)?]
                  [(: (let m) (let d)) (bubble-right color kx vx (boxed l) r d)])
             (: m v d))]
         [ordering:greater
-          (with ([(: (let r) (let v) (let d)) (remove k r)]
+          (with ([(: (let r) (let v) (let d)) (remove k r)?]
                  [(: (let m) (let d)) (bubble-left color kx vx l (boxed r) d)])
             (: m v d))]
         [ordering:equal
@@ -301,7 +304,7 @@
                      (: (adjust l) #f))
                    (with1 (: (let r) (let ky) (let vy) (let d)) (remove-min r)
                      (bubble-left color ky vy l (boxed r) d)))
-            (: m (some vx) d))])]))
+            (: m vx d))]))]))
 
 (function (remove-min node)
   {(forall K V T S) (-> (T K V) (: (S K V) K V Bool)) (where (NodeAdjust T Unboxed) (NodeAdjust Boxed S) (Node S))}
