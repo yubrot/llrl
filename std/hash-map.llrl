@@ -195,6 +195,7 @@
         (when backshift? (set! j j+1))
         backshift?))
     (if (< ~j i)
+      ; wrap around
       (begin
         (when (ne? i (- cap 1))
           (ptr/move! (ptr/add (+ i 1) hashes) (- cap 1 i) (ptr/add i hashes))

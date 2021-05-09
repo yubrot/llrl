@@ -5,7 +5,7 @@
 (import "std/s" s/length)
 (import "std/integer" _.U64)
 (import "std/access" unsafe-get unsafe-set!)
-(import "std/memory" Ptr ptr/_)
+(import "std/memory" Ptr ptr:null ptr/_)
 (import "std/ref" Ref ref ref/_ _.Ref)
 (import "std/iterator" _)
 (export Array array array/_ _.Array)
@@ -45,7 +45,7 @@
     t))
 
 (function array/empty {(forall A) (Array A)}
-  (array/unsafe-from-ptr ptr/null 0))
+  (array/unsafe-from-ptr ptr:null 0))
 
 ; Caller must ensure that no one loads an uninitialized index.
 (builtin-op array/unsafe-alloc-uninitialized {(forall A) (-> U64 (Array A))} "array.alloc")
@@ -309,7 +309,7 @@
 (function (vector/move! t) {(forall A) (-> (Vector A) (Vector A))}
   (with1 (vector: (let body)) t
     (let1 moved-vec (vector: (ref ~body))
-      (set! body (vector-body: ptr/null 0 0))
+      (set! body (vector-body: ptr:null 0 0))
       moved-vec)))
 
 ; ---------------------------

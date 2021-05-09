@@ -1,6 +1,6 @@
 (import "std/vector" _)
 (import "std/array" array/_)
-(import "std/memory" ptr/null)
+(import "std/memory" ptr:null)
 
 ; Same as array
 (assert-eq? (vector) default)
@@ -35,7 +35,7 @@
   (let ([ptr (vector/ptr a)]
         [len (vector/length a)]
         [cap (vector/capacity a)])
-    (assert-ne? ptr ptr/null)
+    (assert-ne? ptr ptr:null)
     (assert-eq? len 3)
     (assert (<= len cap))
     (assert-eq? (vector 1 2 3) (vector/unsafe-from-ptr ptr len cap))))

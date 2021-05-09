@@ -23,24 +23,24 @@
         (set! i (- ~i 1))))
     none))
 
-(function (it/concat it-a it-b) {(forall T S A) (-> (T A) (S A) (Iterator A)) (where (Iterate T) (Iterate S))}
-  (let1 s (ref (concat:a (iterate it-a) it-b))
-    (iterator/new [^0 (concat/next! s)])))
+(function (it/chain it-a it-b) {(forall T S A) (-> (T A) (S A) (Iterator A)) (where (Iterate T) (Iterate S))}
+  (let1 s (ref (chain:a (iterate it-a) it-b))
+    (iterator/new [^0 (chain/next! s)])))
 
-(value-data (Concat T A)
-  (concat:a (Iterator A) (T A))
-  (concat:b (Iterator A)))
+(value-data (Chain T A)
+  (chain:a (Iterator A) (T A))
+  (chain:b (Iterator A)))
 
-(function (concat/next! s) {(forall T A) (-> (Ref (Concat T A)) (Option A)) (where (Iterate T))}
+(function (chain/next! s) {(forall T A) (-> (Ref (Chain T A)) (Option A)) (where (Iterate T))}
   (match ~s
-    [(concat:a (let it-a) (let it-b))
+    [(chain:a (let it-a) (let it-b))
       (match (iterator/next! it-a)
         [none
-          (set! s (concat:b (iterate it-b)))
-          (concat/next! s)]
+          (set! s (chain:b (iterate it-b)))
+          (chain/next! s)]
         [(some (let x))
           (some x)])]
-    [(concat:b (let it))
+    [(chain:b (let it))
       (iterator/next! it)]))
 
 (function (it/zip it-a it-b) {(forall T S A B) (-> (T A) (S B) (Iterator (: A B))) (where (Iterate T) (Iterate S))}

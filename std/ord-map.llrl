@@ -3,7 +3,7 @@
 (import "std/prelude/stage-1" _)
 (import "std/s" s/map)
 (import "std/integer" _)
-(import "std/memory" Ptr ptr/_ _.Ptr)
+(import "std/memory" Ptr ptr:null ptr/_ _.Ptr)
 (import "std/ref" Ref ref ref/_ _.Ref)
 (import "std/iterator" _)
 (import "std/it" it/_)
@@ -14,7 +14,7 @@
 (export OrdMap ord-map ord-map/_ _.OrdMap)
 
 ; An ordered, mutable key-value collection.
-; The OrdMap implementation is based on https://opendatastructures.org/
+; The OrdMap is implemented based on B-Tree described in https://opendatastructures.org/
 (value-data (OrdMap K V)
   (m: (Ref (OrdMapBody K V))))
 
@@ -148,7 +148,7 @@
     (ref 0)
     (array/ptr (array/unsafe-alloc-uninitialized 2B-1))
     (array/ptr (array/unsafe-alloc-uninitialized 2B-1))
-    ptr/null))
+    ptr:null))
 
 (function (node/new-internal) {(forall K V) (-> (Node K V))}
   (node:
@@ -168,7 +168,7 @@
 
 (function (node/simplify-root root) {(forall K V) (-> (Node K V) (Node K V))}
   (with1 (node: (let length) _ _ (let edges)) root
-    (if (and (eq? ~length 0) (ne? ptr/null edges))
+    (if (and (eq? ~length 0) (ne? ptr:null edges))
       (ptr/load-at 0 edges)
       root)))
 
@@ -205,11 +205,11 @@
 
 (function (node/leaf? node) {(forall K V) (-> (Node K V) Bool)}
   (with1 (node: _ _ _ (let edges)) node
-    (eq? ptr/null edges)))
+    (eq? ptr:null edges)))
 
 (function (node/internal? node) {(forall K V) (-> (Node K V) Bool)}
   (with1 (node: _ _ _ (let edges)) node
-    (ne? ptr/null edges)))
+    (ne? ptr:null edges)))
 
 (function (node/edge-at index node) {(forall K V) (-> U64 (Node K V) (Node K V))}
   (assert (node/internal? node) "node/edge-at: Node is leaf")
@@ -400,7 +400,7 @@
           [p-value (ptr/load-at (- index 1) p-values)]
           [l-key (ptr/load-at (- ~l-length 1) l-keys)]
           [l-value (ptr/load-at (- ~l-length 1) l-values)]
-          [edge (if (ne? ptr/null l-edges) (some (ptr/load-at ~l-length l-edges)) none)])
+          [edge (if (ne? ptr:null l-edges) (some (ptr/load-at ~l-length l-edges)) none)])
       ; right-node.elems.unshift(node.elems[index-1])
       (ptr/store-at! (- index 1) l-key p-keys)
       (ptr/store-at! (- index 1) l-value p-values)
@@ -426,7 +426,7 @@
           [p-value (ptr/load-at index p-values)]
           [r-key (ptr/load-at 0 r-keys)]
           [r-value (ptr/load-at 0 r-values)]
-          [edge (if (ne? ptr/null r-edges) (some (ptr/load-at 0 r-edges)) none)])
+          [edge (if (ne? ptr:null r-edges) (some (ptr/load-at 0 r-edges)) none)])
       ; left-node.elems.push(node.elems[index])
       (ptr/store-at! ~l-length p-key l-keys)
       (ptr/store-at! ~l-length p-value l-values)
@@ -461,7 +461,7 @@
       ; left-node.elems.append(right-node.elems)
       (ptr/copy! r-keys ~r-length (ptr/add (+ ~l-length 1) l-keys))
       (ptr/copy! r-values ~r-length (ptr/add (+ ~l-length 1) l-values))
-      (when (ne? ptr/null l-edges)
+      (when (ne? ptr:null l-edges)
         ; left-node.edges.append(right-node.edges)
         (ptr/copy! r-edges (+ ~r-length 1) (ptr/add (+ ~l-length 1) l-edges)))
       (set! p-length (- ~p-length 1))
@@ -509,21 +509,21 @@
 (instance ShallowCopy.Node (forall K V) (ShallowCopy (Node K V))
   (function (shallow-copy a)
     (with ([(node: (let length) (let keys) (let values) (let edges)) a]
-           [(let new-node (node: (let n-length) (let n-keys) (let n-values) (let n-edges))) (if (ne? ptr/null edges) (node/new-internal) (node/new-leaf))])
+           [(let new-node (node: (let n-length) (let n-keys) (let n-values) (let n-edges))) (if (ne? ptr:null edges) (node/new-internal) (node/new-leaf))])
       (set! n-length ~length)
       (ptr/copy! keys ~length n-keys)
       (ptr/copy! values ~length n-values)
-      (when (ne? ptr/null edges) (ptr/copy-map! shallow-copy edges (+ ~length 1) n-edges))
+      (when (ne? ptr:null edges) (ptr/copy-map! shallow-copy edges (+ ~length 1) n-edges))
       new-node)))
 
 (instance DeepCopy.Node (forall K V) (DeepCopy (Node K V)) (where (DeepCopy K) (DeepCopy V))
   (function (deep-copy a)
     (with ([(node: (let length) (let keys) (let values) (let edges)) a]
-           [(let new-node (node: (let n-length) (let n-keys) (let n-values) (let n-edges))) (if (ne? ptr/null edges) (node/new-internal) (node/new-leaf))])
+           [(let new-node (node: (let n-length) (let n-keys) (let n-values) (let n-edges))) (if (ne? ptr:null edges) (node/new-internal) (node/new-leaf))])
       (set! n-length ~length)
       (ptr/copy-map! deep-copy keys ~length n-keys)
       (ptr/copy-map! deep-copy values ~length n-values)
-      (when (ne? ptr/null edges) (ptr/copy-map! deep-copy edges (+ ~length 1) n-edges))
+      (when (ne? ptr:null edges) (ptr/copy-map! deep-copy edges (+ ~length 1) n-edges))
       new-node)))
 
 (function (ptr/copy-map! f src len dest)

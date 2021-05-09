@@ -11,6 +11,8 @@
 (import "std/tuple" _.Tuple.2)
 (export OrdMap ord-map ord-map/_ _.OrdMap)
 
+; An ordered, persistent key-value collection.
+; The OrdMap is implemented based on Okasaki's Red-black tree.
 (value-data (OrdMap K V)
   (m: (Unboxed K V)))
 
@@ -130,8 +132,6 @@
   (it/map (case1 (: _ (let value)) value) (ord-map/elems map)))
 
 ; ---------------------------
-
-; The Red-black tree implementation is based on Okasaki's red-black tree.
 
 (value-data Color
   :red

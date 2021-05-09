@@ -335,7 +335,7 @@ Each class instance has its own name. Instances are automatically resolved when 
 
 ### Macros
 
-The definition of macros have the same form as functions, but the type of macros always be `(-> (Syntax Sexp) (Result (Syntax Sexp) String))`. [`(Syntax A)`](./llrl0/src/ast/builtin.llrl#L114-L116) is the internal representation type used for embedding context information, and [`Sexp`](./llrl0/src/ast/builtin.llrl#L118-L128) is the structure of S-expressions itself. This means that macros take the S-expression of the macro application (with context information) as an argument and either return the result of the macro expansion or return an expansion error. Since it is hard to deconstruct and construct S-expressions manually, there is `s/match` to deconstruct S-expressions and quoting to construct S-expressions.
+The definition of macros have the same form as functions, but the types of macros are always `(-> (Syntax Sexp) (Result (Syntax Sexp) String))`. [`(Syntax A)`](./llrl0/src/ast/builtin.llrl#L114-L116) is the internal representation type used for embedding context information, and [`Sexp`](./llrl0/src/ast/builtin.llrl#L118-L128) is the structure of S-expressions itself. This means that macros take the S-expression of the macro application (with context information) as an argument and either return the result of the macro expansion or return an expansion error. Since it is hard to deconstruct and construct S-expressions manually, there is `s/match` to deconstruct S-expressions and quoting to construct S-expressions.
 
 For example, `lambda` syntax is defined as a macro in [std/boot/5-lambda](./std/boot/5-lambda.llrl):
 
@@ -354,7 +354,7 @@ For example, `lambda` syntax is defined as a macro in [std/boot/5-lambda](./std/
 
 `s/match` and `quasiquote` are defined as macros in [std/boot/2-s-match](./std/boot/2-s-match.llrl), [std/boot/3-quasiquote](./std/boot/3-quasiquote.llrl).
 
-`'`(quote), `` ` `` (quasiquote), `,` (unquote), `,@` (unquote-splicing) are the same as in the classical Lisp, but there is a llrl-specific quoting, `\` (capture). This captures the "use" of the definition of the scope.
+`'`(quote), `` ` `` (quasiquote), `,` (unquote), `,@` (unquote-splicing) are the same as in the classical Lisp, but there is a llrl-specific quoting, `\` (capture). This captures the "use" of the definition in the scope.
 For example, `and` macro (defined in [std/bool](./std/bool.llrl)) uses the function `&&` in the result of the macro expansion. Thanks to the capture, this points to the intended `&&` even if `&&` does not exist in the scope of the macro caller.
 
 ```llrl

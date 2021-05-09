@@ -9,7 +9,6 @@
   [ptr:null "null"]
   [(ptr:non-null A) "non-null"])
 
-(builtin-op ptr/null {(forall A) (Ptr A)} "ptr.null")
 (builtin-op ptr/load {(forall A) (-> (Ptr A) A)} "ptr.load")
 (builtin-op ptr/store! {(forall A) (-> A (Ptr A) unit)} "ptr.store")
 (builtin-op ptr/offset {(forall A) (-> I64 (Ptr A) (Ptr A))} "ptr.offset")

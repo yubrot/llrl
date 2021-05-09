@@ -877,7 +877,6 @@ fn builtin_rt(unit: &TextualUnit, name: &str, mut ct_args: Vec<Ct>, mut args: Ve
         ("ptr.le", _, [a, b]) => Rt::binary(Binary::PtrLe, take(a), take(b)),
         ("ptr.gt", _, [a, b]) => Rt::binary(Binary::PtrGt, take(a), take(b)),
         ("ptr.ge", _, [a, b]) => Rt::binary(Binary::PtrGe, take(a), take(b)),
-        ("ptr.null", [ty], []) => Rt::nullary(Nullary::Null(take(ty))),
         ("ptr.load", [_], [a]) => Rt::unary(Unary::Load, take(a)),
         ("ptr.store", [_], [a, b]) => Rt::binary(Binary::Store, take(a), take(b)),
         ("ptr.offset", [_], [a, b]) => Rt::binary(Binary::Offset, take(a), take(b)),

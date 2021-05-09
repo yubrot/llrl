@@ -131,7 +131,7 @@
     buf)
 
 (function (canonicalize/complete buf) {(-> (Vector String) String)}
-  (string/join "/" (it/concat (iterator/only "") buf)))
+  (string/join "/" (it/chain (iterator/only "") buf)))
 
 (function (path/join p q) {(-> String String String)}
   (cond

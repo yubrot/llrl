@@ -10,13 +10,12 @@
   (ptr/store! 456 (ref/ptr x))
   (assert-eq? 456 ~x))
 
-(assert-eq? ptr/null ptr/null)
-(assert-ne? ptr/null (|> 123 box box/unsafe-ptr))
+(assert-eq? ptr:null ptr:null)
+(assert-ne? ptr:null (|> 123 box box/unsafe-ptr))
 
-(assert-is? ptr:null ptr/null)
 (assert (not (is? ptr:null (|> 123 box box/unsafe-ptr))))
 (assert-is? (ptr:non-null 123) (|> 123 box box/unsafe-ptr))
-(assert (not (is? (ptr:non-null 123) ptr/null)))
+(assert (not (is? (ptr:non-null 123) ptr:null)))
 (assert (not (is? (ptr:non-null 456) (|> 123 box box/unsafe-ptr))))
 
 (let ([x "Hello"])

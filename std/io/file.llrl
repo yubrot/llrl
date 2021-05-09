@@ -2,7 +2,7 @@
 
 (import "std/prelude/stage-1" _)
 (import "std/integer" _.I32 _.U64)
-(import "std/memory" Ptr ptr/_ _.Ptr)
+(import "std/memory" Ptr ptr:null _.Ptr)
 (import "std/ref" Ref ref _.Ref)
 (import "std/array" Array array/_)
 (import "std/rw" Read Write)
@@ -15,16 +15,16 @@
 
 (function (file/open! pathname mode) {(-> String String (Result File IoError))}
   (let1 handle (<fopen> (string/c-compatible-ptr pathname) (string/c-compatible-ptr mode))
-    (if (ne? handle ptr/null)
+    (if (ne? handle ptr:null)
       (ok (file: (ref handle)))
       (err (io-error/from-current-errno)))))
 
 (function file/closed {File}
-  (file: (ref ptr/null)))
+  (file: (ref ptr:null)))
 
 (function (file/read! dest file) {(-> (Array U8) File (Result U64 IoError))}
   (with1 (file: (let handle)) file
-    (if (eq? ~handle ptr/null)
+    (if (eq? ~handle ptr:null)
       (err io-error:closed)
       (let1 bytes-read (<fread> (array/ptr dest) 1 (array/length dest) ~handle)
         (if (or (eq? bytes-read (array/length dest))
@@ -34,7 +34,7 @@
 
 (function (file/write! src file) {(-> (Array U8) File (Result unit IoError))}
   (with1 (file: (let handle)) file
-    (if (eq? ~handle ptr/null)
+    (if (eq? ~handle ptr:null)
       (err io-error:closed)
       (let1 bytes-write (<fwrite> (array/ptr src) 1 (array/length src) ~handle)
         (if (eq? bytes-write (array/length src))
@@ -43,7 +43,7 @@
 
 (function (file/flush! file) {(-> File (Result unit IoError))}
   (with1 (file: (let handle)) file
-    (if (eq? ~handle ptr/null)
+    (if (eq? ~handle ptr:null)
       (err io-error:closed)
       (if (eq? (<fflush> ~handle) 0)
         (ok unit)
@@ -51,10 +51,10 @@
 
 (function (file/close! file) {(-> File (Result unit IoError))}
   (with1 (file: (let handle)) file
-    (if (eq? ~handle ptr/null)
+    (if (eq? ~handle ptr:null)
       (ok unit) ; Already closed; do nothing
       (let1 close-result (<fclose> ~handle)
-        (set! handle ptr/null) ; the handle is no longer available even if close failed
+        (set! handle ptr:null) ; the handle is no longer available even if close failed
         (if (eq? close-result 0)
           (ok unit)
           (err (io-error/from-current-errno)))))))
@@ -62,19 +62,19 @@
 ; Checks whether the file is closed or if the end-of file is reached.
 (function (file/eof? file) {(-> File Bool)}
   (with1 (file: (let handle)) file
-    (or (eq? ~handle ptr/null)
+    (or (eq? ~handle ptr:null)
         (ne? (<feof> ~handle) 0))))
 
 ; Checks whether the file has error.
 (function (file/error? file) {(-> File Bool)}
   (with1 (file: (let handle)) file
-    (and (ne? ~handle ptr/null)
+    (and (ne? ~handle ptr:null)
          (ne? (<ferror> ~handle) 0))))
 
 ; Checks whether the file is closed.
 (function (file/closed? file) {(-> File Bool)}
   (with1 (file: (let handle)) file
-    (eq? ~handle ptr/null)))
+    (eq? ~handle ptr:null)))
 
 (data <File>)
 (c-function <fopen> {(-> (Ptr U8) (Ptr U8) (Ptr <File>))} "fopen")
