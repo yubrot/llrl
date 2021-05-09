@@ -99,6 +99,46 @@
 (function (array/split-last? t) {(forall A) (-> (Array A) (Option (: A (Array A))))}
   (if (not (array/empty? t)) (some (array/split-last t)) none))
 
+(function (array/insert index value t) {(forall A) (-> U64 A (Array A) (Array A))}
+  (assert (<= 0 index (array/length t)) "array/insert: out of range")
+  (let* ([l (array/length t)]
+         [s (array/unsafe-alloc-uninitialized (+ l 1))]
+         [tp (array/ptr t)]
+         [sp (array/ptr s)])
+    (when (ne? index 0) (ptr/copy! tp index sp))
+    (when (ne? index l) (ptr/copy! (ptr/add index tp) (- l index) (ptr/add (+ index 1) sp)))
+    (ptr/store-at! index value sp)
+    s))
+
+(function (array/push value t) {(forall A) (-> A (Array A) (Array A))}
+  (array/insert (array/length t) value t))
+
+(function (array/unshift value t) {(forall A) (-> A (Array A) (Array A))}
+  (array/insert 0 value t))
+
+(function (array/update index value t) {(forall A) (-> U64 A (Array A) (Array A))}
+  (assert (<= 0 index (- (array/length t) 1)) "array/update: out of range")
+  (let1 s (shallow-copy t)
+    (unsafe-set! s[index] value)
+    s))
+
+(function (array/remove index t) {(forall A) (-> U64 (Array A) (Array A))}
+  (assert (and (not (array/empty? t))
+               (<= 0 index (- (array/length t) 1))) "array/remove: out of range")
+  (let* ([l (array/length t)]
+         [s (array/unsafe-alloc-uninitialized (- l 1))]
+         [tp (array/ptr t)]
+         [sp (array/ptr s)])
+    (when (ne? index 0) (ptr/copy! tp index sp))
+    (when (ne? index (- l 1)) (ptr/copy! (ptr/add (+ index 1) tp) (- l index 1) (ptr/add index sp)))
+    s))
+
+(function (array/concat a b) {(forall A) (-> (Array A) (Array A) (Array A))}
+  (let1 s (array/unsafe-alloc-uninitialized (+ (array/length a) (array/length b)))
+    (array/copy! a s)
+    (array/copy! b (array/skip (array/length a) s))
+    s))
+
 (function (array/fill! elem t) {(forall A) (-> A (Array A) unit)}
   (let ([i (ref 0)]
         [l (array/length t)])
