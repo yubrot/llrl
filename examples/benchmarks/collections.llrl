@@ -1,4 +1,4 @@
-(import "std/process" time)
+(import "std/system" time)
 (import "std/hash-map" [mutable/_ _])
 (import "std/ord-map" [mutable/_ _])
 (import "std/persistent/hash-map" [persistent/_ _])

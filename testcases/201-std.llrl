@@ -70,7 +70,7 @@
 
 (test-std
   (import "std/phantom")
-  (import "std/process")
+  (import "std/system")
   (import "std/tests/real")
   (import "std/tests/math")
   (import "std/tests/path")
