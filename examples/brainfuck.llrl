@@ -1,4 +1,4 @@
-(import "std/io" stdin stdout)
+(import "std/io" IoError io-error:_ stdin stdout)
 
 (function (get-char!) {(-> (Result I32 IoError))}
   (match (read-u8! stdin)

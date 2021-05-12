@@ -73,7 +73,6 @@
   (import "std/system")
   (import "std/tests/real")
   (import "std/tests/math")
-  (import "std/tests/path")
   (import "std/tests/ord-map")
   (import "std/tests/persistent/ord-map")
   (import "std/tests/hash-map")

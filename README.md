@@ -75,11 +75,11 @@ The goal of llrl is not to create a modern, practical programming language. Inst
   - [x] [xxHash](https://github.com/Cyan4973/xxHash)
   - [x] Iterators
   - [ ] Derive macro
-  - [ ] System
-    - [x] I/O
+  - [x] I/O
     - [x] Path
     - [x] File
     - [ ] Directory
+  - [ ] System
     - [ ] Command line arguments
     - [ ] Process
 - [ ] llrl1: llrl compiler by llrl

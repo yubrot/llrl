@@ -3,8 +3,10 @@
 (import "std/prelude/stage-1" _)
 (import "std/string-writer" string-writer)
 (import "std/io/error" _)
+(import "std/io/path" _)
 (import "std/io/file" _)
 (export IoError io-error:_ io-error/_ _.IoError)
+(export path canonicalized-path path/_ PathComponent path-component:_ _.PathComponent)
 (export File file/_ _.File)
 (export stdin stdout stderr print! println! eprint! eprintln! fprint! fprintln!)
 
