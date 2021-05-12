@@ -10,6 +10,7 @@
 #include <gc/gc.h>
 #include <sys/random.h>
 #include <sys/time.h>
+#include <dirent.h>
 
 typedef struct {
   char *ptr;
@@ -100,14 +101,14 @@ rt_string llrt_f64_to_string(double a) {
   return ret;
 }
 
-static rt_string zero = {.len = 1, .ptr = "0"};
+static rt_string zero_string = {.len = 1, .ptr = "0"};
 
 char digit_to_char(uint8_t digit) {
   return digit < 10 ? '0' + digit : 'a' + (digit - 10);
 }
 
 rt_string llrt_i64_to_string(uint8_t radix, int64_t value) {
-  if (value == 0) return zero;
+  if (value == 0) return zero_string;
   char buf[64];
   int64_t sign = value < 0 ? -1 : 1;
   size_t len = 0;
@@ -128,7 +129,7 @@ rt_string llrt_i64_to_string(uint8_t radix, int64_t value) {
 }
 
 rt_string llrt_u64_to_string(uint8_t radix, uint64_t value) {
-  if (value == 0) return zero;
+  if (value == 0) return zero_string;
   char buf[64];
   size_t len = 0;
   while (value != 0) {
@@ -237,6 +238,16 @@ to_f64 llrt_string_to_f64(rt_string s) {
   double value = strtod(buf, &end);
   if (errno != 0 || end != buf + s.len) return (to_f64){.success = 0};
   return (to_f64){.success = 1, .value = value};
+}
+
+rt_string llrt_readdir(DIR *dir) {
+  struct dirent *ent = readdir(dir);
+  if (ent == NULL) return (rt_string){.len = 0, .ptr = NULL};
+  rt_string ret;
+  ret.len = strlen(ent->d_name);
+  ret.ptr = GC_malloc(ret.len);
+  memcpy(ret.ptr, ent->d_name, ret.len);
+  return ret;
 }
 
 // NOTE: Actually this is not C89/C99-compatible

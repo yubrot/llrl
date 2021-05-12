@@ -1,0 +1,59 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-1" _)
+(import "std/integer" _.I32)
+(import "std/memory" Ptr ptr:null _.Ptr)
+(import "std/ref" Ref ref _.Ref)
+(import "std/iterator" _)
+(import "std/string" string/empty? string/c-compatible-ptr)
+(import "std/io/error" _)
+(export Directory directory/_ _.Directory)
+
+(value-data Directory
+  (directory: (Ref (Ptr <Dir>))))
+
+(function (directory/open! pathname) {(-> String (Result Directory IoError))}
+  (let1 handle (<opendir> (string/c-compatible-ptr pathname))
+    (if (ne? handle ptr:null)
+      (ok (directory: (ref handle)))
+      (err (io-error/from-current-errno)))))
+
+(function directory/closed {Directory}
+  (directory: (ref ptr:null)))
+
+(function (directory/next! dir) {(-> Directory (Result (Option String) IoError))}
+  (with1 (directory: (let handle)) dir
+    (if (eq? ~handle ptr:null)
+      (err io-error:closed)
+      (let1 entry (<readdir> ~handle)
+        (match entry
+          ["" (ok none)]
+          ["." (directory/next! dir)]
+          [".." (directory/next! dir)]
+          [(let s) (ok (some s))])))))
+
+(function (directory/entries! dir) {(-> Directory (Iterator String))}
+  (iterator/new (lambda ()
+    (match (directory/next! dir)
+      [(ok (let r)) r]
+      [(err _) none]))))
+
+(function (directory/close! dir) {(-> Directory (Result unit IoError))}
+  (with1 (directory: (let handle)) dir
+    (if (eq? ~handle ptr:null)
+      (ok unit) ; Already closed; do nothing
+      (let1 close-result (<closedir> ~handle)
+        (set! handle ptr:null) ; the handle is no longer available even if close failed
+        (if (eq? close-result 0)
+          (ok unit)
+          (err (io-error/from-current-errno)))))))
+
+; Checks whether the directory is closed.
+(function (directory/closed? dir) {(-> Directory Bool)}
+  (with1 (directory: (let handle)) dir
+    (eq? ~handle ptr:null)))
+
+(data <Dir>)
+(c-function <opendir> {(-> (Ptr U8) (Ptr <Dir>))} "opendir")
+(c-function <readdir> {(-> (Ptr <Dir>) String)} "llrt_readdir")
+(c-function <closedir> {(-> (Ptr <Dir>) I32)} "closedir")

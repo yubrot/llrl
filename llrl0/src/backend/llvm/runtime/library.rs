@@ -35,6 +35,7 @@ impl<'ctx: 'm, 'm> RtLibrary<'ctx, 'm> {
             llvm::add_symbol("llrt_string_to_u64", llrt_string_to_u64 as *mut ());
             llvm::add_symbol("llrt_string_to_f32", llrt_string_to_f32 as *mut ());
             llvm::add_symbol("llrt_string_to_f64", llrt_string_to_f64 as *mut ());
+            llvm::add_symbol("llrt_readdir", llrt_readdir as *mut ());
             llvm::add_symbol("llrt_stdin", llrt_stdin as *mut ());
             llvm::add_symbol("llrt_stdout", llrt_stdout as *mut ());
             llvm::add_symbol("llrt_stderr", llrt_stderr as *mut ());

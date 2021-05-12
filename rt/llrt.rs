@@ -90,6 +90,8 @@ extern "C" {
     pub fn llrt_string_to_f32(s: RtString) -> Result<f32>;
     pub fn llrt_string_to_f64(s: RtString) -> Result<f64>;
 
+    pub fn llrt_readdir(dir: *const u8) -> RtString;
+
     pub fn llrt_stdin() -> *mut *const u8;
     pub fn llrt_stdout() -> *mut *const u8;
     pub fn llrt_stderr() -> *mut *const u8;

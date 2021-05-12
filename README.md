@@ -78,7 +78,7 @@ The goal of llrl is not to create a modern, practical programming language. Inst
   - [x] I/O
     - [x] Path
     - [x] File
-    - [ ] Directory
+    - [x] Directory
   - [ ] System
     - [ ] Command line arguments
     - [ ] Process
