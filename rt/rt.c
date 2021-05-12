@@ -17,6 +17,33 @@ typedef struct {
   uint64_t len;
 } rt_string;
 
+typedef struct {
+  uint64_t argc;
+  rt_string *argv;
+} rt_args;
+
+static rt_args last_args = (rt_args){.argc = 0, .argv = NULL};
+
+void llrt_init(int argc, char *argv[]) {
+  if (argc < 1) return;
+  argc -= 1;
+  argv = &argv[1];
+
+  last_args.argc = (uint64_t)argc;
+  last_args.argv = GC_malloc(sizeof(rt_string) * last_args.argc);
+  for (int i = 0; i < argc; ++i) {
+    rt_string s;
+    s.len = strlen(argv[i]);
+    s.ptr = GC_malloc(s.len);
+    memcpy(s.ptr, argv[i], s.len);
+    last_args.argv[i] = s;
+  }
+}
+
+rt_args llrt_args() {
+  return last_args;
+}
+
 noreturn void llrt_panic(rt_string msg) {
   if (msg.len != 0) {
     fwrite(msg.ptr, sizeof(char), msg.len, stderr);
@@ -25,14 +52,14 @@ noreturn void llrt_panic(rt_string msg) {
   abort();
 }
 
+void llrt_exit(int32_t exitcode) {
+  exit(exitcode);
+}
+
 double llrt_time() {
   struct timeval t;
   gettimeofday(&t, NULL);
   return t.tv_sec + t.tv_usec * 1e-6;
-}
-
-void llrt_exit(int32_t exitcode) {
-  exit(exitcode);
 }
 
 rt_string llrt_getcwd() {
@@ -45,7 +72,7 @@ rt_string llrt_getcwd() {
   return ret;
 }
 
-uint64_t last_sym;
+static uint64_t last_sym;
 
 rt_string llrt_string_genid() {
   last_sym += 1;
@@ -254,9 +281,9 @@ rt_string llrt_readdir(DIR *dir) {
 #undef stdin
 #undef stdout
 #undef stderr
-void **llrt_stdin_ref = (void **)&stdin;
-void **llrt_stdout_ref = (void **)&stdout;
-void **llrt_stderr_ref = (void **)&stderr;
+static void **llrt_stdin_ref = (void **)&stdin;
+static void **llrt_stdout_ref = (void **)&stdout;
+static void **llrt_stderr_ref = (void **)&stderr;
 
 void **llrt_stdin() {
   return llrt_stdin_ref;
@@ -274,7 +301,7 @@ int32_t llrt_current_errno() {
   return errno;
 }
 
-uint64_t llrt_xxh_seed_cache;
+static uint64_t llrt_xxh_seed_cache;
 
 uint64_t llrt_xxh_seed() {
   if (llrt_xxh_seed_cache == 0) {

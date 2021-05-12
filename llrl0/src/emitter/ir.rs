@@ -233,6 +233,9 @@ impl RtId {
     pub fn index(self) -> u32 {
         self.0
     }
+
+    pub const ARGC: Self = Self(-1 as i32 as u32);
+    pub const ARGV: Self = Self(-2 as i32 as u32);
 }
 
 #[derive(Debug, Clone)]

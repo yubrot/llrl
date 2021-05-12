@@ -1,17 +1,25 @@
 (no-implicit-std)
 
-(import "std/prelude/stage-0" _)
-(import "std/assert" assert)
-(import "std/num-literals" I32 F64)
-(export exit time)
+(import "std/prelude/stage-1" _)
+(import "std/memory" Ptr)
+(import "std/array" Array array/_ _.Array)
+(export args exit time)
+
+(function (args) {(-> (Array String))}
+  (with1 (args: (let argc) (let argv)) <args>
+    (shallow-copy (array/unsafe-from-ptr argv argc))))
+
+(c-function <args> {Args} "llrt_args")
+
+(c-data Args
+  (args: U64 (Ptr String)))
 
 (function (exit status) {(forall A) (-> I32 A)}
   (<exit> status)
   (assert #f))
 
-; TODO: argv
+(c-function <exit> {(-> I32 unit)} "llrt_exit")
+
 ; TODO: command
 
 (c-function time {(-> F64)} "llrt_time")
-
-(c-function <exit> {(-> I32 unit)} "llrt_exit")

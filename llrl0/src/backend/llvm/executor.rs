@@ -61,7 +61,7 @@ impl<'ctx> Executor<'ctx> {
             FunctionSymbolKind::Macro => {
                 executor_fun::<(Env, Syntax<Sexp>), Result<Syntax<Sexp>, String>>
             }
-            FunctionSymbolKind::Main(Ct::U(1)) => executor_fun::<(), bool>,
+            FunctionSymbolKind::Main(Ct::U(1)) => executor_fun::<(i32, Argv), bool>,
             FunctionSymbolKind::Main(_) => Err("Unsupported".to_string())?,
         };
         let address = self.engine.get_function_address(&f.name) as usize;
@@ -112,6 +112,7 @@ pub enum Value {
     String(String),
     Result(Result<Box<Value>, Box<Value>>),
     Null,
+    EmptyArgv,
     Unknown,
 }
 
@@ -124,6 +125,7 @@ impl fmt::Display for Value {
             Self::Result(Ok(value)) => write!(f, "(ok {})", value),
             Self::Result(Err(value)) => write!(f, "(err {})", value),
             Self::Null => write!(f, "<null>"),
+            Self::EmptyArgv => write!(f, "<empty-argv>"),
             Self::Unknown => write!(f, "<unknown>"),
         }
     }
@@ -223,6 +225,41 @@ impl ExecutorValue for bool {
 
     fn from_rt(rt: Self::Rt) -> Value {
         Value::I(if rt { 1 } else { 0 })
+    }
+}
+
+impl ExecutorValue for i32 {
+    type Rt = i32;
+
+    fn into_rt(value: Value) -> Result<Self::Rt, String> {
+        match value {
+            Value::I(n) => Ok(n as i32),
+            v => Err(format!("Cannot treat {} as i32", v)),
+        }
+    }
+
+    fn from_rt(rt: Self::Rt) -> Value {
+        Value::I(rt as i64)
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct Argv;
+
+const EMPTY_ARGV: &[*const u8] = &[std::ptr::null()];
+
+impl ExecutorValue for Argv {
+    type Rt = *const *const u8;
+
+    fn into_rt(value: Value) -> Result<Self::Rt, String> {
+        match value {
+            Value::EmptyArgv => Ok(EMPTY_ARGV.as_ptr()),
+            v => Err(format!("Cannot treat {} as argv", v)),
+        }
+    }
+
+    fn from_rt(_: Self::Rt) -> Value {
+        Value::Unknown
     }
 }
 

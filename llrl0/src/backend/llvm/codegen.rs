@@ -31,8 +31,8 @@ pub fn run<'ctx: 'm, 'm>(
     };
 
     // Bind arguments
-    for (p, param) in def.params.iter().zip(params) {
-        values.insert(p.id, param);
+    for (p, param) in def.params.iter().zip(&params) {
+        values.insert(p.id, *param);
     }
 
     if let (Some(env_param), Some(env)) = (env_param, &def.env) {
@@ -50,6 +50,15 @@ pub fn run<'ctx: 'm, 'm>(
             let param = builder.build_load(param);
             values.insert(elem.id, param);
         }
+    }
+
+    if function.symbol.kind.is_main() {
+        let llrt_init = module.capture_c_function(
+            "llrt_init",
+            ctx,
+            || llvm_type!(*ctx, (function(i32 (ptr (ptr u8))) void)),
+        );
+        builder.build_call(llrt_init.value, &params);
     }
 
     let mut codegen = Codegen::new(ctx, module, builder, ret_pointer, values, HashMap::new());

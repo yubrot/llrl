@@ -80,7 +80,7 @@ The goal of llrl is not to create a modern, practical programming language. Inst
     - [x] File
     - [x] Directory
   - [ ] System
-    - [ ] Command line arguments
+    - [x] Command line arguments
     - [ ] Process
 - [ ] llrl1: llrl compiler by llrl
   - [ ] LLVM-C API porting

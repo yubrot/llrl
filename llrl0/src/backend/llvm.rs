@@ -146,7 +146,7 @@ fn process_requests(options: Options, receiver: Receiver<Request>) -> Report {
                 if !defs.is_empty() || !main.is_empty() {
                     report.enter_phase(Phase::Codegen);
                     let module = module_builder.build(
-                        "main",
+                        "entry",
                         &mut artifact,
                         std::mem::take(&mut defs),
                         Some(std::mem::take(&mut main)),
@@ -158,7 +158,7 @@ fn process_requests(options: Options, receiver: Receiver<Request>) -> Report {
 
                 report.enter_phase(Phase::JIT);
                 let main = artifact.main_function_symbol().unwrap();
-                let ret = executor.call(main, Vec::new());
+                let ret = executor.call(main, vec![Value::I(0), Value::EmptyArgv]);
                 report.leave_phase(Phase::JIT);
 
                 let _ = sender.send(ret);
@@ -174,7 +174,7 @@ fn process_requests(options: Options, receiver: Receiver<Request>) -> Report {
 
                 report.enter_phase(Phase::Codegen);
                 modules.push(module_builder.build(
-                    "main",
+                    "entry",
                     &mut artifact,
                     std::mem::take(&mut defs),
                     Some(std::mem::take(&mut main)),

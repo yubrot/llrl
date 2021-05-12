@@ -19,6 +19,8 @@ impl<'ctx: 'm, 'm> RtLibrary<'ctx, 'm> {
 
         INIT_LIBRARY.call_once(|| unsafe {
             use llrt::*;
+            llvm::add_symbol("llrt_init", llrt_init as *mut ());
+            llvm::add_symbol("llrt_args", llrt_args as *mut ());
             llvm::add_symbol("llrt_panic", llrt_panic as *mut ());
             llvm::add_symbol("llrt_exit", llrt_exit as *mut ());
             llvm::add_symbol("llrt_time", llrt_time as *mut ());

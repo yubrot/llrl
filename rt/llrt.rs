@@ -67,7 +67,17 @@ impl Ord for RtString {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+#[repr(C)]
+pub struct RtArgs {
+    pub argc: u64,
+    pub argv: *const RtString,
+}
+
 extern "C" {
+    pub fn llrt_init(argc: i32, argv: *const *const u8);
+    pub fn llrt_args() -> RtArgs;
+
     pub fn llrt_panic(a: RtString) -> !;
     pub fn llrt_exit(exitcode: i32);
 

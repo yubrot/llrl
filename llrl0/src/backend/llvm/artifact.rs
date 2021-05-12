@@ -256,7 +256,7 @@ impl<'ctx> FunctionSymbol<'ctx> {
 pub enum FunctionSymbolKind {
     Standard(Vec<Ct>, Ct), // (-> _ ... _)
     Macro,                 // (-> Sexp (Result Sexp String))
-    Main(Ct),              // (-> _)
+    Main(Ct),              // (-> I32 (Ptr (Ptr U8)) _)
 }
 
 impl FunctionSymbolKind {
@@ -281,12 +281,17 @@ impl FunctionSymbolKind {
             }
             FunctionKind::Main => {
                 assert!(
-                    def.params.is_empty() && def.env.is_none(),
-                    "Main function cannot have parameters"
+                    def.params.len() == 2 && def.env.is_none(),
+                    "Main function must take argc and argv as arguments"
                 );
+                // TODO: assert that the arguments types are I32, (Ptr (Ptr U8))
                 Self::Main(def.ret.clone())
             }
         }
+    }
+
+    pub fn is_main(&self) -> bool {
+        matches!(self, Self::Main(_))
     }
 
     pub fn takes_env_as_argument(&self) -> bool {
@@ -394,7 +399,10 @@ impl<'ctx: 'm, 'm> ModuleArtifact<'ctx, 'm> {
 
             Function::new(
                 None,
-                Vec::new(),
+                vec![
+                    FunctionParam::new(RtId::ARGC, Ct::S(32)),
+                    FunctionParam::new(RtId::ARGV, Ct::ptr(Ct::ptr(Ct::U(8)))),
+                ],
                 ret.ty,
                 Rt::seq(stmts, ret.expr),
                 FunctionKind::Main,
