@@ -1,25 +1,73 @@
 (no-implicit-std)
 
 (import "std/prelude/stage-1" _)
-(import "std/memory" Ptr)
+(import "std/integer" _.I32)
+(import "std/option" _.Option)
+(import "std/memory" Ptr ptr:_)
+(import "std/iterator" _)
+(import "std/it" it/_)
 (import "std/array" Array array/_ _.Array)
-(export args exit time)
+(import "std/vector" vector/_ _.Vector)
+(import "std/string" string/_)
+(import "std/io" IoError io-error/_ File file/_)
+(export args exit Process process/_ process time)
 
 (function (args) {(-> (Array String))}
-  (with1 (args: (let argc) (let argv)) <args>
+  (with1 (<args>: (let argc) (let argv)) <args>
     (shallow-copy (array/unsafe-from-ptr argv argc))))
-
-(c-function <args> {Args} "llrt_args")
-
-(c-data Args
-  (args: U64 (Ptr String)))
 
 (function (exit status) {(forall A) (-> I32 A)}
   (<exit> status)
   (assert #f))
 
-(c-function <exit> {(-> I32 unit)} "llrt_exit")
+(value-data Process
+  (process: I32 File File File)) ; pid in out err
 
-; TODO: command
+(function (process name args) {(forall T) (-> String (T String) (Result Process IoError)) (where (Iterate T))}
+  (let ([name (string/c-compatible-ptr name)]
+        [argv vector/empty])
+  (vector/push! name argv)
+  (for (let arg) args (vector/push! (string/c-compatible-ptr arg) argv))
+  (vector/push! ptr:null argv)
+    (with1
+      (<process>: (let errno) (let pid) (let cin) (let cout) (let cerr))
+      (<process> name (array/ptr (vector/buffer argv)))
+      (if (eq? errno 0)
+        (let ([cin (file/unsafe-from-handle cin)]
+              [cout (file/unsafe-from-handle cout)]
+              [cerr (file/unsafe-from-handle cerr)])
+          (ok (process: pid cin cout cerr)))
+        (err (io-error/from-errno errno))))))
+
+(function (process/pid proc) {(-> Process I32)}
+  (with1 (process: (let pid) _ _ _) proc pid))
+
+(function (process/in proc) {(-> Process File)}
+  (with1 (process: _ (let in) _ _) proc in))
+
+(function (process/out proc) {(-> Process File)}
+  (with1 (process: _ _ (let out) _) proc out))
+
+(function (process/err proc) {(-> Process File)}
+  (with1 (process: _ _ _ (let err)) proc err))
+
+(function (process/wait! proc) {(-> Process (Option I32))}
+  (with1 (process: (let pid) (let in) _ _) proc
+    (file/close! in)
+    (let1 status (<wait> pid)
+      (if (< status 0) ; FIXME: Identify waitpid errors, SIGNALED, and STOPPED
+        none
+        (some status)))))
 
 (c-function time {(-> F64)} "llrt_time")
+
+(c-data <Args>
+  (<args>: U64 (Ptr String)))
+
+(c-data <Process>
+  (<process>: I32 I32 (Ptr U8) (Ptr U8) (Ptr U8))) ; errno pid cin cout cerr
+
+(c-function <args> {<Args>} "llrt_args")
+(c-function <exit> {(-> I32 unit)} "llrt_exit")
+(c-function <process> {(-> (Ptr U8) (Ptr (Ptr U8)) <Process>)} "llrt_process")
+(c-function <wait> {(-> I32 I32)} "llrt_wait")

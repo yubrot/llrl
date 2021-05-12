@@ -23,6 +23,8 @@ impl<'ctx: 'm, 'm> RtLibrary<'ctx, 'm> {
             llvm::add_symbol("llrt_args", llrt_args as *mut ());
             llvm::add_symbol("llrt_panic", llrt_panic as *mut ());
             llvm::add_symbol("llrt_exit", llrt_exit as *mut ());
+            llvm::add_symbol("llrt_process", llrt_process as *mut ());
+            llvm::add_symbol("llrt_wait", llrt_wait as *mut ());
             llvm::add_symbol("llrt_time", llrt_time as *mut ());
             llvm::add_symbol("llrt_getcwd", llrt_getcwd as *mut ());
             llvm::add_symbol("llrt_string_genid", llrt_string_genid as *mut ());

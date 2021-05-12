@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5,12 +7,22 @@
 #include <inttypes.h>
 #include <stdnoreturn.h>
 #include <math.h>
-#include <unistd.h>
 #include <errno.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <fcntl.h>
 #include <gc/gc.h>
 #include <sys/random.h>
 #include <sys/time.h>
-#include <dirent.h>
+#include <sys/wait.h>
+
+void llrt_init_signal() {
+  signal(SIGPIPE, SIG_IGN);
+}
+
+void llrt_restore_signal() {
+  signal(SIGPIPE, SIG_DFL);
+}
 
 typedef struct {
   char *ptr;
@@ -25,6 +37,8 @@ typedef struct {
 static rt_args last_args = (rt_args){.argc = 0, .argv = NULL};
 
 void llrt_init(int argc, char *argv[]) {
+  llrt_init_signal();
+
   if (argc < 1) return;
   argc -= 1;
   argv = &argv[1];
@@ -54,6 +68,100 @@ noreturn void llrt_panic(rt_string msg) {
 
 void llrt_exit(int32_t exitcode) {
   exit(exitcode);
+}
+
+typedef struct {
+  int32_t err;
+  int32_t pid;
+  FILE *cin;
+  FILE *cout;
+  FILE *cerr;
+} rt_process;
+
+rt_process llrt_process(const char *name, char *const argv[]) {
+  rt_process ret;
+  int init[2]; // used to notify an execvp error
+  int cin[2];
+  int cout[2];
+  int cerr[2];
+
+  // TODO: Handle pipe error
+  pipe2(init, O_CLOEXEC);
+  pipe2(cin, O_CLOEXEC);
+  pipe2(cout, O_CLOEXEC);
+  pipe2(cerr, O_CLOEXEC);
+
+  pid_t pid = fork();
+
+  if (pid < 0) {
+    // fork failed
+    ret.err = errno;
+    for (int i = 0; i < 2; ++i) {
+      close(init[i]);
+      close(cin[i]);
+      close(cout[i]);
+      close(cerr[i]);
+    }
+    return ret;
+  }
+
+  if (pid == 0) {
+    // fork child
+    close(init[0]);
+    close(cin[1]);
+    close(cout[0]);
+    close(cerr[0]);
+
+    llrt_restore_signal();
+
+    dup2(cin[0], STDIN_FILENO);
+    dup2(cout[1], STDOUT_FILENO);
+    dup2(cerr[1], STDERR_FILENO);
+    execvp(name, argv);
+
+    // execvp failed: put error to init pipe
+    char buf[4];
+    *(int32_t *)buf = errno;
+    write(init[1], buf, 4); // FIXME: Ensure that writing succeeds atomically
+    exit(1);
+  }
+
+  // fork parent
+  close(init[1]);
+  close(cin[0]);
+  close(cout[1]);
+  close(cerr[1]);
+
+  char buf[4];
+  if (read(init[0], buf, 4) != 0) {
+    // execvp failed
+    ret.err = *(int32_t *)buf;
+    close(init[0]);
+    close(cin[1]);
+    close(cout[0]);
+    close(cerr[0]);
+    return ret;
+  }
+
+  // execvp succeeded
+  close(init[0]);
+  ret.cin = fdopen(cin[1], "w");
+  ret.cout = fdopen(cout[0], "r");
+  ret.cerr = fdopen(cerr[0], "r");
+
+  // FIXME: Error handling
+  if (ret.cin == NULL || ret.cout == NULL || ret.cerr == NULL) abort();
+
+  ret.pid = pid;
+  ret.err = 0;
+  return ret;
+}
+
+int32_t llrt_wait(int32_t pid) {
+  int wstatus;
+  if (waitpid(pid, &wstatus, 0) < 0) return -1;
+  if (!WIFEXITED(wstatus)) return -1;
+  return WEXITSTATUS(wstatus);
 }
 
 double llrt_time() {

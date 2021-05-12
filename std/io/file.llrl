@@ -2,7 +2,7 @@
 
 (import "std/prelude/stage-1" _)
 (import "std/integer" _.I32 _.U64)
-(import "std/memory" Ptr ptr:null _.Ptr)
+(import "std/memory" Ptr ptr:null ptr/cast _.Ptr)
 (import "std/ref" Ref ref _.Ref)
 (import "std/array" Array array/_)
 (import "std/rw" Read Write)
@@ -21,6 +21,10 @@
 
 (function file/closed {File}
   (file: (ref ptr:null)))
+
+; Caller must ensure that the handle is a C-compatible file handler
+(function (file/unsafe-from-handle handle) {(-> (Ptr U8) File)}
+  (file: (ref (ptr/cast handle))))
 
 (function (file/read! dest file) {(-> (Array U8) File (Result U64 IoError))}
   (with1 (file: (let handle)) file

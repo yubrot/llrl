@@ -74,12 +74,25 @@ pub struct RtArgs {
     pub argv: *const RtString,
 }
 
+#[derive(Debug, Clone, Copy)]
+#[repr(C)]
+pub struct RtProcess {
+    pub err: i32,
+    pub pid: i32,
+    pub cin: *const u8,
+    pub cout: *const u8,
+    pub cerr: *const u8,
+}
+
 extern "C" {
     pub fn llrt_init(argc: i32, argv: *const *const u8);
     pub fn llrt_args() -> RtArgs;
 
     pub fn llrt_panic(a: RtString) -> !;
     pub fn llrt_exit(exitcode: i32);
+
+    pub fn llrt_process(name: *const u8, argv: *const *const u8) -> RtProcess;
+    pub fn llrt_wait(pid: i32) -> i32;
 
     pub fn llrt_time() -> f64;
 

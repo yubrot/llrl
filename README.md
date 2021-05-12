@@ -79,9 +79,9 @@ The goal of llrl is not to create a modern, practical programming language. Inst
     - [x] Path
     - [x] File
     - [x] Directory
-  - [ ] System
+  - [x] System
     - [x] Command line arguments
-    - [ ] Process
+    - [x] Process
 - [ ] llrl1: llrl compiler by llrl
   - [ ] LLVM-C API porting
   - [ ] S-expression parser
