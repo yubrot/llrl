@@ -79,7 +79,7 @@
 
 (c-function path/cwd {String} "llrt_getcwd")
 
-(value-data PathComponent
+(derive (Eq) value-data PathComponent
   path-component:root-dir
   path-component:current-dir
   path-component:parent-dir
@@ -183,15 +183,6 @@
       [path-component:current-dir (display! w "path-component:current-dir")]
       [path-component:parent-dir (display! w "path-component:parent-dir")]
       [(path-component:normal (let a)) (display-all! w "(path-component:normal " (debug a) ")")])))
-
-(instance Eq.PathComponent (Eq PathComponent)
-  (function (eq? a b)
-    (match (: a b)
-      [(: path-component:root-dir path-component:root-dir) #t]
-      [(: path-component:current-dir path-component:current-dir) #t]
-      [(: path-component:parent-dir path-component:parent-dir) #t]
-      [(: (path-component:normal (let a)) (path-component:normal (let b))) (eq? a b)]
-      [_ #f])))
 
 (instance Hash.PathComponent (Hash PathComponent)
   (function (hash! s a)

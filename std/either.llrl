@@ -3,7 +3,7 @@
 (import "std/prelude/stage-1" _)
 (export Either left right either either/_ _.Either)
 
-(value-data (Either L R)
+(derive (Eq) value-data (Either L R)
   (left L)
   (right R))
 
@@ -90,13 +90,6 @@
         (display-all! w "(left " (debug x) ")")]
       [(right (let x))
         (display-all! w "(right " (debug x) ")")])))
-
-(instance Eq.Either (forall L R) (Eq (Either L R)) (where (Eq L) (Eq R))
-  (function (eq? a b)
-    (match (: a b)
-      [(: (left (let a)) (left (let b))) (eq? a b)]
-      [(: (right (let a)) (right (let b))) (eq? a b)]
-      [_ #f])))
 
 (instance Ord.Either (forall L R) (Ord (Either L R)) (where (Ord L) (Ord R))
   (function (compare a b)

@@ -1,10 +1,12 @@
 (no-implicit-std)
 
 (import "std/prelude/stage-0" _)
-(import "std/s" s/map)
+(import "std/s" s/_)
 (import "std/never" Never never)
+(import "std/control" _)
+(import "std/derive" derive/_)
 (import "std/bool" Bool not and)
-(export Eq eq? ne? = Eq._)
+(export Eq eq? ne? = Eq._ derive/Eq)
 
 (class (Eq A)
   (function (eq? a b) {(-> A A Bool)})
@@ -34,3 +36,39 @@
   (transparent-function (eq? a b) (<bool/eq?> a b)))
 
 (builtin-op <bool/eq?> {(-> Bool Bool Bool)} "integer.eq")
+
+(macro (derive/Eq s)
+  (s/match s
+    [(_ _ ,type-con ,@value-cons)
+      (let* ([ty-name (derive/data/type-con/name type-con)]
+             [ty-params (derive/data/type-con/ty-params type-con)]
+             [inst-name (derive/symbol/concat 'Eq. ty-name)!]
+             [inst-sig
+                (if-match1 (some (let params)) ty-params
+                  `[(forall ,@params) (,\Eq ,type-con) (where ,@(s/map [^1 `(,\Eq ,%1)] params)!)]
+                  `[(,\Eq ,type-con)])]
+             [function-body
+                (match value-cons
+                  [(s:list (let value-con)) `(,(equality-clause value-con)!)]
+                  [_ `(,@(s/traverse equality-clause value-cons)! [_ #f])])])
+        (ok
+          `(instance ,inst-name ,@inst-sig
+            (function (eq? a b)
+              (match (: a b)
+                ,@function-body)))))]
+    [_
+      (err "Unsupported derivation")]))
+
+(function (equality-clause value-con)
+  (let ([con-name (derive/data/value-con/name value-con)]
+        [con-fields (derive/data/value-con/fields value-con)])
+    (match con-fields
+      [none
+        (ok `[(: ,con-name ,con-name) #t])]
+      [(some (let fields))
+        (let ([l-names (s/map [^1 (gensym)] fields)!]
+              [r-names (s/map [^1 (gensym)] fields)!])
+          (ok
+            `[(: (,con-name ,@(s/map [^1 `(let ,%1)] l-names)!)
+                 (,con-name ,@(s/map [^1 `(let ,%1)] r-names)!))
+              (,\and ,@(s/zip [^2 `(,\eq? ,%1 ,%2)] l-names r-names)!)]))])))

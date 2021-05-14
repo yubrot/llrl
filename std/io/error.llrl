@@ -6,7 +6,7 @@
 (export IoError io-error:_ io-error/_ _.IoError)
 
 ; I'm not familiar with error handling in C, so I decided to borrow Rust's definition
-(value-data IoError
+(derive (Eq) value-data IoError
   io-error:closed
   io-error:not-found
   io-error:permission-denied
@@ -92,11 +92,6 @@
       [io-error:interrupted (display! w "io-error:interrupted")]
       [io-error:unexpected-eof (display! w "io-error:unexpected-eof")]
       [io-error:other (display! w "io-error:other")])))
-
-(instance Eq.IoError (Eq IoError)
-  (transparent-function (eq? a b) (<io-error/eq?> a b)))
-
-(builtin-op <io-error/eq?> {(-> IoError IoError Bool)} "integer.eq")
 
 (instance Ord.IoError (Ord IoError)
   (transparent-function (lt? a b) (<io-error/lt?> a b))

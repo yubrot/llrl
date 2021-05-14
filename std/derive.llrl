@@ -1,0 +1,77 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-0" _)
+(import "std/s" s/_)
+(import "std/control" _)
+(export derive derive/_)
+
+(macro (derive s)
+  (s/match s
+    [(_ ,classes ,@body)
+      (s/for-each derive/derive-class/validate classes)!
+      (derive/data/validate body)!
+      (ok `(begin
+        ,body
+        ,@(s/traverse [^1 (ok `(,(derive/symbol/concat 'derive/ %1)! ,@body))] classes)!))]
+    [_
+      (err "Expected (derive (<class> ...) <data or value-data or c-data> <type-con> <value-con> ...)")]))
+
+(function (derive/derive-class/validate cls) {(-> (Syntax Sexp) (Result unit String))}
+  (match cls
+    [(s:symbol _) (ok unit)]
+    [_ (err "derive: derive-class: Expected symbol")]))
+
+(function (derive/type-parameter/validate s) {(-> (Syntax Sexp) (Result unit String))}
+  (match s
+    [(s:symbol _) (ok unit)]
+    [_ (err "derive: type-parameter: Expected symbol")]))
+
+(function (derive/data/validate s) {(-> (Syntax Sexp) (Result unit String))}
+  (with1
+    (: (let type-con) (let value-cons))
+    (s/match s
+      [(data ,type-con ,@value-cons) (: type-con value-cons)]
+      [(value-data ,type-con ,@value-cons) (: type-con value-cons)]
+      [(c-data ,type-con ,@value-cons) (: type-con value-cons)]
+      [_ (err "derive: data: Expected (<data or value-data or c-data> <type-con> <value-con> ...)")!])
+    (derive/data/type-con/validate type-con)!
+    (s/for-each derive/data/value-con/validate value-cons)))
+
+(function (derive/data/type-con/validate s) {(-> (Syntax Sexp) (Result unit String))}
+  (s/match s
+    [,(s:symbol _) (ok unit)]
+    [(,(s:symbol _) ,@params) (s/for-each derive/type-parameter/validate params)]
+    [_ (err "derive: type-con: Expected <type-name> or (<type-name> <ty-param> ...)")]))
+
+(function (derive/data/type-con/name s) {(-> (Syntax Sexp) (Syntax Sexp))}
+  (s/match s
+    [(,name ,@_) name]
+    [,name name]))
+
+(function (derive/data/type-con/ty-params s) {(-> (Syntax Sexp) (Option (Syntax Sexp)))}
+  (s/match s
+    [(_ ,@params) (some params)]
+    [_ none]))
+
+(function (derive/data/value-con/validate s) {(-> (Syntax Sexp) (Result unit String))}
+  (s/match s
+    [,(s:symbol _) (ok unit)]
+    [(,(s:symbol _) ,@fields) (ok unit)]
+    [_ (err "derive: value-con: Expected <con-name> or (<con-name> <field> ...)")]))
+
+(function (derive/data/value-con/name s) {(-> (Syntax Sexp) (Syntax Sexp))}
+  (s/match s
+    [(,name ,@_) name]
+    [,name name]))
+
+(function (derive/data/value-con/fields s) {(-> (Syntax Sexp) (Option (Syntax Sexp)))}
+  (s/match s
+    [(_ ,@fields) (some fields)]
+    [_ none]))
+
+(function (derive/symbol/concat a b) {(-> (Syntax Sexp) (Syntax Sexp) (Result (Syntax Sexp) String))}
+  (match (: a b)
+    [(: (s:symbol (let a)) (s:symbol (let b))) (ok (s:symbol (<symbol/concat> a b)))]
+    [_ (err "Expected symbol")]))
+
+(builtin-op <symbol/concat> {(-> String String String)} "string.concat")
