@@ -10,7 +10,7 @@
 (import "std/control" _)
 (import "std/derive" derive)
 (import "std/copy" ShallowCopy shallow-copy ShallowCopy._ DeepCopy deep-copy DeepCopy._ derive/DeepCopy)
-(import "std/default" Default default)
+(import "std/default" Default default derive/Default)
 (import "std/display" WriteString write-string! Display Display._ display! display-all!)
 (import "std/debug" Debug debug _.Debug DebugDisplay DebugDisplay._ debug-display!)
 (import "std/bool" Bool not and or _.Bool)

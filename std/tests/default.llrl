@@ -1,3 +1,11 @@
 (import "std/default" _)
 
-; Nothing to do
+(derive (Eq Default) value-data T1
+  (t1: I32 Bool))
+
+(derive (Eq Default) value-data (T2 A B)
+  (t2:a A)
+  (t2:b B))
+
+(assert (eq? default (t1: 0 #f)))
+(assert (eq? default (t2:a (t2:a unit))))
