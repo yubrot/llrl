@@ -7,7 +7,11 @@
 (import "std/float" Display.F64)
 (import "std/char" DebugDisplay.Char)
 (import "std/string" DebugDisplay.String)
-(export Display.S)
+(export Display.S DebugDisplay.S)
+
+(instance DebugDisplay.S (DebugDisplay (Syntax Sexp))
+  (function (debug-display! w s)
+    (display! w s)))
 
 (instance Display.S (Display (Syntax Sexp))
   (function (display! w s)

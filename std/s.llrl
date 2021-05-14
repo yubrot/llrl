@@ -48,6 +48,17 @@
     [_
       (ok (s:nil))]))
 
+(function (s/for-each f s) {(-> (-> (Syntax Sexp) (Result unit String)) (Syntax Sexp) (Result unit String))}
+  (s/for-each-unchecked f (s/force-proper-list "s/for-each expects proper-list" s)!))
+
+(function (s/for-each-unchecked f s) {(-> (-> (Syntax Sexp) (Result unit String)) (Syntax Sexp) (Result unit String))}
+  (match s
+    [(s:cons (let car) (let cdr))
+      (f car)!
+      (s/for-each-unchecked f cdr)]
+    [_
+      (ok unit)]))
+
 (function (s/map f s) {(-> (-> (Syntax Sexp) (Syntax Sexp)) (Syntax Sexp) (Result (Syntax Sexp) String))}
   (ok (s/map-unchecked f (s/force-proper-list "s/map expects proper-list" s)!)))
 
@@ -57,6 +68,15 @@
       (s:cons (f car) (s/map-unchecked f cdr))]
     [_
       (s:nil)]))
+
+(function (s/zip f s1 s2) {(-> (-> (Syntax Sexp) (Syntax Sexp) (Syntax Sexp)) (Syntax Sexp) (Syntax Sexp) (Result (Syntax Sexp) String))}
+  (match (: s1 s2)
+    [(: (s:cons (let car1) (let cdr1)) (s:cons (let car2) (let cdr2)))
+      (ok (s:cons (f car1 car2) (s/zip f cdr1 cdr2)!))]
+    [(: (s:nil) (s:nil))
+      (ok (s:nil))]
+    [_
+      (err "s/zip expects proper same-length lists")]))
 
 (function (s/foldl f a b) {(-> (-> (Syntax Sexp) (Syntax Sexp) (Syntax Sexp)) (Syntax Sexp) (Syntax Sexp) (Result (Syntax Sexp) String))}
   (ok (s/foldl-unchecked f a (s/force-proper-list "s/foldl expects proper-list" b)!)))

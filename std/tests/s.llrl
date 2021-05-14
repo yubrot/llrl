@@ -24,6 +24,10 @@
                           (s:list (s:string "hello") (s:string "hello"))))
     (s/map f '(#t #f "hello"))))
 
+(let ([(f a b) `(,a ,b)])
+  (assert-is? (ok (s:list (s:list (s:bool #t) (s:bool #f)) (s:list (s:bool #f) (s:bool #t))))
+    (s/zip f '(#t #f) '(#f #t))))
+
 (assert-is? (ok (s:bool #f))
   (s/foldl [^2 (s:list %1 %2)] '#f '()))
 (assert-is? (ok (s:list (s:list (s:bool #f) (s:bool #t)) (s:string "hello")))
