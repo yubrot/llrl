@@ -1,7 +1,12 @@
 (no-implicit-std)
 
+(import "std/prelude/stage-0" _)
+(import "std/assert" assert)
+(import "std/s" s/_)
 (import "std/never" Never never)
-(export ShallowCopy shallow-copy ShallowCopy._ DeepCopy deep-copy DeepCopy._)
+(import "std/control" _)
+(import "std/derive" derive/_)
+(export ShallowCopy shallow-copy ShallowCopy._ DeepCopy deep-copy DeepCopy._ derive/DeepCopy)
 
 ; A value of a type that implements ShallowCopy has some indirect reference and
 ; it can be duplicated by producing a new value.
@@ -16,3 +21,28 @@
 
 (instance DeepCopy.Never (DeepCopy Never)
   (transparent-function (deep-copy a) (never a)))
+
+(macro (derive/DeepCopy s)
+  (s/match s
+    [(_ _ ,type-con ,@value-cons)
+      (let ([inst-name (derive/symbol/concat 'DeepCopy. (derive/data/type-con/name type-con))!]
+            [inst-signature (derive/data/type-con/instance-signature \DeepCopy type-con)!]
+            [function-body
+              (match value-cons
+                [(s:list) `(,\assert #f)]
+                [_ `(match a ,@(s/traverse deep-copy-clause value-cons)!)])])
+        (ok
+          `(instance ,inst-name ,@inst-signature
+            (function (deep-copy a)
+              ,function-body))))]
+    [_
+      (err "Unsupported derivation")]))
+
+(function (deep-copy-clause value-con)
+  (let ([con-name (derive/data/value-con/name value-con)]
+        [con-fields (derive/data/value-con/fields value-con)])
+    (ok (if-match1 (some (let fields)) con-fields
+      (let1 names (s/map [^1 (gensym)] fields)!
+        `[(,con-name ,@(s/map [^1 `(let ,%1)] names)!)
+          (,con-name ,@(s/map [^1 `(,\deep-copy ,%1)] names)!)])
+      `[,con-name ,con-name]))))

@@ -39,7 +39,7 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(data XxHasher
+(derive (DeepCopy) data XxHasher
   (xxh: U64 (Ref State)))
 
 (function (xx-hasher/new) {(-> XxHasher)}
@@ -48,11 +48,6 @@
 (function (xx-hasher/with-seed seed) {(-> U64 XxHasher)}
   (let1 state (state: 0 (initial-v seed) (array/new 0 4) 0)
     (xxh: seed (ref state))))
-
-(instance DeepCopy.XxHasher (DeepCopy XxHasher)
-  (function (deep-copy a)
-    (with1 (xxh: (let seed) (let state)) a
-      (xxh: seed (ref (deep-copy ~state))))))
 
 (instance DebugDisplay.XxHasher (DebugDisplay XxHasher)
   (function (debug-display! w a)

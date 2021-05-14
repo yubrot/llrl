@@ -79,7 +79,7 @@
 
 (c-function path/cwd {String} "llrt_getcwd")
 
-(derive (Eq) value-data PathComponent
+(derive (Eq DeepCopy) value-data PathComponent
   path-component:root-dir
   path-component:current-dir
   path-component:parent-dir
@@ -172,9 +172,6 @@
       (: l ~e r))))
 
 ; ---------------------------
-
-(instance DeepCopy.PathComponent (DeepCopy PathComponent)
-  (transparent-function (deep-copy a) a))
 
 (instance DebugDisplay.PathComponent (DebugDisplay PathComponent)
   (function (debug-display! w a)

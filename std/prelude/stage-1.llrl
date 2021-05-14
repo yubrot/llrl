@@ -9,7 +9,7 @@
 (import "std/preprocess" $$)
 (import "std/control" _)
 (import "std/derive" derive)
-(import "std/copy" ShallowCopy shallow-copy ShallowCopy._ DeepCopy deep-copy DeepCopy._)
+(import "std/copy" ShallowCopy shallow-copy ShallowCopy._ DeepCopy deep-copy DeepCopy._ derive/DeepCopy)
 (import "std/default" Default default)
 (import "std/display" WriteString write-string! Display Display._ display! display-all!)
 (import "std/debug" Debug debug _.Debug DebugDisplay DebugDisplay._ debug-display!)

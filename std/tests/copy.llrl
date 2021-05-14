@@ -1,3 +1,23 @@
 (import "std/copy" _)
 
-; Nothing to do
+(derive (Eq DeepCopy) data T1)
+
+(derive (Eq DeepCopy) data T2
+  (t2: (Ref I32) (Ref I32)))
+
+(derive (Eq DeepCopy) data (T3 A)
+  (t3: (Ref A)))
+
+(let1 a (t2: (ref 1) (ref 2))
+  (with1 (t2: (let x) _) a (set! x 3))
+  (let1 b (deep-copy a)
+    (with1 (t2: _ (let x)) a (set! x 4))
+    (with1 (t2: (let x) _) b (set! x 5))
+    (assert (eq? a (t2: (ref 3) (ref 4))))
+    (assert (eq? b (t2: (ref 5) (ref 2))))))
+
+(let* ([a (t3: (ref (ref 123)))]
+       [b (deep-copy a)])
+  (with1 (t3: (ref (let x))) b (set! x 456))
+  (assert (eq? a (t3: (ref (ref 123)))))
+  (assert (eq? b (t3: (ref (ref 456))))))

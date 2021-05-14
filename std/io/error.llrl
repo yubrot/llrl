@@ -6,7 +6,7 @@
 (export IoError io-error:_ io-error/_ _.IoError)
 
 ; I'm not familiar with error handling in C, so I decided to borrow Rust's definition
-(derive (Eq Ord) value-data IoError
+(derive (Eq Ord DeepCopy) value-data IoError
   io-error:closed
   io-error:not-found
   io-error:permission-denied
@@ -47,9 +47,6 @@
     [110 io-error:timed-out] ; ETIMEDOUT: Connection timed out
     [111 io-error:connection-refused] ; ECONNREFUSED: Connection refused
     [_ io-error:other]))
-
-(instance DeepCopy.IoError (DeepCopy IoError)
-  (transparent-function (deep-copy a) a))
 
 (instance Display.IoError (Display IoError)
   (function (display! w a)

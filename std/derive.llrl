@@ -21,15 +21,15 @@
     [(s:symbol _) (ok unit)]
     [_ (err "derive: derive-class: Expected symbol")]))
 
-(function (derive/type-parameter/validate s) {(-> (Syntax Sexp) (Result unit String))}
-  (match s
+(function (derive/type-parameter/validate ty-param) {(-> (Syntax Sexp) (Result unit String))}
+  (match ty-param
     [(s:symbol _) (ok unit)]
     [_ (err "derive: type-parameter: Expected symbol")]))
 
-(function (derive/data/validate s) {(-> (Syntax Sexp) (Result unit String))}
+(function (derive/data/validate decl) {(-> (Syntax Sexp) (Result unit String))}
   (with1
     (: (let type-con) (let value-cons))
-    (s/match s
+    (s/match decl
       [(data ,type-con ,@value-cons) (: type-con value-cons)]
       [(value-data ,type-con ,@value-cons) (: type-con value-cons)]
       [(c-data ,type-con ,@value-cons) (: type-con value-cons)]
@@ -37,35 +37,42 @@
     (derive/data/type-con/validate type-con)!
     (s/for-each derive/data/value-con/validate value-cons)))
 
-(function (derive/data/type-con/validate s) {(-> (Syntax Sexp) (Result unit String))}
-  (s/match s
+(function (derive/data/type-con/validate type-con) {(-> (Syntax Sexp) (Result unit String))}
+  (s/match type-con
     [,(s:symbol _) (ok unit)]
     [(,(s:symbol _) ,@params) (s/for-each derive/type-parameter/validate params)]
     [_ (err "derive: type-con: Expected <type-name> or (<type-name> <ty-param> ...)")]))
 
-(function (derive/data/type-con/name s) {(-> (Syntax Sexp) (Syntax Sexp))}
-  (s/match s
+(function (derive/data/type-con/name type-con) {(-> (Syntax Sexp) (Syntax Sexp))}
+  (s/match type-con
     [(,name ,@_) name]
     [,name name]))
 
-(function (derive/data/type-con/ty-params s) {(-> (Syntax Sexp) (Option (Syntax Sexp)))}
-  (s/match s
+(function (derive/data/type-con/ty-params type-con) {(-> (Syntax Sexp) (Option (Syntax Sexp)))}
+  (s/match type-con
     [(_ ,@params) (some params)]
     [_ none]))
 
-(function (derive/data/value-con/validate s) {(-> (Syntax Sexp) (Result unit String))}
-  (s/match s
+;    (instance-signature \Eq (Foo A B))
+; => (ok '[(forall A B) (Eq (Foo A B)) (where (Eq A) (Eq B))])
+(function (derive/data/type-con/instance-signature cls type-con) {(-> (Syntax Sexp) (Syntax Sexp) (Result (Syntax Sexp) String))}
+  (ok (if-match1 (some (let params)) (derive/data/type-con/ty-params type-con)
+    `[(forall ,@params) (,cls ,type-con) (where ,@(s/map [^1 `(,cls ,%1)] params)!)]
+    `[(,cls ,type-con)])))
+
+(function (derive/data/value-con/validate value-con) {(-> (Syntax Sexp) (Result unit String))}
+  (s/match value-con
     [,(s:symbol _) (ok unit)]
     [(,(s:symbol _) ,@fields) (ok unit)]
     [_ (err "derive: value-con: Expected <con-name> or (<con-name> <field> ...)")]))
 
-(function (derive/data/value-con/name s) {(-> (Syntax Sexp) (Syntax Sexp))}
-  (s/match s
+(function (derive/data/value-con/name value-con) {(-> (Syntax Sexp) (Syntax Sexp))}
+  (s/match value-con
     [(,name ,@_) name]
     [,name name]))
 
-(function (derive/data/value-con/fields s) {(-> (Syntax Sexp) (Option (Syntax Sexp)))}
-  (s/match s
+(function (derive/data/value-con/fields value-con) {(-> (Syntax Sexp) (Option (Syntax Sexp)))}
+  (s/match value-con
     [(_ ,@fields) (some fields)]
     [_ none]))
 

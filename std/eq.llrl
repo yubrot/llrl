@@ -40,35 +40,27 @@
 (macro (derive/Eq s)
   (s/match s
     [(_ _ ,type-con ,@value-cons)
-      (let* ([ty-name (derive/data/type-con/name type-con)]
-             [ty-params (derive/data/type-con/ty-params type-con)]
-             [inst-name (derive/symbol/concat 'Eq. ty-name)!]
-             [inst-sig
-                (if-match1 (some (let params)) ty-params
-                  `[(forall ,@params) (,\Eq ,type-con) (where ,@(s/map [^1 `(,\Eq ,%1)] params)!)]
-                  `[(,\Eq ,type-con)])]
-             [function-body
-                (match value-cons
-                  [(s:list (let value-con)) `(,(equality-clause value-con)!)]
-                  [_ `(,@(s/traverse equality-clause value-cons)! [_ #f])])])
+      (let ([inst-name (derive/symbol/concat 'Eq. (derive/data/type-con/name type-con))!]
+            [inst-signature (derive/data/type-con/instance-signature \Eq type-con)!]
+            [match-body
+              (match value-cons
+                [(s:list (let value-con)) `(,(equality-clause value-con)!)]
+                [_ `(,@(s/traverse equality-clause value-cons)! [_ #f])])])
         (ok
-          `(instance ,inst-name ,@inst-sig
+          `(instance ,inst-name ,@inst-signature
             (function (eq? a b)
               (match (: a b)
-                ,@function-body)))))]
+                ,@match-body)))))]
     [_
       (err "Unsupported derivation")]))
 
 (function (equality-clause value-con)
   (let ([con-name (derive/data/value-con/name value-con)]
         [con-fields (derive/data/value-con/fields value-con)])
-    (match con-fields
-      [none
-        (ok `[(: ,con-name ,con-name) #t])]
-      [(some (let fields))
-        (let ([l-names (s/map [^1 (gensym)] fields)!]
-              [r-names (s/map [^1 (gensym)] fields)!])
-          (ok
-            `[(: (,con-name ,@(s/map [^1 `(let ,%1)] l-names)!)
-                 (,con-name ,@(s/map [^1 `(let ,%1)] r-names)!))
-              (,\and ,@(s/zip [^2 `(,\eq? ,%1 ,%2)] l-names r-names)!)]))])))
+    (ok (if-match1 (some (let fields)) con-fields
+      (let ([l-names (s/map [^1 (gensym)] fields)!]
+            [r-names (s/map [^1 (gensym)] fields)!])
+        `[(: (,con-name ,@(s/map [^1 `(let ,%1)] l-names)!)
+             (,con-name ,@(s/map [^1 `(let ,%1)] r-names)!))
+          (,\and ,@(s/zip [^2 `(,\eq? ,%1 ,%2)] l-names r-names)!)])
+      `[(: ,con-name ,con-name) #t]))))
