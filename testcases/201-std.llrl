@@ -28,6 +28,7 @@
   (import "std/tests/never")
   (import "std/tests/preprocess")
   (import "std/tests/control")
+  (import "std/tests/derive")
   (import "std/tests/copy")
   (import "std/tests/default")
   (import "std/tests/display")

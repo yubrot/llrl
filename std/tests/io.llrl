@@ -2,12 +2,6 @@
 (import "std/char" char/utf-8-length)
 (import "std/tests/hash" h)
 
-(assert-ne? io-error:not-found io-error:permission-denied)
-
-(assert-ne? ordering:equal (compare io-error:connection-refused io-error:connection-reset))
-
-(assert-ne? (h io-error:unexpected-eof) (h io-error:invalid-data))
-
 (assert-eq? "" (path/base-name ""))
 (assert-eq? "/" (path/base-name "/"))
 (assert-eq? "hello" (path/base-name "hello"))

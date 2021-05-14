@@ -90,3 +90,24 @@
   (assert-eq? (< a b) (= (compare a b) ordering:less))
   (assert-eq? (> a b) (= (compare a b) ordering:greater))
   (assert-eq? (= a b) (= (compare a b) ordering:equal)))
+
+(derive (Eq Ord) data T1)
+
+(derive (Eq Ord) data T2
+  t2:)
+
+(derive (Eq Ord) data T3
+  t3:a
+  t3:b)
+
+(derive (Eq Ord) data T4
+  (t4:a Bool Bool)
+  (t4:b Bool))
+
+(derive (Eq Ord) data (T5 A B)
+  (t5: A B))
+
+(assert-eq? ordering:equal (compare t2: t2:))
+(test12 t3:a t3:b)
+(test1234 (t4:a #f #f) (t4:a #f #t) (t4:b #f) (t4:b #t))
+(test123 (t5: "a" #f) (t5: "a" #t) (t5: "b" #f))

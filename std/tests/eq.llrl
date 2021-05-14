@@ -8,3 +8,29 @@
 (assert (not (= #t #t #f)))
 (assert (not (= #t #f #t)))
 (assert (= #f #f #f))
+
+(derive (Eq) data T1)
+
+(derive (Eq) data T2
+  t2:)
+
+(derive (Eq) data T3
+  t3:a
+  t3:b)
+
+(derive (Eq) data T4
+  (t4:a Bool Bool)
+  (t4:b Bool))
+
+(derive (Eq) data (T5 A B)
+  (t5: A B))
+
+(assert (eq? t2: t2:))
+(assert (eq? t3:a t3:a))
+(assert (ne? t3:a t3:b))
+(assert (ne? (t4:a #t #t) (t4:b #t)))
+(assert (ne? (t4:a #t #t) (t4:a #t #f)))
+(assert (eq? (t4:a #t #f) (t4:a #t #f)))
+(assert (eq? (t4:b #f) (t4:b #f)))
+(assert (eq? (t5: "foo" #t) (t5: "foo" #t)))
+(assert (ne? (t5: "foo" #t) (t5: "bar" #t)))

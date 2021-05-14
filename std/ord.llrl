@@ -1,12 +1,14 @@
 (no-implicit-std)
 
 (import "std/prelude/stage-0" _)
-(import "std/s" s/foldl)
+(import "std/s" s/_)
 (import "std/never" Never never)
+(import "std/derive" derive/_)
+(import "std/control" _)
 (import "std/bool" Bool &&)
 (import "std/eq" Eq eq? Eq.Bool Eq.Never)
-(import "std/ordering" Ordering ordering:_ Eq.Ordering)
-(export Ord compare lt? le? gt? ge? < > <= >= min max Ord._)
+(import "std/ordering" Ordering ordering:_ ordering/_ Eq.Ordering)
+(export Ord compare lt? le? gt? ge? < > <= >= min max Ord._ derive/Ord)
 
 (class (Ord A) (where (Eq A))
   (function (compare a b) {(-> A A Ordering)}
@@ -100,3 +102,58 @@
 (builtin-op <ordering/le?> {(-> Ordering Ordering Bool)} "unsigned.le")
 (builtin-op <ordering/gt?> {(-> Ordering Ordering Bool)} "unsigned.gt")
 (builtin-op <ordering/ge?> {(-> Ordering Ordering Bool)} "unsigned.ge")
+
+(macro (derive/Ord s)
+  (s/match s
+    [(_ _ ,type-con ,@value-cons)
+      (let* ([ty-name (derive/data/type-con/name type-con)]
+             [ty-params (derive/data/type-con/ty-params type-con)]
+             [inst-name (derive/symbol/concat 'Ord. ty-name)!]
+             [inst-sig
+                (if-match1 (some (let params)) ty-params
+                  `[(forall ,@params) (,\Ord ,type-con) (where ,@(s/map [^1 `(,\Ord ,%1)] params)!)]
+                  `[(,\Ord ,type-con)])]
+             [function-body (comparison-clauses value-cons)!])
+        (ok
+          `(instance ,inst-name ,@inst-sig
+            (function (compare a b)
+              (match (: a b)
+                ,@function-body)))))]
+    [_
+      (err "Unsupported derivation")]))
+
+(function (comparison-clauses value-cons)
+  (match value-cons
+    [(s:list (let value-con))
+      (ok `(,(comparison-clause value-con)!))]
+    [(s:cons (let value-con) (let value-cons))
+      (ok `(,(comparison-clause value-con)!
+            ,@(comparison-clause-default value-con)!
+            ,@(comparison-clauses value-cons)!))]
+    [_
+      (ok `([_ ,\ordering:equal]))]))
+
+(function (comparison-clause value-con)
+  (let ([con-name (derive/data/value-con/name value-con)]
+        [con-fields (derive/data/value-con/fields value-con)])
+    (match con-fields
+      [none
+        (ok `[(: ,con-name ,con-name) ,\ordering:equal])]
+      [(some (let fields))
+        (let ([l-names (s/map [^1 (gensym)] fields)!]
+              [r-names (s/map [^1 (gensym)] fields)!])
+          (ok
+            `[(: (,con-name ,@(s/map [^1 `(let ,%1)] l-names)!)
+                 (,con-name ,@(s/map [^1 `(let ,%1)] r-names)!))
+              (,\ordering/or ,@(s/zip [^2 `(,\compare ,%1 ,%2)] l-names r-names)!)]))])))
+
+(function (comparison-clause-default value-con)
+  (let ([con-name (derive/data/value-con/name value-con)]
+        [con-fields (derive/data/value-con/fields value-con)])
+    (match con-fields
+      [none
+        (ok `([(: ,con-name _) ,\ordering:less]
+              [(: _ ,con-name) ,\ordering:greater]))]
+      [(some (let fields))
+        (ok `([(: (,con-name ,@(s/map [^1 '_] fields)!) _) ,\ordering:less]
+              [(: _ (,con-name ,@(s/map [^1 '_] fields)!)) ,\ordering:greater]))])))
