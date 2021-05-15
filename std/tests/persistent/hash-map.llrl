@@ -1,6 +1,5 @@
 (import "std/persistent/hash-map" _)
 (import "std/ord-map" _)
-(import "std/tests/hash" h)
 
 (let* ([a hash-map/empty]
        [b (hash-map/insert #t #f a)]

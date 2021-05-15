@@ -14,7 +14,7 @@
 (import "std/array" Array array array/_ _.Array)
 (import "std/vector" Vector vector vector/_ _.Vector)
 (import "std/rw" Read read-_ Read._ Write write-_ flush! Write._)
-(import "std/hash" hash Hasher hasher/_ Hash hash! hash-all! Hash._)
+(import "std/hash" hash Hasher hasher/_ Hash hash! hash-all! Hash._ derive/Hash)
 (import "std/char" Char char/_ _.Char)
 (import "std/string" String string string/_ _.String)
 (import "std/text" Text text text/_ _.Text)

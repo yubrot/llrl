@@ -2,11 +2,11 @@
 
 (import "std/prelude/stage-1" _)
 (import "std/rw" UnexpectedEof InvalidData)
-(import "std/hash" Hash hash! Hash.U8)
+(import "std/hash" Hash hash! Hash.U16 derive/Hash)
 (export IoError io-error:_ io-error/_ _.IoError)
 
 ; I'm not familiar with error handling in C, so I decided to borrow Rust's definition
-(derive (Eq Ord DeepCopy DebugDisplay) value-data IoError
+(derive (Eq Ord DeepCopy DebugDisplay Hash) value-data IoError
   io-error:closed
   io-error:not-found
   io-error:permission-denied
@@ -74,9 +74,3 @@
 
 (instance InvalidData.IoError (InvalidData IoError)
   (transparent-function invalid-data io-error:invalid-data))
-
-(instance Hash.IoError (Hash IoError)
-  (function (hash! s a)
-    (hash! s (<io-error/hash> a) {U8})))
-
-(builtin-op <io-error/hash> {(forall A B) (-> A B)} "unsigned.ext")

@@ -1,7 +1,8 @@
 (no-implicit-std)
 
 (import "std/prelude/stage-1" _)
-(import "std/s" s/map)
+(import "std/s" s/_)
+(import "std/derive" derive/_)
 (import "std/access" unsafe-get)
 (import "std/integer" _.U64)
 (import "std/memory" Ptr ptr/_ _.Ptr)
@@ -10,7 +11,7 @@
 (import "std/either" Either left right)
 (import "std/array" Array array/_ _.Array)
 (import "std/vector" Vector vector/buffer)
-(export hash Hasher hasher/_ Hash hash! hash-array! hash-all! Hash._)
+(export hash Hasher hasher/_ Hash hash! hash-array! hash-all! Hash._ derive/Hash)
 
 (function (hash s a) {(forall S A) (-> S A U64) (where (Hash A) (Hasher S))}
   (hasher/reset! s)
@@ -117,3 +118,44 @@
 (instance Hash.Vector (forall A) (Hash (Vector A)) (where (Hash A))
   (function (hash! s a)
     (hash! s (vector/buffer a))))
+
+(macro (derive/Hash s)
+  (s/match s
+    [(_ _ ,type-con ,@value-cons)
+      (let ([inst-name (derive/symbol/concat 'Hash. (derive/data/type-con/name type-con))!]
+            [inst-signature (derive/data/type-con/instance-signature \Hash type-con)!]
+            [function-body
+              (match value-cons
+                [(s:list) 'unit]
+                [(s:list (let value-con)) `(match a ,(hash-clause none value-con)!)]
+                [_ `(match a ,@(hash-clauses 0 value-cons)!)])])
+        (ok
+          `(instance ,inst-name ,@inst-signature
+            (function (hash! s a)
+              ,function-body))))]
+    [_
+      (err "Unsupported derivation")]))
+
+(function (hash-clauses index value-cons)
+  (match value-cons
+    [(s:cons (let value-con) (let value-cons))
+      (ok
+        `(,(hash-clause (some index) value-con)!
+          ,@(hash-clauses (+ index 1) value-cons)!))]
+    [_
+      (ok '())]))
+
+(function (hash-clause index value-con)
+  (let ([hash-index
+          (if-match1 (some (let index)) index
+            `(,\hash! s (annotate ,(s:integer #f index) ,\U16))
+            'unit)]
+        [con-name (derive/data/value-con/name value-con)]
+        [con-fields (derive/data/value-con/fields value-con)])
+    (ok (if-match1 (some (let fields)) con-fields
+      (let1 names (s/map [^1 (gensym)] fields)!
+        `[(,con-name ,@(s/map [^1 `(let ,%1)] names)!)
+          ,hash-index
+          ,@(s/map [^1 `(,\hash! s ,%1)] names)!])
+      `[,con-name
+        ,hash-index]))))

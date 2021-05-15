@@ -7,7 +7,7 @@
 (import "std/iterator" _)
 (import "std/it" it/_)
 (import "std/vector" Vector vector/_ _.Vector)
-(import "std/hash" Hash hash-all! Hash.U8)
+(import "std/hash" Hash hash-all! Hash.U16 derive/Hash)
 (import "std/char" Char char/_ _.Char)
 (import "std/string" String string string/_ _.String)
 (import "std/text" _.Text)
@@ -79,7 +79,7 @@
 
 (c-function path/cwd {String} "llrt_getcwd")
 
-(derive (Eq DeepCopy DebugDisplay) value-data PathComponent
+(derive (Eq DeepCopy DebugDisplay Hash) value-data PathComponent
   path-component:root-dir
   path-component:current-dir
   path-component:parent-dir
@@ -170,13 +170,3 @@
       (while (and (< l ~e) (ne? (string/byte-at (- ~e 1) p) (cast (char/unicode-scalar #\.))))
         (set! e (- ~e 1)))
       (: l ~e r))))
-
-; ---------------------------
-
-(instance Hash.PathComponent (Hash PathComponent)
-  (function (hash! s a)
-    (match a
-      [path-component:root-dir (hash-all! s 0 {U8})]
-      [path-component:current-dir (hash-all! s 1 {U8})]
-      [path-component:parent-dir (hash-all! s 2 {U8})]
-      [(path-component:normal (let a)) (hash-all! s 3 {U8} a)])))

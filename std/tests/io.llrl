@@ -1,6 +1,5 @@
 (import "std/io" _ [:_ path-component:_])
 (import "std/char" char/utf-8-length)
-(import "std/tests/hash" h)
 
 (assert-eq? "" (path/base-name ""))
 (assert-eq? "/" (path/base-name "/"))

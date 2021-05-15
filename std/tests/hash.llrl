@@ -97,3 +97,17 @@
 (assert-ne? (h (text "X")) (h (text "Y")))
 (assert-eq? (h (text "Hello, World!"))
             (let1 t text/empty (text/push! "Hello" t) (text/push! ", " t) (text/push! "World!" t) (h t)))
+
+(derive (Hash) value-data T1 t1:)
+(derive (Hash) value-data T2 t2:a t2:b)
+(derive (Hash) value-data T3 (t3: I32 I32 I32))
+(derive (Hash) value-data T4 (t4:a Bool) t4:b)
+
+(assert-eq? (h t1:) (h t1:))
+(assert-ne? (h t2:a) (h t2:b))
+(assert-eq? (h t2:b) (h t2:b))
+(assert-eq? (h (t3: 1 2 3)) (h (t3: 1 2 3)))
+(assert-ne? (h (t3: 1 2 3)) (h (t3: 1 3 2)))
+(assert-ne? (h (t4:a #t)) (h t4:b))
+(assert-ne? (h (t4:a #t)) (h (t4:a #f)))
+(assert-eq? (h (t4:a #t)) (h (t4:a #t)))

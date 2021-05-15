@@ -74,7 +74,7 @@ The goal of llrl is not to create a modern, practical programming language. Inst
   - [x] Bit operations
   - [x] [xxHash](https://github.com/Cyan4973/xxHash)
   - [x] Iterators
-  - [ ] Derive macro
+  - [x] Derive macro
   - [x] I/O
     - [x] Path
     - [x] File
@@ -354,7 +354,7 @@ For example, `lambda` syntax is defined as a macro in [std/boot/5-lambda](./std/
 
 `s/match` and `quasiquote` are defined as macros in [std/boot/2-s-match](./std/boot/2-s-match.llrl), [std/boot/3-quasiquote](./std/boot/3-quasiquote.llrl).
 
-`'`(quote), `` ` `` (quasiquote), `,` (unquote), `,@` (unquote-splicing) are the same as in the classical Lisp, but there is a llrl-specific quoting, `\` (capture). This captures the "use" of the definition in the scope.
+`'`(quote), `` ` `` (quasiquote), `,` (unquote), `,@` (unquote-splicing) work just like any other Lisp, but there is a llrl-specific quoting, `\` (capture). This captures the "use" of the definition in the scope.
 For example, `and` macro (defined in [std/bool](./std/bool.llrl)) uses the function `&&` in the result of the macro expansion. Thanks to the capture, this points to the intended `&&` even if `&&` does not exist in the scope of the macro caller.
 
 ```llrl
@@ -369,6 +369,8 @@ For example, `and` macro (defined in [std/bool](./std/bool.llrl)) uses the funct
 ```
 
 To simplify the compilation and the JIT execution order, macros are not usable in the defined module.
+
+llrl does not support hygienic macros.
 
 ### Standard library
 
