@@ -316,7 +316,7 @@ llrl type classes are almost same as Haskell 2010 type classes + `MultiParamType
   (function (<> x y) {(-> A A A)}))
 ```
 
-Each class instance has its own name. Instances are automatically resolved when using methods of the class, but the instances that are resolved must exist in the current scope by import/export.
+Each class instance has its own name. Instances are automatically resolved when using methods of classes, but instances that are resolved automatically must exist in the current scope by import/export.
 
 ```llrl
 (instance Semigroup.I32 (Semigroup I32)
@@ -332,6 +332,14 @@ Each class instance has its own name. Instances are automatically resolved when 
 ```
 
 `std` provides several type classes that express frequently appearing operations like [`Eq`](./std/eq.llrl), [`Ord`](./std/ord.llrl), [`Display`](./std/display.llrl), etc.
+
+`std` also supports automatic derivation of frequently used instances via [`derive` macro](./std/derive.llrl).
+
+```llrl
+(derive (Default Eq Ord DebugDisplay Hash)
+  value-data (Vec2 A)
+    (vec2: T T))
+```
 
 ### Macros
 
