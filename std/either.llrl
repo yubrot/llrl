@@ -3,7 +3,7 @@
 (import "std/prelude/stage-1" _)
 (export Either left right either either/_ _.Either)
 
-(derive (Eq Ord DeepCopy) value-data (Either L R)
+(derive (Eq Ord DeepCopy DebugDisplay) value-data (Either L R)
   (left L)
   (right R))
 
@@ -76,11 +76,3 @@
   (match x
     [(left (let x)) (left x)]
     [(right (let x)) (f x)]))
-
-(instance DebugDisplay.Either (forall L R) (DebugDisplay (Either L R)) (where (DebugDisplay L) (DebugDisplay R))
-  (function (debug-display! w a)
-    (match a
-      [(left (let x))
-        (display-all! w "(left " (debug x) ")")]
-      [(right (let x))
-        (display-all! w "(right " (debug x) ")")])))

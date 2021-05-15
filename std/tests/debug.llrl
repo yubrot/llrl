@@ -1,3 +1,10 @@
 (import "std/debug" _)
 
-; Nothing to do
+(derive (DebugDisplay) data (Test A B)
+  (test:foo A)
+  test:bar
+  (test:baz B B))
+
+(assert-eq? "(test:foo 123)" (string (debug (test:foo 123))))
+(assert-eq? "test:bar" (string (debug test:bar)))
+(assert-eq? "(test:baz (test:foo #t) test:bar)" (string (debug (test:baz (test:foo #t) test:bar))))

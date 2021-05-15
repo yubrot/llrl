@@ -76,6 +76,11 @@
     [(_ ,@fields) (some fields)]
     [_ none]))
 
+(function (derive/symbol/string sym) {(-> (Syntax Sexp) (Result (Syntax Sexp) String))}
+  (match sym
+    [(s:symbol (let s)) (ok (s:string s))]
+    [_ (err "Expected symbol")]))
+
 (function (derive/symbol/concat a b) {(-> (Syntax Sexp) (Syntax Sexp) (Result (Syntax Sexp) String))}
   (match (: a b)
     [(: (s:symbol (let a)) (s:symbol (let b))) (ok (s:symbol (<symbol/concat> a b)))]

@@ -4,15 +4,16 @@
 (import "std/assert" assert)
 (import "std/num-literals" I32 Number.I32)
 (import "std/s" s/foldr)
+(import "std/derive" derive)
 (import "std/copy" ShallowCopy DeepCopy)
 (import "std/default" Default)
 (import "std/display" Display.String display!)
-(import "std/debug" DebugDisplay)
+(import "std/debug" DebugDisplay derive/DebugDisplay)
 (import "std/bool" Bool)
 (import "std/eq" Eq)
 (export Ordering ordering:_ ordering/_ _.Ordering)
 
-(value-data Ordering
+(derive (DebugDisplay) value-data Ordering
   ordering:less
   ordering:equal
   ordering:greater)
@@ -49,13 +50,6 @@
 
 (instance Default.Ordering (Default Ordering)
   (transparent-function default ordering:equal))
-
-(instance DebugDisplay.Ordering (DebugDisplay Ordering)
-  (function (debug-display! w a)
-    (match a
-      [ordering:less (display! w "ordering:less")]
-      [ordering:equal (display! w "ordering:equal")]
-      [ordering:greater (display! w "ordering:greater")])))
 
 (instance Eq.Ordering (Eq Ordering)
   (transparent-function (eq? a b) (<ordering/eq?> a b)))

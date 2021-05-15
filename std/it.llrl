@@ -58,17 +58,10 @@
         [(: none (some (let b))) (some (zip-either:right b))]
         [_ none])))))
 
-(derive (Eq) value-data (ZipEither A B)
+(derive (Eq DebugDisplay) value-data (ZipEither A B)
   (zip-either:left A)
   (zip-either:right B)
   (zip-either:both A B))
-
-(instance DebugDisplay.ZipEither (forall A B) (DebugDisplay (ZipEither A B)) (where (DebugDisplay A) (DebugDisplay B))
-  (function (debug-display! w a)
-    (match a
-      [(zip-either:left (let a)) (display-all! w "(zip-either:left " (debug a) ")")]
-      [(zip-either:right (let a)) (display-all! w "(zip-either:right " (debug a) ")")]
-      [(zip-either:both (let a) (let b)) (display-all! w "(zip-either:both " (debug a) " " (debug b) ")")])))
 
 (function (it/map f it) {(forall T A B) (-> (-> A B) (T A) (Iterator B)) (where (Iterate T))}
   (let1 it (iterate it)

@@ -1,9 +1,13 @@
 (no-implicit-std)
 
 (import "std/prelude/stage-0" _)
+(import "std/assert" assert)
+(import "std/s" s/_)
 (import "std/never" Never never)
+(import "std/control" _)
+(import "std/derive" derive/_)
 (import "std/display" _)
-(export Debug debug _.Debug DebugDisplay DebugDisplay._ debug-display!)
+(export Debug debug _.Debug DebugDisplay DebugDisplay._ debug-display! derive/DebugDisplay)
 
 ; A newtype for debugging display.
 (value-data (Debug A)
@@ -21,3 +25,32 @@
 
 (instance DebugDisplay.Never (DebugDisplay Never)
   (transparent-function (debug-display! w a) w (never a)))
+
+(macro (derive/DebugDisplay s)
+  (s/match s
+    [(_ _ ,type-con ,@value-cons)
+      (let ([inst-name (derive/symbol/concat 'DebugDisplay. (derive/data/type-con/name type-con))!]
+            [inst-signature (derive/data/type-con/instance-signature \DebugDisplay type-con)!]
+            [function-body
+              (match value-cons
+                [(s:list) `(,\assert #f)]
+                [_ `(match a ,@(s/traverse debug-display-clause value-cons)!)])])
+        (ok
+          `(instance ,inst-name ,@inst-signature
+            (function (debug-display! w a)
+              ,function-body))))]
+    [_
+      (err "Unsupported derivation")]))
+
+(function (debug-display-clause value-con)
+  (let ([con-name (derive/data/value-con/name value-con)]
+        [con-fields (derive/data/value-con/fields value-con)])
+    (ok (if-match1 (some (let fields)) con-fields
+      (let1 names (s/map [^1 (gensym)] fields)!
+        `[(,con-name ,@(s/map [^1 `(let ,%1)] names)!)
+          (,\display! w "(")!
+          (,\display! w ,(derive/symbol/string con-name)!)!
+          ,@(s/map [^1 `(begin (,\display! w " ")! (,\debug-display! w ,%1)!)] names)!
+          (,\display! w ")")])
+      `[,con-name
+        (,\display! w ,(derive/symbol/string con-name)!)]))))

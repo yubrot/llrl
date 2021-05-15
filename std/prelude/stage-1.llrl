@@ -12,7 +12,7 @@
 (import "std/copy" ShallowCopy shallow-copy ShallowCopy._ DeepCopy deep-copy DeepCopy._ derive/DeepCopy)
 (import "std/default" Default default derive/Default)
 (import "std/display" WriteString write-string! Display Display._ display! display-all!)
-(import "std/debug" Debug debug _.Debug DebugDisplay DebugDisplay._ debug-display!)
+(import "std/debug" Debug debug _.Debug DebugDisplay DebugDisplay._ debug-display! derive/DebugDisplay)
 (import "std/bool" Bool not and or _.Bool)
 (import "std/eq" Eq eq? ne? = Eq._ derive/Eq)
 (import "std/ordering" Ordering ordering:_ _.Ordering)

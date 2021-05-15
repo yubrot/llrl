@@ -6,7 +6,7 @@
 (export IoError io-error:_ io-error/_ _.IoError)
 
 ; I'm not familiar with error handling in C, so I decided to borrow Rust's definition
-(derive (Eq Ord DeepCopy) value-data IoError
+(derive (Eq Ord DeepCopy DebugDisplay) value-data IoError
   io-error:closed
   io-error:not-found
   io-error:permission-denied
@@ -68,27 +68,6 @@
       [io-error:interrupted (display! w "Interrupted")]
       [io-error:unexpected-eof (display! w "Unexpected EOF")]
       [io-error:other (display! w "Other")])))
-
-(instance DebugDisplay.IoError (DebugDisplay IoError)
-  (function (debug-display! w a)
-    (match a
-      [io-error:closed (display! w "io-error:closed")]
-      [io-error:not-found (display! w "io-error:not-found")]
-      [io-error:permission-denied (display! w "io-error:permission-denied")]
-      [io-error:connection-refused (display! w "io-error:connection-refused")]
-      [io-error:connection-reset (display! w "io-error:connection-reset")]
-      [io-error:connection-aborted (display! w "io-error:connection-aborted")]
-      [io-error:not-connected (display! w "io-error:not-connected")]
-      [io-error:addr-in-use (display! w "io-error:addr-in-use")]
-      [io-error:addr-not-available (display! w "io-error:addr-not-available")]
-      [io-error:broken-pipe (display! w "io-error:broken-pipe")]
-      [io-error:already-exists (display! w "io-error:already-exists")]
-      [io-error:invalid-input (display! w "io-error:invalid-input")]
-      [io-error:invalid-data (display! w "io-error:invalid-data")]
-      [io-error:timed-out (display! w "io-error:timed-out")]
-      [io-error:interrupted (display! w "io-error:interrupted")]
-      [io-error:unexpected-eof (display! w "io-error:unexpected-eof")]
-      [io-error:other (display! w "io-error:other")])))
 
 (instance UnexpectedEof.IoError (UnexpectedEof IoError)
   (transparent-function unexpected-eof io-error:unexpected-eof))
