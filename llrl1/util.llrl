@@ -36,3 +36,16 @@
         (when (ne? i 0) (display! w sep)!)
         (display! w a)!))
     (ok unit)))
+
+; Representation of data A on context information C.
+(export Contextual contextual: _.Contextual ContextualDisplay contextual-display!)
+(value-data (Contextual A C)
+  (contextual: A C))
+
+(instance Display.Contextual (forall A C) (Display (Contextual A C)) (where (ContextualDisplay A C))
+  (function (display! w a)
+    (with1 (contextual: (let a) (let ctx)) a
+      (contextual-display! w a ctx))))
+
+(class (ContextualDisplay A C)
+  (function (contextual-display! w a ctx) {(forall W Error) (-> W A C (Result unit Error)) (where (WriteString W Error))}))

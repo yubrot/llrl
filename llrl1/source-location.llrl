@@ -1,4 +1,7 @@
+(import "std/ord-map" _)
 (import "~/util" _)
+(import "~/interning" _)
+(import "~/path" Path _.Path)
 
 (export Location location/_ _.Location)
 (derive (Eq Ord DebugDisplay Hash Default) value-data Location
@@ -51,3 +54,47 @@
 (function (location-range/review s range) {(-> String LocationRange String)}
   (with1 (location-range: (location: (let start) _ _) (location: (let end) _ _)) range
     (string/substring (cast start) (cast end) s)))
+
+; Data that indicates the specific location of a particular file of the llrl source.
+(export SourceLocation source-location/_ _.SourceLocation)
+(derive (Eq Ord DebugDisplay Hash) value-data SourceLocation
+  (source-location: (Interned Path) (Interned LocationRange)))
+
+(instance ContextualDisplay.SourceLocation (ContextualDisplay SourceLocation SourceLocationTable)
+  (function (contextual-display! w a ctx)
+    (with1 (: (let path) (let range)) (source-location-table/review a ctx)
+      (display-all! w path ":" range))))
+
+(export SourceLocationTable source-location-table/_)
+(data SourceLocationTable
+  (source-location-table: (InternTable Path) (OrdMap (Interned Path) (InternTable LocationRange))))
+
+(function (source-location-table/new) {(-> SourceLocationTable)}
+  (source-location-table: (intern-table/new) ord-map/empty))
+
+(function (source-location-table/get-locator! path table) {(-> Path SourceLocationTable SourceLocator)}
+  (with1 (source-location-table: (let path-table) (let range-tables)) table
+    (let1 path (intern-table/intern! path path-table)
+      (if-match1 (some (let range-table)) (ord-map/get? path range-tables)
+        (source-locator: path range-table)
+        (let1 range-table (intern-table/new)
+          (ord-map/insert! path range-table range-tables)
+          (source-locator: path range-table))))))
+
+(function (source-location-table/review location table) {(-> SourceLocation SourceLocationTable (: Path LocationRange))}
+  (with ([(source-location: (let path) (let range)) location]
+         [(source-location-table: (let path-table) (let range-tables)) table])
+    (let ([reviewed-path (intern-table/review path path-table)]
+          [reviewed-range (intern-table/review range (option/force (ord-map/get? path range-tables)))])
+      (: reviewed-path reviewed-range))))
+
+(export SourceLocator source-locator/_)
+(value-data SourceLocator
+  (source-locator: (Interned Path) (InternTable LocationRange)))
+
+(function (source-locator/temporary) {(-> SourceLocator)}
+  (source-location-table/get-locator! default (source-location-table/new)))
+
+(function (source-locator/issue! range locator) {(-> LocationRange SourceLocator SourceLocation)}
+  (with1 (source-locator: (let path) (let range-table)) locator
+    (source-location: path (intern-table/intern! range range-table))))

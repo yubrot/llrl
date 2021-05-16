@@ -35,3 +35,14 @@
   (assert-eq? 9 (|> range location-range/start location/offset))
   (assert-eq? 14 (|> range location-range/end location/offset))
   (assert-eq? "3:2-4:3" (string range)))
+
+(import "~/util" _)
+(import "~/path" _)
+
+(let* ([tbl (source-location-table/new)]
+       [locator-std (source-location-table/get-locator! path/std tbl)]
+       [locator-builtin (source-location-table/get-locator! path/builtin tbl)]
+       [a (source-locator/issue! default locator-std)]
+       [b (source-locator/issue! default locator-builtin)])
+  (assert-eq? (string (contextual: a tbl)) "std:1:1-1:1")
+  (assert-eq? (string (contextual: b tbl)) "builtin:1:1-1:1"))

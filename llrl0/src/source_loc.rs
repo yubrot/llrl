@@ -39,6 +39,7 @@ impl SourceLocationTable {
     }
 
     pub fn begin_locate(&mut self, path: &Path) -> SourceLocator {
+        assert!(!self.path_table.is_interned(path));
         let path = self.path_table.intern(path);
         SourceLocator {
             path,
