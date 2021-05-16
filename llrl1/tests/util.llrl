@@ -1,0 +1,8 @@
+(import "~/util" _)
+
+(value-data Test (test: I32 I32))
+(getter test: test/a test/b)
+(assert-eq? (test/a (test: 1 2)) 1)
+(assert-eq? (test/b (test: 1 2)) 2)
+
+(assert-eq? "1, 2, 3" (|> (array 1 2 3) (it/format ", ") string))

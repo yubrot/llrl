@@ -96,9 +96,9 @@ The goal of llrl is not to create a modern, practical programming language. Inst
 Since `llrl0` is an executable that runs standalone, you can simply run it with `cargo run` or `cargo build`.
 
 ```shell
-cargo build --release
-./target/release/llrl0 --help
-./target/release/llrl0 -O examples/fibonacci-numbers
+cargo install --path llrl0
+llrl0 --help
+llrl0 -O examples/fibonacci-numbers
 
 # or
 

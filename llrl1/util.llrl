@@ -1,0 +1,38 @@
+; This module contains an llrl-independent utilities,
+; but the API is not well thought out enough to be adopted as std.
+
+(import "std/s" s/_)
+
+;    (getter con: con/a con/b)
+; => (function (con/a x) (with1 (con: (let con/a) (let con/b)) x con/a))
+;    (function (con/b x) (with1 (con: (let con/a) (let con/b)) x con/b))
+; NOTE: Should we define a lens/prism instead of an ad-hoc getter?
+(export getter)
+(macro (getter s)
+  (s/match s
+    [(_ ,value-con-name ,@field-names)
+      (ok `(begin ,@(s/traverse [^1 (getter-function value-con-name field-names %1)] field-names)!))]
+    [_
+      (err "Expected (getter value-con-name field-name ...)")]))
+
+(function (getter-function con-name fields field)
+  (let1 self (gensym)
+    (ok `(function (,field ,self)
+      (,\with1 (,con-name ,@(s/map [^1 `(let ,%1)] fields)!) ,self ,field)))))
+
+;    (string (it/format ", " (array 1 2 3)))
+; => "1, 2, 3"
+(export Format _.Format it/format)
+(function (it/format sep it) {(forall T A) (-> String (T A) (Format T A))}
+  (format: sep it))
+
+(value-data (Format T A)
+  (format: String (T A)))
+
+(instance Display.Format (forall T A) (Display (Format T A)) (where (Iterate T) (Display A))
+  (function (display! w a)
+    (with1 (format: (let sep) (let it)) a
+      (for (: (let i) (let a)) (it/with-index it)
+        (when (ne? i 0) (display! w sep)!)
+        (display! w a)!))
+    (ok unit)))

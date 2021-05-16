@@ -119,7 +119,7 @@ impl<'a> CliOptions<'a> {
             .values_of("package")
             .unwrap_or_default()
             .map(|value| {
-                let (package_path, package_name) = Self::interpret_package_option(value)
+                let (package_name, package_path) = Self::interpret_package_option(value)
                     .ok_or_else(|| {
                         invalid_option(
                             "package",
@@ -141,7 +141,7 @@ impl<'a> CliOptions<'a> {
             [package_path] => {
                 let path = path::Path::new(*package_path).file_name()?;
                 let package_name = path.to_str()?;
-                Some((*package_path, package_name))
+                Some((package_name, *package_path))
             }
             [package_name, package_path] => Some((*package_name, *package_path)),
             _ => None,
