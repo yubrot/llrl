@@ -1,4 +1,4 @@
-use crate::sexp::Token;
+use crate::token::Token;
 
 #[derive(PartialEq, PartialOrd, thiserror::Error, Debug, Clone)]
 #[error("{}: Expected {} but got {}", .unexpected.range, .expected, .unexpected.rep)]

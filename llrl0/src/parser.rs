@@ -1,5 +1,5 @@
-use crate::sexp::{Token, TokenRep};
 use crate::source_loc::{Location, LocationRange, SourceLocation, SourceLocator};
+use crate::token::{Token, TokenRep};
 use std::iter::Peekable;
 
 mod error;

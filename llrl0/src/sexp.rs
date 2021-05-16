@@ -9,14 +9,12 @@ use std::fmt;
 #[macro_use]
 pub mod matcher;
 pub mod native;
-pub mod token;
 
 #[cfg(test)]
 mod tests;
 
 pub use matcher::{Error as MatchError, Match, MatchSlice};
 pub use native::{Native, NativeValue};
-pub use token::{Token, TokenRep};
 
 /// A sequence of S-expressions.
 #[derive(PartialEq, PartialOrd, Debug, Clone, new)]

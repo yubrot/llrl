@@ -9,8 +9,10 @@ pub mod source_loc;
 
 #[macro_use]
 pub mod sexp;
+
 pub mod lexer;
 pub mod parser;
+pub mod token;
 
 pub mod syntax;
 

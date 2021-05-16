@@ -1,5 +1,5 @@
 use super::{Nonterminal, NonterminalRecover, NonterminalTry, Parser, Result};
-use crate::sexp::{Token, TokenRep};
+use crate::token::{Token, TokenRep};
 use std::marker::PhantomData;
 
 pub struct Eof;

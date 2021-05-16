@@ -1,5 +1,6 @@
 use super::{primitive as prim, Nonterminal, NonterminalRecover, NonterminalTry, Parser, Result};
-use crate::sexp::{self, Sexp, SexpRep, Ss, Token, TokenRep};
+use crate::sexp::{self, Sexp, SexpRep, Ss};
+use crate::token::{Token, TokenRep};
 use std::marker::PhantomData;
 
 impl Nonterminal for Ss {

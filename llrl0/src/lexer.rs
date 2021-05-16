@@ -1,6 +1,6 @@
-use crate::sexp::{Token, TokenRep};
 use crate::source_loc::{Location, LocationRange};
 use crate::string;
+use crate::token::{Token, TokenRep};
 
 /// Produces a sequence of tokens.
 pub fn lex(input: &str) -> Vec<Token> {
