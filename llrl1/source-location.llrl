@@ -1,0 +1,53 @@
+(import "~/util" _)
+
+(export Location location/_ _.Location)
+(derive (Eq Ord DebugDisplay Hash Default) value-data Location
+  (location: U32 U32 U32))
+
+(instance Display.Location (Display Location)
+  (function (display! w a)
+    (display-all! w (+ (location/line a) 1) ":" (+ (location/character a) 1))))
+
+(getter location: location/offset     ; Zero-based, in bytes offset of the string.
+                  location/line       ; Zero-based, line position of the string.
+                  location/character) ; Zero-based, in bytes offset on a line of the string.
+
+(function (location/eat s location) {(-> String Location Location)}
+  (with1 (location: (let offset) (let line) (let character)) location
+    (let ([offset (+ offset (cast (string/length s)))]
+          [line (ref line)]
+          [character (ref character)])
+      (for (: (let i) (let l)) (it/with-index (string/split "\n" s))
+        (if (eq? i 0)
+          (set! character (+ ~character (cast (string/length l))))
+          (begin
+            (set! line (+ ~line 1))
+            (set! character (cast (string/length l))))))
+      (location: offset ~line ~character))))
+
+(export LocationRange location-range/_ _.LocationRange)
+(derive (Eq Ord DebugDisplay Hash Default) value-data LocationRange
+  (location-range: Location Location))
+
+(instance Display.LocationRange (Display LocationRange)
+  (function (display! w a)
+    (with1 (location-range: (let start) (let end)) a
+      (display-all! w start "-" end))))
+
+(getter location-range: location-range/start ; An inclusive range's start position.
+                        location-range/end)  ; An exclusive range's end position.
+
+(function (location-range/new start end) {(-> Location Location LocationRange)}
+  (location-range: start end))
+
+(function (location-range/empty location) {(-> Location LocationRange)}
+  (location-range: location location))
+
+(function (location-range/from-range s start end) {(-> String U64 U64 LocationRange)}
+  (let* ([l (location/eat (string/substring 0 start s) default)]
+         [r (location/eat (string/substring start end s) l)])
+    (location-range: l r)))
+
+(function (location-range/review s range) {(-> String LocationRange String)}
+  (with1 (location-range: (location: (let start) _ _) (location: (let end) _ _)) range
+    (string/substring (cast start) (cast end) s)))

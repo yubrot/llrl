@@ -1,4 +1,5 @@
 (import "~/path" _)
+(println! "llrl1/tests/path")
 
 (function (assert-from-string src dest) {(-> String (Option Path) unit)}
   (assert-eq? (|> src path/from-string result/ok?) dest))

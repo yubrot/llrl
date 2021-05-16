@@ -1,4 +1,5 @@
 (import "~/util" _)
+(println! "llrl1/tests/util")
 
 (value-data Test (test: I32 I32))
 (getter test: test/a test/b)

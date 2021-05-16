@@ -1,0 +1,37 @@
+(import "~/source-location" _)
+(println! "llrl1/tests/source-location")
+
+(function (assert-location loc ofs ln ch) {(-> Location U32 U32 U32 unit)}
+  (assert-eq? (location/offset loc) ofs)
+  (assert-eq? (location/line loc) ln)
+  (assert-eq? (location/character loc) ch))
+
+(let1 loc (ref default)
+  (assert-location ~loc 0 0 0)
+  (set! loc (location/eat "hello" ~loc))
+  (assert-location ~loc 5 0 5)
+  (set! loc (location/eat "日本語" ~loc))
+  (assert-location ~loc 14 0 14)
+  (set! loc (location/eat "a\nb" ~loc))
+  (assert-location ~loc 17 1 1)
+  (set! loc (location/eat "\n\r\n" ~loc))
+  (assert-location ~loc 20 3 0)
+  (set! loc (location/eat "xxx\n\nyyy" ~loc))
+  (assert-location ~loc 28 5 3))
+
+(let* ([original "Hello,\nWorld!\n"]
+       [a (string/substring 0 5 original)]
+       [b (string/substring 5 9 original)]
+       [c (string/skip 9 original)]
+       [l0 default]
+       [l1 (location/eat a l0)]
+       [l2 (location/eat b l1)]
+       [l3 (location/eat c l2)])
+  (assert-eq? (location-range/review original (location-range/new l0 l1)) "Hello")
+  (assert-eq? (location-range/review original (location-range/new l1 l2)) ",\nWo")
+  (assert-eq? (location-range/review original (location-range/new l2 l3)) "rld!\n"))
+
+(let1 range (location-range/from-range "ABC\nDEF\nGHI\nJKL" 9 14)
+  (assert-eq? 9 (|> range location-range/start location/offset))
+  (assert-eq? 14 (|> range location-range/end location/offset))
+  (assert-eq? "3:2-4:3" (string range)))
