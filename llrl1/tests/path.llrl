@@ -1,0 +1,40 @@
+(import "~/path" _)
+
+(function (assert-from-string src dest) {(-> String (Option Path) unit)}
+  (assert-eq? (|> src path/from-string result/ok?) dest))
+
+(function (assert-display src dest) {(-> String String unit)}
+  (assert-eq? (|> src path/from-string result/ok? (option/map [^1 (string %1)])) (some dest)))
+
+(assert-from-string "" none)
+(assert-from-string "~" (some path/current))
+(assert-from-string "builtin" (some path/builtin))
+(assert-from-string "std" (some path/std))
+(assert-from-string "hello" (some
+  (path/new (result/force (package-name/external "hello"))
+            module-name/prelude)))
+(assert-from-string "~/" none)
+(assert-from-string "hello/" none)
+(assert-from-string "~/hello" (some
+  (path/new package-name/current
+            (result/force (module-name/from-parts (array "hello"))))))
+(assert-from-string "std/hello" (some
+  (path/new package-name/std
+            (result/force (module-name/from-parts (array "hello"))))))
+(assert-from-string "hello/world" (some
+  (path/new (result/force (package-name/external "hello"))
+            (result/force (module-name/from-parts (array "world"))))))
+(assert-from-string "~/prelude" (some path/current))
+(assert-display "~/prelude" "~")
+(assert-from-string "hello/prelude" (some
+  (path/new (result/force (package-name/external "hello"))
+            module-name/prelude)))
+(assert-display "hello/prelude" "hello")
+(assert-from-string "~/hello/" none)
+(assert-from-string "hello/world/" none)
+(assert-from-string "~/hello/world" (some
+  (path/new package-name/current
+            (result/force (module-name/from-parts (array "hello" "world"))))))
+(assert-from-string "hello/world/test" (some
+  (path/new (result/force (package-name/external "hello"))
+            (result/force (module-name/from-parts (array "world" "test"))))))

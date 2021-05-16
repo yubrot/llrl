@@ -1,0 +1,139 @@
+(import "~/util" _)
+
+(export Error error:_ _.Error)
+(derive (Eq Ord DebugDisplay) value-data Error
+  (error:path-contains-illegal-characters String))
+
+(instance Display.Error (Display Error)
+  (function (display! w a)
+    (match a
+      [(error:path-contains-illegal-characters (let part))
+        (display-all! w "Path contains illegal characters: " part)])))
+
+; Path of the llrl module.
+;
+; In llrl, modules are identified by a string in the form of a path separated by a slash `/`.
+; The first part of the path points to the name of the package, and the rest of the parts
+; correspond to the file path on the package. If the file path on the package is omitted,
+; it is treated as equivalent to `<package-name>/prelude`.
+(export Path path/_ _.Path)
+(derive (Eq Ord DebugDisplay Hash Default) value-data Path
+  (path: PackageName ModuleName))
+
+(instance Display.Path (Display Path)
+  (function (display! w a)
+    (if (|> a path/module module-name/prelude?)
+      (display! w (path/package a))
+      (display-all! w (path/package a) "/" (path/module a)))))
+
+(function (path/new package module) {(-> PackageName ModuleName Path)}
+  (path: package module))
+
+(function path/current {Path}
+  (path: package-name/current module-name/prelude))
+
+(function path/builtin {Path}
+  (path: package-name/builtin module-name/prelude))
+
+(function path/std {Path}
+  (path: package-name/std module-name/prelude))
+
+(function (path/from-string path) {(-> String (Result Path Error))}
+  (if-match1 (some (let index)) (string/find? "/" path)
+    (let* ([path-head (string/take index path)]
+           [path-tail (string/skip (+ index (string/length "/")) path)]
+           [package (package-name/from-string path-head)!]
+           [module (module-name/from-string path-tail)!])
+      (ok (path: package module)))
+    (let* ([package (package-name/from-string path)!]
+           [module module-name/prelude])
+      (ok (path: package module)))))
+
+(getter path: path/package path/module)
+
+; Name of the llrl package.
+;
+; There are several well known package names:
+; - `~`: The special pakcage name that refers to the current package.
+; - `builtin`: a set of language built-in definitions used directly by numeric literals, etc.
+; - `std`: the llrl language standard library.
+(export PackageName package-name/_ _.PackageName)
+(derive (Eq Ord DebugDisplay Hash Default) value-data PackageName
+  (package-name: (Option String)))
+
+(instance Display.PackageName (Display PackageName)
+  (function (display! w a)
+    (if-match1 (some (let name)) (package-name/external-name? a)
+      (display! w name)
+      (display! w "~"))))
+
+(function package-name/current {PackageName}
+  (package-name: none))
+
+(function package-name/builtin {PackageName}
+  (result/force (package-name/external "builtin")))
+
+(function package-name/std {PackageName}
+  (result/force (package-name/external "std")))
+
+(function (package-name/external name) {(-> String (Result PackageName Error))}
+  (if (package-name/valid? name)
+    (ok (package-name: (some name)))
+    (err (error:path-contains-illegal-characters name))))
+
+(function (package-name/from-string name) {(-> String (Result PackageName Error))}
+  (if (eq? name "~")
+    (ok package-name/current)
+    (package-name/external name)))
+
+(getter package-name: package-name/external-name?)
+
+(function (package-name/current? n) {(-> PackageName Bool)}
+  (is? none (package-name/external-name? n)))
+
+(function (package-name/external? n) {(-> PackageName Bool)}
+  (is? (some _) (package-name/external-name? n)))
+
+(function (package-name/valid? name) {(-> String Bool)}
+  (and (not (string/empty? name))
+       (is? none (string/find? "/" name))
+       (ne? name "~")
+       (ne? name ".")
+       (ne? name "..")))
+
+; Path of the llrl module in a particular package.
+(export ModuleName module-name/_ _.ModuleName)
+(derive (Eq Ord DebugDisplay Hash Default) value-data ModuleName
+  (module-name: (Array String)))
+
+(instance Display.ModuleName (Display ModuleName)
+  (function (display! w a)
+    (if (module-name/prelude? a)
+      (display! w "prelude")
+      (display! w (|> a module-name/raw-parts (it/format "/"))))))
+
+(function module-name/prelude {ModuleName}
+  (module-name: array/empty)) ; Internally, prelude will be normalized as an empty path.
+
+(function (module-name/from-parts parts) {(forall T) (-> (T String) (Result ModuleName Error)) (where (Iterate T))}
+  (let1 parts (collect parts)
+    (if (eq? parts (array "prelude"))
+      (ok module-name/prelude)
+      (if-match1 (some (let part)) (it/find? [^1 (not (module-name/valid-part? %1))] parts)
+        (err (error:path-contains-illegal-characters part))
+        (ok (module-name: parts))))))
+
+(function (module-name/from-string name) {(-> String (Result ModuleName Error))}
+  (|> name (string/split "/") module-name/from-parts))
+
+(getter module-name: module-name/raw-parts)
+
+(function (module-name/prelude? name) {(-> ModuleName Bool)}
+  (|> name module-name/raw-parts array/empty?))
+
+(function (module-name/valid-part? part)
+  (and (not (string/empty? part))
+       (is? none (string/find? "/" part))
+       (ne? part "~")
+       (ne? part ".")
+       (ne? part "..")))

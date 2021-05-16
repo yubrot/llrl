@@ -1,1 +1,2 @@
 (import "~/tests/util")
+(import "~/tests/path")
