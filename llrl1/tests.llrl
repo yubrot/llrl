@@ -1,3 +1,4 @@
 (import "~/tests/util")
+(import "~/tests/interning")
 (import "~/tests/path")
 (import "~/tests/source-location")

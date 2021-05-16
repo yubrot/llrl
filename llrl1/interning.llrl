@@ -1,0 +1,55 @@
+(import "std/hash-map" _)
+(import "~/util" _)
+
+; An interned symbol representation.
+; Symbols are interned in a `InternTable`.
+(export Interned interned/_ _.Interned)
+(value-data (Interned A)
+  (interned: U32))
+
+(getter interned: interned/index)
+
+(instance DebugDisplay.Interned (forall A) (DebugDisplay (Interned A))
+  (function (debug-display! w a)
+    (display-all! w "(interned: " (interned/index a) ")")))
+
+(instance Eq.Interned (forall A) (Eq (Interned A))
+  (function (eq? a b)
+    (eq? (interned/index a) (interned/index b))))
+
+(instance Ord.Interned (forall A) (Ord (Interned A))
+  (function (compare a b)
+    (compare (interned/index a) (interned/index b))))
+
+(instance Hash.Interned (forall A) (Hash (Interned A))
+  (function (hash! s a)
+    (hash! s (interned/index a))))
+
+(export InternTable intern-table/_)
+(value-data (InternTable A)
+  (intern-table: (Vector A) (HashMap A (Interned A))))
+
+(function (intern-table/new) {(forall A) (-> (InternTable A))}
+  (intern-table: vector/empty hash-map/empty))
+
+(function (intern-table/get-interned? id table) {(forall A) (-> A (InternTable A) (Option (Interned A))) (where (Eq A) (Hash A))}
+  (with1 (intern-table: _ (let map)) table
+    (hash-map/get? id map)))
+
+(function (intern-table/has-interned? id table) {(forall A) (-> A (InternTable A) Bool) (where (Eq A) (Hash A))}
+  (with1 (intern-table: _ (let map)) table
+    (hash-map/has? id map)))
+
+(function (intern-table/intern! id table) {(forall A) (-> A (InternTable A) (Interned A)) (where (Eq A) (Hash A))}
+  (with1 (intern-table: (let ids) (let map)) table
+    (if-match1 (some (let sym)) (hash-map/get? id map)
+      sym
+      (let1 new-sym (interned: (cast (vector/length ids)))
+        (vector/push! id ids)
+        (hash-map/insert! id new-sym map)
+        new-sym))))
+
+(function (intern-table/review sym table) {(forall A) (-> (Interned A) (InternTable A) A)}
+  (with ([(intern-table: (let ids) _) table]
+         [(interned: (let index)) sym])
+    (get ids[(cast index)])))
