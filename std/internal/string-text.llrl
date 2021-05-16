@@ -342,7 +342,7 @@
   (function (debug-display! w a)
     (display! w "\"")!
     (for (let c) (string/chars a)
-      (match (char/escape c)
+      (match (char/escape? c)
         [(some (let s)) (display! w s)]
         [none (display! w c)])!)
     (display! w "\"")))

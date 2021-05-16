@@ -7,13 +7,13 @@
 (import "std/float" Display.F64)
 (import "std/char" DebugDisplay.Char)
 (import "std/string" DebugDisplay.String)
-(export Display.S DebugDisplay.S)
+(export _.SyntaxSexp)
 
-(instance DebugDisplay.S (DebugDisplay (Syntax Sexp))
+(instance DebugDisplay.SyntaxSexp (DebugDisplay (Syntax Sexp))
   (function (debug-display! w s)
-    (display! w s)))
+    (display-all! w "'" s)))
 
-(instance Display.S (Display (Syntax Sexp))
+(instance Display.SyntaxSexp (Display (Syntax Sexp))
   (function (display! w s)
     (match s
       [(s:integer (let signed) (let value))

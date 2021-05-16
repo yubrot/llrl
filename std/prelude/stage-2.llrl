@@ -21,7 +21,7 @@
 (import "std/string-reader" read-string-to-end!)
 (import "std/string-writer" StringWriter string-writer _.StringWriter)
 (import "std/tuple" ShallowCopy._ DeepCopy._ Default._ DebugDisplay._ Eq._ Ord._ Hash._)
-(import "std/s-display" Display.S DebugDisplay.S)
+(import "std/s-display" _.SyntaxSexp)
 (import "std/io" _.IoError _.File print! println! eprint! eprintln! fprint! fprintln!)
 (import "std/assert-eq" assert-eq? assert-ne?)
 (export _)

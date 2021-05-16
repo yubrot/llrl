@@ -24,7 +24,7 @@
 (function (char/ascii? c) {(-> Char Bool)}
   (<= (char/unicode-scalar c) 127))
 
-(function (char/escape c) {(-> Char (Option String))}
+(function (char/escape? c) {(-> Char (Option String))}
   (match c
     [#\\t (some "\\t")]
     [#\\r (some "\\r")]
@@ -74,7 +74,7 @@
 (instance DebugDisplay.Char (DebugDisplay Char)
   (function (debug-display! w a)
     (display! w "#\\")!
-    (match (char/escape a)
+    (match (char/escape? a)
       [(some (let s)) (display! w s)]
       [none (display! w a)])))
 
