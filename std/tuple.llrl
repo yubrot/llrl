@@ -3,7 +3,7 @@
 (import "std/prelude/stage-1" _)
 (import "std/ordering" ordering/or)
 (import "std/hash" Hash hash-all!)
-(export ShallowCopy._ DeepCopy._ Default._ DebugDisplay._ Eq._ Ord._ Hash._)
+(export ShallowCopy._ DeepCopy._ Default._ Display._ DebugDisplay._ Eq._ Ord._ Hash._)
 
 (instance DeepCopy.unit (DeepCopy unit)
   (transparent-function (deep-copy a) a))
@@ -11,8 +11,11 @@
 (instance Default.unit (Default unit)
   (transparent-function default unit))
 
+(instance Display.unit (Display unit)
+  (function (display! w a) (display! w "unit")))
+
 (instance DebugDisplay.unit (DebugDisplay unit)
-  (function (debug-display! w a) (display! w "unit")))
+  (function (debug-display! w a) (display! w a)))
 
 (instance Eq.unit (Eq unit)
   (transparent-function (eq? a b) a b #t))

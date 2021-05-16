@@ -1,6 +1,9 @@
 (import "~/util" _)
+(export Error _.Error error:_)
+(export Path _.Path path/_)
+(export PackageName _.PackageName package-name/_)
+(export ModuleName _.ModuleName module-name/_)
 
-(export Error error:_ _.Error)
 (derive (Eq Ord DebugDisplay) value-data Error
   (error:path-contains-illegal-characters String))
 
@@ -16,7 +19,6 @@
 ; The first part of the path points to the name of the package, and the rest of the parts
 ; correspond to the file path on the package. If the file path on the package is omitted,
 ; it is treated as equivalent to `<package-name>/prelude`.
-(export Path path/_ _.Path)
 (derive (Eq Ord DebugDisplay Hash Default) value-data Path
   (path: PackageName ModuleName))
 
@@ -57,7 +59,6 @@
 ; - `~`: The special pakcage name that refers to the current package.
 ; - `builtin`: a set of language built-in definitions used directly by numeric literals, etc.
 ; - `std`: the llrl language standard library.
-(export PackageName package-name/_ _.PackageName)
 (derive (Eq Ord DebugDisplay Hash Default) value-data PackageName
   (package-name: (Option String)))
 
@@ -102,7 +103,6 @@
        (ne? name "..")))
 
 ; Path of the llrl module in a particular package.
-(export ModuleName module-name/_ _.ModuleName)
 (derive (Eq Ord DebugDisplay Hash Default) value-data ModuleName
   (module-name: (Array String)))
 

@@ -1,13 +1,11 @@
 (import "std/hash-map" _)
 (import "~/util" _)
+(export Interned _.Interned interned/_ InternTable intern-table/_)
 
 ; An interned symbol representation.
 ; Symbols are interned in a `InternTable`.
-(export Interned interned/_ _.Interned)
 (value-data (Interned A)
   (interned: U32))
-
-(getter interned: interned/index)
 
 (instance DebugDisplay.Interned (forall A) (DebugDisplay (Interned A))
   (function (debug-display! w a)
@@ -25,7 +23,8 @@
   (function (hash! s a)
     (hash! s (interned/index a))))
 
-(export InternTable intern-table/_)
+(getter interned: interned/index)
+
 (value-data (InternTable A)
   (intern-table: (Vector A) (HashMap A (Interned A))))
 

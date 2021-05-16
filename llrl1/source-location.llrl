@@ -2,8 +2,12 @@
 (import "~/util" _)
 (import "~/interning" _)
 (import "~/path" Path _.Path)
+(export Location _.Location location/_)
+(export LocationRange _.LocationRange location-range/_)
+(export SourceLocation _.SourceLocation source-location/_)
+(export SourceLocationTable source-location-table/_)
+(export SourceLocator source-locator/_)
 
-(export Location location/_ _.Location)
 (derive (Eq Ord DebugDisplay Hash Default) value-data Location
   (location: U32 U32 U32))
 
@@ -28,7 +32,6 @@
             (set! character (cast (string/length l))))))
       (location: offset ~line ~character))))
 
-(export LocationRange location-range/_ _.LocationRange)
 (derive (Eq Ord DebugDisplay Hash Default) value-data LocationRange
   (location-range: Location Location))
 
@@ -56,7 +59,6 @@
     (string/substring (cast start) (cast end) s)))
 
 ; Data that indicates the specific location of a particular file of the llrl source.
-(export SourceLocation source-location/_ _.SourceLocation)
 (derive (Eq Ord DebugDisplay Hash) value-data SourceLocation
   (source-location: (Interned Path) (Interned LocationRange)))
 
@@ -65,7 +67,6 @@
     (with1 (: (let path) (let range)) (source-location-table/review a ctx)
       (display-all! w path ":" range))))
 
-(export SourceLocationTable source-location-table/_)
 (data SourceLocationTable
   (source-location-table: (InternTable Path) (OrdMap (Interned Path) (InternTable LocationRange))))
 
@@ -88,7 +89,6 @@
           [reviewed-range (intern-table/review range (option/force (ord-map/get? path range-tables)))])
       (: reviewed-path reviewed-range))))
 
-(export SourceLocator source-locator/_)
 (value-data SourceLocator
   (source-locator: (Interned Path) (InternTable LocationRange)))
 

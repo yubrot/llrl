@@ -1,0 +1,50 @@
+(import "~/sexp" _)
+(println! "llrl1/tests/sexp")
+
+(import "~/source-location" _)
+
+(let* ([l (source-locator/issue! default (source-locator/temporary))]
+       [(s rep) (s: l rep)]
+       [(cons a b) (s (s-rep:cons a b))]
+       [nil (s s-rep:nil)]
+       [(ss syntax-sugar) (s/from-syntax-sugar l syntax-sugar)])
+
+  (assert (s/proper-list? nil))
+  (assert (s/proper-list? (cons (s (s-rep:bool #t)) nil)))
+  (assert (s/proper-list? (cons (s (s-rep:bool #t)) (cons (s (s-rep:bool #t)) nil))))
+  (assert (not (s/proper-list? (cons (s (s-rep:bool #t)) (cons (s (s-rep:bool #t)) (s (s-rep:bool #t)))))))
+  (assert (not (s/proper-list? (s (s-rep:bool #t)))))
+
+  (assert-eq? "123" (string (s (s-rep/signed 123))))
+  (assert-eq? "-456789" (string (s (s-rep/signed -456789))))
+  (assert-eq? "-9223372036854775808" (string (s (s-rep/signed -9223372036854775808))))
+  (assert-eq? "9223372036854775807" (string (s (s-rep/signed 9223372036854775807))))
+  (assert-eq? "0" (string (s (s-rep/unsigned 0))))
+  (assert-eq? "18446744073709551615" (string (s (s-rep/unsigned 18446744073709551615))))
+  (assert-eq? "3.1415" (string (s (s-rep:fp-number 3.1415))))
+  (assert-eq? "#\\c" (string (s (s-rep:char #\c))))
+  (assert-eq? "#\\\\n" (string (s (s-rep:char #\\n))))
+  (assert-eq? "hello/world" (string (s (s-rep:symbol "hello/world"))))
+  (assert-eq? "\"Hello, World!\\n\"" (string (s (s-rep:string "Hello, World!\n"))))
+  (assert-eq? "#t" (string (s (s-rep:bool #t))))
+  (assert-eq? "#f" (string (s (s-rep:bool #f))))
+  (assert-eq? "()" (string nil))
+  (assert-eq? "(#t)" (string (cons (s (s-rep:bool #t)) nil)))
+  (assert-eq? "(#t #f)" (string (cons (s (s-rep:bool #t)) (cons (s (s-rep:bool #f)) nil))))
+  (assert-eq? "(#t . #f)" (string (cons (s (s-rep:bool #t)) (s (s-rep:bool #f)))))
+  (assert-eq? "(#t #f . #\\e)" (string (cons (s (s-rep:bool #t)) (cons (s (s-rep:bool #f)) (s (s-rep:char #\e))))))
+  (assert-eq? "'()" (string (ss (syntax-sugar:quote nil))))
+  (assert-eq? "`(#t ,1 ,@(foo 3))" (string
+    (ss (syntax-sugar:quasiquote
+      (cons (s (s-rep:bool #t))
+            (cons (ss (syntax-sugar:unquote
+                    (s (s-rep/signed 1))))
+                  (cons (ss (syntax-sugar:unquote-splicing
+                              (cons (s (s-rep:symbol "foo"))
+                                    (cons (s (s-rep/signed 3))
+                                          nil))))
+                        nil)))))))
+  (assert-eq? "\\foo" (string (ss (syntax-sugar:capture (s (s-rep:symbol "foo"))))))
+  (assert-eq? "(foo bar)?" (string (ss (syntax-sugar:try? (cons (s (s-rep:symbol "foo")) (cons (s (s-rep:symbol "bar")) nil))))))
+  (assert-eq? "(foo bar)!" (string (ss (syntax-sugar:try! (cons (s (s-rep:symbol "foo")) (cons (s (s-rep:symbol "bar")) nil))))))
+  (assert-eq? "1 {2 3}" (string (ss (syntax-sugar:annotate (s (s-rep/signed 1)) (cons (s (s-rep/signed 2)) (cons (s (s-rep/signed 3)) nil)))))))

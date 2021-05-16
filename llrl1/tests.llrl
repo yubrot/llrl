@@ -2,3 +2,4 @@
 (import "~/tests/interning")
 (import "~/tests/path")
 (import "~/tests/source-location")
+(import "~/tests/sexp")

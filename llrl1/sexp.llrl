@@ -1,0 +1,183 @@
+(import "~/util" _)
+(import "~/source-location" SourceLocation _.SourceLocation)
+(export Ss _.Ss ss: ss/_)
+(export S _.S s: s/_)
+(export SRep _.SRep s-rep:_ s-rep/_)
+(export SyntaxSugar _.SyntaxSugar syntax-sugar:_)
+
+; NOTE: Barely avoiding a name conflict with the host's (llrl's own) Sexp-related definitions.
+; Perhaps these host Sexp-related definitions should be renamed and re-exported by a custom prelude for llrl1.
+
+(derive (DebugDisplay) data (Ss A)
+  (ss: SourceLocation (Array (S A))))
+
+(instance Display.Ss (forall A) (Display (Ss A)) (where (Display A))
+  (function (display! w a)
+    (for (: (let i) (let s)) (|> a ss/elems it/with-index)
+      (when (ne? i 0) (display! w "\n")!)
+      (display! w s)!)
+    (ok unit)))
+
+(getter ss: ss/location ss/elems)
+
+(derive (DebugDisplay) data (S A)
+  (s: SourceLocation (SRep A)))
+
+(instance Display.S (forall A) (Display (S A)) (where (Display A))
+  (function (display! w a)
+    (display! w (s/rep a))))
+
+(getter s: s/location s/rep)
+
+(function (s/proper-list? s) {(forall A) (-> (S A) Bool)}
+  (s-rep/proper-list? (s/rep s)))
+
+(function (s/from-syntax-sugar loc syntax-sugar) {(forall A) (-> SourceLocation (SyntaxSugar A) (S A))}
+  (s: loc (s-rep/from-syntax-sugar loc syntax-sugar)))
+
+(derive (DebugDisplay) data (SRep A)
+  (s-rep:integer Bool U64)
+  (s-rep:fp-number F64)
+  (s-rep:symbol String)
+  (s-rep:string String)
+  (s-rep:char Char)
+  (s-rep:cons (S A) (S A))
+  s-rep:nil
+  (s-rep:bool Bool)
+  (s-rep:pure A))
+
+(instance Display.SRep (forall A) (Display (SRep A)) (where (Display A))
+  (function (display! w a)
+    (if-match1 (some (let syntax-sugar)) (s-rep/syntax-sugar? a)
+      (display! w syntax-sugar)
+      (match a
+        [(s-rep:integer #t (let v))
+          (display! w (cast v) {I64})]
+        [(s-rep:integer #f (let v))
+          (display! w v)]
+        [(s-rep:fp-number (let v))
+          (display! w v)]
+        [(s-rep:symbol (let s))
+          (display! w s)]
+        [(s-rep:string (let s))
+          (display! w (debug s))]
+        [(s-rep:char (let c))
+          (display! w "#\\")!
+          (match (char/escape? c)
+            [(some (let s)) (display! w s)]
+            [none (display! w c)])]
+        [(s-rep:cons (let car) (let cdr))
+          (display-all! w "(" car (tail: cdr) ")")]
+        [s-rep:nil
+          (display! w "()")]
+        [(s-rep:bool (let v))
+          (display! w v)]
+        [(s-rep:pure (let v))
+          (display! w v)]))))
+
+(function (s-rep/signed value) {(forall A) (-> I64 (SRep A))}
+  (s-rep:integer #t (cast value)))
+
+(function (s-rep/unsigned value) {(forall A) (-> U64 (SRep A))}
+  (s-rep:integer #f value))
+
+(function (s-rep/proper-list? rep) {(forall A) (-> (SRep A) Bool)}
+  (match rep
+    [(s-rep:cons _ (let cdr)) (s/proper-list? cdr)]
+    [s-rep:nil #t]
+    [_ #f]))
+
+(function (s-rep/from-syntax-sugar loc syntax-sugar) {(forall A) (-> SourceLocation (SyntaxSugar A) (SRep A))}
+  (match syntax-sugar
+    [(syntax-sugar:quote (let s))
+      (s-rep:cons (s: loc (s-rep:symbol "quote")) (s: loc (s-rep:cons s (s: loc s-rep:nil))))]
+    [(syntax-sugar:quasiquote (let s))
+      (s-rep:cons (s: loc (s-rep:symbol "quasiquote")) (s: loc (s-rep:cons s (s: loc s-rep:nil))))]
+    [(syntax-sugar:unquote (let s))
+      (s-rep:cons (s: loc (s-rep:symbol "unquote")) (s: loc (s-rep:cons s (s: loc s-rep:nil))))]
+    [(syntax-sugar:unquote-splicing (let s))
+      (s-rep:cons (s: loc (s-rep:symbol "unquote-splicing")) (s: loc (s-rep:cons s (s: loc s-rep:nil))))]
+    [(syntax-sugar:load (let s))
+      (s-rep:cons (s: loc (s-rep:symbol "load")) (s: loc (s-rep:cons s (s: loc s-rep:nil))))]
+    [(syntax-sugar:capture (let s))
+      (s-rep:cons (s: loc (s-rep:symbol "capture")) (s: loc (s-rep:cons s (s: loc s-rep:nil))))]
+    [(syntax-sugar:try? (let s))
+      (s-rep:cons (s: loc (s-rep:symbol "try?")) (s: loc (s-rep:cons s (s: loc s-rep:nil))))]
+    [(syntax-sugar:try! (let s))
+      (s-rep:cons (s: loc (s-rep:symbol "try!")) (s: loc (s-rep:cons s (s: loc s-rep:nil))))]
+    [(syntax-sugar:annotate (let a) (let b))
+      (s-rep:cons (s: loc (s-rep:symbol "annotate")) (s: loc (s-rep:cons a b)))]))
+
+(function (s-rep/syntax-sugar? rep) {(forall A) (-> (SRep A) (Option (SyntaxSugar A)))}
+  (match rep
+    [(s-rep:cons (s: _ (s-rep:symbol "quote")) (s: _ (s-rep:cons (let s) (s: _ s-rep:nil))))
+      (some (syntax-sugar:quote s))]
+    [(s-rep:cons (s: _ (s-rep:symbol "quasiquote")) (s: _ (s-rep:cons (let s) (s: _ s-rep:nil))))
+      (some (syntax-sugar:quasiquote s))]
+    [(s-rep:cons (s: _ (s-rep:symbol "unquote")) (s: _ (s-rep:cons (let s) (s: _ s-rep:nil))))
+      (some (syntax-sugar:unquote s))]
+    [(s-rep:cons (s: _ (s-rep:symbol "unquote-splicing")) (s: _ (s-rep:cons (let s) (s: _ s-rep:nil))))
+      (some (syntax-sugar:unquote-splicing s))]
+    [(s-rep:cons (s: _ (s-rep:symbol "load")) (s: _ (s-rep:cons (let s) (s: _ s-rep:nil))))
+      (some (syntax-sugar:load s))]
+    [(s-rep:cons (s: _ (s-rep:symbol "capture")) (s: _ (s-rep:cons (let s) (s: _ s-rep:nil))))
+      (some (syntax-sugar:capture s))]
+    [(s-rep:cons (s: _ (s-rep:symbol "try?")) (s: _ (s-rep:cons (let s) (s: _ s-rep:nil))))
+      (some (syntax-sugar:try? s))]
+    [(s-rep:cons (s: _ (s-rep:symbol "try!")) (s: _ (s-rep:cons (let s) (s: _ s-rep:nil))))
+      (some (syntax-sugar:try! s))]
+    [(s-rep:cons (s: _ (s-rep:symbol "annotate")) (s: _ (s-rep:cons (let a) (let b))))
+      (if (s/proper-list? b)
+        (some (syntax-sugar:annotate a b))
+        none)]
+    [_
+      none]))
+
+(derive (DebugDisplay) value-data (SyntaxSugar A)
+  (syntax-sugar:quote (S A))
+  (syntax-sugar:quasiquote (S A))
+  (syntax-sugar:unquote (S A))
+  (syntax-sugar:unquote-splicing (S A))
+  (syntax-sugar:load (S A))
+  (syntax-sugar:capture (S A))
+  (syntax-sugar:try? (S A))
+  (syntax-sugar:try! (S A))
+  (syntax-sugar:annotate (S A) (S A)))
+
+(instance Display.SyntaxSugar (forall A) (Display (SyntaxSugar A)) (where (Display A))
+  (function (display! w a)
+    (match a
+      [(syntax-sugar:quote (let s))
+        (display-all! w "'" s)]
+      [(syntax-sugar:quasiquote (let s))
+        (display-all! w "`" s)]
+      [(syntax-sugar:unquote (let s))
+        (display-all! w "," s)]
+      [(syntax-sugar:unquote-splicing (let s))
+        (display-all! w ",@" s)]
+      [(syntax-sugar:load (let s))
+        (display-all! w "~" s)]
+      [(syntax-sugar:capture (let s))
+        (display-all! w "\\" s)]
+      [(syntax-sugar:try? (let s))
+        (display-all! w s "?")]
+      [(syntax-sugar:try! (let s))
+        (display-all! w s "!")]
+      [(syntax-sugar:annotate (let s) (s: _ (s-rep:cons (let car) (let cdr))))
+        (display-all! w s " {" car (tail: cdr) "}")]
+      [(syntax-sugar:annotate (let s) (let nil))
+        ; (assert-is? (s: _ s-rep:nil) nil)
+        (display-all! w s " {}")])))
+
+(value-data (Tail A)
+  (tail: (S A)))
+
+(instance Display.Tail (forall A) (Display (Tail A)) (where (Display A))
+  (function (display! w a)
+    (match a
+      [(tail: (s: _ (s-rep:cons (let car) (let cdr))))
+        (display-all! w " " car (tail: cdr))]
+      [(tail: (s: _ s-rep:nil))
+        (ok unit)]
+      [(tail: (let s))
+        (display-all! w " . " s)])))
