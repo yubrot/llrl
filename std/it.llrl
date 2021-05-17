@@ -109,6 +109,29 @@
         (set! index (- ~index 1)))
       (iterator/next! it)))))
 
+(function (it/take-while f it) {(forall T A) (-> (-> A Bool) (T A) (Iterator A)) (where (Iterate T))}
+  (let ([it (iterate it)]
+        [invalidated? (ref #f)])
+    (iterator/new (lambda ()
+      (when ~invalidated? (return none))
+      (if-match1 (some (let a)) (iterator/next! it)
+        (if (f a)
+          (some a)
+          (begin
+            (set! invalidated? #t)
+            none))
+        none)))))
+
+(function (it/skip-while f it) {(forall T A) (-> (-> A Bool) (T A) (Iterator A)) (where (Iterate T))}
+  (let ([it (iterate it)]
+        [activated? (ref #f)])
+    (iterator/new (lambda ()
+      (when (not ~activated?)
+        (set! activated? #t)
+        (while-match1 (some (let a)) (iterator/next! it)
+          (when (not (f a)) (return (some a)))))
+      (iterator/next! it)))))
+
 (function (it/flat-map f it) {(forall T S A B) (-> (-> A (S B)) (T A) (Iterator B)) (where (Iterate T) (Iterate S))}
   (let1 s (ref (flat-map: f (iterate it) none))
     (iterator/new [^0 (flat-map/next! s)])))
