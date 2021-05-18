@@ -14,10 +14,53 @@
 (assert-is? (: 2 4)
   ([^4 (: %2 %4)] 1 2 3 4))
 
+(let* ([c (ref 0)]
+       [(f)
+         (loop
+           (when (eq? ~c 3) (return #t))
+           (set! c (+ ~c 1)))])
+  (assert (f)))
+
+(let ([(f a b) (cond [a 0] [b 1] [else 2])])
+  (assert-is? 2 (f #f #f))
+  (assert-is? 0 (f #t #f))
+  (assert-is? 1 (f #f #t))
+  (assert-is? 0 (f #t #t)))
+
+(let ([(f a b) (cond? [a 0] [b 1])])
+  (assert-is? none (f #f #f))
+  (assert-is? (some 0) (f #t #f))
+  (assert-is? (some 1) (f #f #t))
+  (assert-is? (some 0) (f #t #t)))
+
+(let ([(f a b)
+        (cond
+          [when (eq? a b) 3]
+          [when-match ([(some (let a)) a] [(some (let b)) b]) (+ a b)]
+          [when-match1 (some (let a)) a a]
+          [else 0])])
+  (assert-is? 3 (f (some 1) (some 1)))
+  (assert-is? 5 (f (some 2) (some 3)))
+  (assert-is? 0 (f none (some 2)))
+  (assert-is? 1 (f (some 1) none)))
+
+(let ([(f a b)
+        (cond?
+          [when (eq? a b) 3]
+          [when-match ([(some (let a)) a] [(some (let b)) b]) (+ a b)]
+          [when-match1 (some (let a)) a a])])
+  (assert-is? (some 3) (f (some 1) (some 1)))
+  (assert-is? (some 5) (f (some 2) (some 3)))
+  (assert-is? none (f none (some 2)))
+  (assert-is? (some 1) (f (some 1) none)))
+
 (let* ([a #t]
        [b (not a)]
        [c (not b)])
   (assert c))
+
+(let1 a #t
+  (assert a))
 
 (let ([f (case [1 2] [2 3] [_ 1])])
   (assert-is? (: 2 3 1)
@@ -27,12 +70,6 @@
        [(: (let x) _) x])
   (assert-is? 3 x))
 
-(let ([(f a b) (cond [a 0] [b 1] [else 2])])
-  (assert-is? 2 (f #f #f))
-  (assert-is? 0 (f #t #f))
-  (assert-is? 1 (f #f #t))
-  (assert-is? 0 (f #t #t)))
-
 (let ([(f x)
          (if-match ([(some (let x)) x]
                     [(some (let x)) x])
@@ -40,13 +77,6 @@
            #f)])
   (assert-is? (: #f #f #t)
     (: (f none) (f (some none)) (f (some (some #t))))))
-
-(let* ([c (ref 0)]
-       [(f)
-         (loop
-           (when (eq? ~c 3) (return #t))
-           (set! c (+ ~c 1)))])
-  (assert (f)))
 
 (let ([(counter x)
         (let ([x (ref x)])
@@ -73,9 +103,6 @@
     (assert-eq? ~accum 3)
     (f (some 5))
     (assert-eq? ~accum 8)))
-
-(let1 a #t
-  (assert a))
 
 (let ([f (case1 (: (let a) (let b)) (+ a b))])
   (assert-eq? 5 (f (: 2 3))))
@@ -125,12 +152,6 @@
            x)])
   (assert-is? (: none none (some #t))
     (: (f none) (f (some none)) (f (some (some #t))))))
-
-(let ([(f a b) (cond? [a 0] [b 1])])
-  (assert-is? none (f #f #f))
-  (assert-is? (some 0) (f #t #f))
-  (assert-is? (some 1) (f #f #t))
-  (assert-is? (some 0) (f #t #t)))
 
 (let ([f (case1? 1 2)])
   (assert-is? (: (some 2) none none)

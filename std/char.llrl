@@ -29,8 +29,17 @@
     [#\\t (some "\\t")]
     [#\\r (some "\\r")]
     [#\\n (some "\\n")]
-    [#\\" (some "\\\"")]
+    [#\" (some "\\\"")]
     [#\\\ (some "\\\\")]
+    [_ none]))
+
+(function (char/unescape? c) {(-> Char (Option Char))}
+  (match c
+    [#\t (some #\\t)]
+    [#\r (some #\\r)]
+    [#\n (some #\\n)]
+    [#\" (some #\")]
+    [#\\\ (some #\\\)]
     [_ none]))
 
 (function (char/utf-8-length c) {(-> Char U64)}

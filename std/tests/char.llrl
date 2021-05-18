@@ -15,6 +15,17 @@
 (assert (char/ascii? #\\n))
 (assert (not (char/ascii? #\星)))
 
+(assert-eq? (some "\\n") (char/escape? #\\n))
+(assert-eq? (some "\\\"") (char/escape? #\\"))
+(assert-eq? (some "\\\\") (char/escape? #\\\))
+(assert-eq? none (char/escape? #\n))
+
+(assert-eq? (some #\\t) (char/unescape? #\t))
+(assert-eq? (some #\\n) (char/unescape? #\n))
+(assert-eq? (some #\") (char/unescape? #\"))
+(assert-eq? (some #\\\) (char/unescape? #\\\))
+(assert-eq? none (char/unescape? #\a))
+
 (assert-eq? (array 3 4 1 2) (|> (array #\€ #\𐍈 #\C #\¢) (it/map char/utf-8-length) collect))
 
 (assert-eq? (array "€" "𐍈" "C" "¢") (|> (array #\€ #\𐍈 #\C #\¢) (it/map [^1 (string %1)]) collect))
