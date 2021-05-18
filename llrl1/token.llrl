@@ -1,0 +1,110 @@
+(import "~/util" _)
+(import "~/source-location" LocationRange _.LocationRange)
+(export Token _.Token token: token/_ TokenRep _.TokenRep token-rep:_ token-rep/_)
+
+(derive (Eq Ord DebugDisplay Hash) value-data Token
+  (token: LocationRange TokenRep))
+
+(instance Display.Token (Display Token)
+  (function (display! w a)
+    (display! w (token/rep a))))
+
+(getter token: token/range token/rep)
+
+(function (token/ambient? token) {(-> Token Bool)}
+  (|> token token/rep token-rep/ambient?))
+
+(function (token/error? token) {(-> Token Bool)}
+  (|> token token/rep token-rep/error?))
+
+(function (token/eof? token) {(-> Token Bool)}
+  (|> token token/rep token-rep/eof?))
+
+(derive (Eq Ord DebugDisplay Hash) value-data TokenRep
+  (token-rep:signed I64)
+  (token-rep:unsigned U64)
+  (token-rep:fp-number F64)
+  (token-rep:symbol String)
+  (token-rep:string String)
+  (token-rep:char Char)
+
+  token-rep:.
+  token-rep:?
+  token-rep:!
+
+  token-rep:l-paren
+  token-rep:r-paren
+  token-rep:l-brack
+  token-rep:r-brack
+  token-rep:l-brace
+  token-rep:r-brace
+  token-rep:quote
+  token-rep:backquote
+  token-rep:backslash
+  token-rep:tilde
+  token-rep:comma
+  token-rep:comma-at
+  token-rep:true
+  token-rep:false
+
+  token-rep:whitespaces
+  token-rep:line-comment
+
+  token-rep:unterminated-string
+  token-rep:unterminated-char
+  token-rep:unknown-character
+
+  token-rep:eof)
+
+(instance Display.TokenRep (Display TokenRep)
+  (function (display! w a)
+    (match a
+      [(token-rep:signed (let v)) (display! w v)]
+      [(token-rep:unsigned (let v)) (display! w v)]
+      [(token-rep:fp-number (let v)) (display! w v)]
+      [(token-rep:symbol (let s)) (display! w s)]
+      [(token-rep:string (let s)) (display! w (debug s))]
+      [(token-rep:char (let c))
+        (display! w "#\\")!
+        (match (char/escape? c)
+          [(some (let s)) (display! w s)]
+          [none (display! w c)])]
+      [token-rep:. (display! w ".")]
+      [token-rep:? (display! w "?")]
+      [token-rep:! (display! w "!")]
+      [token-rep:l-paren (display! w "(")]
+      [token-rep:r-paren (display! w "(")]
+      [token-rep:l-brack (display! w "[")]
+      [token-rep:r-brack (display! w "]")]
+      [token-rep:l-brace (display! w "{")]
+      [token-rep:r-brace (display! w "}")]
+      [token-rep:quote (display! w "'")]
+      [token-rep:backquote (display! w "`")]
+      [token-rep:backslash (display! w "\\")]
+      [token-rep:tilde (display! w "~")]
+      [token-rep:comma (display! w ",")]
+      [token-rep:comma-at (display! w ",@")]
+      [token-rep:true (display! w "#t")]
+      [token-rep:false (display! w "#f")]
+      [token-rep:whitespaces (display! w "<spaces>")]
+      [token-rep:line-comment (display! w "<comment>")]
+      [token-rep:unterminated-string (display! w "<unterminated string>")]
+      [token-rep:unterminated-char (display! w "<unterminated char>")]
+      [token-rep:unknown-character (display! w "<unknown char>")]
+      [token-rep:eof (display! w "<eof>")])))
+
+(function (token-rep/ambient? rep) {(-> TokenRep Bool)}
+  (match rep
+    [token-rep:whitespaces #t]
+    [token-rep:line-comment #t]
+    [_ #f]))
+
+(function (token-rep/error? rep) {(-> TokenRep Bool)}
+  (match rep
+    [token-rep:unterminated-string #t]
+    [token-rep:unterminated-char #t]
+    [token-rep:unknown-character #t]
+    [_ #f]))
+
+(function (token-rep/eof? rep) {(-> TokenRep Bool)}
+  (is? token-rep:eof rep))

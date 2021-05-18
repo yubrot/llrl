@@ -35,7 +35,7 @@
 (function (s/from-syntax-sugar loc syntax-sugar) {(forall A) (-> SourceLocation (SyntaxSugar A) (S A))}
   (s: loc (s-rep/from-syntax-sugar loc syntax-sugar)))
 
-(derive (DebugDisplay) data (SRep A)
+(derive (DebugDisplay) value-data (SRep A)
   (s-rep:integer Bool U64)
   (s-rep:fp-number F64)
   (s-rep:symbol String)
@@ -106,6 +106,7 @@
     [(syntax-sugar:try! (let s))
       (s-rep:cons (s: loc (s-rep:symbol "try!")) (s: loc (s-rep:cons s (s: loc s-rep:nil))))]
     [(syntax-sugar:annotate (let a) (let b))
+      ; (assert-is? (s: _ s-rep:nil) b)
       (s-rep:cons (s: loc (s-rep:symbol "annotate")) (s: loc (s-rep:cons a b)))]))
 
 (function (s-rep/syntax-sugar? rep) {(forall A) (-> (SRep A) (Option (SyntaxSugar A)))}
@@ -166,7 +167,6 @@
       [(syntax-sugar:annotate (let s) (s: _ (s-rep:cons (let car) (let cdr))))
         (display-all! w s " {" car (tail: cdr) "}")]
       [(syntax-sugar:annotate (let s) (let nil))
-        ; (assert-is? (s: _ s-rep:nil) nil)
         (display-all! w s " {}")])))
 
 (value-data (Tail A)

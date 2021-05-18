@@ -1,0 +1,72 @@
+(import "~/lexer" [lexer/lex lex])
+(import "~/source-location" location/_ location-range/_)
+(import "~/token" token: _.TokenRep [:_ token-rep:_])
+(println! "llrl1/tests/lexer")
+
+(function (lex s)
+  (|> s
+      lexer/lex
+      (it/map (case1 (token: (let r) (let rep))
+        (: (|> r location-range/start location/offset)
+           (|> r location-range/end location/offset)
+           rep)))
+      collect))
+
+(assert-eq? (lex "") (array))
+
+(assert-eq? (lex "  \t  \r\n \n") (array (: 0 9 :whitespaces)))
+
+(assert-eq? (lex "; hello\n;world \n") (array
+  (: 0 8 :line-comment)
+  (: 8 16 :line-comment)))
+
+(assert-eq? (lex "12 3a b-4 cd5e -6  7.8 .a .") (array
+  (: 0 2 (:unsigned 12))
+  (: 2 3 :whitespaces)
+  (: 3 5 (:symbol "3a"))
+  (: 5 6 :whitespaces)
+  (: 6 9 (:symbol "b-4"))
+  (: 9 10 :whitespaces)
+  (: 10 14 (:symbol "cd5e"))
+  (: 14 15 :whitespaces)
+  (: 15 17 (:signed -6))
+  (: 17 19 :whitespaces)
+  (: 19 22 (:fp-number 7.8))
+  (: 22 23 :whitespaces)
+  (: 23 25 (:symbol ".a"))
+  (: 25 26 :whitespaces)
+  (: 26 27 :.)))
+
+(assert-eq? (lex "[)=,@,`'(]{}\\~") (array
+  (: 0 1 :l-brack)
+  (: 1 2 :r-paren)
+  (: 2 3 (:symbol "="))
+  (: 3 5 :comma-at)
+  (: 5 6 :comma)
+  (: 6 7 :backquote)
+  (: 7 8 :quote)
+  (: 8 9 :l-paren)
+  (: 9 10 :r-brack)
+  (: 10 11 :l-brace)
+  (: 11 12 :r-brace)
+  (: 12 13 :backslash)
+  (: 13 14 :tilde)))
+
+(assert-eq? (lex "#t\"Hello, World!\\n\"#f") (array
+  (: 0 2 :true)
+  (: 2 19 (:string "Hello, World!\n"))
+  (: 19 21 :false)))
+
+(assert-eq? (lex "#\\a#\\b#\\\\n#\\話") (array
+  (: 0 3 (:char #\a))
+  (: 3 6 (:char #\b))
+  (: 6 10 (:char #\\n))
+  (: 10 15 (:char #\話))))
+
+(assert-eq? (lex "\"hello") (array (: 0 6 :unterminated-string)))
+(assert-eq? (lex "\"hello\\") (array (: 0 7 :unterminated-string)))
+(assert-eq? (lex "@") (array (: 0 1 :unknown-character)))
+(assert-eq? (lex "日本語") (array
+  (: 0 3 :unknown-character)
+  (: 3 6 :unknown-character)
+  (: 6 9 :unknown-character)))

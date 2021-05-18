@@ -148,7 +148,7 @@ impl<'l, 'a> Eat<'l, 'a> {
         }
     }
 
-    fn eat_str(&mut self, text: &str) -> bool {
+    fn eat_exact(&mut self, text: &str) -> bool {
         if self.current.starts_with(text) {
             self.eat(text.len())
         } else {
@@ -181,9 +181,9 @@ impl<'l, 'a> Eat<'l, 'a> {
     }
 
     fn eat_line_comment(&mut self) -> bool {
-        if self.eat_str(";") {
+        if self.eat_exact(";") {
             self.eat_while(|c| c != '\n');
-            self.eat_str("\n");
+            self.eat_exact("\n");
             true
         } else {
             false
@@ -201,10 +201,10 @@ impl<'l, 'a> Eat<'l, 'a> {
     }
 
     fn eat_string(&mut self) -> Option<bool> {
-        if self.eat_str("\"") {
+        if self.eat_exact("\"") {
             while {
                 self.eat_while(|c| !matches!(c, '"' | '\\'));
-                if self.eat_str("\"") {
+                if self.eat_exact("\"") {
                     return Some(true);
                 }
                 self.eat('\\'.len_utf8()) && self.eat_if(|c| string::unescape_char(c).is_some())
@@ -216,7 +216,7 @@ impl<'l, 'a> Eat<'l, 'a> {
     }
 
     fn eat_char(&mut self) -> Option<bool> {
-        if self.eat_str("#\\") {
+        if self.eat_exact("#\\") {
             Some(
                 self.eat_if(|c| c != '\\')
                     || (self.eat('\\'.len_utf8())
@@ -228,59 +228,59 @@ impl<'l, 'a> Eat<'l, 'a> {
     }
 
     fn eat_lparen(&mut self) -> bool {
-        self.eat_str("(")
+        self.eat_exact("(")
     }
 
     fn eat_rparen(&mut self) -> bool {
-        self.eat_str(")")
+        self.eat_exact(")")
     }
 
     fn eat_lbrack(&mut self) -> bool {
-        self.eat_str("[")
+        self.eat_exact("[")
     }
 
     fn eat_rbrack(&mut self) -> bool {
-        self.eat_str("]")
+        self.eat_exact("]")
     }
 
     fn eat_lbrace(&mut self) -> bool {
-        self.eat_str("{")
+        self.eat_exact("{")
     }
 
     fn eat_rbrace(&mut self) -> bool {
-        self.eat_str("}")
+        self.eat_exact("}")
     }
 
     fn eat_quote(&mut self) -> bool {
-        self.eat_str("'")
+        self.eat_exact("'")
     }
 
     fn eat_backquote(&mut self) -> bool {
-        self.eat_str("`")
+        self.eat_exact("`")
     }
 
     fn eat_backslash(&mut self) -> bool {
-        self.eat_str("\\")
+        self.eat_exact("\\")
     }
 
     fn eat_tilde(&mut self) -> bool {
-        self.eat_str("~")
+        self.eat_exact("~")
     }
 
     fn eat_comma(&mut self) -> bool {
-        self.eat_str(",")
+        self.eat_exact(",")
     }
 
     fn eat_comma_at(&mut self) -> bool {
-        self.eat_str(",@")
+        self.eat_exact(",@")
     }
 
     fn eat_true(&mut self) -> bool {
-        self.eat_str("#t")
+        self.eat_exact("#t")
     }
 
     fn eat_false(&mut self) -> bool {
-        self.eat_str("#f")
+        self.eat_exact("#f")
     }
 }
 

@@ -1,0 +1,201 @@
+(import "std/integer" integer/from-string? Integer._)
+(import "std/float" float/from-string? Float._)
+(import "~/source-location" Location location/_ LocationRange location-range/_)
+(import "~/token" Token token: TokenRep [:_ token-rep:_])
+(export lex)
+
+; Lexical analyzer for llrl.
+(function (lex input) {(-> String (Iterator Token))}
+  (let ([input (ref input)]
+        [location (ref location/init)])
+    (iterator/new (lambda ()
+      (next! (eat: input location (ref ~input) (ref 0)))))))
+
+(function (next! eat) {(-> Eat (Option Token))}
+  (cond?
+    [when (eat-whitespaces! eat)
+      (produce! :whitespaces eat)]
+    [when (eat-line-comment! eat)
+      (produce! :line-comment eat)]
+    [when (eat-id! eat)
+      (produce!*
+        (lambda (s) (cond
+          [when-match1 (some (let num)) (integer/from-string? 10 s)
+            (:unsigned num)]
+          [when-match1 (some (let num)) (integer/from-string? 10 s)
+            (:signed num)]
+          [when-match1 (some (let num)) (float/from-string? s)
+            (:fp-number num)]
+          [when (eq? s ".")
+            :.]
+          [when (eq? s "?")
+            :!]
+          [when (eq? s "!")
+            :?]
+          [else
+            (:symbol s)]))
+        eat)]
+    [when-match1 (some (let terminated?)) (eat-string! eat)
+      (if terminated?
+        (produce!*
+          (lambda (s)
+            (assert (<= 2 (string/length s)))
+            (|> s
+                (string/substring 1 (- (string/length s) 1))
+                unescape-string?
+                option/force
+                :string))
+          eat)
+        (produce! :unterminated-string eat))]
+    [when-match1 (some (let terminated?)) (eat-char! eat)
+      (if terminated?
+        (produce!*
+          (lambda (s)
+            (assert (<= 3 (string/length s)))
+            (|> s
+                (string/skip 2)
+                unescape-char?
+                option/force
+                :char))
+          eat)
+        (produce! :unterminated-char eat))]
+    [when (eat-exact! "(" eat)
+      (produce! :l-paren eat)]
+    [when (eat-exact! ")" eat)
+      (produce! :r-paren eat)]
+    [when (eat-exact! "[" eat)
+      (produce! :l-brack eat)]
+    [when (eat-exact! "]" eat)
+      (produce! :r-brack eat)]
+    [when (eat-exact! "{" eat)
+      (produce! :l-brace eat)]
+    [when (eat-exact! "}" eat)
+      (produce! :r-brace eat)]
+    [when (eat-exact! "'" eat)
+      (produce! :quote eat)]
+    [when (eat-exact! "`" eat)
+      (produce! :backquote eat)]
+    [when (eat-exact! "\\" eat)
+      (produce! :backslash eat)]
+    [when (eat-exact! "~" eat)
+      (produce! :tilde eat)]
+    [when (eat-exact! ",@" eat)
+      (produce! :comma-at eat)]
+    [when (eat-exact! "," eat)
+      (produce! :comma eat)]
+    [when (eat-exact! "#t" eat)
+      (produce! :true eat)]
+    [when (eat-exact! "#f" eat)
+      (produce! :false eat)]
+    [when (eat-if! [^1 #t] eat)
+      (produce! :unknown-character eat)]))
+
+(value-data Eat
+  (eat: (Ref String) (Ref Location) (Ref String) (Ref U64))) ; input location current consumed-len
+
+(function (produce! rep eat) {(-> TokenRep Eat Token)}
+  (produce!* [^1 rep] eat))
+
+(function (produce!* repf eat) {(-> (-> String TokenRep) Eat Token)}
+  (with1 (eat: (let input) (let location) (let current) (let consumed-len)) eat
+    (let* ([consumed (string/take ~consumed-len ~input)]
+           [rest ~current] ; (string/skip ~consumed-len ~input)
+           [start ~location]
+           [end (location/eat consumed start)])
+      (set! input rest)
+      (set! location end)
+      (token: (location-range/new start end) (repf consumed)))))
+
+(function (eof? eat) {(-> Eat Bool)}
+  (with1 (eat: _ _ (let current) _) eat
+    (string/empty? ~current)))
+
+(function (eat! len eat) {(-> U64 Eat Bool)}
+  (with1 (eat: _ _ (let current) (let consumed-len)) eat
+    (if (and (ne? len 0) (<= len (string/length ~current)))
+      (begin
+        (set! current (string/skip len ~current))
+        (set! consumed-len (+ ~consumed-len len))
+        #t)
+      #f)))
+
+(function (eat-exact! s eat) {(-> String Eat Bool)}
+  (with1 (eat: _ _ (let current) _) eat
+    (and (string/starts-with? s ~current) (eat! (string/length s) eat))))
+
+(function (eat-if! f eat) {(-> (-> Char Bool) Eat Bool)}
+  (with1 (eat: _ _ (let current) _) eat
+    (if-match1 (some (let ch)) (iterator/next! (string/chars ~current))
+      (and (f ch) (eat! (char/utf-8-length ch) eat))
+      #f)))
+
+(function (eat-while! f eat) {(-> (-> Char Bool) Eat Bool)}
+  (with1 (eat: _ _ (let current) _) eat
+    (let1 consumed-len (|> ~current string/chars (it/take-while f) (it/map char/utf-8-length) it/sum)
+      (eat! consumed-len eat))))
+
+(function (eat-whitespaces! eat) {(-> Eat Bool)}
+  (eat-while! (case [#\  #t] [#\\t #t] [#\\r #t] [#\\n #t] [_ #f]) eat))
+
+(function (eat-line-comment! eat) {(-> Eat Bool)}
+  (if (eat-exact! ";" eat)
+    (begin
+      (eat-while! (case [#\\n #f] [_ #t]) eat)
+      (eat-exact! "\n" eat)
+      #t)
+    #f))
+
+(function (eat-id! eat) {(-> Eat Bool)}
+  (eat-while!
+    (lambda (c)
+      (let1 c (char/unicode-scalar c)
+        ;   !          $ % &        * +          - . / 0-9 :  < = > ?
+        (or (eq? c 33) (<= 36 c 38) (<= 42 c 43) (<= 45 c 58) (<= 60 c 63)
+        ;   A-Z          ^ _          a-z           |
+            (<= 65 c 90) (<= 94 c 95) (<= 97 c 122) (eq? c 124))))
+      eat))
+
+(function (eat-string! eat) {(-> Eat (Option Bool))}
+  (when? (eat-exact! "\"" eat)
+    (loop
+      (eat-while! (case [#\" #f] [#\\\ #f] [_ #t]) eat)
+      (cond
+        [when-match1 (some (let valid?)) (eat-escape-sequence! eat)
+          (when (not valid?) (return (some #f)))]
+        [when (eat-exact! "\"" eat)
+          (return (some #t))]
+        [else
+          (return (some #f))]))))
+
+(function (eat-char! eat) {(-> Eat (Option Bool))}
+  (when? (eat-exact! "#\\" eat)
+    (cond
+      [when-match1 (some (let valid?)) (eat-escape-sequence! eat)
+        valid?]
+      [when (eat-if! [^1 (ne? #\\\ %1)] eat)
+        #t]
+      [else
+        #f])))
+
+(function (eat-escape-sequence! eat) {(-> Eat (Option Bool))}
+  (when? (eat-exact! "\\" eat)
+    (eat-if! [^1 (is? (some _) (char/unescape? %1))] eat)))
+
+(function (unescape-string? s) {(-> String (Option String))}
+  (let ([buf text/empty]
+        [unescape-next? (ref #f)])
+    (for (let c) (string/chars s)
+      (if ~unescape-next?
+        (begin
+          (set! unescape-next? #f)
+          (text/put! (char/unescape? c)? buf))
+        (match c
+          [#\\\ (set! unescape-next? #t)]
+          [_ (text/put! c buf)])))
+    (when? (not ~unescape-next?) (text/consume-all! buf))))
+
+(function (unescape-char? s) {(-> String (Option Char))}
+  (let1 it (string/chars s)
+    (match (iterator/next! it)?
+      [#\\\ (char/unescape? (iterator/next! it)?)]
+      [(let c) (some c)])))

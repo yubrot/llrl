@@ -19,6 +19,9 @@
                   location/line       ; Zero-based, line position of the string.
                   location/character) ; Zero-based, in bytes offset on a line of the string.
 
+(function location/init {Location}
+  default)
+
 (function (location/eat s location) {(-> String Location Location)}
   (with1 (location: (let offset) (let line) (let character)) location
     (let ([offset (+ offset (cast (string/length s)))]
