@@ -31,7 +31,6 @@ impl fmt::Display for ModuleId {
 }
 
 /// A globally unique identifier of the node in the module.
-#[derive(Debug)]
 pub struct NodeId<T: ?Sized>(u64, PhantomData<T>);
 
 impl<T: ?Sized> NodeId<T> {
@@ -77,6 +76,17 @@ impl<T: ?Sized> PartialOrd for NodeId<T> {
 impl<T: ?Sized> Ord for NodeId<T> {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.0.cmp(&other.0)
+    }
+}
+
+impl<T: ?Sized> fmt::Debug for NodeId<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "NodeId::new_unchecked({:?}, {:?})",
+            self.module(),
+            self.index_in_module()
+        )
     }
 }
 

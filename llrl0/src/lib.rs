@@ -1,7 +1,7 @@
 pub mod formatting;
-pub mod graph;
 pub mod interning;
 pub mod string;
+pub mod topological_sort;
 
 pub mod path;
 

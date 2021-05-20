@@ -1,6 +1,6 @@
 use super::*;
 use crate::formatting::ContextualDisplay;
-use crate::graph;
+use crate::topological_sort;
 use if_chain::if_chain;
 use std::convert::TryFrom;
 use std::fmt;
@@ -94,7 +94,7 @@ impl Dfs for Type {
     }
 }
 
-impl<'a> graph::DependencyList<NodeId<DataTypeCon>> for Type {
+impl<'a> topological_sort::DependencyList<NodeId<DataTypeCon>> for Type {
     fn traverse_dependencies(&self, f: &mut impl FnMut(&NodeId<DataTypeCon>)) {
         self.dfs_do(|ty| match ty {
             Type::Con(TypeCon::Data(id)) => f(id),
@@ -393,7 +393,7 @@ impl Constraint {
     }
 }
 
-impl<'a> graph::DependencyList<NodeId<ClassCon>> for Constraint {
+impl<'a> topological_sort::DependencyList<NodeId<ClassCon>> for Constraint {
     fn traverse_dependencies(&self, f: &mut impl FnMut(&NodeId<ClassCon>)) {
         let ConstraintRep::Class(ref class, _) = self.rep;
         f(class.get_resolved())

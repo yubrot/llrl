@@ -1,5 +1,5 @@
 use super::*;
-use crate::graph;
+use crate::topological_sort;
 use itertools::Itertools;
 
 #[derive(Debug, Clone)]
@@ -11,7 +11,7 @@ pub struct Function {
     pub body: Expr,
 }
 
-impl<'a> graph::DependencyList<NodeId<Function>> for Function {
+impl<'a> topological_sort::DependencyList<NodeId<Function>> for Function {
     fn traverse_dependencies(&self, f: &mut impl FnMut(&NodeId<Function>)) {
         self.body.traverse_dependencies(f);
     }
@@ -134,7 +134,7 @@ impl<'a> DataType<'a> {
     }
 }
 
-impl<'a> graph::DependencyList<NodeId<DataTypeCon>> for DataType<'a> {
+impl<'a> topological_sort::DependencyList<NodeId<DataTypeCon>> for DataType<'a> {
     fn traverse_dependencies(&self, f: &mut impl FnMut(&NodeId<DataTypeCon>)) {
         for field in self.fields_on_every_value_cons() {
             field.ty.traverse_dependencies(f);
@@ -245,7 +245,7 @@ impl Generic for ClassCon {
     }
 }
 
-impl<'a> graph::DependencyList<NodeId<ClassCon>> for ClassCon {
+impl<'a> topological_sort::DependencyList<NodeId<ClassCon>> for ClassCon {
     fn traverse_dependencies(&self, f: &mut impl FnMut(&NodeId<ClassCon>)) {
         for c in self.superclasses.iter() {
             c.traverse_dependencies(f);
@@ -334,7 +334,7 @@ impl<'a> Class<'a> {
     }
 }
 
-impl<'a> graph::DependencyList<NodeId<ClassCon>> for Class<'a> {
+impl<'a> topological_sort::DependencyList<NodeId<ClassCon>> for Class<'a> {
     fn traverse_dependencies(&self, f: &mut impl FnMut(&NodeId<ClassCon>)) {
         for c in self.constraints_on_interface() {
             c.traverse_dependencies(f);

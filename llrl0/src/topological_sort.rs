@@ -1,8 +1,5 @@
-use smallvec::{smallvec, SmallVec};
-use std::cell::RefCell;
+use smallvec::SmallVec;
 use std::collections::BTreeMap;
-
-// TODO: Probably inefficient, replace with an algorithm to calculate SCC
 
 /// An enumeration of the dependencies of a value. Used in topological sorting.
 pub trait DependencyList<K> {
@@ -16,122 +13,83 @@ impl<'a, T: DependencyList<K>, K> DependencyList<K> for &'a T {
 }
 
 /// Perform a topological sort.
-pub fn topological_sort<K: Ord, V: DependencyList<K>>(
+pub fn run<K: Ord, V: DependencyList<K>>(
     data: impl IntoIterator<Item = (K, V)>,
 ) -> Vec<SmallVec<[V; 1]>> {
-    let state = TopologicalSort {
-        map: data
-            .into_iter()
-            .map(|(k, v)| (k, RefCell::new(Marked::None(v))))
-            .collect(),
+    let data = data.into_iter();
+    let size = data.size_hint().0;
+
+    let mut state = State {
+        keys: BTreeMap::new(),
+        indices: Vec::with_capacity(size),
+        lowlinks: Vec::with_capacity(size),
+        scc_indices: Vec::with_capacity(size),
+        next_index: 0,
+        next_scc_index: 0,
+        stack: Vec::new(),
     };
-    let mut result = Vec::new();
-    for key in state.map.keys() {
-        state.visit(key, 0, &mut result);
+    let mut values = Vec::with_capacity(size);
+
+    for (i, (k, v)) in data.enumerate() {
+        state.keys.insert(k, i);
+        values.push(v);
+        state.indices.push(-1);
+        state.lowlinks.push(-1);
+        state.scc_indices.push(-1);
     }
+    let size = state.keys.len();
+    for i in 0..size {
+        if state.indices[i] < 0 {
+            state.visit(i, &values);
+        }
+    }
+
+    let scc_size = state.next_scc_index as usize;
+    let mut result = Vec::with_capacity(scc_size);
+    result.resize_with(scc_size, SmallVec::new);
+
+    for (value, scc_index) in values.into_iter().zip(state.scc_indices) {
+        result[scc_index as usize].push(value);
+    }
+
     result
 }
 
-type Depth = u32;
-
-enum Marked<V> {
-    None(V),
-    Temporary(Depth, V),
-    Permanent,
+struct State<K> {
+    keys: BTreeMap<K, usize>,
+    indices: Vec<isize>,
+    lowlinks: Vec<isize>,
+    scc_indices: Vec<isize>,
+    next_index: isize,
+    next_scc_index: isize,
+    stack: Vec<usize>,
 }
 
-impl<V> Marked<V> {
-    fn mark_as_temporary(&mut self, depth: Depth) {
-        match self {
-            Self::None(v) => unsafe {
-                let v = std::ptr::read(v);
-                std::ptr::write(self, Self::Temporary(depth, v));
-            },
-            _ => panic!("mark_as_temporary must be called on Marked::None"),
-        }
-    }
+impl<K: Ord> State<K> {
+    fn visit<V: DependencyList<K>>(&mut self, i: usize, values: &Vec<V>) {
+        self.indices[i] = self.next_index;
+        self.lowlinks[i] = self.next_index;
+        self.stack.push(i);
+        self.next_index += 1;
 
-    fn mark_as_permanent(&mut self) -> V {
-        match self {
-            Self::Temporary(_, v) => unsafe {
-                let v = std::ptr::read(v);
-                std::ptr::write(self, Self::Permanent);
-                v
-            },
-            _ => panic!("mark_as_permanent must be called on Marked::Temporary"),
-        }
-    }
-}
-
-enum Cycle<V> {
-    Acyclic,
-    Cyclic(Depth, SmallVec<[V; 1]>),
-}
-
-impl<V> Cycle<V> {
-    fn merge(&mut self, other: Cycle<V>) {
-        match self {
-            Cycle::Acyclic => *self = other,
-            Cycle::Cyclic(depth, vs) => match other {
-                Cycle::Acyclic => {}
-                Cycle::Cyclic(d, mut v) => {
-                    *depth = std::cmp::min(*depth, d);
-                    vs.append(&mut v);
+        values[i].traverse_dependencies(&mut |k| {
+            if let Some(j) = self.keys.get(k).copied() {
+                if self.indices[j] < 0 {
+                    self.visit(j, values);
+                    self.lowlinks[i] = self.lowlinks[i].min(self.lowlinks[j]);
+                } else if self.scc_indices[j] < 0 {
+                    self.lowlinks[i] = self.lowlinks[i].min(self.indices[j]);
                 }
-            },
-        }
-    }
-}
-
-impl<K, V: DependencyList<K>> DependencyList<K> for Marked<V> {
-    fn traverse_dependencies(&self, f: &mut impl FnMut(&K)) {
-        match self {
-            Marked::Temporary(_, v) => v.traverse_dependencies(f),
-            _ => panic!("dependency_list"),
-        }
-    }
-}
-
-struct TopologicalSort<K, V> {
-    map: BTreeMap<K, RefCell<Marked<V>>>,
-}
-
-impl<K: Ord, V: DependencyList<K>> TopologicalSort<K, V> {
-    fn visit(&self, key: &K, depth: Depth, result: &mut Vec<SmallVec<[V; 1]>>) -> Cycle<V> {
-        let cell = match self.map.get(key) {
-            Some(cell) => cell,
-            None => return Cycle::Acyclic,
-        };
-
-        match *cell.borrow() {
-            Marked::None(_) => {}
-            Marked::Temporary(d, _) => return Cycle::Cyclic(d, SmallVec::new()),
-            Marked::Permanent => return Cycle::Acyclic,
-        }
-
-        cell.borrow_mut().mark_as_temporary(depth);
-
-        let mut cycle = Cycle::Acyclic;
-        cell.borrow().traverse_dependencies(&mut |key| {
-            cycle.merge(self.visit(key, depth + 1, result));
+            }
         });
 
-        let value = cell.borrow_mut().mark_as_permanent();
-
-        match cycle {
-            Cycle::Acyclic => {
-                result.push(smallvec![value]);
-                Cycle::Acyclic
-            }
-            Cycle::Cyclic(d, mut vs) => {
-                vs.push(value);
-                if d < depth {
-                    Cycle::Cyclic(d, vs)
-                } else {
-                    result.push(vs);
-                    Cycle::Acyclic
-                }
-            }
+        if self.indices[i] == self.lowlinks[i] {
+            while {
+                let j = self.stack.pop().unwrap();
+                self.scc_indices[j] = self.next_scc_index;
+                j != i
+            } {}
+            self.next_scc_index += 1;
         }
     }
 }
@@ -163,8 +121,7 @@ mod tests {
 
     fn random_graph(ns: &[(i32, &[i32])]) -> Vec<Vec<Node>> {
         match ns {
-            [] => Vec::new(),
-            [n] => vec![random_node(n).collect()],
+            [] => vec![Vec::new()],
             [n, ns @ ..] => random_node(n)
                 .flat_map(|item| {
                     random_graph(ns).into_iter().map(move |mut items| {
@@ -177,7 +134,7 @@ mod tests {
     }
 
     fn run_sort(items: Vec<Node>) -> String {
-        let result = topological_sort(items.into_iter().map(|node| (node.name, node)));
+        let result = run(items.into_iter().map(|node| (node.name, node)));
         result
             .into_iter()
             .map(|nodes| {
@@ -201,7 +158,7 @@ mod tests {
     }
 
     #[test]
-    fn test_topological_sort() {
+    fn test_run() {
         assert_sort!([], "");
 
         assert_sort!([(0, &[])], "0");

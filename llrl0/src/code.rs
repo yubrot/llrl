@@ -1,10 +1,10 @@
-use crate::graph;
 use crate::lexer::Lexer;
 use crate::parser::parse;
 use crate::path::Path;
 use crate::sexp::Ss;
 use crate::source_loc::SourceLocator;
 use crate::syntax;
+use crate::topological_sort;
 use std::collections::HashMap;
 
 mod collector;
@@ -107,7 +107,7 @@ impl Code {
     }
 }
 
-impl graph::DependencyList<Path> for Code {
+impl topological_sort::DependencyList<Path> for Code {
     fn traverse_dependencies(&self, f: &mut impl FnMut(&Path)) {
         self.dependencies.values().for_each(f);
     }

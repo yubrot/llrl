@@ -1,6 +1,6 @@
 use super::{Error, External, InferredKinds, Module, ModuleId, Result};
 use crate::ast::{self, Dfs as _};
-use crate::graph;
+use crate::topological_sort;
 use crate::unification::kind as u;
 use std::collections::HashMap;
 
@@ -158,7 +158,7 @@ impl<'a, E: External> Infer<ast::Root> for Context<'a, E> {
             self.infer(builtin_type.con)?;
         }
 
-        for group in graph::topological_sort(target.data_types().map(|ty| (ty.con.id, ty))) {
+        for group in topological_sort::run(target.data_types().map(|ty| (ty.con.id, ty))) {
             self.infer(group.as_slice())?;
         }
 
@@ -168,7 +168,7 @@ impl<'a, E: External> Infer<ast::Root> for Context<'a, E> {
             }
         }
 
-        for group in graph::topological_sort(target.classes().map(|cls| (cls.con.id, cls))) {
+        for group in topological_sort::run(target.classes().map(|cls| (cls.con.id, cls))) {
             self.infer(group.as_slice())?;
         }
 

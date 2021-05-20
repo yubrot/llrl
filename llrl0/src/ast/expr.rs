@@ -1,6 +1,6 @@
 use super::*;
 use crate::formatting::ContextualDisplay;
-use crate::graph;
+use crate::topological_sort;
 use either::*;
 use std::convert::TryFrom;
 use std::fmt;
@@ -131,7 +131,7 @@ impl<'a> Dfs for ExprDfsSameLevel<'a> {
     }
 }
 
-impl<'a> graph::DependencyList<NodeId<Function>> for Expr {
+impl<'a> topological_sort::DependencyList<NodeId<Function>> for Expr {
     fn traverse_dependencies(&self, f: &mut impl FnMut(&NodeId<Function>)) {
         self.dfs_do(|e| match e.rep {
             ExprRep::Use(Use::Resolved(Value::Function(id), _)) => f(&id),
@@ -140,7 +140,7 @@ impl<'a> graph::DependencyList<NodeId<Function>> for Expr {
     }
 }
 
-impl<'a> graph::DependencyList<NodeId<LocalFunction>> for Expr {
+impl<'a> topological_sort::DependencyList<NodeId<LocalFunction>> for Expr {
     fn traverse_dependencies(&self, f: &mut impl FnMut(&NodeId<LocalFunction>)) {
         self.dfs_do(|e| match e.rep {
             ExprRep::Use(Use::Resolved(Value::LocalFunction(id), _)) => f(&id),
@@ -444,7 +444,7 @@ pub struct LocalFunction {
     pub body: Expr,
 }
 
-impl<'a> graph::DependencyList<NodeId<LocalFunction>> for LocalFunction {
+impl<'a> topological_sort::DependencyList<NodeId<LocalFunction>> for LocalFunction {
     fn traverse_dependencies(&self, f: &mut impl FnMut(&NodeId<LocalFunction>)) {
         self.body.traverse_dependencies(f);
     }

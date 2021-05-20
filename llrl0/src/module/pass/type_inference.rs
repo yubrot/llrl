@@ -3,7 +3,7 @@ use super::{
     TextualInformation,
 };
 use crate::ast::{self, Dfs as _};
-use crate::graph;
+use crate::topological_sort;
 use derive_new::new;
 use either::*;
 use if_chain::if_chain;
@@ -491,7 +491,7 @@ impl<'a, E: External> Context<'a, E> {
         &mut self,
         classes: &HashMap<ast::NodeId<ast::ClassCon>, ast::ClassCon>,
     ) -> Result<()> {
-        for group in graph::topological_sort(classes.values().map(|con| (con.id, con))) {
+        for group in topological_sort::run(classes.values().map(|con| (con.id, con))) {
             if group.len() >= 2 {
                 let ids = group.iter().map(|cls| cls.id).collect();
                 Err(Error::CyclicClasses(ids))?
@@ -536,7 +536,7 @@ impl<'a, E: External> Context<'a, E> {
         &mut self,
         functions: &HashMap<ast::NodeId<ast::Function>, ast::Function>,
     ) -> Result<()> {
-        for group in graph::topological_sort(
+        for group in topological_sort::run(
             functions
                 .values()
                 .filter(|f| f.scheme.is_none())
@@ -832,7 +832,7 @@ impl<'a, E: External> Context<'a, E> {
         }
 
         // 1. infer implicit local functions
-        for group in graph::topological_sort(
+        for group in topological_sort::run(
             let_.local_functions()
                 .filter(|f| f.scheme.is_none())
                 .map(|f| (f.id, f)),

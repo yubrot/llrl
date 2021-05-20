@@ -1,6 +1,6 @@
 use super::{Code, Error};
-use crate::graph;
 use crate::path::{ModuleName, PackageName, Path};
+use crate::topological_sort;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
@@ -37,7 +37,7 @@ impl CodeMap {
 
     pub fn resolve_dependencies_order(self) -> Result<Vec<Code>, Vec<Path>> {
         let sorted_codes =
-            graph::topological_sort(self.tree.into_iter().flat_map(|(_, codes)| {
+            topological_sort::run(self.tree.into_iter().flat_map(|(_, codes)| {
                 codes.into_iter().map(|(_, code)| (code.path.clone(), code))
             }));
 

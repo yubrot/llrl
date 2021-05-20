@@ -1,7 +1,7 @@
 //! Expands data types and pattern matching to lower level representations.
 
 use super::{ir::*, rewriter, traverser};
-use crate::graph;
+use crate::topological_sort;
 use derive_new::new;
 use if_chain::if_chain;
 use itertools::Itertools;
@@ -14,7 +14,7 @@ pub trait Env {
 }
 
 pub fn compute<'a>(data_types: impl IntoIterator<Item = (CtId, &'a Data)>, env: &mut impl Env) {
-    for expanding_data_group in graph::topological_sort(
+    for expanding_data_group in topological_sort::run(
         data_types
             .into_iter()
             .map(|(id, data)| (id, ExpandingData::new(id, data))),
@@ -438,7 +438,7 @@ impl<'a> ExpandingData<'a> {
     }
 }
 
-impl<'a> graph::DependencyList<CtId> for ExpandingData<'a> {
+impl<'a> topological_sort::DependencyList<CtId> for ExpandingData<'a> {
     fn traverse_dependencies(&self, f: &mut impl FnMut(&CtId)) {
         traverser::visit_ct_uses(self.data, f);
     }

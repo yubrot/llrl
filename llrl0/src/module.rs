@@ -1,8 +1,8 @@
 use crate::ast;
 use crate::code::Code;
-use crate::graph;
 use crate::path::Path;
 use crate::report::Report;
+use crate::topological_sort;
 
 mod builder;
 mod error;
@@ -228,7 +228,7 @@ impl Module {
     }
 }
 
-impl graph::DependencyList<ModuleId> for Module {
+impl topological_sort::DependencyList<ModuleId> for Module {
     fn traverse_dependencies(&self, f: &mut impl FnMut(&ModuleId)) {
         self.imports.iter().for_each(f);
     }
