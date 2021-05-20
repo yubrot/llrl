@@ -4,3 +4,4 @@
 (import "~/tests/source-location")
 (import "~/tests/sexp")
 (import "~/tests/lexer")
+(import "~/tests/parser")

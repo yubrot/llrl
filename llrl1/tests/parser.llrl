@@ -1,0 +1,71 @@
+(import "~/sexp" _)
+(import "~/lexer" _)
+(import "~/parser" _)
+(import "~/token" _)
+(import "~/source-location" _)
+(println! "llrl1/tests/parser")
+
+(function (parse-raw input) {(-> String (Result (Ss Never) (: TokenRep String)))}
+  (|> input
+      lex
+      (parser/new (source-locator/temporary))
+      parser/parse-ss!
+      (result/map-err [^1 (: (token/rep (error/unexpected %1)) (error/expected %1))])))
+
+(function (parse input) {(-> String (Result String (: TokenRep String)))}
+  (|> input
+      parse-raw
+      (result/map [^1 (string %1)])))
+
+(assert-eq? (ok "foo") (parse "foo"))
+(assert-eq? (ok "abc123") (parse "abc123"))
+(assert-eq? (ok "foo-bar") (parse "foo-bar"))
+(assert-eq? (ok "*foo*") (parse "*foo*"))
+(assert-eq? (ok "x1-y2!$%&*+-/:<=>?^_") (parse "x1-y2!$%&*+-/:<=>?^_"))
+(assert-eq? (ok "the-Answer-to-the-Ultimate-Question") (parse "the-Answer-to-the-Ultimate-Question"))
+(assert-eq? (ok "0") (parse "0"))
+(assert-eq? (ok "1234") (parse "1234"))
+(assert-eq? (ok "3.5") (parse "3.5"))
+(assert-eq? (ok "732") (parse "+732"))
+(assert-eq? (ok "-42") (parse "-42"))
+(assert-eq? (ok "1300") (parse "13e2"))
+(assert-eq? (ok "90") (parse "9e+1"))
+(assert-eq? (ok "12.5") (parse "125e-1"))
+(assert-eq? (ok "\"foo\"") (parse "\"foo\""))
+(assert-eq? (ok "\"Hello, World!\"") (parse "\"Hello, World!\""))
+(assert-eq? (ok "\"( ) . 0 a\"") (parse "\"( ) . 0 a\""))
+(assert-eq? (ok "\"foo\\nbar\"") (parse "\"foo\\nbar\""))
+(assert-eq? (ok "\"foo\\nbar\"") (parse "\"foo\nbar\""))
+(assert-eq? (ok "\"A \\\"\\\\ B\"") (parse "\"A \\\"\\\\ B\""))
+(assert-eq? (ok "#\\z") (parse "#\\z"))
+(assert-eq? (ok "#\\\\t") (parse "#\\\\t"))
+(assert-eq? (ok "()") (parse "()"))
+(assert-eq? (ok "()") (parse "[]"))
+(assert-eq? (ok "(foo)") (parse "(foo)"))
+(assert-eq? (ok "bar") (parse "(. bar)"))
+(assert-eq? (ok "(foo . bar)") (parse "(foo . bar)"))
+(assert-eq? (ok "(1 2 . 3)") (parse "(1 2 . 3)"))
+(assert-eq? (ok "(a b c d)") (parse "(a b c d)"))
+(assert-eq? (err (: token-rep:r-paren "S-expression")) (parse "(e .)"))
+(assert-eq? (err (: token-rep:eof "]")) (parse "["))
+(assert-eq? (err (: token-rep:r-paren "]")) (parse "[)"))
+(assert-eq? (ok "(foo (bar (baz)))") (parse "(foo [bar (baz)])"))
+(assert-eq? (ok "(#t #f)") (parse "(#t #f)"))
+(assert-eq? (ok "'foo") (parse "'foo"))
+(assert-eq? (ok "'(foo 123)") (parse "'(foo 123)"))
+(assert-eq? (ok "'\\foo") (parse "'\\foo"))
+(assert-eq? (ok "`(i ,j ,@(k l))") (parse "`(i ,j ,@(k l))"))
+(assert-eq? (ok "123") (parse "       123"))
+(assert-eq? (ok "()") (parse "; hello\n; world\n    ()   "))
+(assert-eq? (ok "(foo bar)") (parse "(foo ; comment\nbar ; comment\n)"))
+(assert-eq? (err (: token-rep:unknown-character "eof")) (parse "あ"))
+(assert-eq? (err (: token-rep:r-paren "eof")) (parse ")"))
+(assert-eq? (ok "foo\nbar\nbaz") (parse "    foo  \n  bar ; comment\n baz   ; eof"))
+
+(let1 result (with1? (ok (ss: _ (let elems))) (parse-raw ",()!") (get elems[0]))
+  (assert-is?
+    ; Since the prefix operator takes precedence, this should produce (unquote (try! ()))
+    (some (s: _ (s-rep:cons (s: _ (s-rep:symbol "unquote"))
+                            (s: _ (s-rep:cons (s: _ (s-rep:cons (s: _ (s-rep:symbol "try!")) (s: _ (s-rep:cons (s: _ s-rep:nil) _)))) _)))))
+    result
+    (string "Mismatch: " (debug result))))

@@ -146,6 +146,7 @@
   (syntax-sugar:annotate (S A) (S A)))
 
 (instance Display.SyntaxSugar (forall A) (Display (SyntaxSugar A)) (where (Display A))
+  ; FIXME: This process does not correctly display S-expressions like (try! (unquote ...)) or like (try! symbol)
   (function (display! w a)
     (match a
       [(syntax-sugar:quote (let s))

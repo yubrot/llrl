@@ -1,0 +1,190 @@
+(import "~/util" _)
+(import "~/source-location" _)
+(import "~/token" _ [:_ token-rep:_])
+(import "~/sexp" _)
+(export Error _.Error error/_ Parser parser/_)
+
+(derive (Eq Ord DebugDisplay) value-data Error
+  (error: Token String))
+
+(instance Display.Error (Display Error)
+  (function (display! w a)
+    (with1 (error: (let unexpected) (let expected)) a
+      (display-all! w (token/range unexpected) ": Expected " expected " but got " (token/rep unexpected)))))
+
+(getter error: error/unexpected error/expected)
+
+(data Parser
+  (parser: SourceLocator (Iterator Token) (Ref (Option Token)) (Ref Location)))
+
+(function (parser/new locator lexer) {(forall T) (-> SourceLocator (T Token) Parser) (where (Iterate T))}
+  (parser: locator (iterate lexer) (ref none) (ref location/init)))
+
+(function (parser/parse-ss! parser) {(forall A) (-> Parser (Result (Ss A) Error))}
+  (parse-exact! grammar/ss parser))
+
+(function (parser/parse-s! parser) {(forall A) (-> Parser (Result (S A) Error))}
+  (parse-exact! grammar/s parser))
+
+; ---------------------------
+
+(getter parser: locator lexer peeking-token latest-token-end)
+
+(function (parse-exact! grammar p) {(forall A) (-> (-> Parser (Result A Error)) Parser (Result A Error))}
+  (let1 result (grammar p)!
+    (if (is? none (peek p))
+      (ok result)
+      (err (error "eof" p)))))
+
+(function (peek p) {(-> Parser (Option Token))}
+  (when-match1 (some (let token)) ~(peeking-token p)
+    (return (some token)))
+  (loop
+    (let1 token (iterator/next! (lexer p))?
+      (when (not (token/ambient? token))
+        (set! (peeking-token p) (some token))
+        (return (some token))))))
+
+(function (next! p) {(-> Parser (Option Token))}
+  (let1 token (peek p)?
+    (set! (peeking-token p) none)
+    (some token)))
+
+(function (next-token-start p) {(-> Parser Location)}
+  (if-match1 (some (let token)) (peek p)
+    (|> token token/range location-range/start)
+    ~(latest-token-end p)))
+
+(function (location-start! p) {(-> Parser (-> SourceLocation))}
+  (let1 start (next-token-start p)
+    [^0 (source-locator/issue! (location-range/new start ~(latest-token-end p)) (locator p))]))
+
+(function (error expected p) {(-> String Parser Error)}
+  (error:
+    (option/unwrap* [^0 (token: (location-range/empty ~(latest-token-end p)) :eof)] (peek p))
+    expected))
+
+; ---------------------------
+
+(function (grammar/ss p)
+  (let ([loc (location-start! p)]
+        [buf vector/empty])
+    (while-match1 (some (let s)) (grammar/s? p)! (vector/push! s buf))
+    (ok (ss: (loc) (vector/buffer buf)))))
+
+(function (grammar/s p)
+  (if-match1 (some (let s)) (grammar/s? p)!
+    (ok s)
+    (err (error "S-expression" p))))
+
+(function (grammar/s? p)
+  (let1 loc (location-start! p)
+    ; handle prefix
+    (if-match1
+      (some (let ss))
+      (cond?
+        [when (grammar/terminal? :quote p)!
+          (syntax-sugar:quote (grammar/s p)!)]
+        [when (grammar/terminal? :backquote p)!
+          (syntax-sugar:quasiquote (grammar/s p)!)]
+        [when (grammar/terminal? :backslash p)!
+          (syntax-sugar:capture (grammar/s p)!)]
+        [when (grammar/terminal? :tilde p)!
+          (syntax-sugar:load (grammar/s p)!)]
+        [when (grammar/terminal? :comma p)!
+          (syntax-sugar:unquote (grammar/s p)!)]
+        [when (grammar/terminal? :comma-at p)!
+          (syntax-sugar:unquote-splicing (grammar/s p)!)])
+      (ok (some (s/from-syntax-sugar (loc) ss)))
+      (grammar/s-2? p))))
+
+(function (grammar/s-2? p)
+  (let* ([loc (location-start! p)]
+         [main (grammar/s-3? p)!])
+    (if-match1 (some (let main)) main
+      (let1 main (ref main)
+        ; handle suffix
+        (while-match1
+          (some (let ss))
+          (cond?
+            [when (grammar/terminal? :? p)!
+              (syntax-sugar:try? ~main)]
+            [when (grammar/terminal? :! p)!
+              (syntax-sugar:try! ~main)]
+            [when-match1 (some (let ann)) (grammar/annotation-suffix? p)!
+              (syntax-sugar:annotate ~main ann)])
+          (set! main (s/from-syntax-sugar (loc) ss)))
+        (ok (some ~main)))
+      (ok none))))
+
+(function (grammar/s-3? p)
+  (let1 loc (location-start! p)
+    (if-match1
+      (some (let s-rep))
+      (match? (option/map token/rep (peek p))
+        [(some (:signed (let n)))
+          (next! p)
+          (s-rep/signed n)]
+        [(some (:unsigned (let n)))
+          (next! p)
+          (s-rep/unsigned n)]
+        [(some (:fp-number (let n)))
+          (next! p)
+          (s-rep:fp-number n)]
+        [(some (:symbol (let s)))
+          (next! p)
+          (s-rep:symbol s)]
+        [(some (:string (let s)))
+          (next! p)
+          (s-rep:string s)]
+        [(some (:char (let c)))
+          (next! p)
+          (s-rep:char c)]
+        [(some :true)
+          (next! p)
+          (s-rep:bool #t)]
+        [(some :false)
+          (next! p)
+          (s-rep:bool #f)]
+        [(some :l-paren)
+          (next! p)
+          (let1 body (grammar/s-list-body #t p)!
+            (grammar/terminal :r-paren p)!
+            (s/rep body))]
+        [(some :l-brack)
+          (next! p)
+          (let1 body (grammar/s-list-body #t p)!
+            (grammar/terminal :r-brack p)!
+            (s/rep body))])
+      (ok (some (s: (loc) s-rep)))
+      (ok none))))
+
+(function (grammar/s-list-body allow-improper? p)
+  (let1 loc (location-start! p)
+    (if-match1 (some (let l)) (grammar/s? p)!
+      (let1 r (grammar/s-list-body allow-improper? p)!
+        (ok (s: (loc) (s-rep:cons l r))))
+      (if (and allow-improper? (grammar/terminal? :. p)!)
+        (grammar/s p)
+        (ok (s: (loc) s-rep:nil))))))
+
+(function (grammar/annotation-suffix? p)
+  (if (grammar/terminal? :l-brace p)!
+    (let1 ann (grammar/s-list-body #f p)!
+      (grammar/terminal :r-brace p)!
+      (ok (some ann)))
+    (ok none)))
+
+(function (grammar/terminal token-rep p)
+  (if (grammar/terminal? token-rep p)!
+    (ok unit)
+    (err (error (string token-rep) p))))
+
+(function (grammar/terminal? token-rep p)
+  (if-match1 (some (token: _ (let rep))) (peek p)
+    (if (eq? rep token-rep)
+      (begin
+        (next! p) ; consume
+        (ok #t))
+      (ok #f))
+    (ok #f)))

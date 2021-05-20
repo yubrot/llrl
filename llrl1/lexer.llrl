@@ -29,9 +29,9 @@
           [when (eq? s ".")
             :.]
           [when (eq? s "?")
-            :!]
-          [when (eq? s "!")
             :?]
+          [when (eq? s "!")
+            :!]
           [else
             (:symbol s)]))
         eat)]
