@@ -338,7 +338,7 @@ Each class instance has its own name. Instances are automatically resolved when 
 ```llrl
 (derive (Default Eq Ord DebugDisplay Hash)
   value-data (Vec2 A)
-    (vec2: T T))
+    (vec2: A A))
 ```
 
 ### Macros
