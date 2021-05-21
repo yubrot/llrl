@@ -1,7 +1,8 @@
-(import "~/lexer" [lexer/lex lex])
+(import "~/sexp/lexer" [lexer/lex lex])
+(println! "llrl1/tests/sexp/lexer")
+
+(import "~/sexp/token" token: _.TokenRep [:_ token-rep:_])
 (import "~/source-location" location/_ location-range/_)
-(import "~/token" token: _.TokenRep [:_ token-rep:_])
-(println! "llrl1/tests/lexer")
 
 (function (lex s)
   (|> s

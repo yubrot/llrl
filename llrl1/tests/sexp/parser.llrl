@@ -1,9 +1,11 @@
-(import "~/sexp" _)
-(import "~/lexer" _)
-(import "~/parser" _)
-(import "~/token" _)
+(import "~/sexp/parser" _)
+(println! "llrl1/tests/sexp/parser")
+
+(import "~/sexp/data" _)
+(import "~/sexp/lexer" _)
+(import "~/sexp/token" _)
+(import "~/sexp/match" _)
 (import "~/source-location" _)
-(println! "llrl1/tests/parser")
 
 (function (parse-raw input) {(-> String (Result (Ss Never) (: TokenRep String)))}
   (|> input
@@ -62,10 +64,9 @@
 (assert-eq? (err (: token-rep:r-paren "eof")) (parse ")"))
 (assert-eq? (ok "foo\nbar\nbaz") (parse "    foo  \n  bar ; comment\n baz   ; eof"))
 
-(let1 result (with1? (ok (ss: _ (let elems))) (parse-raw ",()!") (get elems[0]))
+(let1 result (with1? (ok (ss: _ (let elems))) (parse-raw ",(foo)!") (get elems[0]))
   (assert-is?
-    ; Since the prefix operator takes precedence, this should produce (unquote (try! ()))
-    (some (s: _ (s-rep:cons (s: _ (s-rep:symbol "unquote"))
-                            (s: _ (s-rep:cons (s: _ (s-rep:cons (s: _ (s-rep:symbol "try!")) (s: _ (s-rep:cons (s: _ s-rep:nil) _)))) _)))))
+    ; Since the prefix operator takes precedence, this should produce (unquote (try! (foo)))
+    (some (s*list (s*symbol "unquote") (s*list (s*symbol "try!") (s*list (s*symbol "foo")))))
     result
     (string "Mismatch: " (debug result))))

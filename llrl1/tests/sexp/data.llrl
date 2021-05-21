@@ -1,5 +1,5 @@
-(import "~/sexp" _)
-(println! "llrl1/tests/sexp")
+(import "~/sexp/data" _)
+(println! "llrl1/tests/sexp/data")
 
 (import "~/source-location" _)
 

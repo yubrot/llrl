@@ -1,0 +1,79 @@
+(import "~/sexp/data" _)
+(export s*_)
+
+(macro (s*integer s)
+  (s/match s
+    [(_ ,signed ,value)
+      (ok `(,\s: _ (,\s-rep:integer ,signed ,value)))]
+    [_
+      (err "Expected (s*integer signed value)")]))
+
+(macro (s*fp-number s)
+  (s/match s
+    [(_ ,value)
+      (ok `(,\s: _ (,\s-rep:fp-number ,value)))]
+    [_
+      (err "Expected (s*fp-number value)")]))
+
+(macro (s*symbol s)
+  (s/match s
+    [(_ ,value)
+      (ok `(,\s: _ (,\s-rep:symbol ,value)))]
+    [_
+      (err "Expected (s*symbol value)")]))
+
+(macro (s*string s)
+  (s/match s
+    [(_ ,value)
+      (ok `(,\s: _ (,\s-rep:string ,value)))]
+    [_
+      (err "Expected (s*string value)")]))
+
+(macro (s*char s)
+  (s/match s
+    [(_ ,value)
+      (ok `(,\s: _ (,\s-rep:char ,value)))]
+    [_
+      (err "Expected (s*char value)")]))
+
+(macro (s*cons s)
+  (s/match s
+    [(_ ,car ,cdr)
+      (ok `(,\s: _ (,\s-rep:cons ,car ,cdr)))]
+    [_
+      (err "Expected (s*cons car cdr)")]))
+
+(macro (s*nil s)
+  (s/match s
+    [(_)
+      (ok `(,\s: _ ,\s-rep:nil))]
+    [_
+      (err "Expected (s*nil)")]))
+
+(macro (s*bool s)
+  (s/match s
+    [(_ ,value)
+      (ok `(,\s: _ (,\s-rep:bool ,value)))]
+    [_
+      (err "Expected (s*bool value)")]))
+
+(macro (s*pure s)
+  (s/match s
+    [(_ ,value)
+      (ok `(,\s: _ (,\s-rep:pure ,value)))]
+    [_
+      (err "Expected (s*pure value)")]))
+
+(macro (s*list s)
+  (s/match s
+    [(_ ,@ss)
+      (ok (expand-list ss))]
+    [_
+      (err "Expected (s*list s ...)")]))
+
+(function (expand-list ss)
+  (s/match ss
+    [(,car ,@cdr)
+      `(,\s: _ (,\s-rep:cons ,car ,(expand-list cdr)))]
+    [_
+      `(,\s: _ ,\s-rep:nil)]))

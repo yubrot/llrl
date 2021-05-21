@@ -1,7 +1,7 @@
 (import "~/util" _)
+(import "~/sexp/data" _)
+(import "~/sexp/token" _ [:_ token-rep:_])
 (import "~/source-location" _)
-(import "~/token" _ [:_ token-rep:_])
-(import "~/sexp" _)
 (export Error _.Error error/_ Parser parser/_)
 
 (derive (Eq Ord DebugDisplay) value-data Error

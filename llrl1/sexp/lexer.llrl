@@ -1,7 +1,7 @@
 (import "std/integer" integer/from-string? Integer._)
 (import "std/float" float/from-string? Float._)
+(import "~/sexp/token" Token token: TokenRep [:_ token-rep:_])
 (import "~/source-location" Location location/_ LocationRange location-range/_)
-(import "~/token" Token token: TokenRep [:_ token-rep:_])
 (export lex)
 
 ; Lexical analyzer for llrl.
