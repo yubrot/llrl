@@ -2,7 +2,7 @@
 
 (import "std/prelude/stage-1" _)
 (import "std/integer" integer/to-string _.U64)
-(import "std/phantom" Phantom phantom:)
+(import "std/phantom" Phantom phantom)
 (export Ptr ptr:_ ptr/_ size-of align-of _.Ptr)
 
 (builtin-type (Ptr A) "ptr"
@@ -43,14 +43,14 @@
 (macro (size-of s)
   (s/match s
     [(_ ,ty)
-      (ok `(,\<size-of> (annotate ,\phantom: (,\Phantom ,ty))))]
+      (ok `(,\<size-of> (,\phantom ,ty)))]
     [_
       (err "Expected (size-of type)")]))
 
 (macro (align-of s)
   (s/match s
     [(_ ,ty)
-      (ok `(,\<align-of> (annotate ,\phantom: (,\Phantom ,ty))))]
+      (ok `(,\<align-of> (,\phantom ,ty)))]
     [_
       (err "Expected (align-of type)")]))
 

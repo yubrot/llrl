@@ -1,6 +1,14 @@
 (no-implicit-std)
 
-(export Phantom phantom:)
+(import "std/prelude/stage-0" _)
+(export Phantom phantom: phantom)
 
 (data (Phantom A)
   phantom:)
+
+(macro (phantom s)
+  (s/match s
+    [(_ ,ty)
+      (ok `(annotate ,\phantom: (,\Phantom ,ty)))]
+    [_
+      (err "Expected (phantom type)")]))
