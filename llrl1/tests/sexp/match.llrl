@@ -22,4 +22,6 @@
   (assert-is? (s*pure unit)
               (s: l (s-rep:pure unit)))
   (assert-is? (s*list (s*bool #t) (s*bool #f))
-              (s: l (s-rep:cons (s: l (s-rep:bool #t)) (s: l (s-rep:cons (s: l (s-rep:bool #f)) (s: l s-rep:nil)))))))
+              (s: l (s-rep:cons (s: l (s-rep:bool #t)) (s: l (s-rep:cons (s: l (s-rep:bool #f)) (s: l s-rep:nil))))))
+  (assert-is? (s*list-like (s*bool #t) (s*bool #f) (s*bool #t))
+              (s: l (s-rep:cons (s: l (s-rep:bool #t)) (s: l (s-rep:cons (s: l (s-rep:bool #f)) (s: l (s-rep:bool #t))))))))

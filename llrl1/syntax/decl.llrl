@@ -1,0 +1,313 @@
+(import "~/sexp" _)
+(import "~/source-location" _)
+(import "~/syntax/common" _)
+(import "~/syntax/kind" _)
+(import "~/syntax/type" _)
+(import "~/syntax/expr" _)
+(export Syntax_ syntax:_ syntax/_)
+
+(value-data (SyntaxDecl A)
+  syntax:decl:no-implicit-std
+  (syntax:decl:import SyntaxImport)
+  (syntax:decl:export SyntaxExport)
+  (syntax:decl:function (SyntaxFunction A))
+  (syntax:decl:c-function (SyntaxCFunction A))
+  (syntax:decl:builtin-op (SyntaxBuiltinOp A))
+  (syntax:decl:macro (SyntaxMacro A))
+  (syntax:decl:data (SyntaxData A))
+  (syntax:decl:builtin-type (SyntaxBuiltinType A))
+  (syntax:decl:class (SyntaxClass A))
+  (syntax:decl:instance (SyntaxInstance A))
+  (syntax:decl:begin (Array (S A)))
+  (syntax:decl:top-level-expr (S A)))
+
+(function (syntax/decl s)
+  (match s
+    [(s*cons (s*symbol "no-implicit-std") _)
+      (syntax/no-implicit-std s)!
+      (ok syntax:decl:no-implicit-std)]
+    [(s*cons (s*symbol "import") _)
+      (ok (syntax:decl:import (syntax/import s)!))]
+    [(s*cons (s*symbol "export") _)
+      (ok (syntax:decl:export (syntax/export s)!))]
+    [(s*cons (s*symbol "function") _)
+      (ok (syntax:decl:function (syntax/function s)!))]
+    [(s*cons (s*symbol "transparent-function") _)
+      (ok (syntax:decl:function (syntax/function s)!))]
+    [(s*cons (s*symbol "c-function") _)
+      (ok (syntax:decl:c-function (syntax/c-function s)!))]
+    [(s*cons (s*symbol "builtin-op") _)
+      (ok (syntax:decl:builtin-op (syntax/builtin-op s)!))]
+    [(s*cons (s*symbol "macro") _)
+      (ok (syntax:decl:macro (syntax/macro s)!))]
+    [(s*cons (s*symbol "data") _)
+      (ok (syntax:decl:data (syntax/data s)!))]
+    [(s*cons (s*symbol "value-data") _)
+      (ok (syntax:decl:data (syntax/data s)!))]
+    [(s*cons (s*symbol "c-data") _)
+      (ok (syntax:decl:data (syntax/data s)!))]
+    [(s*cons (s*symbol "builtin-type") _)
+      (ok (syntax:decl:builtin-type (syntax/builtin-type s)!))]
+    [(s*cons (s*symbol "class") _)
+      (ok (syntax:decl:class (syntax/class s)!))]
+    [(s*cons (s*symbol "sealed-class") _)
+      (ok (syntax:decl:class (syntax/class s)!))]
+    [(s*cons (s*symbol "instance") _)
+      (ok (syntax:decl:instance (syntax/instance s)!))]
+    [(s*cons (s*symbol "begin") (let body))
+      (ok (syntax:decl:begin (syntax/list-of ok body)!))]
+    [_
+      (ok (syntax:decl:top-level-expr s))]))
+
+(function (syntax/no-implicit-std s)
+  (match s
+    [(s*list (s*symbol "no-implicit-std"))
+      (ok unit)]
+    [_
+      (err (error: (s/location s) "(no-implicit-std)"))]))
+
+(value-data SyntaxImport
+  (syntax:import SourceLocation String (Array SyntaxPortTarget))) ; loc path targets
+
+(function (syntax/import s)
+  (match s
+    [(s*list-like (s*symbol "import") (s*string (let path)) (let targets))
+      (ok (syntax:import (s/location s) path (syntax/list-of syntax/port-target targets)!))]
+    [_
+      (err (error: (s/location s) "(import \"<path>\" <target> ...)"))]))
+
+(value-data SyntaxExport
+  (syntax:export SourceLocation (Array SyntaxPortTarget))) ; loc targets
+
+(function (syntax/export s)
+  (match s
+    [(s*cons (s*symbol "export") (let targets))
+      (ok (syntax:export (s/location s) (syntax/list-of syntax/port-target targets)!))]
+    [_
+      (err (error: (s/location s) "(export <target> ...)"))]))
+
+(value-data SyntaxPortTarget
+  (syntax:port-target SourceLocation (Option SyntaxName) SyntaxName)) ; loc name target
+
+(function (syntax/port-target s)
+  (cond
+    [when-match1 (s*list (let name) (let target)) s
+      (ok (syntax:port-target (s/location s) (some (syntax/name name)!) (syntax/name target)!))]
+    [when-match1 (ok (let target)) (syntax/name s)
+      (ok (syntax:port-target (s/location s) none target))]
+    [else
+      (err (error: (s/location s) "<<target-name> or (<name> <target-name>)>"))]))
+
+(value-data (SyntaxFunction A)
+  (syntax:function
+    SourceLocation              ; loc
+    Bool                        ; transparent?
+    SyntaxName                  ; name
+    (Option (Array SyntaxName)) ; params
+    (Option (SyntaxScheme A))   ; scheme
+    (Array (S A))))             ; body
+
+(function (syntax/function s)
+  (match s
+    [(s*list-like (let kind) (let header) (let body))
+      (with ([(let transparent?) (syntax/function-kind kind)!]
+             [(syntax:annotatable (syntax:parameterizable (let name) (let params)) (let scheme))
+               (syntax/annotatable [^1 (syntax/parameterizable syntax/name syntax/name %1)] syntax/scheme header)!]
+             [(let body) (syntax/list-of ok body)!])
+        (ok (syntax:function (s/location s) transparent? name params scheme body)))]
+    [_
+      (err (error: (s/location s) "(<function or transparent-function> <<name> or (<name> <param> ...)> {scheme}? <body> ...)"))]))
+
+(function (syntax/function-kind s)
+  (match s
+    [(s*symbol "function")
+      (ok #f)]
+    [(s*symbol "transparent-function")
+      (ok #t)]
+    [_
+      (err (error: (s/location s) "<function or transparent-function>"))]))
+
+(value-data (SyntaxCFunction A)
+  (syntax:c-function
+    SourceLocation   ; loc
+    SyntaxName       ; name
+    (SyntaxScheme A) ; scheme
+    String))         ; c-name
+
+(function (syntax/c-function s)
+  (match s
+    [(s*list (s*symbol "c-function") (s*list-like (s*symbol "annotate") (let name) (let scheme)) (s*string (let c-name)))
+      (ok (syntax:c-function (s/location s) (syntax/name name)! (syntax/scheme scheme)! c-name))]
+    [_
+      (err (error: (s/location s) "(c-function <name> {scheme} \"<c-name>\")"))]))
+
+(value-data (SyntaxBuiltinOp A)
+  (syntax:builtin-op
+    SourceLocation   ; loc
+    SyntaxName       ; name
+    (SyntaxScheme A) ; scheme
+    String))         ; builtin-name
+
+(function (syntax/builtin-op s)
+  (match s
+    [(s*list (s*symbol "builtin-op") (s*list-like (s*symbol "annotate") (let name) (let scheme)) (s*string (let builtin-name)))
+      (ok (syntax:builtin-op (s/location s) (syntax/name name)! (syntax/scheme scheme)! builtin-name))]
+    [_
+      (err (error: (s/location s) "(builtin-op <name> {scheme} \"<builtin-name>\")"))]))
+
+(value-data (SyntaxMacro A)
+  (syntax:macro
+    SourceLocation  ; loc
+    SyntaxName      ; name
+    SyntaxName      ; param
+    (Array (S A)))) ; body
+
+(function (syntax/macro s)
+  (match s
+    [(s*list-like (s*symbol "macro") (s*list (let name) (let param)) (let body))
+      (ok (syntax:macro (s/location s) (syntax/name name)! (syntax/name param)! (syntax/list-of ok body)!))]
+    [_
+      (err (error: (s/location s) "(macro (<name> <param>) <body> ...)"))]))
+
+(value-data (SyntaxData A)
+  (syntax:data
+    SourceLocation                           ; loc
+    SyntaxDataRepr                           ; repr
+    SyntaxName                               ; name
+    (Option (Array (SyntaxTypeParameter A))) ; ty-params
+    (Array (SyntaxDataValueCon A))))         ; value-cons
+
+(function (syntax/data s)
+  (match s
+    [(s*list-like (let repr) (let header) (let value-cons))
+      (with ([(let repr) (syntax/data-repr repr)!]
+             [(syntax:parameterizable (let name) (let ty-params)) (syntax/parameterizable syntax/name syntax/type-parameter header)!]
+             [(let value-cons) (syntax/list-of syntax/data-value-con value-cons)!])
+        (ok (syntax:data (s/location s) repr name ty-params value-cons)))]
+    [_
+      (err (error: (s/location s) "(<data or value-data or c-data> <<ty-name> or (<ty-name> <ty-param> ...)> <value-con> ...)"))]))
+
+(value-data SyntaxDataRepr
+  syntax:data-repr:default
+  syntax:data-repr:value
+  syntax:data-repr:c)
+
+(function (syntax/data-repr s)
+  (match s
+    [(s*symbol "data")
+      (ok syntax:data-repr:default)]
+    [(s*symbol "value-data")
+      (ok syntax:data-repr:value)]
+    [(s*symbol "c-data")
+      (ok syntax:data-repr:c)]
+    [_
+      (err (error: (s/location s) "<data or value-data or c-data>"))]))
+
+(value-data (SyntaxDataValueCon A)
+  (syntax:data-value-con SourceLocation SyntaxName (Option (Array (S A))))) ; loc name fields
+
+(function (syntax/data-value-con s)
+  (cond
+    [when-match1 (s*cons (let name) (let fields)) s
+      (ok (syntax:data-value-con (s/location s) (syntax/name name)! (some (syntax/list-of ok fields)!)))]
+    [when-match1 (ok (let name)) (syntax/name s)
+      (ok (syntax:data-value-con (s/location s) name none))]
+    [else
+      (err (error: (s/location s) "<<con-name> or (<con-name> <field-ty> ...)>"))]))
+
+(value-data (SyntaxBuiltinType A)
+  (syntax:builtin-type
+    SourceLocation                           ; loc
+    SyntaxName                               ; name
+    (Option (Array (SyntaxTypeParameter A))) ; ty-params
+    String                                   ; builtin-name
+    (Array (SyntaxBuiltinValueCon A))))      ; value-cons
+
+(function (syntax/builtin-type s)
+  (match s
+    [(s*list-like (s*symbol "builtin-type") (let header) (s*string (let builtin-name)) (let value-cons))
+      (with ([(syntax:parameterizable (let name) (let ty-params)) (syntax/parameterizable syntax/name syntax/type-parameter header)!]
+             [(let value-cons) (syntax/list-of syntax/builtin-value-con value-cons)!])
+        (ok (syntax:builtin-type (s/location s) name ty-params builtin-name value-cons)))]
+    [_
+      (err (error: (s/location s) "(builtin-type <<ty-name> or (<ty-name> <ty-param> ...)> \"<builtin-name>\" <value-con> ...)"))]))
+
+(value-data (SyntaxBuiltinValueCon A)
+  (syntax:builtin-value-con SourceLocation SyntaxName (Option (Array (S A))) String)) ; loc name fields builtin-name
+
+(function (syntax/builtin-value-con s)
+  (cond
+    [when-match1 (s*list (s*list-like (let name) (let fields)) (s*string (let builtin-name))) s
+      (ok (syntax:builtin-value-con (s/location s) (syntax/name name)! (some (syntax/list-of ok fields)!) builtin-name))]
+    [when-match1 (s*list (let name) (s*string (let builtin-name))) s
+      (ok (syntax:builtin-value-con (s/location s) (syntax/name name)! none builtin-name))]
+    [else
+      (err (error: (s/location s) "[<<con-name> or (<con-name> <field-ty> ...)> \"<builtin-name>\"]"))]))
+
+(value-data (SyntaxClass A)
+  (syntax:class
+    SourceLocation                           ; loc
+    Bool                                     ; sealed?
+    SyntaxName                               ; name
+    (Option (Array (SyntaxTypeParameter A))) ; ty-params
+    (Array (SyntaxConstraint A))             ; superclasses
+    (Array (SyntaxFunction A))))             ; methods
+
+(function (syntax/class s)
+  (if-match1
+    (some (: (let kind) (let header) (let w) (let methods)))
+    (match? s
+      [(s*list-like (let kind) (let header) (let w (s*cons (s*symbol "where") _)) (let methods))
+        (: kind header (some (syntax/where w)!) methods)]
+      [(s*list-like (let kind) (let header) (let methods))
+        (: kind header none methods)])
+    (with1
+      (syntax:parameterizable (let name) (let ty-params))
+      (syntax/parameterizable syntax/name syntax/type-parameter header)!
+      (ok (syntax:class
+        (s/location s)
+        (syntax/class-kind kind)!
+        name
+        ty-params
+        (|> w (option/map syntax/where/constraints) (option/unwrap array/empty))
+        (syntax/list-of syntax/function methods)!)))
+    (err (error: (s/location s) "(<class or sealed-class> <<name> or (<name> <ty-param> ...)> (where <superclass> ...)? <method> ...)"))))
+
+(function (syntax/class-kind s)
+  (match s
+    [(s*symbol "class")
+      (ok #f)]
+    [(s*symbol "sealed-class")
+      (ok #t)]
+    [_
+      (err (error: (s/location s) "<class or sealed-class>"))]))
+
+(value-data (SyntaxInstance A)
+  (syntax:instance
+    SourceLocation                  ; loc
+    SyntaxName                      ; name
+    (Array (SyntaxTypeParameter A)) ; ty-params
+    (Array (SyntaxConstraint A))    ; s-params
+    (SyntaxConstraint A)            ; target
+    (Array (SyntaxFunction A))))    ; methods
+
+(function (syntax/instance s)
+  (if-match1
+    (some (: (let name) (let f) (let w) (let target) (let methods)))
+    (match? s
+      [(s*list-like (s*symbol "instance") (let name) (let f (s*cons (s*symbol "forall") _)) (let target) (let w (s*cons (s*symbol "where") _)) (let methods))
+        (: name (some (syntax/forall f)!) (some (syntax/where w)!) target methods)]
+      [(s*list-like (s*symbol "instance") (let name) (let f (s*cons (s*symbol "forall") _)) (let target) (let methods))
+        (: name (some (syntax/forall f)!) none target methods)]
+      [(s*list-like (s*symbol "instance") (let name) (let target) (let w (s*cons (s*symbol "where") _)) (let methods))
+        (: name none (some (syntax/where w)!) target methods)]
+      [(s*list-like (s*symbol "instance") (let name) (let target) (let methods))
+        (: name none none target methods)])
+    (ok (syntax:instance
+      (s/location s)
+      (syntax/name name)!
+      (|> f (option/map syntax/forall/params) (option/unwrap array/empty))
+      (|> w (option/map syntax/where/constraints) (option/unwrap array/empty))
+      (syntax/constraint target)!
+      (syntax/list-of syntax/function methods)!))
+    (err (error: (s/location s) ""))))

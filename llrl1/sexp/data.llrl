@@ -35,6 +35,9 @@
 (function (s/from-syntax-sugar loc syntax-sugar) {(forall A) (-> SourceLocation (SyntaxSugar A) (S A))}
   (s: loc (s-rep/from-syntax-sugar loc syntax-sugar)))
 
+(function (s/syntax-sugar? s) {(forall A) (-> (S A) (Option (SyntaxSugar A)))}
+  (s-rep/syntax-sugar? (s/rep s)))
+
 (derive (DebugDisplay) value-data (SRep A)
   (s-rep:integer Bool U64)
   (s-rep:fp-number F64)

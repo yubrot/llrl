@@ -1,0 +1,78 @@
+(import "~/util" _)
+(import "~/source-location" _)
+(import "~/sexp" _)
+(export Error _.Error error:)
+(export Syntax_ syntax:_ syntax/_)
+
+(derive (DebugDisplay) value-data Error
+  (error: SourceLocation String))
+
+(instance ContextualDisplay.Error (ContextualDisplay Error SourceLocationTable)
+  (function (contextual-display! w a ctx)
+    (with1 (error: (let loc) (let msg)) a
+      (display-all! w (contextual: loc ctx) ": Syntax error: expected " msg))))
+
+(function (syntax/list-of syn s)
+  (let* ([buf vector/empty]
+         [(go s)
+            (match s
+              [(s*cons (let car) (let cdr))
+                (vector/push! (syn car)! buf)
+                (go cdr)]
+              [(s*nil)
+                (ok (vector/buffer buf))]
+              [_
+                (err (error: (s/location s) "proper list"))])])
+    (go s)))
+
+(value-data SyntaxName
+  (syntax:name SourceLocation String))
+
+(function (syntax/name s)
+  (match s
+    [(s*symbol (let sym))
+      (ok (syntax:name (s/location s) sym))]
+    [_
+      (err (error: (s/location s) "<name>"))]))
+
+(value-data (SyntaxUse A)
+  (syntax:use SourceLocation (Either String A)))
+
+(function (syntax/use s)
+  (match s
+    [(s*symbol (let sym))
+      (ok (syntax:use (s/location s) (left sym)))]
+    [(s*pure (let a))
+      (ok (syntax:use (s/location s) (right a)))]
+    [_
+      (err (error: (s/location s) "<name>"))]))
+
+(value-data (SyntaxAnnotatable TBody TAnn)
+  (syntax:annotatable TBody (Option TAnn)))
+
+(function (syntax/annotatable syn-body syn-ann s)
+  (if-match1 (s*list-like (s*symbol "annotate") (let body) (let ann)) s
+    (ok (syntax:annotatable (syn-body body)! (some (syn-ann ann)!)))
+    (ok (syntax:annotatable (syn-body s)! none))))
+
+(value-data (SyntaxParameterizable TCallee TParam)
+  (syntax:parameterizable TCallee (Option (Array TParam))))
+
+(function (syntax/parameterizable syn-callee syn-param s)
+  (cond
+    [when-match1 (ok (let callee)) (syn-callee s)
+      (ok (syntax:parameterizable callee none))]
+    [when-match1 (s*cons (let callee) (let params)) s
+      (ok (syntax:parameterizable (syn-callee callee)! (some (syntax/list-of syn-param params)!)))]
+    [else
+      (err (error: (s/location s) "(<callee> <param> ...)"))]))
+
+(value-data (MacroApply A)
+  (syntax:macro-apply (SyntaxUse A) (S A))) ; macro-use args
+
+(function (syntax/macro-apply s)
+  (if-match ([(s*cons (let callee) (let args)) s]
+             [(ok (let use*)) (syntax/use callee)]
+             [#t (s/proper-list? args)])
+    (ok (syntax:macro-apply use* args))
+    (err (error: (s/location s) "(<macro> <arg> ...)"))))

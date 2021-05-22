@@ -85,7 +85,7 @@ The goal of llrl is not to create a modern, practical programming language. Inst
 - [ ] llrl1: llrl compiler by llrl
   - [ ] LLVM-C API porting
   - [x] S-expression parser
-  - [ ] Syntax analysis
+  - [x] Syntax analysis
   - [ ] Loading mechanism for a set of source codes
   - [ ] Semantic analysis
   - [ ] Code generation

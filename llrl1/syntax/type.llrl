@@ -1,0 +1,96 @@
+(import "~/util" _)
+(import "~/source-location" _)
+(import "~/sexp" _)
+(import "~/syntax/common" _)
+(export Syntax_ syntax:_ syntax/_)
+
+(value-data (SyntaxType A)
+  (syntax:type:fun (Array (S A)) (S A)) ; args ret
+  (syntax:type:tuple (Array (S A))) ; elems
+  syntax:type:unit
+  (syntax:type:use (SyntaxUse A))
+  (syntax:type:app (S A) (Array (S A)))) ; callee args
+
+(function (syntax/type s)
+  (match s
+    [(s*cons (s*symbol "->") (let args-ret))
+      (let1 args-ret (syntax/list-of ok args-ret)!
+        (if-match1 (some (: (let ret) (let args))) (array/split-last? args-ret)
+          (ok (syntax:type:fun args ret))
+          (err (error: (s/location s) "(-> <return-type>)"))))]
+    [(s*cons (s*symbol ":") (let elems))
+      (ok (syntax:type:tuple (syntax/list-of ok elems)!))]
+    [(s*cons (let callee) (let args))
+      (ok (syntax:type:app callee (syntax/list-of ok args)!))]
+    [(s*symbol "unit")
+      (ok syntax:type:unit)]
+    [_
+      (if-match1 (ok (let use*)) (syntax/use s)
+        (ok (syntax:type:use use*))
+        (err (error: (s/location s) "<type>")))]))
+
+(value-data (SyntaxConstraint A)
+  (syntax:constraint SourceLocation (SyntaxUse A) (Option (Array (S A))))) ; loc target-class args
+
+(function (syntax/constraint s)
+  (if-match1 (ok (syntax:parameterizable (let use*) (let args))) (syntax/parameterizable syntax/use ok s)
+    (ok (syntax:constraint (s/location s) use* args))
+    (err (error: (s/location s) "<constraint>"))))
+
+(value-data (SyntaxTypeParameter A)
+  (syntax:type-parameter SourceLocation SyntaxName (Option (S A)))) ; loc name kind-ann
+
+(function (syntax/type-parameter s)
+  (cond
+    [when-match1 (ok (let name)) (syntax/name s)
+      (ok (syntax:type-parameter (s/location s) name none))]
+    [when-match1 (s*list (let name) (let kind-ann)) s
+      (ok (syntax:type-parameter (s/location s) (syntax/name name)! (some kind-ann)))]
+    [else
+      (err (error: (s/location s) "<<ty-param-name> or [<ty-param-name> <kind>]>"))]))
+
+(value-data (SyntaxScheme A)
+  (syntax:scheme
+    SourceLocation                  ; loc
+    (Array (SyntaxTypeParameter A)) ; ty-params
+    (Array (SyntaxConstraint A))    ; s-params
+    (S A)))                         ; body
+
+(function (syntax/scheme s)
+  (if-match1
+    (some (: (let f) (let w) (let body)))
+    (match? s
+      [(s*list (let f (s*cons (s*symbol "forall") _)) (let body) (let w (s*cons (s*symbol "where") _)))
+        (: (some (syntax/forall f)!) (some (syntax/where w)!) body)]
+      [(s*list (let f (s*cons (s*symbol "forall") _)) (let body))
+        (: (some (syntax/forall f)!) none body)]
+      [(s*list (let body) (let w (s*cons (s*symbol "where") _)))
+        (: none (some (syntax/where w)!) body)]
+      [(s*list (let body))
+        (: none none body)])
+    (ok (syntax:scheme
+      (s/location s)
+      (|> f (option/map syntax/forall/params) (option/unwrap array/empty))
+      (|> w (option/map syntax/where/constraints) (option/unwrap array/empty))
+      body))
+    (err (error: (s/location s) "((forall ...)? <type> (where ...)?)"))))
+
+(value-data (SyntaxForall A)
+  (syntax:forall SourceLocation (Array (SyntaxTypeParameter A))))
+
+(getter syntax:forall syntax/forall/loc syntax/forall/params)
+
+(function (syntax/forall s)
+  (if-match1 (s*cons (s*symbol "forall") (let params)) s
+    (ok (syntax:forall (s/location s) (syntax/list-of syntax/type-parameter params)!))
+    (err (error: (s/location s) "(forall <type-parameter> ...)"))))
+
+(value-data (SyntaxWhere A)
+  (syntax:where SourceLocation (Array (SyntaxConstraint A))))
+
+(getter syntax:where syntax/where/loc syntax/where/constraints)
+
+(function (syntax/where s)
+  (if-match1 (s*cons (s*symbol "where") (let constraints)) s
+    (ok (syntax:where (s/location s) (syntax/list-of syntax/constraint constraints)!))
+    (err (error: (s/location s) "(where <constraint> ...)"))))

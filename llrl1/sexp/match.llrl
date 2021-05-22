@@ -77,3 +77,19 @@
       `(,\s: _ (,\s-rep:cons ,car ,(expand-list cdr)))]
     [_
       `(,\s: _ ,\s-rep:nil)]))
+
+(macro (s*list-like s)
+  (s/match s
+    [(_ ,@ss)
+      (ok (expand-list-like ss))]
+    [_
+      (err "Expected (s*list-like s ...)")]))
+
+(function (expand-list-like ss)
+  (s/match ss
+    [(,last)
+      last]
+    [(,car ,@cdr)
+      `(,\s: _ (,\s-rep:cons ,car ,(expand-list-like cdr)))]
+    [_
+      `(,\s: _ ,\s-rep:nil)]))

@@ -511,7 +511,7 @@ fn test_class() {
 #[test]
 fn test_instance() {
     assert_matches!(
-        "(instance Eq:Int (Eq Int) (function (eq x y) True))",
+        "(instance Eq.Int (Eq Int) (function (eq x y) True))",
         Instance<Function>,
         Ok(Instance { ty_params, target, s_params, method_impls, .. })
             if ty_params.is_empty()
@@ -521,7 +521,7 @@ fn test_instance() {
     );
 
     assert_matches!(
-        "(instance Eq:Pair (forall A) (Eq (Pair A A)) (where (Eq A) (Eq A)) (function (eq x y) true))",
+        "(instance Eq.Pair (forall A) (Eq (Pair A A)) (where (Eq A) (Eq A)) (function (eq x y) true))",
         Instance<Function>,
         Ok(Instance { ty_params, target, s_params, method_impls, .. })
             if matches!(ty_params.as_slice(), [

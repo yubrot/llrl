@@ -1,0 +1,89 @@
+(import "~/sexp" _)
+(import "~/source-location" _)
+(import "~/syntax/common" _)
+(import "~/syntax/type" _)
+(import "~/syntax/pattern" _)
+(export Syntax_ syntax:_ syntax/_)
+
+(value-data (SyntaxExpr A)
+  (syntax:expr:begin (Array (S A)))
+  (syntax:expr:let (Array (SyntaxLocalDef A)) (Array (S A)))
+  (syntax:expr:if (S A) (S A) (S A))
+  (syntax:expr:while (S A) (Array (S A)))
+  (syntax:expr:match (S A) (Array (SyntaxMatchClause A)))
+  (syntax:expr:return (Option (S A)))
+  (syntax:expr:tuple (Array (S A)))
+  syntax:expr:unit
+  (syntax:expr:use (SyntaxUse A))
+  (syntax:expr:app (S A) (Array (S A)))
+  (syntax:expr:quote (S A))
+  (syntax:expr:capture SyntaxName)
+  (syntax:expr:annotate (S A) (SyntaxScheme A))
+  (syntax:expr:literal (S A)))
+
+(function (syntax/expr s)
+  (match s
+    [(s*cons (s*symbol "begin") (let body))
+      (ok (syntax:expr:begin (syntax/list-of ok body)!))]
+    [(s*list-like (s*symbol "let") (let defs) (let body))
+      (ok (syntax:expr:let (syntax/list-of syntax/local-def defs)! (syntax/list-of ok body)!))]
+    [(s*list (s*symbol "if") (let cond) (let then) (let else))
+      (ok (syntax:expr:if cond then else))]
+    [(s*list-like (s*symbol "while") (let cond) (let body))
+      (ok (syntax:expr:while cond (syntax/list-of ok body)!))]
+    [(s*list-like (s*symbol "match") (let target) (let clauses))
+      (ok (syntax:expr:match target (syntax/list-of syntax/match-clause clauses)!))]
+    [(s*list (s*symbol "return"))
+      (ok (syntax:expr:return none))]
+    [(s*list (s*symbol "return") (let expr))
+      (ok (syntax:expr:return (some expr)))]
+    [(s*cons (s*symbol ":") (let elems))
+      (ok (syntax:expr:tuple (syntax/list-of ok elems)!))]
+    [(s*list (s*symbol "quote") (let expr))
+      (ok (syntax:expr:quote expr))]
+    [(s*list (s*symbol "capture") (let name))
+      (ok (syntax:expr:capture (syntax/name name)!))]
+    [(s*list-like (s*symbol "annotate") (let expr) (let scheme))
+      (ok (syntax:expr:annotate expr (syntax/scheme scheme)!))]
+    [(s*cons (let callee) (let args))
+      (ok (syntax:expr:app callee (syntax/list-of ok args)!))]
+    [(s*symbol "unit")
+      (ok syntax:expr:unit)]
+    [(s*integer _ _)
+      (ok (syntax:expr:literal s))]
+    [(s*fp-number _)
+      (ok (syntax:expr:literal s))]
+    [(s*string _)
+      (ok (syntax:expr:literal s))]
+    [(s*char _)
+      (ok (syntax:expr:literal s))]
+    [(s*bool _)
+      (ok (syntax:expr:literal s))]
+    [_
+      (if-match1 (ok (let use*)) (syntax/use s)
+        (ok (syntax:expr:use use*))
+        (err (error: (s/location s) "<expr>")))]))
+
+(value-data (SyntaxLocalDef A)
+  (syntax:local-def
+    SourceLocation              ; loc
+    SyntaxName                  ; name
+    (Option (Array SyntaxName)) ; params
+    (Option (SyntaxScheme A))   ; scheme
+    (Array (S A))))             ; body
+
+(function (syntax/local-def s)
+  (if-match1 (s*cons (let decl) (let body)) s
+    (with1
+      (syntax:annotatable (syntax:parameterizable (let name) (let params)) (let scheme))
+      (syntax/annotatable [^1 (syntax/parameterizable syntax/name syntax/name %1)] syntax/scheme decl)!
+      (ok (syntax:local-def (s/location s) name params scheme (syntax/list-of ok body)!)))
+    (err (error: (s/location s) "[<<name> or (<name> <param> ...)> {type-scheme}? <body> ...]"))))
+
+(value-data (SyntaxMatchClause A)
+  (syntax:match-clause SourceLocation (S A) (Array (S A)))) ; loc pat body
+
+(function (syntax/match-clause s)
+  (if-match1 (s*cons (let pat) (let body)) s
+    (ok (syntax:match-clause (s/location s) pat (syntax/list-of ok body)!))
+    (err (error: (s/location s) "[<pat> <body> ...]"))))

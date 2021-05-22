@@ -1,0 +1,373 @@
+(import "~/syntax" _)
+(println! "llrl1/tests/syntax")
+
+(import "~/sexp" _)
+(import "~/sexp/lexer" lex)
+(import "~/sexp/parser" Parser parser/_ [Display.ParseError Display.Error])
+(import "~/source-location" source-locator/temporary)
+
+(function (parse input) {(-> String (S Never))}
+  (|> input
+      lex
+      (parser/new (source-locator/temporary))
+      parser/parse-s!
+      (result/unwrap* [^1 (assert #f (string "Parse error: " %1))])))
+
+(assert-is? (ok (syntax:name _ "foo"))
+            (syntax/name (parse "foo")))
+(assert-is? (ok (syntax:use _ (left "foo")))
+            (syntax/use (parse "foo")))
+(assert-is? (ok (syntax:annotatable (syntax:name _ "foo") none))
+            (syntax/annotatable syntax/name ok (parse "foo")))
+(assert-is? (ok (syntax:annotatable (syntax:name _ "foo") (some (s*list _ _))))
+            (syntax/annotatable syntax/name ok (parse "foo {a b}")))
+(assert-is? (ok (syntax:parameterizable (syntax:name _ "foo") none))
+            (syntax/parameterizable syntax/name ok (parse "foo")))
+(assert-is? (ok (syntax:parameterizable (syntax:name _ "foo") (some _)))
+            (syntax/parameterizable syntax/name ok (parse "(foo a b)")))
+(assert-is? (err _)
+            (syntax/macro-apply (parse "foo")))
+(assert-is? (ok (syntax:macro-apply (syntax:use _ (left "foo")) (s*list _ _)))
+            (syntax/macro-apply (parse "(foo a b)")))
+
+(assert-is? (ok syntax:kind:type)
+            (syntax/kind (parse "*")))
+(assert-is? (ok syntax:kind:constraint)
+            (syntax/kind (parse "Constraint")))
+(assert-is? (ok syntax:kind:satisfaction)
+            (syntax/kind (parse "Satisfaction")))
+(assert-is? (ok syntax:kind:value)
+            (syntax/kind (parse "Value")))
+(assert-is? (ok syntax:kind:macro)
+            (syntax/kind (parse "Macro")))
+(assert-is? (ok (syntax:kind:fun _ (s*symbol "*")))
+            (syntax/kind (parse "(-> * * *)")))
+
+(assert-is? (ok syntax:type:unit)
+            (syntax/type (parse "unit")))
+(assert-is? (ok (syntax:type:use (syntax:use _ (left "Foo"))))
+            (syntax/type (parse "Foo")))
+(assert-is? (err _)
+            (syntax/type (parse "(->)")))
+(assert-is? (ok (syntax:type:fun _ _))
+            (syntax/type (parse "(-> unit)")))
+(assert-is? (ok (syntax:type:fun _ _))
+            (syntax/type (parse "(-> A unit)")))
+(assert-is? (ok (syntax:type:fun _ _))
+            (syntax/type (parse "(-> A B unit)")))
+(assert-is? (ok (syntax:type:tuple _))
+            (syntax/type (parse "(:)")))
+(assert-is? (ok (syntax:type:tuple _))
+            (syntax/type (parse "(: A B C)")))
+(assert-is? (ok (syntax:type:app (s*symbol "A") _))
+            (syntax/type (parse "(A)")))
+(assert-is? (ok (syntax:type:app (s*symbol "A") _))
+            (syntax/type (parse "(A B C)")))
+
+(assert-is? (ok (syntax:constraint _ (syntax:use _ (left "Partial")) none))
+            (syntax/constraint (parse "Partial")))
+(assert-is? (ok (syntax:constraint _ (syntax:use _ (left "Functor")) (some _)))
+            (syntax/constraint (parse "(Functor F)")))
+
+(assert-is? (ok (syntax:type-parameter _ (syntax:name _ "A") none))
+            (syntax/type-parameter (parse "A")))
+(assert-is? (ok (syntax:type-parameter _ (syntax:name _ "A") (some (s*symbol "*"))))
+            (syntax/type-parameter (parse "[A *]")))
+
+(assert-is? (ok (syntax:forall _ _))
+            (syntax/forall (parse "(forall)")))
+(assert-is? (ok (syntax:forall _ _))
+            (syntax/forall (parse "(forall A B)")))
+(assert-is? (ok (syntax:forall _ _))
+            (syntax/forall (parse "(forall [A (-> * *)])")))
+
+(assert-is? (ok (syntax:where _ _))
+            (syntax/where (parse "(where)")))
+(assert-is? (ok (syntax:where _ _))
+            (syntax/where (parse "(where (Eq A) (Hash A))")))
+
+(assert
+  (if-match1
+    (ok (syntax:scheme _ (let ty-params) (let s-params) (let body)))
+    (syntax/scheme (parse "((-> String) (where Partial))"))
+    (and (is? (s*list (s*symbol "->") _) body)
+         (eq? 0 (array/length ty-params))
+         (eq? 1 (array/length s-params))
+         (is? (syntax:constraint _ (syntax:use _ (left "Partial")) none) (get s-params[0])))
+    #f))
+
+(assert
+  (if-match1
+    (ok (syntax:scheme _ (let ty-params) (let s-params) (let body)))
+    (syntax/scheme (parse "((forall A) (-> A A))"))
+    (and (is? (s*list (s*symbol "->") _ _) body)
+         (eq? 1 (array/length ty-params))
+         (is? (syntax:type-parameter _ (syntax:name _ "A") none) (get ty-params[0]))
+         (eq? 0 (array/length s-params)))
+    #f))
+
+(assert
+  (if-match1
+    (ok (syntax:scheme _ (let ty-params) (let s-params) (let body)))
+    (syntax/scheme (parse "((forall A) (-> A String) (where (Show A)))"))
+    (and (is? (s*list (s*symbol "->") _ _) body)
+         (eq? 1 (array/length ty-params))
+         (is? (syntax:type-parameter _ (syntax:name _ "A") none) (get ty-params[0]))
+         (eq? 1 (array/length s-params))
+         (is? (syntax:constraint _ (syntax:use _ (left "Show")) (some _)) (get s-params[0])))
+    #f))
+
+(assert-is? (ok syntax:pattern:wildcard)
+            (syntax/pattern (parse "_")))
+(assert-is? (ok (syntax:pattern:const (s*integer _ 123)))
+            (syntax/pattern (parse "123")))
+(assert-is? (ok (syntax:pattern:const (s*bool #t)))
+            (syntax/pattern (parse "#t")))
+(assert-is? (ok (syntax:pattern:const (s*string "foo")))
+            (syntax/pattern (parse "\"foo\"")))
+(assert-is? (ok (syntax:pattern:const (s*char #\x)))
+            (syntax/pattern (parse "#\\x")))
+(assert-is? (ok (syntax:pattern:var (syntax:name _ "x") none))
+            (syntax/pattern (parse "(let x)")))
+(assert-is? (ok (syntax:pattern:var (syntax:name _ "x") (some (s*bool #t))))
+            (syntax/pattern (parse "(let x #t)")))
+(assert-is? (ok (syntax:pattern:decon (syntax:use _ (left "nil")) none))
+            (syntax/pattern (parse "nil")))
+(assert-is? (ok syntax:pattern:unit)
+            (syntax/pattern (parse "unit")))
+(assert-is? (ok (syntax:pattern:decon (syntax:use _ (left "cons")) (some _)))
+            (syntax/pattern (parse "(cons (let x) (let xs))")))
+(assert-is? (ok (syntax:pattern:tuple _))
+            (syntax/pattern (parse "(:)")))
+(assert-is? (ok (syntax:pattern:tuple _))
+            (syntax/pattern (parse "(: a b c)")))
+
+(assert-is? (ok (syntax:expr:begin _))
+            (syntax/expr (parse "(begin a b c)")))
+(assert-is? (ok (syntax:expr:if (s*symbol "a") (s*symbol "b") (s*symbol "c")))
+            (syntax/expr (parse "(if a b c)")))
+(assert-is? (ok (syntax:expr:while (s*symbol "a") _))
+            (syntax/expr (parse "(while a b c d e)")))
+(assert-is? (ok (syntax:expr:return none))
+            (syntax/expr (parse "(return)")))
+(assert-is? (ok (syntax:expr:return (some (s*integer _ 123))))
+            (syntax/expr (parse "(return 123)")))
+(assert-is? (ok (syntax:expr:tuple _))
+            (syntax/expr (parse "(: a b)")))
+(assert-is? (ok syntax:expr:unit)
+            (syntax/expr (parse "unit")))
+(assert-is? (ok (syntax:expr:use (syntax:use _ (left "foo"))))
+            (syntax/expr (parse "foo")))
+(assert-is? (ok (syntax:expr:app (s*symbol "foo") _))
+            (syntax/expr (parse "(foo a b c)")))
+(assert-is? (ok (syntax:expr:literal (s*integer _ 123)))
+            (syntax/expr (parse "123")))
+(assert-is? (ok (syntax:expr:literal (s*bool #f)))
+            (syntax/expr (parse "#f")))
+(assert-is? (ok (syntax:expr:quote (s*symbol "foo")))
+            (syntax/expr (parse "'foo")))
+(assert-is? (ok (syntax:expr:capture (syntax:name _ "foo")))
+            (syntax/expr (parse "\\foo")))
+(assert-is? (ok (syntax:expr:annotate (s*symbol "foo") (syntax:scheme _ _ _ (s*symbol "bar"))))
+            (syntax/expr (parse "foo {bar}")))
+
+(assert
+  (if-match1
+    (ok (syntax:expr:let (let defs) (let body)))
+    (syntax/expr (parse "(let ([a 1] [b 2]) c d)"))
+    (and (eq? 2 (array/length body))
+         (is? (s*symbol "c") (get body[0]))
+         (is? (s*symbol "d") (get body[1]))
+         (eq? 2 (array/length defs))
+         (is? (syntax:local-def _ (syntax:name _ "a") none none _) (get defs[0]))
+         (is? (syntax:local-def _ (syntax:name _ "b") none none _) (get defs[1])))
+    #f))
+
+(assert
+  (if-match1
+    (ok (syntax:expr:let (let defs) (let body)))
+    (syntax/expr (parse "(let ([(f x) 1] [g {T} 2]) c d)"))
+    (and (eq? 2 (array/length body))
+         (eq? 2 (array/length defs))
+         (is? (syntax:local-def _ (syntax:name _ "f") (some _) none _)
+              (get defs[0]))
+         (is? (syntax:local-def _ (syntax:name _ "g") none (some (syntax:scheme _ _ _ (s*symbol "T"))) _)
+              (get defs[1])))
+    #f))
+
+(assert
+  (if-match1
+    (ok (syntax:expr:match (let target) (let clauses)))
+    (syntax/expr (parse "(match target [A 0] [B 1])"))
+    (and (is? (s*symbol "target") target)
+         (eq? 2 (array/length clauses))
+         (is? (syntax:match-clause _ (s*symbol "A") _) (get clauses[0]))
+         (is? (syntax:match-clause _ (s*symbol "B") _) (get clauses[1])))
+    #f))
+
+(assert
+  (if-match1
+    (ok (syntax:decl:import (syntax:import _ (let path) (let targets))))
+    (syntax/decl (parse "(import \"hello\" foo bar [foobar baz])"))
+    (and (is? "hello" path)
+         (eq? 3 (array/length targets))
+         (is? (syntax:port-target _ none (syntax:name _ "foo")) (get targets[0]))
+         (is? (syntax:port-target _ none (syntax:name _ "bar")) (get targets[1]))
+         (is? (syntax:port-target _ (some (syntax:name _ "foobar")) (syntax:name _ "baz")) (get targets[2])))
+    #f))
+
+(assert
+  (if-match1
+    (ok (syntax:decl:export (syntax:export _ (let targets))))
+    (syntax/decl (parse "(export [hoge fuga] piyo)"))
+    (and (eq? 2 (array/length targets))
+         (is? (syntax:port-target _ (some (syntax:name _ "hoge")) (syntax:name _ "fuga")) (get targets[0]))
+         (is? (syntax:port-target _ none (syntax:name _ "piyo")) (get targets[1])))
+    #f))
+
+(assert-is? (ok (syntax:decl:function (syntax:function _ #f (syntax:name _ "f") none none _)))
+            (syntax/decl (parse "(function f f)")))
+(assert-is? (ok (syntax:decl:function (syntax:function _ #t (syntax:name _ "g") (some _) none _)))
+            (syntax/decl (parse "(transparent-function (g) f)")))
+(assert-is? (ok (syntax:decl:function (syntax:function _ #f (syntax:name _ "h") none (some _) _)))
+            (syntax/decl (parse "(function h {T})")))
+
+(assert
+  (if-match1
+    (ok (syntax:decl:function (syntax:function _ #f _ (some (let params)) (some (syntax:scheme _ _ _ (let ty))) (let body))))
+    (syntax/decl (parse "(function (f a b) {T} a)"))
+    (and (eq? 2 (array/length params))
+         (is? (syntax:name _ "a") (get params[0]))
+         (is? (syntax:name _ "b") (get params[1]))
+         (is? (s*symbol "T") ty)
+         (eq? 1 (array/length body))
+         (is? (s*symbol "a") (get body[0])))
+    #f))
+
+(assert-is? (ok (syntax:decl:c-function (syntax:c-function _ (syntax:name _ "<puts>") (syntax:scheme _ _ _ (s*list (s*symbol "->") _ _)) "puts")))
+            (syntax/decl (parse "(c-function <puts> {(-> (Ptr U8) I32)} \"puts\")")))
+
+(assert-is? (ok (syntax:decl:builtin-op (syntax:builtin-op _ (syntax:name _ "add") (syntax:scheme _ _ _ (s*list (s*symbol "->") _ _ _)) "i32.add")))
+            (syntax/decl (parse "(builtin-op add {(-> I32 I32 I32)} \"i32.add\")")))
+
+(assert-is? (ok (syntax:decl:macro (syntax:macro _ (syntax:name _ "f") (syntax:name _ "a") _)))
+            (syntax/decl (parse "(macro (f a) b)")))
+
+(assert
+  (if-match1
+    (ok (syntax:decl:data (syntax:data _ syntax:data-repr:value (syntax:name _ "Bool") none (let value-cons))))
+    (syntax/decl (parse "(value-data Bool true false)"))
+    (and (eq? 2 (array/length value-cons))
+         (is? (syntax:data-value-con _ (syntax:name _ "true") none) (get value-cons[0]))
+         (is? (syntax:data-value-con _ (syntax:name _ "false") none) (get value-cons[1])))
+    #f))
+
+(assert
+  (if-match1
+    (ok (syntax:decl:data (syntax:data _ syntax:data-repr:default (syntax:name _ "List") (some (let ty-params)) (let value-cons))))
+    (syntax/decl (parse "(data (List A) (cons A (List A)) nil)"))
+    (and (eq? 1 (array/length ty-params))
+         (is? (syntax:type-parameter _ (syntax:name _ "A") none) (get ty-params[0]))
+         (eq? 2 (array/length value-cons))
+         (if-match1
+           (syntax:data-value-con _ (syntax:name _ "cons") (some (let fields)))
+           (get value-cons[0])
+           (and (eq? 2 (array/length fields))
+                (is? (s*symbol "A") (get fields[0]))
+                (is? (s*list (s*symbol "List") _) (get fields[1])))
+           #f)
+         (is? (syntax:data-value-con _ (syntax:name _ "nil") none) (get value-cons[1])))
+    #f))
+
+(assert
+  (if-match1
+    (ok (syntax:decl:data (syntax:data _ syntax:data-repr:c (syntax:name _ "Proxy") (some (let ty-params)) (let value-cons))))
+    (syntax/decl (parse "(c-data (Proxy (A *)))"))
+    (and (eq? 1 (array/length ty-params))
+         (is? (syntax:type-parameter _ (syntax:name _ "A") (some _)) (get ty-params[0]))
+         (eq? 0 (array/length value-cons)))
+    #f))
+
+(assert
+  (if-match1
+    (ok (syntax:decl:builtin-type (syntax:builtin-type _ (syntax:name _ "Foo") none "foo" (let value-cons))))
+    (syntax/decl (parse "(builtin-type Foo \"foo\")"))
+    (eq? 0 (array/length value-cons))
+    #f))
+
+(assert
+  (if-match1
+    (ok (syntax:decl:builtin-type (syntax:builtin-type _ (syntax:name _ "Foo") (some (let ty-params)) "foo" (let value-cons))))
+    (syntax/decl (parse "(builtin-type (Foo A) \"foo\")"))
+    (and (eq? 1 (array/length ty-params))
+         (is? (syntax:type-parameter _ (syntax:name _ "A") none) (get ty-params[0])))
+    #f))
+
+(assert
+  (if-match1
+    (ok (syntax:decl:builtin-type (syntax:builtin-type _ (syntax:name _ "Foo") none "foo" (let value-cons))))
+    (syntax/decl (parse "(builtin-type Foo \"foo\" [bar \"foobar\"] [(baz A) \"baz\"])"))
+    (and (eq? 2 (array/length value-cons))
+         (is? (syntax:builtin-value-con _ (syntax:name _ "bar") none "foobar") (get value-cons[0]))
+         (if-match1
+          (syntax:builtin-value-con _ (syntax:name _ "baz") (some (let fields)) "baz")
+          (get value-cons[1])
+          (and (eq? 1 (array/length fields))
+               (is? (s*symbol "A") (get fields[0])))
+          #f))
+    #f))
+
+(assert
+  (if-match1
+    (ok (syntax:decl:class (syntax:class _ #f (syntax:name _ "Partial") none (let superclasses) (let methods))))
+    (syntax/decl (parse "(class Partial)"))
+    (and (eq? 0 (array/length superclasses))
+         (eq? 0 (array/length methods)))
+    #f))
+
+(assert
+  (if-match1
+    (ok (syntax:decl:class (syntax:class _ #t (syntax:name _ "Num") (some (let ty-params)) _ _)))
+    (syntax/decl (parse "(sealed-class (Num A))"))
+    (and (eq? 1 (array/length ty-params))
+         (is? (syntax:type-parameter _ (syntax:name _ "A") none) (get ty-params[0])))
+    #f))
+
+(assert
+  (if-match1
+    (ok (syntax:decl:class (syntax:class _ #f (syntax:name _ "Eq") (some _) _ (let methods))))
+    (syntax/decl (parse "(class (Eq A) (function (eq x y) {(-> A A Bool)}))"))
+    (and (eq? 1 (array/length methods))
+         (is? (syntax:function _ #f (syntax:name _ "eq") (some _) (some _) _) (get methods[0])))
+    #f))
+
+(assert
+  (if-match1
+    (ok (syntax:decl:class (syntax:class _ #f (syntax:name _ "Ord") (some _) (let superclasses) _)))
+    (syntax/decl (parse "(class (Ord A) (where (Eq A)))"))
+    (and (eq? 1 (array/length superclasses))
+         (is? (syntax:constraint _ (syntax:use _ (left "Eq")) (some _)) (get superclasses[0])))
+    #f))
+
+(assert
+  (if-match1
+    (ok (syntax:decl:instance (syntax:instance _ (syntax:name _ "Eq.Int") (let ty-params) (let s-params) (syntax:constraint _ (syntax:use _ (left "Eq")) (some _)) (let methods))))
+    (syntax/decl (parse "(instance Eq.Int (Eq Int) (function (eq x y) #t))"))
+    (and (eq? 0 (array/length ty-params))
+         (eq? 0 (array/length s-params))
+         (eq? 1 (array/length methods))
+         (is? (syntax:function _ #f (syntax:name _ "eq") (some _) none _) (get methods[0])))
+    #f))
+
+(assert
+  (if-match1
+    (ok (syntax:decl:instance (syntax:instance _ (syntax:name _ "Eq.Pair") (let ty-params) (let s-params) (syntax:constraint _ (syntax:use _ (left "Eq")) (some (let target-args))) (let methods))))
+    (syntax/decl (parse "(instance Eq.Pair (forall A B) (Eq (Pair A B)) (where (Eq A) (Eq B)) (function (eq x y) #t))"))
+    (and (eq? 2 (array/length ty-params))
+         (is? (syntax:type-parameter _ (syntax:name _ "A") none) (get ty-params[0]))
+         (is? (syntax:type-parameter _ (syntax:name _ "B") none) (get ty-params[1]))
+         (eq? 1 (array/length target-args))
+         (is? (s*list (s*symbol "Pair") (s*symbol "A") (s*symbol "B")) (get target-args[0]))
+         (eq? 1 (array/length methods))
+         (is? (syntax:function _ #f (syntax:name _ "eq") (some _) none _) (get methods[0])))
+    #f))

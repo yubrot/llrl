@@ -1,0 +1,32 @@
+(import "~/source-location" _)
+(import "~/sexp" _)
+(import "~/syntax/common" _)
+(export Syntax_ syntax:_ syntax/_)
+
+(value-data (SyntaxKind A)
+  (syntax:kind:fun (Array (S A)) (S A)) ; args ret
+  syntax:kind:type
+  syntax:kind:constraint
+  syntax:kind:satisfaction
+  syntax:kind:value
+  syntax:kind:macro)
+
+(function (syntax/kind s)
+  (match s
+    [(s*cons (s*symbol "->") (let args-ret))
+      (let1 args-ret (syntax/list-of ok args-ret)!
+        (if-match1 (some (: (let ret) (let args))) (array/split-last? args-ret)
+          (ok (syntax:kind:fun args ret))
+          (err (error: (s/location s) "(-> <return-kind>)"))))]
+    [(s*symbol "*")
+      (ok syntax:kind:type)]
+    [(s*symbol "Constraint")
+      (ok syntax:kind:constraint)]
+    [(s*symbol "Satisfaction")
+      (ok syntax:kind:satisfaction)]
+    [(s*symbol "Value")
+      (ok syntax:kind:value)]
+    [(s*symbol "Macro")
+      (ok syntax:kind:macro)]
+    [_
+      (err (error: (s/location s) "<kind>"))]))

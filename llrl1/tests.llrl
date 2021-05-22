@@ -6,3 +6,4 @@
 (import "~/tests/sexp/match")
 (import "~/tests/sexp/lexer")
 (import "~/tests/sexp/parser")
+(import "~/tests/syntax")

@@ -1,0 +1,38 @@
+(import "~/sexp" _)
+(import "~/syntax/common" _)
+(export Syntax_ syntax:_ syntax/_)
+
+(value-data (SyntaxPattern A)
+  (syntax:pattern:const (S A))
+  (syntax:pattern:var SyntaxName (Option (S A))) ; name as-pat
+  (syntax:pattern:tuple (Array (S A))) ; elems
+  syntax:pattern:unit
+  (syntax:pattern:decon (SyntaxUse A) (Option (Array (S A)))) ; con fields
+  syntax:pattern:wildcard)
+
+(function (syntax/pattern s)
+  (match s
+    [(s*symbol "unit")
+      (ok syntax:pattern:unit)]
+    [(s*symbol "_")
+      (ok syntax:pattern:wildcard)]
+    [(s*list (s*symbol "let") (let name))
+      (ok (syntax:pattern:var (syntax/name name)! none))]
+    [(s*list (s*symbol "let") (let name) (let as-pat))
+      (ok (syntax:pattern:var (syntax/name name)! (some as-pat)))]
+    [(s*cons (s*symbol ":") (let elems))
+      (ok (syntax:pattern:tuple (syntax/list-of ok elems)!))]
+    [(s*integer _ _)
+      (ok (syntax:pattern:const s))]
+    [(s*fp-number _)
+      (ok (syntax:pattern:const s))]
+    [(s*string _)
+      (ok (syntax:pattern:const s))]
+    [(s*char _)
+      (ok (syntax:pattern:const s))]
+    [(s*bool _)
+      (ok (syntax:pattern:const s))]
+    [_
+      (if-match1 (ok (syntax:parameterizable (let con) (let fields))) (syntax/parameterizable syntax/use ok s)
+        (ok (syntax:pattern:decon con fields))
+        (err (error: (s/location s) "<pattern>")))]))
