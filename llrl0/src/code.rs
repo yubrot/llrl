@@ -49,7 +49,7 @@ impl Code {
         let mut implicit_std = true;
 
         for s in source.ss.iter() {
-            if let Ok(()) = s.matches::<syntax::NoImplicitPrelude>() {
+            if let Ok(()) = s.matches::<syntax::NoImplicitStd>() {
                 implicit_std = false;
             } else if let Ok(import) = s.matches::<syntax::Import>() {
                 match import.path.parse::<Path>() {

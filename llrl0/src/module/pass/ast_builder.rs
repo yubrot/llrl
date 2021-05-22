@@ -22,7 +22,7 @@ fn define<'a, E: External>(s: &Sexp, ctx: &mut ContextImpl<'a, E>) -> Result<()>
     let s = ctx.expand_macro(s)?;
     let decl = ctx.matches::<syntax::Decl>(&s)?;
     match decl {
-        syntax::Decl::NoImplicitPrelude => {}
+        syntax::Decl::NoImplicitStd => {}
         syntax::Decl::Import(_) => {}
         syntax::Decl::Export(_) => {}
         syntax::Decl::Function(function) => {

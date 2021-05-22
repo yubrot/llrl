@@ -7,7 +7,7 @@ use std::borrow::Cow;
 
 #[derive(Debug, Clone)]
 pub enum Decl<'a> {
-    NoImplicitPrelude,
+    NoImplicitStd,
     Import(Import<'a>),
     Export(Export<'a>),
     Function(Function<'a>),
@@ -27,7 +27,7 @@ impl<'a> m::Match<'a> for Decl<'a> {
 
     fn match_sexp(s: &'a Sexp) -> m::Result<Self> {
         match s.matches::<(m::Symbol, m::Rest<m::Any>)>() {
-            Ok(("no-implicit-std", [])) => Ok(Decl::NoImplicitPrelude),
+            Ok(("no-implicit-std", [])) => Ok(Decl::NoImplicitStd),
             Ok(("import", _)) => Ok(Decl::Import(s.matches::<Import>()?)),
             Ok(("export", _)) => Ok(Decl::Export(s.matches::<Export>()?)),
             Ok(("function", _)) => Ok(Decl::Function(s.matches::<Function>()?)),
@@ -55,9 +55,9 @@ impl<'a> m::Match<'a> for Decl<'a> {
 impl_default_match_slice!(['a] MatchSlice<'a> for Decl<'a>);
 
 #[derive(Debug, Clone)]
-pub struct NoImplicitPrelude;
+pub struct NoImplicitStd;
 
-impl<'a> m::Match<'a> for NoImplicitPrelude {
+impl<'a> m::Match<'a> for NoImplicitStd {
     type Result = ();
 
     fn match_sexp(s: &'a Sexp) -> m::Result<Self> {
