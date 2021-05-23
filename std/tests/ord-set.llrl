@@ -1,0 +1,68 @@
+(import "std/ord-set" _)
+(import "std/tests/hash" h)
+
+(assert (ord-set/empty? ord-set/empty))
+(assert-eq? 0 (ord-set/length ord-set/empty))
+(assert (not (ord-set/has? unit ord-set/empty)))
+
+(let1 set ord-set/empty
+  (assert (ord-set/insert! unit set))
+  (assert (not (ord-set/empty? set)))
+  (assert-eq? 1 (ord-set/length set))
+  (assert (ord-set/has? unit set))
+  (assert (not (ord-set/insert! unit set)))
+  (assert (ord-set/has? unit set)))
+
+(let1 set (ord-set (some #t) none)
+  (assert (ord-set/has? none set))
+  (assert (ord-set/has? (some #t) set))
+  (assert (not (ord-set/has? (some #f) set)))
+  (assert (ord-set/remove! none set))
+  (assert (not (ord-set/remove! none set)))
+  (assert (not (ord-set/has? none set))))
+
+(let1 set (ord-set (some #t) none)
+  (ord-set/clear! set)
+  (assert (not (ord-set/has? none set)))
+  (assert (not (ord-set/has? (some #t) set))))
+
+(let1 set (ord-set/collect (array 1 2 3))
+  (assert (ord-set/has? 1 set))
+  (assert (ord-set/has? 2 set))
+  (assert (ord-set/has? 3 set))
+  (assert (not (ord-set/has? 4 set))))
+
+(let1 set (ord-set 1 3 2)
+  (assert-eq? (array 1 2 3) (collect set))
+  (assert-eq? (some 1) (ord-set/min? set))
+  (assert-eq? (some 3) (ord-set/max? set))
+  (assert-eq? (some 1) (ord-set/remove-min! set))
+  (assert-eq? (some 3) (ord-set/remove-max! set))
+  (assert-eq? (some 2) (ord-set/min? set))
+  (assert-eq? (some 2) (ord-set/max? set))
+  (assert-eq? (some 2) (ord-set/remove-min! set))
+  (assert-eq? none (ord-set/remove-max! set))
+  (assert-eq? none (ord-set/min? set)))
+
+(assert (ord-set/empty? default))
+
+(assert-eq? (string (debug (ord-set 1 2 3 4)))
+            "(ord-set 1 2 3 4)")
+
+(assert-eq? (ord-set) (ord-set))
+(assert-ne? (ord-set) (ord-set 1))
+(assert-eq? (ord-set 1) (ord-set 1))
+(assert-ne? (ord-set 1) (ord-set 2))
+(assert-ne? (ord-set 1) (ord-set 1 2))
+(assert-ne? (ord-set 1 3) (ord-set 1 2))
+
+(assert (not (< (ord-set) (ord-set))))
+(assert (< (ord-set) (ord-set 0)))
+(assert (< (ord-set 0) (ord-set 1)))
+(assert (< (ord-set 0 1) (ord-set 1)))
+
+(assert-eq? (h (ord-set)) (h (ord-set)))
+(assert-ne? (h (ord-set)) (h (ord-set 1)))
+(assert-eq? (h (ord-set 1)) (h (ord-set 1)))
+(assert-ne? (h (ord-set 1)) (h (ord-set 0)))
+(assert-ne? (h (ord-set 1)) (h (ord-set 1 2)))

@@ -1,0 +1,52 @@
+(import "std/hash-set" _)
+(import "std/ord-set" _)
+
+(assert (hash-set/empty? hash-set/empty))
+(assert-eq? 0 (hash-set/length hash-set/empty))
+(assert (not (hash-set/has? unit hash-set/empty)))
+
+(let1 set hash-set/empty
+  (assert (hash-set/insert! unit set))
+  (assert (not (hash-set/empty? set)))
+  (assert-eq? 1 (hash-set/length set))
+  (assert (hash-set/has? unit set))
+  (assert (not (hash-set/insert! unit set))))
+
+(let1 set (hash-set (some #t) none)
+  (assert (hash-set/has? none set))
+  (assert (hash-set/has? (some #t) set))
+  (assert (not (hash-set/has? (some #f) set)))
+  (assert (hash-set/remove! none set))
+  (assert (not (hash-set/remove! none set)))
+  (assert (not (hash-set/has? none set))))
+
+(let1 set (hash-set (some #t) none)
+  (hash-set/clear! set)
+  (assert (not (hash-set/has? none set)))
+  (assert (not (hash-set/has? (some #t) set))))
+
+(let1 set (hash-set/collect (array 1 2 3))
+  (assert (hash-set/has? 1 set))
+  (assert (hash-set/has? 2 set))
+  (assert (hash-set/has? 3 set))
+  (assert (not (hash-set/has? 4 set))))
+
+(let1 set (hash-set 1 3 2)
+  (assert-eq? (ord-set 1 2 3)
+              (|> set iterate ord-set/collect)))
+
+(assert (hash-set/empty? default))
+
+(let1 s (string (debug (hash-set 12 34 56 78)))
+  (assert (string/contains? "12" s))
+  (assert (string/contains? "34" s))
+  (assert (string/contains? "56" s))
+  (assert (string/contains? "78" s))
+  (assert-eq? (string/length "(hash-set 12 34 56 78)") (string/length s)))
+
+(assert-eq? (hash-set) (hash-set))
+(assert-ne? (hash-set) (hash-set 1))
+(assert-eq? (hash-set 1) (hash-set 1))
+(assert-ne? (hash-set 1) (hash-set 2))
+(assert-ne? (hash-set 1) (hash-set 1 2))
+(assert-ne? (hash-set 2) (hash-set 1 2))

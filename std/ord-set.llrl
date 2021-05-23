@@ -1,0 +1,109 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-1" _)
+(import "std/s" s/map)
+(import "std/integer" _)
+(import "std/iterator" _)
+(import "std/it" it/_)
+(import "std/hash" Hash hash!)
+(import "std/tuple" _.unit)
+(import "std/ord-map" _)
+(export OrdSet ord-set ord-set/_ _.OrdSet)
+
+(value-data (OrdSet K)
+  (set: (OrdMap K unit)))
+
+(macro (ord-set s)
+  (s/match s
+    [(_ ,@elems)
+      (ok
+        (let1 tmp-set (gensym)
+          `(let ([,tmp-set ,\ord-set/empty])
+            ,@(s/map [^1 `(,\ord-set/insert! ,%1 ,tmp-set)] elems)!
+            ,tmp-set)))]
+    [_
+      (err "Expected (ord-set elem ...)")]))
+
+(function (inner set) {(forall K) (-> (OrdSet K) (OrdMap K unit))}
+  (with1 (set: (let map)) set
+    map))
+
+(function ord-set/empty {(forall K) (OrdSet K)}
+  (set: ord-map/empty))
+
+(function (ord-set/length set) {(forall K) (-> (OrdSet K) U64)}
+  (ord-map/length (inner set)))
+
+(function (ord-set/empty? set) {(forall K) (-> (OrdSet K) Bool)}
+  (ord-map/empty? (inner set)))
+
+(function (ord-set/has? elem set) {(forall K) (-> K (OrdSet K) Bool) (where (Ord K))}
+  (ord-map/has? elem (inner set)))
+
+(function (ord-set/min? set) {(forall K) (-> (OrdSet K) (Option K)) (where (Ord K))}
+  (with1? (some (: (let elem) _)) (ord-map/get-min? (inner set))
+    elem))
+
+(function (ord-set/max? set) {(forall K) (-> (OrdSet K) (Option K)) (where (Ord K))}
+  (with1? (some (: (let elem) _)) (ord-map/get-max? (inner set))
+    elem))
+
+(function (ord-set/insert! elem set) {(forall K) (-> K (OrdSet K) Bool) (where (Ord K))}
+  (is? none (ord-map/insert! elem unit (inner set))))
+
+(function (ord-set/remove! elem set) {(forall K) (-> K (OrdSet K) Bool) (where (Ord K))}
+  (is? (some _) (ord-map/remove! elem (inner set))))
+
+(function (ord-set/remove-min! set) {(forall K) (-> (OrdSet K) (Option K)) (where (Ord K))}
+  (with1? (some (: (let elem) _)) (ord-map/remove-min! (inner set))
+    elem))
+
+(function (ord-set/remove-max! set) {(forall K) (-> (OrdSet K) (Option K)) (where (Ord K))}
+  (with1? (some (: (let elem) _)) (ord-map/remove-max! (inner set))
+    elem))
+
+(function (ord-set/clear! set) {(forall K) (-> (OrdSet K) unit)}
+  (ord-map/clear! (inner set)))
+
+; Currently we are unable to make this implementation an instance of std/iterator/Collect.
+; In order to do so, we need to extend llrl type system to support associated types or fundeps.
+(function (ord-set/collect t) {(forall T K) (-> (T K) (OrdSet K)) (where (Iterate T) (Ord K))}
+  (let1 set ord-set/empty
+    (for (let elem) t (ord-set/insert! elem set))
+    set))
+
+; ---------------------------
+
+(instance ShallowCopy.OrdSet (forall K) (ShallowCopy (OrdSet K))
+  (function (shallow-copy a)
+    (set: (shallow-copy (inner a)))))
+
+(instance DeepCopy.OrdSet (forall K) (DeepCopy (OrdSet K)) (where (DeepCopy K))
+  (function (deep-copy a)
+    (set: (deep-copy (inner a)))))
+
+(instance Default.OrdSet (forall K) (Default (OrdSet K))
+  (transparent-function default ord-set/empty))
+
+(instance DebugDisplay.OrdSet (forall K) (DebugDisplay (OrdSet K)) (where (DebugDisplay K))
+  (function (debug-display! w a)
+    (display! w "(ord-set")!
+    (for (let elem) a
+      (display-all! w " " (debug elem))!)
+    (display! w ")")))
+
+(instance Eq.OrdSet (forall K) (Eq (OrdSet K)) (where (Eq K))
+  (function (eq? a b)
+    (eq? (inner a) (inner b))))
+
+(instance Ord.OrdSet (forall K) (Ord (OrdSet K)) (where (Ord K))
+  (function (compare a b)
+    (compare (inner a) (inner b))))
+
+(instance Hash.OrdSet (forall K) (Hash (OrdSet K)) (where (Hash K))
+  (function (hash! s a)
+    (hash! s (inner a))))
+
+(instance Iterate.OrdSet (Iterate OrdSet)
+  (function (iterate set)
+    (ord-map/keys (inner set))))

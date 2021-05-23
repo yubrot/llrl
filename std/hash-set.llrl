@@ -1,0 +1,85 @@
+(no-implicit-std)
+
+(import "std/prelude/stage-1" _)
+(import "std/s" s/map)
+(import "std/integer" _)
+(import "std/iterator" _)
+(import "std/it" it/_)
+(import "std/hash" Hash hash!)
+(import "std/tuple" _.unit)
+(import "std/hash-map" _)
+(export HashSet hash-set hash-set/_ _.HashSet)
+
+(value-data (HashSet K)
+  (set: (HashMap K unit)))
+
+(macro (hash-set s)
+  (s/match s
+    [(_ ,@elems)
+      (ok
+        (let1 tmp-set (gensym)
+          `(let ([,tmp-set ,\hash-set/empty])
+            ,@(s/map [^1 `(,\hash-set/insert! ,%1 ,tmp-set)] elems)!
+            ,tmp-set)))]
+    [_
+      (err "Expected (hash-set elem ...)")]))
+
+(function (inner set) {(forall K) (-> (HashSet K) (HashMap K unit))}
+  (with1 (set: (let map)) set
+    map))
+
+(function hash-set/empty {(forall K) (HashSet K)}
+  (set: hash-map/empty))
+
+(function (hash-set/length set) {(forall K) (-> (HashSet K) U64)}
+  (hash-map/length (inner set)))
+
+(function (hash-set/empty? set) {(forall K) (-> (HashSet K) Bool)}
+  (hash-map/empty? (inner set)))
+
+(function (hash-set/has? elem set) {(forall K) (-> K (HashSet K) Bool) (where (Eq K) (Hash K))}
+  (hash-map/has? elem (inner set)))
+
+(function (hash-set/insert! elem set) {(forall K) (-> K (HashSet K) Bool) (where (Eq K) (Hash K))}
+  (is? none (hash-map/insert! elem unit (inner set))))
+
+(function (hash-set/remove! elem set) {(forall K) (-> K (HashSet K) Bool) (where (Eq K) (Hash K))}
+  (is? (some _) (hash-map/remove! elem (inner set))))
+
+(function (hash-set/clear! set) {(forall K) (-> (HashSet K) unit)}
+  (hash-map/clear! (inner set)))
+
+; Currently we are unable to make this implementation an instance of std/iterator/Collect.
+; In order to do so, we need to extend llrl type system to support associated types or fundeps.
+(function (hash-set/collect t) {(forall T K) (-> (T K) (HashSet K)) (where (Iterate T) (Eq K) (Hash K))}
+  (let1 set hash-set/empty
+    (for (let elem) t (hash-set/insert! elem set))
+    set))
+
+; ---------------------------
+
+(instance ShallowCopy.HashSet (forall K) (ShallowCopy (HashSet K))
+  (function (shallow-copy a)
+    (set: (shallow-copy (inner a)))))
+
+(instance DeepCopy.HashSet (forall K) (DeepCopy (HashSet K)) (where (DeepCopy K))
+  (function (deep-copy a)
+    (set: (deep-copy (inner a)))))
+
+(instance Default.HashSet (forall K) (Default (HashSet K))
+  (transparent-function default hash-set/empty))
+
+(instance DebugDisplay.HashSet (forall K) (DebugDisplay (HashSet K)) (where (DebugDisplay K))
+  (function (debug-display! w a)
+    (display! w "(hash-set")!
+    (for (let elem) a
+      (display-all! w " " (debug elem))!)
+    (display! w ")")))
+
+(instance Eq.HashSet (forall K) (Eq (HashSet K)) (where (Eq K) (Hash K))
+  (function (eq? a b)
+    (eq? (inner a) (inner b))))
+
+(instance Iterate.HashSet (Iterate HashSet)
+  (function (iterate set)
+    (hash-map/keys (inner set))))

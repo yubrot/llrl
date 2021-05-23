@@ -62,9 +62,9 @@ The goal of llrl is not to create a modern, practical programming language. Inst
     - [x] Array
     - [x] Vector
     - [x] Ordered map (B-tree)
-    - [ ] Ordered set
+    - [x] Ordered set
     - [x] Hash map
-    - [ ] Hash set
+    - [x] Hash set
     - [x] Persistent ordered map (Red-black tree)
     - [ ] Persistent ordered set
     - [x] Persistent hash map (HAMT)
