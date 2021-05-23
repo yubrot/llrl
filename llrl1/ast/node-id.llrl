@@ -1,0 +1,78 @@
+(import "~/util" _)
+(import "std/bits" _)
+(export ModuleId _.ModuleId module-id/_)
+(export NodeId _.NodeId node-id/_)
+(export NodeIdGenerator _.NodeIdGenerator node-id-generator/_ next-node-id!)
+
+; An identifier of the module.
+(derive (Eq Ord DebugDisplay Hash) value-data ModuleId
+  (module-id: U32))
+
+(instance Display.ModuleId (Display ModuleId)
+  (function (display! w a)
+    (display-all! w "#<Module " (module-id/index a) ">")))
+
+(getter module-id: module-id/index)
+
+(function (module-id/from-index index) {(-> U32 ModuleId)}
+  (module-id: index))
+
+(function module-id/builtin {ModuleId}
+  (module-id: 0))
+
+(function (module-id/builtin? mid) {(-> ModuleId Bool)}
+  (eq? mid module-id/builtin))
+
+; A globally unique identifier of the node in the module.
+(value-data (NodeId A)
+  (node-id: U64))
+
+(instance Eq.NodeId (forall A) (Eq (NodeId A))
+  (function (eq? a b)
+    (eq? (node-id/value a) (node-id/value b))))
+
+(instance Ord.NodeId (forall A) (Ord (NodeId A))
+  (function (compare a b)
+    (compare (node-id/value a) (node-id/value b))))
+
+(instance DebugDisplay.NodeId (forall A) (DebugDisplay (NodeId A))
+  (function (debug-display! w a)
+    (display-all! w "(node-id/new-unchecked " (debug (node-id/module a)) " " (node-id/index-in-module a) ")")))
+
+(instance Display.NodeId (forall A) (Display (NodeId A))
+  (function (display! w a)
+    (display-all! w "#<Module " (module-id/index (node-id/module a)) ". " (node-id/index-in-module a) ">")))
+
+(instance Hash.NodeId (forall A) (Hash (NodeId A))
+  (function (hash! s a)
+    (hash! s (node-id/value a))))
+
+(getter node-id: node-id/value)
+
+(function (node-id/new-unchecked mid id) {(forall A) (-> ModuleId U32 (NodeId A))}
+  (node-id: (bw| (cast (module-id/index mid)) (bw<< (cast id) 32))))
+
+(function (node-id/module nid) {(forall A) (-> (NodeId A) ModuleId)}
+  (module-id: (cast (node-id/value nid))))
+
+(function (node-id/index-in-module nid) {(forall A) (-> (NodeId A) U32)}
+  (cast (bw>> (node-id/value nid) 32)))
+
+(function (node-id/reinterpret-unchecked nid) {(forall A B) (-> (NodeId A) (NodeId B))}
+  (node-id: (node-id/value nid)))
+
+(derive (DebugDisplay) value-data NodeIdGenerator
+  (node-id-generator: ModuleId (Ref U32)))
+
+(getter node-id-generator: node-id-generator/module _)
+
+(function (node-id-generator/new mid) {(-> ModuleId NodeIdGenerator)}
+  (if (module-id/builtin? mid)
+    ; Some NodeIds are reserved on builtin
+    (node-id-generator: mid (ref 1000))
+    (node-id-generator: mid (ref 0))))
+
+(function (next-node-id! gen) {(forall A) (-> NodeIdGenerator (NodeId A))}
+  (with1 (node-id-generator: (let mid) (let id)) gen
+    (set! id (+ ~id 1))
+    (node-id/new-unchecked mid ~id)))

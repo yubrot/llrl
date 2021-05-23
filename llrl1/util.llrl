@@ -17,9 +17,13 @@
       (err "Expected (getter value-con-name field-name ...)")]))
 
 (function (getter-function con-name fields field)
-  (let1 self (gensym)
-    (ok `(function (,field ,self)
-      (,\with1 (,con-name ,@(s/map [^1 `(let ,%1)] fields)!) ,self ,field)))))
+  (match field
+    [(s:symbol "_")
+      (ok '(begin))]
+    [_
+      (let1 self (gensym)
+        (ok `(function (,field ,self)
+          (,\with1 (,con-name ,@(s/map [^1 `(let ,%1)] fields)!) ,self ,field))))]))
 
 ;    (string (it/format ", " (array 1 2 3)))
 ; => "1, 2, 3"

@@ -1,0 +1,11 @@
+(import "~/ast/node-id" _)
+(println! "llrl1/tests/ast")
+
+(let* ([gen (node-id-generator/new (module-id/from-index 1))]
+       [a (next-node-id! gen)]
+       [b (next-node-id! gen)]
+       [c (next-node-id! gen)])
+  (assert-ne? a b)
+  (assert-ne? b c)
+  (assert-eq? (node-id/module a) (node-id/module b))
+  (assert-ne? (node-id/index-in-module a) (node-id/index-in-module b)))

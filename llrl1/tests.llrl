@@ -7,3 +7,4 @@
 (import "~/tests/sexp/lexer")
 (import "~/tests/sexp/parser")
 (import "~/tests/syntax")
+(import "~/tests/ast")
