@@ -142,6 +142,8 @@
 
 (function (expand-cond clauses)
   (s/match clauses
+    [()
+      (ok 'unit)]
     [([else ,@body])
       (ok `(begin ,@body))]
     [([when ,pred ,@body] ,@clauses)

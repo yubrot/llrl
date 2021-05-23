@@ -2,6 +2,7 @@
 ; but the API is not well thought out enough to be adopted as std.
 
 (import "std/s" s/_)
+(import "std/ord-map" _)
 
 ;    (getter con: con/a con/b)
 ; => (function (con/a x) (with1 (con: (let con/a) (let con/b)) x con/a))
@@ -49,3 +50,73 @@
 
 (class (ContextualDisplay A C)
   (function (contextual-display! w a ctx) {(forall W Error) (-> W A C (Result unit Error)) (where (WriteString W Error))}))
+
+(export it/permutations)
+(function (it/permutations it) {(forall T A) (-> (T A) (Iterator (Array A))) (where (Ord A) (Iterate T))}
+  (iterator/unfold
+    (case1? (some (let seq)) (: (shallow-copy seq) (when? (next-permutation! seq) seq)))
+    (some (collect it))))
+
+(function (next-permutation! array) {(forall A) (-> (Array A) Bool) (where (Ord A))}
+  (when (<= (array/length array) 1) (return #f))
+  (let1 i (ref (- (array/length array) 1))
+    (loop
+      (let1 j (ref ~i)
+        (set! i (- ~i 1))
+        (cond
+          [(< (get array[~i]) (get array[~j]))
+            (let1 k (ref (- (array/length array) 1))
+              (while (>= (get array[~i]) (get array[~k])) (set! k (- ~k 1)))
+              (array/swap! ~i ~k array)
+              (array/reverse! (array/skip ~j array)))
+            (return #t)]
+          [(eq? ~i 0)
+            (array/reverse! array)
+            (return #f)])))))
+
+; Perform a topological sort.
+(export topological-sort)
+(function (topological-sort traverse src)
+  {(forall K V T)
+   (-> (-> (-> K unit) V unit) (T (: K V)) (Array (Vector V)))
+   (where (Ord K) (Iterate T))}
+  (let ([keys ord-map/empty]
+        [values vector/empty])
+    (for (: (let i) (: (let k) (let v))) (it/with-index src)
+      (ord-map/insert! k i keys)
+      (vector/push! v values))
+    (let* ([values (vector/buffer values)]
+           [indices (array/new -1 {I64} (array/length values))]
+           [lowlinks (array/new -1 {I64} (array/length values))]
+           [scc-indices (array/new -1 {I64} (array/length values))]
+           [next-index (ref 0 {I64})]
+           [next-scc-index (ref 0 {I64})]
+           [stack vector/empty]
+           [(visit i)
+              (set! indices[i] ~next-index)
+              (set! lowlinks[i] ~next-index)
+              (vector/push! i stack)
+              (set! next-index (+ ~next-index 1))
+              (traverse
+                (lambda (k)
+                  (when-match1 (some (let j)) (ord-map/get? k keys)
+                    (cond
+                      [(< (get indices[j]) 0)
+                        (visit j)
+                        (set! lowlinks[i] (min (get lowlinks[i]) (get lowlinks[j])))]
+                      [(< (get scc-indices[j]) 0)
+                        (set! lowlinks[i] (min (get lowlinks[i]) (get indices[j])))])))
+                (get values[i]))
+              (when (= (get indices[i]) (get lowlinks[i]))
+                (while
+                  (let1 j (option/force (vector/pop! stack))
+                    (set! scc-indices[j] ~next-scc-index)
+                    (ne? j i)))
+                (set! next-scc-index (+ ~next-scc-index 1)))])
+      (for (let i) (iterator/range 0 (array/length values) 1)
+        (when (< (get indices[i]) 0)
+          (visit i)))
+      (let1 result (array/new* [^0 vector/empty] (cast ~next-scc-index))
+        (for (: (let value) (let scc-index)) (it/zip values scc-indices)
+          (vector/push! value (get result[(cast scc-index)])))
+        result))))

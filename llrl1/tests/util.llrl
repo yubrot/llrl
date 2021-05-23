@@ -1,4 +1,5 @@
 (import "~/util" _)
+(import "std/ord-set" _)
 (println! "llrl1/tests/util")
 
 (value-data Test (test: I32 I32))
@@ -7,3 +8,95 @@
 (assert-eq? (test/b (test: 1 2)) 2)
 
 (assert-eq? "1, 2, 3" (|> (array 1 2 3) (it/format ", ") string))
+
+(value-data Node (node: I32 (Array I32))) ; id deps
+(getter node: node/id node/deps)
+
+(function (node/traverse-deps f node) {(-> (-> I32 unit) Node unit)}
+  (for (let dep) (node/deps node) (f dep)))
+
+(function (node/reorder-deps node) {(-> Node (Iterator Node))}
+  (with1 (node: (let id) (let deps)) node
+    (|> deps
+        it/permutations
+        (it/map [^1 (node: id %1)]))))
+
+(function (reordered-nodes nodes) {(-> (Array Node) (Iterator (Iterator Node)))}
+  (if-match1 (some (: (let node) (let nodes))) (array/split-first? nodes)
+    (|> node
+        node/reorder-deps
+        (it/flat-map (lambda (node)
+          (|> nodes
+              reordered-nodes
+              (it/map (lambda (nodes)
+                (it/chain (some node) nodes)))))))
+    (iterator/only iterator/empty)))
+
+(function (topological-sorted-nodes nodes) {(forall T) (-> (T Node) String) (where (Iterate T))}
+  (|> nodes
+      (it/map [^1 (: (node/id %1) %1)])
+      (topological-sort node/traverse-deps)
+      (it/map [^1 (|> %1 (it/map node/id) ord-set/collect (it/format ", ") string)])
+      (it/format " / ")
+      string))
+
+(function (assert-topological-sort nodes possible-results)
+  (for (let nodes) (reordered-nodes nodes)
+    (let1 result (topological-sorted-nodes nodes)
+      (assert (it/any? [^1 (eq? %1 result)] possible-results)
+              (string "assert-topological-sort: result = " result)))))
+
+(assert-topological-sort
+  (array)
+  (array ""))
+(assert-topological-sort
+  (array (node: 0 (array)))
+  (array "0"))
+(assert-topological-sort
+  (array (node: 0 (array 0)))
+  (array "0"))
+(assert-topological-sort
+  (array (node: 0 (array 1)) (node: 1 (array)))
+  (array "1 / 0"))
+(assert-topological-sort
+  (array (node: 0 (array)) (node: 1 (array 0)))
+  (array "0 / 1"))
+(assert-topological-sort
+  (array (node: 0 (array 1)) (node: 1 (array 1)))
+  (array "1 / 0"))
+(assert-topological-sort
+  (array (node: 0 (array 0)) (node: 1 (array 0)))
+  (array "0 / 1"))
+(assert-topological-sort
+  (array (node: 0 (array 1)) (node: 1 (array 0)))
+  (array "0, 1"))
+(assert-topological-sort
+  (array (node: 0 (array)) (node: 1 (array)) (node: 2 (array)))
+  (array "0 / 1 / 2"))
+(assert-topological-sort
+  (array (node: 0 (array 2)) (node: 1 (array)) (node: 2 (array 1)))
+  (array "1 / 2 / 0"))
+(assert-topological-sort
+  (array (node: 0 (array 2 3)) (node: 1 (array 0 2)) (node: 2 (array 3)) (node: 3 (array)))
+  (array "3 / 2 / 0 / 1"))
+(assert-topological-sort
+  (array (node: 0 (array 1 2 3)) (node: 1 (array 2)) (node: 2 (array)) (node: 3 (array)))
+  (array "3 / 2 / 1 / 0" "2 / 1 / 3 / 0" "2 / 3 / 1 / 0"))
+(assert-topological-sort
+  (array (node: 0 (array)) (node: 1 (array 2)) (node: 2 (array 3)) (node: 3 (array 2 0)))
+  (array "0 / 2, 3 / 1"))
+(assert-topological-sort
+  (array (node: 0 (array 1)) (node: 1 (array 2)) (node: 2 (array 3 4)) (node: 3 (array 1)) (node: 4 (array 0)))
+  (array "0, 1, 2, 3, 4"))
+(assert-topological-sort
+  (array (node: 0 (array)) (node: 1 (array 0 4)) (node: 2 (array 1 4)) (node: 3 (array 1 2 4)) (node: 4 (array)))
+  (array "4 / 0 / 1 / 3 / 2" "0 / 4 / 1 / 2 / 3"))
+(assert-topological-sort
+  (array (node: 0 (array 1 2)) (node: 1 (array 2 3 4)) (node: 2 (array 1 4 5)) (node: 3 (array 4)) (node: 4 (array 5)) (node: 5 (array 3)))
+  (array "3, 4, 5 / 1, 2 / 0"))
+(assert-topological-sort
+  (array (node: 0 (array 1 4)) (node: 1 (array 2 3 7)) (node: 2 (array 0 6)) (node: 3 (array 4)) (node: 4 (array 5)) (node: 5 (array 3)) (node: 6 (array 7)) (node: 7 (array 8)) (node: 8 (array 6)))
+  (array "3, 4, 5 / 6, 7, 8 / 0, 1, 2" "6, 7, 8 / 3, 4, 5 / 0, 1, 2"))
+(assert-topological-sort
+  (array (node: 0 (array 1)))
+  (array "0"))
