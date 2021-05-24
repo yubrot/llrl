@@ -1,9 +1,7 @@
-(import "std/s" s/_)
 (import "~/util" _)
 (import "~/ast/node-id" NodeId _.NodeId)
 (export Kind _.Kind kind:_ kind/_)
 (export KindUse _.KindUse)
-(export KindBuilder kind-builder/_ build-kind KindBuilder.Ast)
 
 ; In llrl, `Kind` represents the type of the language construct.
 ;
@@ -88,62 +86,3 @@
 
 ; The bottom type for kind uses.
 (derive (Eq Ord DebugDisplay Hash) value-data KindUse)
-
-(class (KindBuilder A Ctx)
-  (function (kind-builder/unresolved ctx id) {(-> Ctx (NodeId KindUse) A)})
-  (function (kind-builder/type ctx) {(-> Ctx A)})
-  (function (kind-builder/constraint ctx) {(-> Ctx A)})
-  (function (kind-builder/satisfaction ctx) {(-> Ctx A)})
-  (function (kind-builder/value ctx) {(-> Ctx A)})
-  (function (kind-builder/macro ctx) {(-> Ctx A)})
-  (function (kind-builder/fun ctx args ret) {(-> Ctx (Array A) A A)})
-  (function (kind-builder/error ctx e) {(-> Ctx String A)}))
-
-(macro (build-kind s)
-  (s/match s
-    [(_ ,ctx ,(s:list (s:symbol "unquote") (let expr)))
-      (ok expr)]
-    [(_ ,ctx (unresolved ,(s:list (s:symbol "unquote") (let id))))
-      (ok `(,\kind-builder/unresolved ,ctx ,id))]
-    [(_ ,ctx *)
-      (ok `(,\kind-builder/type ,ctx))]
-    [(_ ,ctx Constraint)
-      (ok `(,\kind-builder/constraint ,ctx))]
-    [(_ ,ctx Satisfaction)
-      (ok `(,\kind-builder/satisfaction ,ctx))]
-    [(_ ,ctx Value)
-      (ok `(,\kind-builder/value ,ctx))]
-    [(_ ,ctx Macro)
-      (ok `(,\kind-builder/macro ,ctx))]
-    [(_ ,ctx (-> ,(s:list (s:symbol "unquote-splicing") (let expr)) ,ret))
-      (let ([tmp-args (gensym)]
-            [tmp-ret (gensym)])
-        (ok
-          `(let ([,tmp-args ,expr]
-                 [,tmp-ret (,\build-kind ,ctx ,ret)])
-            (,\kind-builder/fun ,ctx ,tmp-args ,tmp-ret))))]
-    [(_ ,ctx (-> ,@args-ret))
-      (if-match1 (some (: (let args) (let ret))) (s/unsnoc args-ret)!
-        (let ([tmp-args (gensym)]
-              [tmp-ret (gensym)])
-          (ok
-            `(let ([,tmp-args (,\array ,@(s/map [^1 `(,\build-kind ,ctx ,%1)] args)!)]
-                   [,tmp-ret (,\build-kind ,ctx ,ret)])
-              (,\kind-builder/fun ,ctx ,tmp-args ,tmp-ret))))
-        (err "Expected (build-kind ctx (-> arg ... ret))"))]
-    [(_ ,ctx (error ,(s:list (s:symbol "unquote") (let e))))
-      (ok `(,\kind-builder/error ,ctx ,e))]
-    [(_ _ ,a)
-      (err (string "Unknown kind form: " a))]
-    [_
-      (err "Expected (build-kind ctx kind-form)")]))
-
-(instance KindBuilder.Ast (KindBuilder Kind unit)
-  (function (kind-builder/unresolved ctx id) (kind:unresolved id))
-  (function (kind-builder/type ctx) kind:type)
-  (function (kind-builder/constraint ctx) kind:constraint)
-  (function (kind-builder/satisfaction ctx) kind:satisfaction)
-  (function (kind-builder/value ctx) kind:value)
-  (function (kind-builder/macro ctx) kind:macro)
-  (function (kind-builder/fun ctx args ret) (kind/fun args ret))
-  (function (kind-builder/error ctx e) (kind:error e)))

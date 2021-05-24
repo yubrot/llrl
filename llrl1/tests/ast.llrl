@@ -1,6 +1,7 @@
 (import "~/util" _)
 (import "~/ast/node-id" _)
-(import "~/ast/kind" _)
+(import "~/ast/data" _)
+(import "~/ast/builder" _)
 (println! "llrl1/tests/ast")
 
 (let* ([gen (node-id-generator/new (module-id/from-index 1))]
