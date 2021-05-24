@@ -31,7 +31,7 @@
 (function (decode c) {(-> Complete Decode)}
   (match c
     [(complete:latin (let a))
-      (let1 x (cast a)
+      (let1 x (conv a)
         (if (<= x 127) (decode:produce x) decode:invalid))]
     [(complete:2 (let a) (let b))
       (let1 x (bw| (&<< a 31 6) (&<< b 63 0))
@@ -81,7 +81,7 @@
 (function (encode x) {(-> U32 Encode)}
   (cond
     [(<= x 127)
-      (encode:success (complete:latin (cast x)))]
+      (encode:success (complete:latin (conv x)))]
     [(<= 128 x 2047)
       (encode:success (complete:2 (>>&| x 6 31 192) (>>&| x 0 63 128)))]
     [(and (<= 2048 x 65535) (not (<= 55296 x 57343)))
@@ -114,7 +114,7 @@
     [else input:invalid]))
 
 (function (&<< x range shift) {(-> U8 U8 U32 U32)}
-  (bw<< (cast (bw& x range)) shift))
+  (bw<< (conv (bw& x range)) shift))
 
 (function (>>&| x shift range header) {(-> U32 U32 U8 U8 U8)}
-  (bw| (bw& (cast (bw>> x shift)) range) header))
+  (bw| (bw& (conv (bw>> x shift)) range) header))

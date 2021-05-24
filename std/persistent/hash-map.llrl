@@ -239,11 +239,11 @@
 
 (function (tree/as-collision-elems tree) {(forall K V) (-> (Tree K V) (Array (: K V)))}
   (with1 (tree: (let num-collision) _ (let collision-elems) _) tree
-    (array/unsafe-from-ptr (ptr/cast collision-elems) (cast num-collision))))
+    (array/unsafe-from-ptr (ptr/cast collision-elems) (conv num-collision))))
 
 (function (tree/from-collision-elems collision-elems) {(forall K V) (-> (Array (: K V)) (Tree K V))}
   ; (assert (not (array/empty? collision-elems)))
-  (tree: (cast (array/length collision-elems)) 0 (ptr/cast (array/ptr collision-elems)) ptr:null))
+  (tree: (conv (array/length collision-elems)) 0 (ptr/cast (array/ptr collision-elems)) ptr:null))
 
 (function (buckets-get bitmap bit-index ptr) {(forall A) (-> U32 BitIndex (Ptr A) A)}
   ; (assert (exists? bitmap bit-index))
@@ -288,19 +288,19 @@
         (: new-bitmap new-ptr)))))
 
 (function (buckets-length bitmap) {(-> U32 U64)}
-  (cast (popcount bitmap)))
+  (conv (popcount bitmap)))
 
 ; The Nth bit of the U32 number indicates whether the Nth element/child exists or not.
 (value-data BitIndex
   (bit-index: U32))
 
 (function (consume-hash hash) {(-> U64 (: BitIndex U64))}
-  (: (bit-index (cast (bw& hash 31)))
+  (: (bit-index (conv (bw& hash 31)))
      (bw>> hash 5)))
 
 (function (restore-hash bit-index hash) {(-> BitIndex U64 U64)}
   (with1 (bit-index: (let bit)) bit-index
-    (bw| (bw<< hash 5) (cast (popcount (- bit 1))))))
+    (bw| (bw<< hash 5) (conv (popcount (- bit 1))))))
 
 (function (bit-index index) {(-> U32 BitIndex)}
   ; (assert (<= 0 index 31)) ; [0b00000,0b11111]
@@ -320,7 +320,7 @@
 
 (function (bucket-index bitmap bit-index) {(-> U32 BitIndex U64)}
   (with1 (bit-index: (let bit)) bit-index
-    (cast (popcount (bw& bitmap (- bit 1))))))
+    (conv (popcount (bw& bitmap (- bit 1))))))
 
 (value-data (Cursor K V)
   (cursor: (Vector (: (Tree K V) U32 U64))))

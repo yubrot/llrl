@@ -142,11 +142,11 @@
       (set! d (array/skip 8 ~d))
       (set! input (+ (* (rotl ~input 27) prime-1) prime-4)))
     (when (<= 4 (array/length ~d))
-      (set! input (bw^ ~input (* (cast (|> ~d array/ptr ptr/cast ptr/load) {U32}) prime-1)))
+      (set! input (bw^ ~input (* (|> ~d array/ptr ptr/cast ptr/load (conv-from I32)) prime-1)))
       (set! d (array/skip 4 ~d))
       (set! input (+ (* (rotl ~input 23) prime-2) prime-3)))
     (for (let byte) ~d
-      (set! input (bw^ ~input (* (cast byte) prime-5)))
+      (set! input (bw^ ~input (* (conv byte) prime-5)))
       (set! input (* (rotl ~input 11) prime-1)))
     (avalanche ~input)))
 

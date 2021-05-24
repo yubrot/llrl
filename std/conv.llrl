@@ -3,13 +3,27 @@
 (import "std/prelude/stage-0" _)
 (import "std/num-literals" _)
 (import "std/preprocess" $$)
-(export Cast cast Cast._)
+(export Conv conv conv-from conv-to Conv._)
 
-(class (Cast From To)
-  (function (cast a) {(-> From To)}))
+(class (Conv From To)
+  (function (conv a) {(-> From To)}))
 
-(instance Cast.Identity (forall A) (Cast A A)
-  (transparent-function (cast a) a))
+(macro (conv-from s)
+  (s/match s
+    [(_ ,ty ,a)
+      (ok `(,\conv (annotate ,a ,ty)))]
+    [_
+      (err "Expected (conv-from ty a)")]))
+
+(macro (conv-to s)
+  (s/match s
+    [(_ ,ty ,a)
+      (ok `(annotate (,\conv ,a) ,ty))]
+    [_
+      (err "Expected (conv-to ty a)")]))
+
+(instance Conv.Identity (forall A) (Conv A A)
+  (transparent-function (conv a) a))
 
 ($$ begin
   ($for-each
@@ -104,8 +118,8 @@
      [F64 U32 <float/to-unsigned>]
      [F64 U64 <float/to-unsigned>]
      [F64 F32 <float/trunc>])
-    (instance ($symbol-concat Cast.From. $from .To. $to) (Cast $from $to)
-      (transparent-function (cast a) ($op a)))))
+    (instance ($symbol-concat Conv.From. $from .To. $to) (Conv $from $to)
+      (transparent-function (conv a) ($op a)))))
 
 (builtin-op <bitcast> {(forall A B) (-> A B)} "bitcast")
 (builtin-op <integer/trunc> {(forall A B) (-> A B)} "integer.trunc")

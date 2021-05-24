@@ -18,7 +18,7 @@
     (match s
       [(s:integer (let signed) (let value))
         (if signed
-          (display! w (cast value) {I64})
+          (display! w (conv-to I64 value))
           (display! w value))]
       [(s:fpnumber (let value))
         (display! w value)]

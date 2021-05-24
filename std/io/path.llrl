@@ -141,7 +141,7 @@
 
 (function (skip-repeated-dir-separator s) {(-> String String)}
   (if (and (<= 1 (string/length s))
-           (= (string/byte-at 0 s) (cast (char/unicode-scalar #\/))))
+           (= (string/byte-at 0 s) (conv (char/unicode-scalar #\/))))
     (skip-repeated-dir-separator (string/skip 1 s))
     s))
 
@@ -149,7 +149,7 @@
 ;                ^
 (function (last-component-end p) {(-> String U64)}
   (let1 r (ref (string/length p))
-    (while (and (< 0 ~r) (eq? (string/byte-at (- ~r 1) p) (cast (char/unicode-scalar #\/))))
+    (while (and (< 0 ~r) (eq? (string/byte-at (- ~r 1) p) (conv (char/unicode-scalar #\/))))
       (set! r (- ~r 1)))
     ~r))
 
@@ -158,7 +158,7 @@
 (function (last-component-start-end p) {(-> String (: U64 U64))}
   (let1 r (last-component-end p)
     (let1 l (ref r)
-      (while (and (< 0 ~l) (ne? (string/byte-at (- ~l 1) p) (cast (char/unicode-scalar #\/))))
+      (while (and (< 0 ~l) (ne? (string/byte-at (- ~l 1) p) (conv (char/unicode-scalar #\/))))
         (set! l (- ~l 1)))
       (: ~l r))))
 
@@ -167,6 +167,6 @@
 (function (last-component-start-dot-end p) {(-> String (: U64 U64 U64))}
   (with1 (: (let l) (let r)) (last-component-start-end p)
     (let1 e (ref r)
-      (while (and (< l ~e) (ne? (string/byte-at (- ~e 1) p) (cast (char/unicode-scalar #\.))))
+      (while (and (< l ~e) (ne? (string/byte-at (- ~e 1) p) (conv (char/unicode-scalar #\.))))
         (set! e (- ~e 1)))
       (: l ~e r))))

@@ -39,7 +39,7 @@
   (import "std/tests/ord")
   (import "std/tests/arithmetic")
   (import "std/tests/access")
-  (import "std/tests/cast")
+  (import "std/tests/conv")
   #t)
 
 (test-std

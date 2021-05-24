@@ -2,12 +2,12 @@
 
 (function (get-char!) {(-> (Result I32 IoError))}
   (match (read-u8! stdin)
-    [(ok (let ch)) (ok (cast ch))]
+    [(ok (let ch)) (ok (conv ch))]
     [(err io-error:unexpected-eof) (ok -1)]
     [(err (let e)) (err e)]))
 
 (function (put-char! c) {(-> I32 (Result unit IoError))}
-  (write-u8! (cast c) stdout))
+  (write-u8! (conv c) stdout))
 
 (value-data Cmd
   cmd:next ; >

@@ -50,13 +50,13 @@
 (getter node-id: node-id/value)
 
 (function (node-id/new-unchecked mid id) {(forall A) (-> ModuleId U32 (NodeId A))}
-  (node-id: (bw| (cast (module-id/index mid)) (bw<< (cast id) 32))))
+  (node-id: (bw| (conv (module-id/index mid)) (bw<< (conv id) 32))))
 
 (function (node-id/module nid) {(forall A) (-> (NodeId A) ModuleId)}
-  (module-id: (cast (node-id/value nid))))
+  (module-id: (conv (node-id/value nid))))
 
 (function (node-id/index-in-module nid) {(forall A) (-> (NodeId A) U32)}
-  (cast (bw>> (node-id/value nid) 32)))
+  (conv (bw>> (node-id/value nid) 32)))
 
 (function (node-id/reinterpret-unchecked nid) {(forall A B) (-> (NodeId A) (NodeId B))}
   (node-id: (node-id/value nid)))

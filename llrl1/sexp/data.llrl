@@ -55,7 +55,7 @@
       (display! w syntax-sugar)
       (match a
         [(s-rep:integer #t (let v))
-          (display! w (cast v) {I64})]
+          (display! w (conv-to I64 v))]
         [(s-rep:integer #f (let v))
           (display! w v)]
         [(s-rep:fp-number (let v))
@@ -79,7 +79,7 @@
           (display! w v)]))))
 
 (function (s-rep/signed value) {(forall A) (-> I64 (SRep A))}
-  (s-rep:integer #t (cast value)))
+  (s-rep:integer #t (conv value)))
 
 (function (s-rep/unsigned value) {(forall A) (-> U64 (SRep A))}
   (s-rep:integer #f value))

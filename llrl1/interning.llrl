@@ -43,7 +43,7 @@
   (with1 (intern-table: (let ids) (let map)) table
     (if-match1 (some (let sym)) (hash-map/get? id map)
       sym
-      (let1 new-sym (interned: (cast (vector/length ids)))
+      (let1 new-sym (interned: (conv (vector/length ids)))
         (vector/push! id ids)
         (hash-map/insert! id new-sym map)
         new-sym))))
@@ -51,4 +51,4 @@
 (function (intern-table/review sym table) {(forall A) (-> (Interned A) (InternTable A) A)}
   (with ([(intern-table: (let ids) _) table]
          [(interned: (let index)) sym])
-    (get ids[(cast index)])))
+    (get ids[(conv index)])))

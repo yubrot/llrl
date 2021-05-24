@@ -124,7 +124,7 @@
                  (some (: (min i index) (char/unsafe-from-unicode-scalar c)))]
                [_
                  (assert #f "Invalid UTF-8 sequence in String")]))])
-    (iterator/new [^0 (next! (cast -1 {I64}) none)])))
+    (iterator/new [^0 (next! (conv-from I64 -1) none)])))
 
 (function (string/from-chars s) {(forall T) (-> (T Char) String) (where (Iterate T))}
   (text/unsafe-string (text/from-chars s)))

@@ -56,7 +56,7 @@ The goal of llrl is not to create a modern, practical programming language. Inst
   - [x] Macro helpers (`gensym`, `quasiquote`, `s/match`)
   - [x] S-expression
   - [x] Common macros (`let*`, `let1`, ...)
-  - [x] Common type classes (`Default`, `Eq`, `Ord`, `Hash`, `Display`, `Cast`, ...)
+  - [x] Common type classes (`Default`, `Eq`, `Ord`, `Hash`, `Display`, `Conv`, ...)
   - [x] Common data types (`Bool`, Integers, Floating-point numbers, `Ptr`, `Option`, `Result`, `Char`, `String`, Tuples, ...)
   - [ ] Aggregate data types
     - [x] Array

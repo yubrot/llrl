@@ -69,7 +69,7 @@
 (for (: (let i) (let p)) (it/with-index patterns)
   (for (: (let j) (let q)) (it/with-index patterns)
     (let ([map ord-map/empty]
-          [exclude-index (+ (* (cast i) 10) (cast j))])
+          [exclude-index (+ (* (conv i) 10) (conv j))])
       (for (let i) (it/filter [^1 (ne? %1 exclude-index)] (p))
         (assert-eq? (ord-map/insert! i (* i 2) map) none))
       (for (let i) (it/filter [^1 (ne? %1 exclude-index)] (q))

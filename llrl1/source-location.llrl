@@ -24,15 +24,15 @@
 
 (function (location/eat s location) {(-> String Location Location)}
   (with1 (location: (let offset) (let line) (let character)) location
-    (let ([offset (+ offset (cast (string/length s)))]
+    (let ([offset (+ offset (conv (string/length s)))]
           [line (ref line)]
           [character (ref character)])
       (for (: (let i) (let l)) (it/with-index (string/split "\n" s))
         (if (eq? i 0)
-          (set! character (+ ~character (cast (string/length l))))
+          (set! character (+ ~character (conv (string/length l))))
           (begin
             (set! line (+ ~line 1))
-            (set! character (cast (string/length l))))))
+            (set! character (conv (string/length l))))))
       (location: offset ~line ~character))))
 
 (derive (Eq Ord DebugDisplay Hash Default) value-data LocationRange
@@ -59,7 +59,7 @@
 
 (function (location-range/review s range) {(-> String LocationRange String)}
   (with1 (location-range: (location: (let start) _ _) (location: (let end) _ _)) range
-    (string/substring (cast start) (cast end) s)))
+    (string/substring (conv start) (conv end) s)))
 
 ; Data that indicates the specific location of a particular file of the llrl source.
 (derive (Eq Ord DebugDisplay Hash) value-data SourceLocation

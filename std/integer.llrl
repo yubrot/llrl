@@ -47,15 +47,15 @@
 
       (function (integer/to-string radix value)
         (assert (<= 2 radix 36) "!(2 <= radix <= 36)")
-        (<i64-to-string> radix (cast value)))
+        (<i64-to-string> radix (conv value)))
 
       (transparent-function (integer/from-string? radix value)
         (match (<string-to-i64> radix value)
           [(<result>: 0 _)
             none]
           [(<result>: _ (let value))
-            (if (<= (cast integer/min {$ty}) value (cast integer/max {$ty}))
-              (some (cast value))
+            (if (<= (conv integer/min {$ty}) value (conv integer/max {$ty}))
+              (some (conv value))
               none)])))
 
     (instance ($symbol-concat Signed. $ty) (Signed $ty))
@@ -89,15 +89,15 @@
 
       (function (integer/to-string radix value)
         (assert (<= 2 radix 36) "!(2 <= radix <= 36)")
-        (<u64-to-string> radix (cast value)))
+        (<u64-to-string> radix (conv value)))
 
       (transparent-function (integer/from-string? radix value)
         (match (<string-to-u64> radix value)
           [(<result>: 0 _)
             none]
           [(<result>: _ (let value))
-            (if (<= (cast integer/min {$ty}) value (cast integer/max {$ty}))
-              (some (cast value))
+            (if (<= (conv integer/min {$ty}) value (conv integer/max {$ty}))
+              (some (conv value))
               none)])))
 
     (instance ($symbol-concat Unsigned. $ty) (Unsigned $ty))

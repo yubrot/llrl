@@ -135,35 +135,35 @@
           (ray-plane-intersect occ-isect ray (.plane scene))
           (when (.hit ~occ-isect)
             (set! occlusion (+ ~occlusion 1)))))
-      (let1 v (/ (- (cast (* ntheta nphi)) ~occlusion) (cast (* ntheta nphi)))
+      (let1 v (/ (- (conv (* ntheta nphi)) ~occlusion) (conv (* ntheta nphi)))
         (vec: v v v)))))
 
 (c-function <drand48> {F64} "drand48")
 
 (function (clamp f) {(-> F64 U8)}
-  (let1 i (cast (* f 255.5)) {I32}
+  (let1 i (conv-to I32 (* f 255.5))
     (cond
       [(< i 0) 0]
       [(< 255 i) 255]
-      [else (cast i)])))
+      [else (conv i)])))
 
 (function (render! img w h nsubsamples scene) {(-> (Array U8) I32 I32 I32 Scene unit)}
-  (let1 fimg (array/new (vec: 0 0 0) (cast (* w h)))
+  (let1 fimg (array/new (vec: 0 0 0) (conv (* w h)))
     (for (let y) (iterator/range 0 h 1)
       (for (let x) (iterator/range 0 w 1)
-        (let* ([findex (cast (+ (* y w) x))]
+        (let* ([findex (conv (+ (* y w) x))]
                [iindex (* findex 3)])
           (for (let v) (iterator/range 0 nsubsamples 1)
             (for (let u) (iterator/range 0 nsubsamples 1)
-              (let* ([px (/ (+ (cast x) (/ (cast u) (cast nsubsamples)) (/ (cast w) -2)) (cast w) 0.5)]
-                     [py (/ (+ (cast y) (/ (cast v) (cast nsubsamples)) (/ (cast h) -2)) (cast h) -0.5)]
+              (let* ([px (/ (+ (conv x) (/ (conv u) (conv nsubsamples)) (/ (conv w) -2)) (conv w) 0.5)]
+                     [py (/ (+ (conv y) (/ (conv v) (conv nsubsamples)) (/ (conv h) -2)) (conv h) -0.5)]
                      [ray (ray: (vec: 0 0 0) (vnormalize (vec: px py -1)))]
                      [isect (ref (isect: 1.0e+17 (vec: 0 0 0) (vec: 0 0 0) #f))])
                 (for (let sphere) (.spheres scene) (ray-sphere-intersect isect ray sphere))
                 (ray-plane-intersect isect ray (.plane scene))
                 (when (.hit ~isect)
                   (set! fimg[findex] (v+ (get fimg[findex]) (ambient-occlusion ~isect scene)))))))
-          (set! fimg[findex] (v* (get fimg[findex]) (/ (cast (* nsubsamples nsubsamples)))))
+          (set! fimg[findex] (v* (get fimg[findex]) (/ (conv (* nsubsamples nsubsamples)))))
           (with1 (vec: (let fx) (let fy) (let fz)) (get fimg[findex])
             (set! img[(+ iindex 0)] (clamp fx))
             (set! img[(+ iindex 1)] (clamp fy))
