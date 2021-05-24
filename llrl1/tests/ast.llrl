@@ -1,11 +1,55 @@
+(import "~/util" _)
 (import "~/ast/node-id" _)
+(import "~/ast/common" _)
+(import "~/ast/kind" _)
 (println! "llrl1/tests/ast")
 
 (let* ([gen (node-id-generator/new (module-id/from-index 1))]
-       [a (next-node-id! gen)]
-       [b (next-node-id! gen)]
-       [c (next-node-id! gen)])
+       [a (node-id-generator/next! gen)]
+       [b (node-id-generator/next! gen)]
+       [c (node-id-generator/next! gen)])
   (assert-ne? a b)
   (assert-ne? b c)
   (assert-eq? (node-id/module a) (node-id/module b))
   (assert-ne? (node-id/index-in-module a) (node-id/index-in-module b)))
+
+(let1 gen (node-id-generator/new (module-id/from-index 1))
+  (assert-eq? none (use/value? (use/unresolved (node-id-generator/next! gen))))
+  (assert-eq? (some unit) (use/value? (use/resolved unit)))
+  (let1 u (use/unresolved (node-id-generator/next! gen))
+    (use/set-value! u unit)
+    (assert-eq? (some unit) (use/value? u))))
+
+(let* ([gen (node-id-generator/new (module-id/from-index 1))]
+       [a (node-id-generator/next! gen)]
+       [(show k) {(-> Kind String)} (string (contextual: k unit))])
+  (assert-eq? (kind:use (use/unresolved a)) (build-kind unit (use ,a)))
+  (assert-eq? kind:type (build-kind unit *))
+  (assert-eq? kind:constraint (build-kind unit Constraint))
+  (assert-eq? kind:satisfaction (build-kind unit Satisfaction))
+  (assert-eq? kind:value (build-kind unit Value))
+  (assert-eq? kind:macro (build-kind unit Macro))
+  (assert-eq? (kind:fun (array kind:type) kind:type) (build-kind unit (-> * *)))
+  (assert-eq? (kind:fun (array kind:type kind:type) kind:type) (build-kind unit (-> * * *)))
+  (assert-eq? (kind:fun (array kind:type kind:constraint) kind:type) (build-kind unit (-> * ,kind:constraint *)))
+  (assert-eq? (kind:fun (array kind:type kind:type) kind:type) (build-kind unit (-> ,@(array kind:type kind:type) *)))
+  (assert-eq? (kind:error "var") (build-kind unit (error ,"var")))
+
+  (assert (kind/first-class? (build-kind unit *)))
+  (assert (kind/first-class? (build-kind unit (-> * (-> * *) *))))
+  (assert (not (kind/first-class? (build-kind unit (-> * Constraint *)))))
+  (assert (not (kind/contains-error? (build-kind unit *))))
+  (assert (kind/contains-error? (build-kind unit (error ,"a"))))
+  (assert (kind/contains-error? (build-kind unit (-> * (error ,"a") *))))
+
+  (assert-eq? "*" (show (build-kind unit *)))
+  (assert-eq? "Constraint" (show (build-kind unit Constraint)))
+  (assert-eq? "Satisfaction" (show (build-kind unit Satisfaction)))
+  (assert-eq? "Value" (show (build-kind unit Value)))
+  (assert-eq? "Macro" (show (build-kind unit Macro)))
+  (assert-eq? "(-> * * *)" (show (build-kind unit (-> * * *))))
+  (assert-eq? "(-> (-> * *) * *)" (show (build-kind unit (-> (-> * *) * *)))))
+
+(instance ContextualDisplay.KindUse.ForTest (ContextualDisplay (Use KindUse) unit)
+  (function (contextual-display! w a ctx)
+    (assert #f)))

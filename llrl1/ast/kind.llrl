@@ -1,0 +1,156 @@
+(import "std/s" s/_)
+(import "~/util" _)
+(import "~/ast/node-id" NodeId _.NodeId)
+(import "~/ast/common" Use _.Use use/_)
+(export Kind _.Kind kind:_ kind/_)
+(export KindUse _.KindUse kind-use/_)
+(export KindBuilder kind-builder/_ build-kind KindBuilder.Ast)
+
+; In llrl, `Kind` represents the type of the language construct.
+;
+; Note that it is not only a representation of the type of the "type-level" expression.
+; Kind is partially provided to the user as a first-class representation, for example it can be
+; written as a kind annotation for type parameters.
+; In fact, since the structure of the llrl AST itself restricts the possible forms of its
+; components according to the type system in the host language (i.e. Rust), not all of the Kind
+; information is essential in semantic analysis, but rather it is more of a supplementary information.
+(derive (Eq Ord DebugDisplay Hash) data Kind
+  (kind:use (Use KindUse))
+  kind:type
+  kind:constraint
+  kind:satisfaction
+  kind:value
+  kind:macro
+  (kind:fun (Array Kind) Kind)
+  (kind:error String))
+
+(instance Dfs.Kind (Dfs Kind)
+  (function (dfs f a)
+    (match a
+      [(kind:use _)]
+      [kind:type]
+      [kind:constraint]
+      [kind:satisfaction]
+      [kind:value]
+      [kind:macro]
+      [(kind:fun (let args) (let ret))
+        (for (let arg) args (dfs f arg)!)
+        (dfs f ret)!]
+      [(kind:error _)])
+    (f a)))
+
+(instance ContextualDisplay.Kind (forall C) (ContextualDisplay Kind C) (where (ContextualDisplay (Use KindUse) C))
+  (function (contextual-display! w a ctx)
+    (match a
+      [(kind:use (let u))
+        (display! w (contextual: u ctx))]
+      [kind:type
+        (display! w "*")]
+      [kind:constraint
+        (display! w "Constraint")]
+      [kind:satisfaction
+        (display! w "Satisfaction")]
+      [kind:value
+        (display! w "Value")]
+      [kind:macro
+        (display! w "Macro")]
+      [(kind:fun (let args) (let ret))
+        (display-all! w
+          "(-> "
+          (|> (it/chain args (some ret))
+              (it/map [^1 (contextual: %1 ctx)])
+              (it/format " "))
+          ")")]
+      [(kind:error (let e))
+        (display! w e)])))
+
+(function (kind/contains-error? k) {(-> Kind Bool)}
+  (|> k
+      (dfs (case
+        [(kind:error _)
+          (err unit)]
+        [_
+          (ok unit)]))
+      (is? (err _))))
+
+(function (kind/first-class? k) {(-> Kind Bool)}
+  (|> k
+      (dfs (case
+        [(kind:use (let u)) (kind-use/never (use/value u))]
+        [kind:type (ok unit)]
+        [(kind:fun _ _) (ok unit)]
+        [_ (err unit)]))
+      (is? (ok _))))
+
+(function (kind/fun args ret)
+  (if (array/empty? args)
+    ret
+    (kind:fun args ret)))
+
+(derive (Eq Ord DebugDisplay Hash) value-data KindUse) ; There are no resolvable Kind components
+
+(instance Display.KindUse (Display KindUse)
+  (function (display! w a)
+    (kind-use/never a)))
+
+(function (kind-use/never u) {(forall A) (-> KindUse A)}
+  (assert #f))
+
+(class (KindBuilder A Ctx)
+  (function (kind-builder/use ctx id) {(-> Ctx (NodeId (Use KindUse)) A)})
+  (function (kind-builder/type ctx) {(-> Ctx A)})
+  (function (kind-builder/constraint ctx) {(-> Ctx A)})
+  (function (kind-builder/satisfaction ctx) {(-> Ctx A)})
+  (function (kind-builder/value ctx) {(-> Ctx A)})
+  (function (kind-builder/macro ctx) {(-> Ctx A)})
+  (function (kind-builder/fun ctx args ret) {(-> Ctx (Array A) A A)})
+  (function (kind-builder/error ctx e) {(-> Ctx String A)}))
+
+(macro (build-kind s)
+  (s/match s
+    [(_ ,ctx ,(s:list (s:symbol "unquote") (let expr)))
+      (ok expr)]
+    [(_ ,ctx (use ,(s:list (s:symbol "unquote") (let id))))
+      (ok `(,\kind-builder/use ,ctx ,id))]
+    [(_ ,ctx *)
+      (ok `(,\kind-builder/type ,ctx))]
+    [(_ ,ctx Constraint)
+      (ok `(,\kind-builder/constraint ,ctx))]
+    [(_ ,ctx Satisfaction)
+      (ok `(,\kind-builder/satisfaction ,ctx))]
+    [(_ ,ctx Value)
+      (ok `(,\kind-builder/value ,ctx))]
+    [(_ ,ctx Macro)
+      (ok `(,\kind-builder/macro ,ctx))]
+    [(_ ,ctx (-> ,(s:list (s:symbol "unquote-splicing") (let expr)) ,ret))
+      (let ([tmp-args (gensym)]
+            [tmp-ret (gensym)])
+        (ok
+          `(let ([,tmp-args ,expr]
+                 [,tmp-ret (,\build-kind ,ctx ,ret)])
+            (,\kind-builder/fun ,ctx ,tmp-args ,tmp-ret))))]
+    [(_ ,ctx (-> ,@args-ret))
+      (if-match1 (some (: (let args) (let ret))) (s/unsnoc args-ret)!
+        (let ([tmp-args (gensym)]
+              [tmp-ret (gensym)])
+          (ok
+            `(let ([,tmp-args (,\array ,@(s/map [^1 `(,\build-kind ,ctx ,%1)] args)!)]
+                   [,tmp-ret (,\build-kind ,ctx ,ret)])
+              (,\kind-builder/fun ,ctx ,tmp-args ,tmp-ret))))
+        (err "Expected (build-kind ctx (-> arg ... ret))"))]
+    [(_ ,ctx (error ,(s:list (s:symbol "unquote") (let e))))
+      (ok `(,\kind-builder/error ,ctx ,e))]
+    [(_ _ ,a)
+      (err (string "Unknown kind form: " a))]
+    [_
+      (err "Expected (build-kind ctx kind-form)")]))
+
+(instance KindBuilder.Ast (KindBuilder Kind unit)
+  (function (kind-builder/use ctx id) (kind:use (use/unresolved id)))
+  (function (kind-builder/type ctx) kind:type)
+  (function (kind-builder/constraint ctx) kind:constraint)
+  (function (kind-builder/satisfaction ctx) kind:satisfaction)
+  (function (kind-builder/value ctx) kind:value)
+  (function (kind-builder/macro ctx) kind:macro)
+  (function (kind-builder/fun ctx args ret) (kind/fun args ret))
+  (function (kind-builder/error ctx e) (kind:error e)))

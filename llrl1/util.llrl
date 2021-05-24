@@ -55,6 +55,11 @@
 (class (ContextualDisplay A C)
   (function (contextual-display! w a ctx) {(forall W Error) (-> W A C (Result unit Error)) (where (WriteString W Error))}))
 
+; Depth first search.
+(export Dfs dfs)
+(class (Dfs A)
+  (function (dfs f a) {(forall Error) (-> (-> A (Result unit Error)) A (Result unit Error))}))
+
 (export it/permutations)
 (function (it/permutations it) {(forall T A) (-> (T A) (Iterator (Array A))) (where (Ord A) (Iterate T))}
   (iterator/unfold

@@ -1,0 +1,45 @@
+(import "~/util" _)
+(import "~/ast/node-id" NodeId _.NodeId)
+(export Use _.Use use:_ use/_)
+(export Annotation _.Annotation annotation: annotation/_)
+
+; A representation of the use of some language construct.
+(derive (Eq Ord DebugDisplay Hash) value-data (Use A)
+  (use: (NodeId (Use A)) (Ref (Option A)))
+  (use:pre-resolved A))
+
+(instance Display.Use (forall A) (Display (Use A)) (where (Display A))
+  (function (display! w a)
+    (match a
+      [(use: (let id) (ref none)) (display! w id)]
+      [(use: _ (ref (some (let v)))) (display! w v)]
+      [(use:pre-resolved (let v)) (display! w v)])))
+
+(function (use/unresolved id) {(forall A) (-> (NodeId (Use A)) (Use A))}
+  (use: id (ref none)))
+
+(function (use/resolved v) {(forall A) (-> A (Use A))}
+  (use:pre-resolved v))
+
+(function (use/resolved? u) {(forall A) (-> (Use A) Bool)}
+  (is? (some _) (use/value? u)))
+
+(function (use/value u) {(forall A) (-> (Use A) A)}
+  (if-match1 (some (let v)) (use/value? u)
+    v
+    (assert #f "use/value: unresolved use")))
+
+(function (use/value? u) {(forall A) (-> (Use A) (Option A))}
+  (match u
+    [(use: _ (let v)) ~v]
+    [(use:pre-resolved (let v)) (some v)]))
+
+(function (use/set-value! u value) {(forall A) (-> (Use A) A unit)}
+  (match u
+    [(use: _ (let v (ref none))) (set! v (some value))]
+    [_ (assert #f "use/set-value! already resolved")]))
+
+(derive (Eq Ord DebugDisplay Hash) value-data (Annotation A)
+  (annotation: (NodeId (Annotation A)) A))
+
+(getter annotation: annotation/id annotation/body)

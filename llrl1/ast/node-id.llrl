@@ -2,7 +2,7 @@
 (import "std/bits" _)
 (export ModuleId _.ModuleId module-id/_)
 (export NodeId _.NodeId node-id/_)
-(export NodeIdGenerator _.NodeIdGenerator node-id-generator/_ next-node-id!)
+(export NodeIdGenerator _.NodeIdGenerator node-id-generator/_)
 
 ; An identifier of the module.
 (derive (Eq Ord DebugDisplay Hash) value-data ModuleId
@@ -72,7 +72,7 @@
     (node-id-generator: mid (ref 1000))
     (node-id-generator: mid (ref 0))))
 
-(function (next-node-id! gen) {(forall A) (-> NodeIdGenerator (NodeId A))}
+(function (node-id-generator/next! gen) {(forall A) (-> NodeIdGenerator (NodeId A))}
   (with1 (node-id-generator: (let mid) (let id)) gen
     (set! id (+ ~id 1))
     (node-id/new-unchecked mid ~id)))
