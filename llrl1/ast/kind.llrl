@@ -1,9 +1,8 @@
 (import "std/s" s/_)
 (import "~/util" _)
 (import "~/ast/node-id" NodeId _.NodeId)
-(import "~/ast/common" Use _.Use use/_)
 (export Kind _.Kind kind:_ kind/_)
-(export KindUse _.KindUse kind-use/_)
+(export KindUse _.KindUse)
 (export KindBuilder kind-builder/_ build-kind KindBuilder.Ast)
 
 ; In llrl, `Kind` represents the type of the language construct.
@@ -12,10 +11,10 @@
 ; Kind is partially provided to the user as a first-class representation, for example it can be
 ; written as a kind annotation for type parameters.
 ; In fact, since the structure of the llrl AST itself restricts the possible forms of its
-; components according to the type system in the host language (i.e. Rust), not all of the Kind
+; components according to the type system in the host language (i.e. llrl), not all of the Kind
 ; information is essential in semantic analysis, but rather it is more of a supplementary information.
 (derive (Eq Ord DebugDisplay Hash) data Kind
-  (kind:use (Use KindUse))
+  (kind:unresolved (NodeId KindUse))
   kind:type
   kind:constraint
   kind:satisfaction
@@ -27,7 +26,7 @@
 (instance Dfs.Kind (Dfs Kind)
   (function (dfs f a)
     (match a
-      [(kind:use _)]
+      [(kind:unresolved _)]
       [kind:type]
       [kind:constraint]
       [kind:satisfaction]
@@ -39,11 +38,11 @@
       [(kind:error _)])
     (f a)))
 
-(instance ContextualDisplay.Kind (forall C) (ContextualDisplay Kind C) (where (ContextualDisplay (Use KindUse) C))
+(instance ContextualDisplay.Kind (forall C) (ContextualDisplay Kind C) (where (ContextualDisplay (NodeId KindUse) C))
   (function (contextual-display! w a ctx)
     (match a
-      [(kind:use (let u))
-        (display! w (contextual: u ctx))]
+      [(kind:unresolved (let id))
+        (display! w (contextual: id ctx))]
       [kind:type
         (display! w "*")]
       [kind:constraint
@@ -76,28 +75,22 @@
 (function (kind/first-class? k) {(-> Kind Bool)}
   (|> k
       (dfs (case
-        [(kind:use (let u)) (kind-use/never (use/value u))]
+        [(kind:unresolved _) (assert #f "kind/first-class?: Unresolved kind")]
         [kind:type (ok unit)]
         [(kind:fun _ _) (ok unit)]
         [_ (err unit)]))
       (is? (ok _))))
 
-(function (kind/fun args ret)
+(function (kind/fun args ret) {(-> (Array Kind) Kind Kind)}
   (if (array/empty? args)
     ret
     (kind:fun args ret)))
 
-(derive (Eq Ord DebugDisplay Hash) value-data KindUse) ; There are no resolvable Kind components
-
-(instance Display.KindUse (Display KindUse)
-  (function (display! w a)
-    (kind-use/never a)))
-
-(function (kind-use/never u) {(forall A) (-> KindUse A)}
-  (assert #f))
+; The bottom type for kind uses.
+(derive (Eq Ord DebugDisplay Hash) value-data KindUse)
 
 (class (KindBuilder A Ctx)
-  (function (kind-builder/use ctx id) {(-> Ctx (NodeId (Use KindUse)) A)})
+  (function (kind-builder/unresolved ctx id) {(-> Ctx (NodeId KindUse) A)})
   (function (kind-builder/type ctx) {(-> Ctx A)})
   (function (kind-builder/constraint ctx) {(-> Ctx A)})
   (function (kind-builder/satisfaction ctx) {(-> Ctx A)})
@@ -110,8 +103,8 @@
   (s/match s
     [(_ ,ctx ,(s:list (s:symbol "unquote") (let expr)))
       (ok expr)]
-    [(_ ,ctx (use ,(s:list (s:symbol "unquote") (let id))))
-      (ok `(,\kind-builder/use ,ctx ,id))]
+    [(_ ,ctx (unresolved ,(s:list (s:symbol "unquote") (let id))))
+      (ok `(,\kind-builder/unresolved ,ctx ,id))]
     [(_ ,ctx *)
       (ok `(,\kind-builder/type ,ctx))]
     [(_ ,ctx Constraint)
@@ -146,7 +139,7 @@
       (err "Expected (build-kind ctx kind-form)")]))
 
 (instance KindBuilder.Ast (KindBuilder Kind unit)
-  (function (kind-builder/use ctx id) (kind:use (use/unresolved id)))
+  (function (kind-builder/unresolved ctx id) (kind:unresolved id))
   (function (kind-builder/type ctx) kind:type)
   (function (kind-builder/constraint ctx) kind:constraint)
   (function (kind-builder/satisfaction ctx) kind:satisfaction)

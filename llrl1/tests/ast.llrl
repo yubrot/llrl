@@ -1,6 +1,5 @@
 (import "~/util" _)
 (import "~/ast/node-id" _)
-(import "~/ast/common" _)
 (import "~/ast/kind" _)
 (println! "llrl1/tests/ast")
 
@@ -13,17 +12,10 @@
   (assert-eq? (node-id/module a) (node-id/module b))
   (assert-ne? (node-id/index-in-module a) (node-id/index-in-module b)))
 
-(let1 gen (node-id-generator/new (module-id/from-index 1))
-  (assert-eq? none (use/value? (use/unresolved (node-id-generator/next! gen))))
-  (assert-eq? (some unit) (use/value? (use/resolved unit)))
-  (let1 u (use/unresolved (node-id-generator/next! gen))
-    (use/set-value! u unit)
-    (assert-eq? (some unit) (use/value? u))))
-
 (let* ([gen (node-id-generator/new (module-id/from-index 1))]
        [a (node-id-generator/next! gen)]
        [(show k) {(-> Kind String)} (string (contextual: k unit))])
-  (assert-eq? (kind:use (use/unresolved a)) (build-kind unit (use ,a)))
+  (assert-eq? (kind:unresolved a) (build-kind unit (unresolved ,a)))
   (assert-eq? kind:type (build-kind unit *))
   (assert-eq? kind:constraint (build-kind unit Constraint))
   (assert-eq? kind:satisfaction (build-kind unit Satisfaction))
@@ -50,6 +42,6 @@
   (assert-eq? "(-> * * *)" (show (build-kind unit (-> * * *))))
   (assert-eq? "(-> (-> * *) * *)" (show (build-kind unit (-> (-> * *) * *)))))
 
-(instance ContextualDisplay.KindUse.ForTest (ContextualDisplay (Use KindUse) unit)
+(instance ContextualDisplay.KindUse.ForTest (ContextualDisplay (NodeId KindUse) unit)
   (function (contextual-display! w a ctx)
     (assert #f)))
