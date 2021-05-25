@@ -1,9 +1,7 @@
 (import "~/util" _)
 (import "~/ast/node-id" NodeId _.NodeId)
 (import "~/ast/data" _)
-(export KindDisplayContext KindDisplayContext.Default)
-(export TypeDisplayContext TypeDisplayContext.Default)
-(export ContextualDisplay._)
+(export _DisplayContext _DisplayContext.Default ContextualDisplay._)
 
 (class (KindDisplayContext C)
   (where (ContextualDisplay (NodeId KindUse) C)))
@@ -28,6 +26,24 @@
          (ContextualDisplay (NodeId TypeParameter) C)
          (ContextualDisplay (NodeId ConstraintUse) C)
          (ContextualDisplay (NodeId ClassCon) C)))
+
+(class (ValueDisplayContext C)
+  (where (ContextualDisplay (NodeId DataValueCon) C)
+         (ContextualDisplay (NodeId BuiltinValueCon) C)))
+
+(instance ValueDisplayContext.Default (forall C) (ValueDisplayContext C)
+  (where (ContextualDisplay (NodeId DataValueCon) C)
+         (ContextualDisplay (NodeId BuiltinValueCon) C)))
+
+(class (PatternDisplayContext C)
+  (where (ValueDisplayContext C)
+         (ContextualDisplay (NodeId PatternUse) C)
+         (ContextualDisplay (NodeId PatternVar) C)))
+
+(instance PatternDisplayContext.Default (forall C) (PatternDisplayContext C)
+  (where (ValueDisplayContext C)
+         (ContextualDisplay (NodeId PatternUse) C)
+         (ContextualDisplay (NodeId PatternVar) C)))
 
 (instance ContextualDisplay.Kind (forall C) (ContextualDisplay Kind C) (where (KindDisplayContext C))
   (function (contextual-display! w a ctx)
@@ -102,17 +118,13 @@
   (function (contextual-display! w a ctx)
     (match a
       [(constraint-rep:unresolved (let id) (let args))
-        (if (array/empty? args)
-          (display! w (contextual: id ctx))
-          (display-all! w "(" (contextual: id ctx) " " (it/format " " (it/map [^1 (contextual: %1 ctx)] args)) ")"))]
+        (display-parameterizable! w id (if (array/empty? args) none (some args)) ctx)]
       [(constraint-rep:class (let id) (let args))
-        (if (array/empty? args)
-          (display! w (contextual: id ctx))
-          (display-all! w "(" (contextual: id ctx) " " (it/format " " (it/map [^1 (contextual: %1 ctx)] args)) ")"))])))
+        (display-parameterizable! w id (if (array/empty? args) none (some args)) ctx)])))
 
 (instance ContextualDisplay.TypeParameter (forall C) (ContextualDisplay TypeParameter C) (where (TypeDisplayContext C))
   (function (contextual-display! w a ctx)
-    (if-match1 (some (let ann)) (type-parameter/kind-ann a)
+    (if-match1 (some (let ann)) (type-parameter/ann a)
       (display-all! w "[" (contextual: (type-parameter/id a) ctx) " " (contextual: (annotation/body ann) ctx) "]")
       (display! w (contextual: (type-parameter/id a) ctx)))))
 
@@ -131,3 +143,44 @@
         (it/format " " (it/map [^1 (contextual: %1 ctx)] (scheme/s-params a)))
         ")")!)
     (display! w "}")))
+
+(instance ContextualDisplay.ValueCon (forall C) (ContextualDisplay ValueCon C) (where (ValueDisplayContext C))
+  (function (contextual-display! w a ctx)
+    (match a
+      [(value-con:data (let id))
+        (display! w (contextual: id ctx))]
+      [(value-con:builtin (let id))
+        (display! w (contextual: id ctx))])))
+
+(instance ContextualDisplay.Pattern (forall C) (ContextualDisplay Pattern C) (where (PatternDisplayContext C))
+  (function (contextual-display! w a ctx)
+    (display! w (contextual: (pattern/rep a) ctx))))
+
+(instance ContextualDisplay.PatternRep (forall C) (ContextualDisplay PatternRep C) (where (PatternDisplayContext C))
+  (function (contextual-display! w a ctx)
+    (match a
+      [(pattern-rep:unresolved (let id) (let fields))
+        (display-parameterizable! w id fields ctx)]
+      [(pattern-rep:var (let var))
+        (display! w (contextual: var ctx))]
+      [pattern-rep:wildcard
+        (display! w "_")]
+      [(pattern-rep:decon (let con) (let fields))
+        (display-parameterizable! w con fields ctx)]
+      [(pattern-rep:const (let c))
+        (display! w c)])))
+
+(instance ContextualDisplay.PatternVar (forall C) (ContextualDisplay PatternVar C) (where (PatternDisplayContext C))
+  (function (contextual-display! w a ctx)
+    (match a
+      [(pattern-var: (let id) none)
+        (display-all! w "(let " (contextual: id ctx) ")")]
+      [(pattern-var: (let id) (some (let pat)))
+        (display-all! w "(let " (contextual: id ctx) " " (contextual: pat ctx) ")")])))
+
+(function (display-parameterizable! w callee args ctx)
+  (if-match1 (some (let args)) args
+    (if (array/empty? args)
+      (display-all! w "(" (contextual: callee ctx) ")")
+      (display-all! w "(" (contextual: callee ctx) " " (it/format " " (it/map [^1 (contextual: %1 ctx)] args)) ")"))
+    (display! w (contextual: callee ctx))))

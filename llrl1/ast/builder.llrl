@@ -94,7 +94,7 @@
 (instance TypeBuilder.Ast (TypeBuilder Type unit)
   (function (type-builder/unresolved ctx id) (type:unresolved id))
   (function (type-builder/con ctx con) (type:con con))
-  (function (type-builder/app ctx callee args) (type:app callee args))
+  (function (type-builder/app ctx callee args) (type/app callee args))
   (function (type-builder/gen ctx id) (type:gen id))
   (function (type-builder/error ctx e) (type:error e)))
 

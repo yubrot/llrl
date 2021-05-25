@@ -43,7 +43,12 @@ impl<'a, M: ModuleMap> Context<'a, M> {
             .clauses
             .iter()
             .map(|(p, _)| p::Row::new(vec![self.simplify_pattern(p)].into()))
-            .collect();
+            .collect::<Vec<_>>();
+
+        if rows.is_empty() {
+            // FIXME: In bottom types, it should be considered exhaustive
+            return Err(Error::NonExhaustivePattern(vec![p::Pattern::Wildcard]));
+        }
 
         p::check(rows).map_err(|e| match e {
             p::Error::Useless(mut row) => Error::UselessPattern(row.take_head().unwrap()),

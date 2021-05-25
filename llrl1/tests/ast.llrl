@@ -101,12 +101,6 @@
                      (array (constraint/number (type:gen a)))
                      (build-type unit (gen ,a)))))))
 
-($$ begin
-  ($for-each $ty [KindUse TypeUse DataTypeCon BuiltinTypeCon TypeParameter ConstraintUse ClassCon]
-    (instance ($symbol-concat ContextualDisplay. $ty .ForTest) (ContextualDisplay (NodeId $ty) unit)
-      (function (contextual-display! w a ctx)
-        (display! w "$")))))
-
 (assert-eq? "123" (string (const:integer #t 123)))
 (assert-eq? "3.14" (string (const:fp-number 3.14)))
 (assert-eq? "\"Hello, World!\\n\"" (string (const:string "Hello, World!\n")))
@@ -119,3 +113,20 @@
   (assert-eq? (some a) (conv-to? (NodeId KindUse) (conv-to Construct a)))
   (assert-eq? none (conv-to? (NodeId TypeUse) (conv-to Construct a)))
   (assert-ne? (conv-to Construct b) (conv-to Construct a)))
+
+(let* ([gen (node-id-generator/new (module-id/from-index 1))]
+       [(id!) (node-id-generator/next! gen)]
+       [(show p) {(-> PatternRep String)} (string (contextual: p unit))])
+  (assert-eq? "_" (show pattern-rep:wildcard))
+  (assert-eq? "#\\\\n" (show (pattern-rep:const (const:char #\\n))))
+  (assert-eq? "$" (show (pattern-rep:decon value-con/unit none)))
+  (assert-eq? "($ _)" (show (pattern-rep:decon value-con/ok (some (array (pattern: (id!) pattern-rep:wildcard))))))
+  (assert-eq? "(let $)" (show (pattern-rep:var (pattern-var: (id!) none))))
+  (assert-eq? "(let $ _)" (show (pattern-rep:var (pattern-var: (id!) (some (pattern: (id!) pattern-rep:wildcard))))))
+  (assert-eq? "($ _ _)" (show (pattern-rep:unresolved (id!) (some (array (pattern: (id!) pattern-rep:wildcard) (pattern: (id!) pattern-rep:wildcard)))))))
+
+($$ begin
+  ($for-each $ty [KindUse TypeUse DataTypeCon BuiltinTypeCon TypeParameter ConstraintUse ClassCon DataValueCon BuiltinValueCon PatternUse PatternVar]
+    (instance ($symbol-concat ContextualDisplay. $ty .ForTest) (ContextualDisplay (NodeId $ty) unit)
+      (function (contextual-display! w a ctx)
+        (display! w "$")))))

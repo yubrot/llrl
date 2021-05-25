@@ -1,23 +1,12 @@
 (import "~/util" _)
 (import "~/sexp" S _.S SRep _.SRep s-rep:_)
-(import "~/ast/node-id" NodeId _.NodeId node-id/_ ModuleId module-id/_)
-(export Annotation _.Annotation annotation: annotation/_
-        Generic generic/_)
-(export Kind _.Kind kind:_ kind/_ KindUse _.KindUse)
-(export Type _.Type type:_ type/_ TypeUse _.TypeUse
-        TypeCon _.TypeCon type-con:_ type-con/_
-        Constraint _.Constraint constraint:_ constraint/_
-        ConstraintRep _.ConstraintRep constraint-rep:_ constraint-rep/_ ConstraintUse _.ConstraintUse
-        TypeParameter _.TypeParameter type-parameter: type-parameter/_
-        Scheme _.Scheme scheme: scheme/_
-        Satisfaction _.Satisfaction satisfaction:_ satisfaction/_
-        SatisfactionByPremise _.SatisfactionByPremise satisfaction-by-premise:
-        SatisfactionByInstance _.SatisfactionByInstance satisfaction-by-instance:
-        Instantiation _.Instantiation instantiation: instantiation/_)
-(export Const _.Const const:_)
-(export DataTypeCon DataValueCon BuiltinTypeCon BuiltinValueCon ClassCon InstanceCon)
-(export Construct _.Construct construct/_)
-(export builtin/_)
+(import "~/ast/node-id" NodeId _.NodeId node-id/_ ModuleId _.ModuleId module-id/_)
+
+; ---------------------------
+; Core
+
+(export Annotation _.Annotation annotation: annotation/_)
+(export Generic generic/_)
 
 (derive (Eq Ord DebugDisplay Hash) value-data (Annotation A)
   (annotation: (NodeId (Annotation A)) A))
@@ -30,6 +19,12 @@
   (function (generic/monomorphic? a) {(-> A Bool)}
     (and (array/empty? (generic/types a))
          (array/empty? (generic/constraints a)))))
+
+; ---------------------------
+; Kinds
+
+(export Kind _.Kind kind:_ kind/_)
+(export KindUse _.KindUse)
 
 ; In llrl, `Kind` represents the type of the language construct.
 ;
@@ -87,6 +82,20 @@
 
 ; The bottom type for kind uses.
 (derive (Eq Ord DebugDisplay Hash) data KindUse)
+
+; ---------------------------
+; Types
+
+(export Type _.Type type:_ type/_)
+(export TypeUse _.TypeUse)
+(export TypeCon _.TypeCon type-con:_ type-con/_)
+(export Constraint _.Constraint constraint:_ constraint/_)
+(export ConstraintRep _.ConstraintRep constraint-rep:_ constraint-rep/_)
+(export ConstraintUse _.ConstraintUse)
+(export TypeParameter _.TypeParameter type-parameter: type-parameter/_)
+(export Scheme _.Scheme scheme: scheme/_)
+(export Satisfaction _.Satisfaction satisfaction:_ satisfaction/_)
+(export Instantiation _.Instantiation instantiation: instantiation/_)
 
 ; In llrl, `Type` represents a type-level expression or the type of values itself.
 ;
@@ -208,7 +217,7 @@
 (derive (DebugDisplay) value-data TypeParameter
   (type-parameter: (NodeId TypeParameter) (Option (Annotation Kind))))
 
-(getter type-parameter: type-parameter/id type-parameter/kind-ann)
+(getter type-parameter: type-parameter/id type-parameter/ann)
 
 (derive (DebugDisplay) value-data Scheme
   (scheme: (Array TypeParameter) (Array Constraint) Type))
@@ -220,30 +229,304 @@
 (getter scheme: scheme/ty-params scheme/s-params scheme/body)
 
 (derive (DebugDisplay) value-data Satisfaction
-  (satisfaction:by-premise SatisfactionByPremise)
-  (satisfaction:by-instance SatisfactionByInstance)
+  (satisfaction:by-premise (NodeId Constraint) (Array (NodeId Constraint))) ; id path
+  (satisfaction:by-instance (NodeId InstanceCon) Instantiation) ; id inst
   (satisfaction:error String))
 
 (instance Dfs.Satisfaction (Dfs Satisfaction)
   (function (dfs f a)
     (match a
-      [(satisfaction:by-premise _)]
-      [(satisfaction:by-instance (satisfaction-by-instance: _ (let inst)))
-        (for (let s) (instantiation/s-args inst)
-          (dfs f s)!)]
+      [(satisfaction:by-premise _ _)]
+      [(satisfaction:by-instance _ (let inst))
+        (for (let sa) (instantiation/s-args inst)
+          (dfs f sa)!)]
       [(satisfaction:error _)])
     (f a)))
 
-(derive (DebugDisplay) value-data SatisfactionByPremise
-  (satisfaction-by-premise: (NodeId Constraint) (Array (NodeId Constraint)))) ; id path
-
-(derive (DebugDisplay) value-data SatisfactionByInstance
-  (satisfaction-by-instance: (NodeId InstanceCon) Instantiation)) ; use instantiation
+(function (satisfaction/contains-error? sa) {(-> Satisfaction Bool)}
+  (|> sa
+      (dfs (case
+        [(satisfaction:error _) (err unit)]
+        [_ (ok unit)]))
+      (is? (err _))))
 
 (derive (DebugDisplay) value-data Instantiation
   (instantiation: (Array Type) (Array Satisfaction)))
 
 (getter instantiation: instantiation/ty-args instantiation/s-args)
+
+; ---------------------------
+; Expressions
+
+(export Expr _.Expr expr: expr/_)
+(export ExprRep _.ExprRep expr-rep:_ expr-rep/_)
+(export ExprUse _.ExprUse)
+(export Value _.Value value:_ value/_)
+(export ValueCon _.ValueCon value-con:_ value-con/_)
+(export LocalVar _.LocalVar local-var: local-var/_)
+(export LocalFun _.LocalFun local-fun: local-fun/_)
+(export InitExpr _.InitExpr init-expr:_)
+
+; In llrl, `Expr` represents a value-level expression.
+(derive (DebugDisplay) value-data Expr
+  (expr: (NodeId Expr) ExprRep)) ; id rep
+
+(instance Dfs.Expr (Dfs Expr)
+  (function (dfs f a)
+    (match (expr/rep a)
+      [(expr-rep:unresolved _)]
+      [(expr-rep:value _)]
+      [(expr-rep:con _)]
+      [(expr-rep:const _)]
+      [(expr-rep:app (let callee) (let args))
+        (dfs f callee)!
+        (for (let arg) args (dfs f arg)!)]
+      [(expr-rep:capture _)]
+      [(expr-rep:annotate (let e) _)
+        (dfs f e)!]
+      [(expr-rep:let (let defs) (let body))
+        (for (let def) defs
+          (match def
+            [(left (let local-var))
+              (dfs f (local-var/init local-var))!]
+            [(right (let local-fun))
+              (dfs f (local-fun/body local-fun))!]))
+        (dfs f body)!]
+      [(expr-rep:seq (let stmts) (let body))
+        (for (let stmt) stmts (dfs f stmt)!)
+        (dfs f body)!]
+      [(expr-rep:if (let cond) (let then) (let else))
+        (dfs f cond)!
+        (dfs f then)!
+        (dfs f else)!]
+      [(expr-rep:while (let cond) (let body))
+        (dfs f cond)!
+        (dfs f body)!]
+      [(expr-rep:match (let target) (let clauses))
+        (dfs f target)!
+        (for (: _ (let body)) clauses (dfs f body)!)]
+      [(expr-rep:return (let ret))
+        (for (let e) ret (dfs f e)!)])
+    (f a)))
+
+(getter expr: expr/id expr/rep)
+
+(function (expr/dfs-same-level f a)
+  {(forall Error) (-> (-> Expr (Result unit Error)) Expr (Result unit Error))}
+  (dfs [^1 (f (expr-focus-same-level/unfocus %1))] (expr-focus-same-level: a)))
+
+(derive (DebugDisplay) value-data ExprFocusSameLevel
+  (expr-focus-same-level: Expr))
+
+(instance Dfs.ExprFocusSameLevel (Dfs ExprFocusSameLevel)
+  (function (dfs f a)
+    (match (expr/rep (expr-focus-same-level/unfocus a))
+      [(expr-rep:unresolved _)]
+      [(expr-rep:value _)]
+      [(expr-rep:con _)]
+      [(expr-rep:const _)]
+      [(expr-rep:app (let callee) (let args))
+        (dfs f (expr-focus-same-level: callee))!
+        (for (let arg) args (dfs f (expr-focus-same-level: arg))!)]
+      [(expr-rep:capture _)]
+      [(expr-rep:annotate (let e) _)
+        (dfs f (expr-focus-same-level: e))!]
+      [(expr-rep:let (let defs) (let body))
+        (for (let def) defs
+          (when-match1 (left (let local-var)) def
+            (dfs f (expr-focus-same-level: (local-var/init local-var)))!))
+        (dfs f (expr-focus-same-level: body))!]
+      [(expr-rep:seq (let stmts) (let body))
+        (for (let stmt) stmts (dfs f (expr-focus-same-level: stmt))!)
+        (dfs f (expr-focus-same-level: body))!]
+      [(expr-rep:if (let cond) (let then) (let else))
+        (dfs f (expr-focus-same-level: cond))!
+        (dfs f (expr-focus-same-level: then))!
+        (dfs f (expr-focus-same-level: else))!]
+      [(expr-rep:while (let cond) (let body))
+        (dfs f (expr-focus-same-level: cond))!
+        (dfs f (expr-focus-same-level: body))!]
+      [(expr-rep:match (let target) (let clauses))
+        (dfs f (expr-focus-same-level: target))!
+        (for (: _ (let body)) clauses (dfs f (expr-focus-same-level: body))!)]
+      [(expr-rep:return (let ret))
+        (for (let e) ret (dfs f (expr-focus-same-level: e))!)])
+    (f a)))
+
+(getter expr-focus-same-level: expr-focus-same-level/unfocus)
+
+(derive (DebugDisplay) data ExprRep
+  (expr-rep:unresolved (NodeId ExprUse))
+  (expr-rep:value Value)
+  (expr-rep:con ValueCon)
+  (expr-rep:const Const)
+  (expr-rep:app Expr (Array Expr))
+  (expr-rep:capture Construct)
+  (expr-rep:annotate Expr (Annotation Type))
+  (expr-rep:let (Array (Either LocalVar LocalFun)) Expr)
+  (expr-rep:seq (Array Expr) Expr)
+  (expr-rep:if Expr Expr Expr)
+  (expr-rep:while Expr Expr)
+  (expr-rep:match Expr (Array (: Pattern Expr)))
+  (expr-rep:return (Option Expr)))
+
+(function expr-rep/unit {ExprRep}
+  (expr-rep:con value-con/unit))
+
+(function (expr-rep/tuple size) {(-> U64 ExprRep)}
+  (expr-rep:con (value-con/tuple size)))
+
+(function (expr-rep/bool value) {(-> Bool ExprRep)}
+  (expr-rep:con (value-con/bool value)))
+
+; The bottom type for expr uses.
+(derive (Eq Ord DebugDisplay Hash) data ExprUse)
+
+(derive (Eq Ord DebugDisplay Hash) value-data Value
+  )
+  ; (value:function (NodeId Function))
+  ; (value:c-function (NodeId CFunction))
+  ; (value:builtin-op (NodeId BuiltinOp))
+  ; (value:class-method (NodeId ClassMethod))
+  ; (value:parameter (NodeId Parameter))
+  ; (value:local-var (NodeId LocalVar))
+  ; (value:local-fun (NodeId LocalFun))
+  ; (value:pattern-var (NodeId PatternVar)))
+
+(function (value/static? v) {(-> Value Bool)}
+  #f)
+  ; (is?
+  ;   (some _)
+  ;   (match? v
+  ;     [value:function]
+  ;     [value:c-function]
+  ;     [value:builtin-op]
+  ;     [value:class-method])))
+
+(derive (Eq Ord DebugDisplay Hash) value-data ValueCon
+  (value-con:data (NodeId DataValueCon))
+  (value-con:builtin (NodeId BuiltinValueCon)))
+
+(function (value-con/tuple size) {(-> U64 ValueCon)}
+  (value-con:data (builtin/tuple size)))
+
+(function (value-con/tuple? con) {(-> ValueCon (Option U64))}
+  (if-match1 (value-con:data (let id)) con
+    (builtin/tuple? id)
+    none))
+
+(function (value-con/bool value) {(-> Bool ValueCon)}
+  (value-con:data (if value builtin/true builtin/false)))
+
+(function value-con/unit (value-con:data (builtin/tuple 0)))
+(function value-con/none (value-con:data builtin/none))
+(function value-con/some (value-con:data builtin/some))
+(function value-con/err (value-con:data builtin/err))
+(function value-con/ok (value-con:data builtin/ok))
+(function value-con/syntax (value-con:builtin builtin/syntax-value))
+
+(derive (DebugDisplay) value-data LocalVar
+  (local-var:
+    (NodeId LocalVar)          ; id
+    (Option (Annotation Type)) ; ann
+    Expr))                     ; init
+
+(getter local-var: local-var/id local-var/ann local-var/init)
+
+(derive (DebugDisplay) value-data LocalFun
+  (local-fun:
+    (NodeId LocalFun)            ; id
+    (Array Parameter)            ; params
+    (Option (Annotation Scheme)) ; ann
+    Expr))                       ; body
+
+(getter local-fun: local-fun/id local-fun/params local-fun/ann local-fun/body)
+
+(derive (DebugDisplay) value-data InitExpr
+  (init-expr:eval Expr)
+  (init-expr:ensure-initialized ModuleId))
+
+; ---------------------------
+; Patterns
+
+(export Pattern _.Pattern pattern: pattern/_)
+(export PatternRep _.PatternRep pattern-rep:_ pattern-rep/_)
+(export PatternUse _.PatternUse)
+(export PatternVar _.PatternVar pattern-var: pattern-var/_)
+
+(derive (DebugDisplay) value-data Pattern
+  (pattern: (NodeId Pattern) PatternRep)) ; id rep
+
+(instance Dfs.Pattern (Dfs Pattern)
+  (function (dfs f a)
+    (match (pattern/rep a)
+      [(pattern-rep:unresolved _ (let fields))
+        (for (let p) (it/flat-map id fields)
+          (dfs f a)!)]
+      [(pattern-rep:var (let var))
+        (for (let p) (pattern-var/as-pat var)
+          (dfs f a)!)]
+      [pattern-rep:wildcard]
+      [(pattern-rep:decon _ (let fields))
+        (for (let p) (it/flat-map id fields)
+          (dfs f a)!)]
+      [(pattern-rep:const _)])
+    (f a)))
+
+(getter pattern: pattern/id pattern/rep)
+
+(derive (DebugDisplay) data PatternRep
+  (pattern-rep:unresolved (NodeId PatternUse) (Option (Array Pattern))) ; use fields
+  (pattern-rep:var PatternVar)
+  pattern-rep:wildcard
+  (pattern-rep:decon ValueCon (Option (Array Pattern))) ; con fields
+  (pattern-rep:const Const))
+
+(function pattern-rep/unit {PatternRep}
+  (pattern-rep:decon value-con/unit none))
+
+(function (pattern-rep/tuple fields) {(-> (Array Pattern) PatternRep)}
+  (pattern-rep:decon
+    (value-con/tuple (array/length fields))
+    (if (array/empty? fields) none (some fields))))
+
+(function (pattern-rep/tuple? rep) {(-> PatternRep (Option (Array Pattern)))}
+  (with? ([(pattern-rep:decon (let con) (let fields)) rep]
+          [(some (let size)) (value-con/tuple? con)]
+          [#t (eq? (eq? size 0) (is? none fields))]
+          [#t (eq? size (|> fields (option/map array/length) (option/unwrap 0)))])
+    (option/unwrap array/empty fields)))
+
+(function (pattern-rep/bool value) {(-> Bool PatternRep)}
+  (pattern-rep:decon (value-con/bool value) none))
+
+; The bottom type for pattern uses.
+(derive (Eq Ord DebugDisplay Hash) data PatternUse)
+
+(derive (DebugDisplay) value-data PatternVar
+  (pattern-var: (NodeId PatternVar) (Option Pattern))) ; id as-pat
+
+(getter pattern-var: pattern-var/id pattern-var/as-pat)
+
+; ---------------------------
+; TODO
+(export DataTypeCon DataValueCon BuiltinTypeCon BuiltinValueCon ClassCon InstanceCon Parameter)
+
+(derive (DebugDisplay) data Root)
+(derive (DebugDisplay) data DataTypeCon)
+(derive (DebugDisplay) data DataValueCon)
+(derive (DebugDisplay) data BuiltinTypeCon)
+(derive (DebugDisplay) data BuiltinValueCon)
+(derive (DebugDisplay) data ClassCon)
+(derive (DebugDisplay) data InstanceCon)
+
+(derive (DebugDisplay) value-data Parameter
+  (parameter: (NodeId Parameter)))
+
+; ---------------------------
+; Constants
+
+(export Const _.Const const:_)
 
 (derive (Eq Ord DebugDisplay Hash) value-data Const
   (const:integer Bool U64)
@@ -261,16 +544,10 @@
       [(const:char (let c)) (display! w (s-rep:char c))]
       [(const:sexp (let s)) (display-all! w "'" s)])))
 
-; TODO
-(derive (DebugDisplay) data Root)
-(derive (DebugDisplay) data DataTypeCon)
-(derive (DebugDisplay) data DataValueCon)
-(derive (DebugDisplay) data BuiltinTypeCon)
-(derive (DebugDisplay) data BuiltinValueCon)
-(derive (DebugDisplay) data ClassCon)
-(derive (DebugDisplay) data InstanceCon)
-
 ; ---------------------------
+; Construct
+
+(export Construct _.Construct construct/_ _.To.Construct Cast.From.Construct._)
 
 ; A type-erased NodeId.
 (derive (Eq Ord DebugDisplay Hash) value-data Construct
@@ -298,7 +575,24 @@
      [22 TypeUse TypeUse]
      [23 TypeParameter TypeParameter]
      [24 Constraint Constraint]
-     [25 ConstraintUse ConstraintUse])
+     [25 ConstraintUse ConstraintUse]
+
+     [30 Expr Expr]
+     [31 ExprUse ExprUse]
+     [32 LocalVar LocalVar]
+     [33 LocalFun LocalFun]
+     [34 Capture Construct]
+
+     [40 Pattern Pattern]
+     [41 PatternUse PatternUse]
+     [42 PatternVar PatternVar]
+
+     [54 DataTypeCon DataTypeCon]
+     [55 DataValueCon DataValueCon]
+     [56 BuiltinTypeCon BuiltinTypeCon]
+     [57 BuiltinValueCon BuiltinValueCon]
+     [59 ClassCon ClassCon]
+     [61 InstanceCon InstanceCon])
 
     (begin
       (instance ($symbol-concat Conv.From. $kind-name .To.Construct) (Conv (NodeId $type) Construct)
@@ -310,7 +604,47 @@
           (with1 (construct: (let type-id) (let node-id)) a
             (when? (eq? type-id $kind-id) (node-id/reinterpret-unchecked node-id))))))))
 
+(instance Conv.From.Construct.To.TypeCon (Conv Construct (Option TypeCon))
+  (function (conv a)
+    (cond?
+      [when-match1 (some (let id)) (conv a)
+        (type-con:data id)]
+      [when-match1 (some (let id)) (conv a)
+        (type-con:builtin id)])))
+
+(instance Conv.From.Construct.To.ValueCon (Conv Construct (Option ValueCon))
+  (function (conv a)
+    (cond?
+      [when-match1 (some (let id)) (conv a)
+        (value-con:data id)]
+      [when-match1 (some (let id)) (conv a)
+        (value-con:builtin id)])))
+
+(instance Conv.From.Construct.To.Value (Conv Construct (Option Value))
+  (function (conv a)
+    (cond?
+      ; [when-match1 (some (let id)) (conv a)
+      ;   (value:function id)]
+      ; [when-match1 (some (let id)) (conv a)
+      ;   (value:c-function id)]
+      ; [when-match1 (some (let id)) (conv a)
+      ;   (value:builtin-op id)]
+      ; [when-match1 (some (let id)) (conv a)
+      ;   (value:class-method id)]
+      ; [when-match1 (some (let id)) (conv a)
+      ;   (value:parameter id)]
+      ; [when-match1 (some (let id)) (conv a)
+      ;   (value:local-var id)]
+      ; [when-match1 (some (let id)) (conv a)
+      ;   (value:local-fun id)]
+      ; [when-match1 (some (let id)) (conv a)
+      ;   (value:pattern-var id)]
+        )))
+
 ; ---------------------------
+; Builtins
+
+(export builtin/_)
 
 (function LIMIT_VARIADIC_SIZE 16)
 
