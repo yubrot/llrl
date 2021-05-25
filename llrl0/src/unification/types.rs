@@ -628,14 +628,14 @@ mod tests {
             let construct = construct.into();
             match construct {
                 ast::Construct::BuiltinTypeCon(id) => {
-                    if let Some(n) = ast::builtin::matches_fun_con(id) {
+                    if let Some(n) = ast::builtin::matches_fun(id) {
                         Cow::Owned(build_kind!(Ast, (-> ...{vec![Kind::Type; n + 1]} type)))
                     } else {
                         panic!("Unknown construct: {}", construct)
                     }
                 }
                 ast::Construct::DataTypeCon(id) => {
-                    if let Some(n) = ast::builtin::matches_tuple_type_con(id) {
+                    if let Some(n) = ast::builtin::matches_tuple_type(id) {
                         if n == 0 {
                             Cow::Owned(Kind::Type)
                         } else {

@@ -311,16 +311,16 @@ pub enum ValueCon {
 
 impl ValueCon {
     pub fn unit() -> Self {
-        Self::Data(builtin::tuple_con(0))
+        Self::Data(builtin::tuple(0))
     }
 
     pub fn tuple(size: usize) -> Self {
-        Self::Data(builtin::tuple_con(size))
+        Self::Data(builtin::tuple(size))
     }
 
     pub fn matches_tuple(self) -> Option<usize> {
         match self {
-            Self::Data(id) => builtin::matches_tuple_con(id),
+            Self::Data(id) => builtin::matches_tuple(id),
             Self::Builtin(_) => None,
         }
     }

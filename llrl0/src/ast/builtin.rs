@@ -33,13 +33,13 @@ macro_rules! define_builtin_reserved {
 
 fn reserve_variadic_constructs(map: &mut HashMap<String, Construct>) {
     for i in 0..=LIMIT_VARIADIC_SIZE {
-        map.insert(format!("Fun.{}", i), fun_con(i).into());
-        map.insert(format!("Tuple.{}", i), tuple_type_con(i).into());
-        map.insert(format!("{}:", i), tuple_con(i).into());
+        map.insert(format!("Fun.{}", i), fun(i).into());
+        map.insert(format!("Tuple.{}", i), tuple_type(i).into());
+        map.insert(format!("{}:", i), tuple(i).into());
     }
 }
 
-pub fn fun_con(arity: usize) -> NodeId<BuiltinTypeCon> {
+pub fn fun(arity: usize) -> NodeId<BuiltinTypeCon> {
     assert!(
         arity <= LIMIT_VARIADIC_SIZE,
         "Unsupported fun arity: {}",
@@ -48,7 +48,7 @@ pub fn fun_con(arity: usize) -> NodeId<BuiltinTypeCon> {
     NodeId::new_unchecked(ModuleId::builtin(), arity as u32)
 }
 
-pub fn tuple_type_con(size: usize) -> NodeId<DataTypeCon> {
+pub fn tuple_type(size: usize) -> NodeId<DataTypeCon> {
     assert!(
         size <= LIMIT_VARIADIC_SIZE,
         "Unsupported tuple size: {}",
@@ -57,7 +57,7 @@ pub fn tuple_type_con(size: usize) -> NodeId<DataTypeCon> {
     NodeId::new_unchecked(ModuleId::builtin(), 100 + size as u32)
 }
 
-pub fn tuple_con(size: usize) -> NodeId<DataValueCon> {
+pub fn tuple(size: usize) -> NodeId<DataValueCon> {
     assert!(
         size <= LIMIT_VARIADIC_SIZE,
         "Unsupported tuple size: {}",
@@ -66,7 +66,7 @@ pub fn tuple_con(size: usize) -> NodeId<DataValueCon> {
     NodeId::new_unchecked(ModuleId::builtin(), 200 + size as u32)
 }
 
-pub fn matches_fun_con(id: NodeId<BuiltinTypeCon>) -> Option<usize> {
+pub fn matches_fun(id: NodeId<BuiltinTypeCon>) -> Option<usize> {
     if id.module().is_builtin() && id.index_in_module() <= LIMIT_VARIADIC_SIZE as u32 {
         Some(id.index_in_module() as usize)
     } else {
@@ -74,7 +74,7 @@ pub fn matches_fun_con(id: NodeId<BuiltinTypeCon>) -> Option<usize> {
     }
 }
 
-pub fn matches_tuple_type_con(id: NodeId<DataTypeCon>) -> Option<usize> {
+pub fn matches_tuple_type(id: NodeId<DataTypeCon>) -> Option<usize> {
     if id.module().is_builtin()
         && 100 <= id.index_in_module()
         && id.index_in_module() <= 100 + LIMIT_VARIADIC_SIZE as u32
@@ -85,7 +85,7 @@ pub fn matches_tuple_type_con(id: NodeId<DataTypeCon>) -> Option<usize> {
     }
 }
 
-pub fn matches_tuple_con(id: NodeId<DataValueCon>) -> Option<usize> {
+pub fn matches_tuple(id: NodeId<DataValueCon>) -> Option<usize> {
     if id.module().is_builtin()
         && 200 <= id.index_in_module()
         && id.index_in_module() <= 200 + LIMIT_VARIADIC_SIZE as u32

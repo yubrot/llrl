@@ -290,27 +290,27 @@ pub enum TypeCon {
 
 impl TypeCon {
     pub fn unit() -> Self {
-        Self::Data(builtin::tuple_type_con(0))
+        Self::Data(builtin::tuple_type(0))
     }
 
     pub fn fun(arity: usize) -> Self {
-        Self::Builtin(builtin::fun_con(arity))
+        Self::Builtin(builtin::fun(arity))
     }
 
     pub fn matches_fun(self) -> Option<usize> {
         match self {
-            Self::Builtin(id) => builtin::matches_fun_con(id),
+            Self::Builtin(id) => builtin::matches_fun(id),
             _ => None,
         }
     }
 
     pub fn tuple(size: usize) -> Self {
-        Self::Data(builtin::tuple_type_con(size))
+        Self::Data(builtin::tuple_type(size))
     }
 
     pub fn matches_tuple(self) -> Option<usize> {
         match self {
-            Self::Data(id) => builtin::matches_tuple_type_con(id),
+            Self::Data(id) => builtin::matches_tuple_type(id),
             _ => None,
         }
     }
