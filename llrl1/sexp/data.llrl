@@ -8,7 +8,7 @@
 ; NOTE: Barely avoiding a name conflict with the host's (llrl's own) Sexp-related definitions.
 ; Perhaps these host Sexp-related definitions should be renamed and re-exported by a custom prelude for llrl1.
 
-(derive (DebugDisplay) data (Ss A)
+(derive (Eq Ord DebugDisplay Hash) data (Ss A)
   (ss: SourceLocation (Array (S A))))
 
 (instance Display.Ss (forall A) (Display (Ss A)) (where (Display A))
@@ -20,7 +20,7 @@
 
 (getter ss: ss/location ss/elems)
 
-(derive (DebugDisplay) data (S A)
+(derive (Eq Ord DebugDisplay Hash) data (S A)
   (s: SourceLocation (SRep A)))
 
 (instance Display.S (forall A) (Display (S A)) (where (Display A))
@@ -38,7 +38,7 @@
 (function (s/syntax-sugar? s) {(forall A) (-> (S A) (Option (SyntaxSugar A)))}
   (s-rep/syntax-sugar? (s/rep s)))
 
-(derive (DebugDisplay) value-data (SRep A)
+(derive (Eq Ord DebugDisplay Hash) value-data (SRep A)
   (s-rep:integer Bool U64)
   (s-rep:fp-number F64)
   (s-rep:bool Bool)

@@ -19,5 +19,5 @@
 (import "std/ord" Ord compare lt? le? gt? ge? < > <= >= min max Ord._ derive/Ord)
 (import "std/arithmetic" Zero One Add Sub Mul Div Rem zero one + - * / % abs)
 (import "std/access" get get? set! Load load Store LoadAt StoreAt)
-(import "std/conv" Conv conv conv-from conv-to Conv._)
+(import "std/conv" Conv conv conv-from conv-to conv-to? Conv._)
 (export _)

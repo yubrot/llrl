@@ -106,3 +106,16 @@
     (instance ($symbol-concat ContextualDisplay. $ty .ForTest) (ContextualDisplay (NodeId $ty) unit)
       (function (contextual-display! w a ctx)
         (display! w "$")))))
+
+(assert-eq? "123" (string (const:integer #t 123)))
+(assert-eq? "3.14" (string (const:fp-number 3.14)))
+(assert-eq? "\"Hello, World!\\n\"" (string (const:string "Hello, World!\n")))
+(assert-eq? "#\\a" (string (const:char #\a)))
+
+(let* ([gen (node-id-generator/new (module-id/from-index 1))]
+       [a {(NodeId KindUse)} (node-id-generator/next! gen)]
+       [b {(NodeId TypeUse)} (node-id-generator/next! gen)])
+  (assert-eq? (node-id/module a) (construct/module (conv a)))
+  (assert-eq? (some a) (conv-to? (NodeId KindUse) (conv-to Construct a)))
+  (assert-eq? none (conv-to? (NodeId TypeUse) (conv-to Construct a)))
+  (assert-ne? (conv-to Construct b) (conv-to Construct a)))

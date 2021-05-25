@@ -1,5 +1,6 @@
 (import "~/util" _)
-(import "~/ast/node-id" NodeId _.NodeId node-id/_ module-id/_)
+(import "~/sexp" S _.S SRep _.SRep s-rep:_)
+(import "~/ast/node-id" NodeId _.NodeId node-id/_ ModuleId module-id/_)
 (export Annotation _.Annotation annotation: annotation/_
         Generic generic/_)
 (export Kind _.Kind kind:_ kind/_ KindUse _.KindUse)
@@ -13,7 +14,9 @@
         SatisfactionByPremise _.SatisfactionByPremise satisfaction-by-premise:
         SatisfactionByInstance _.SatisfactionByInstance satisfaction-by-instance:
         Instantiation _.Instantiation instantiation: instantiation/_)
+(export Const _.Const const:_)
 (export DataTypeCon DataValueCon BuiltinTypeCon BuiltinValueCon ClassCon InstanceCon)
+(export Construct _.Construct construct/_)
 (export builtin/_)
 
 (derive (Eq Ord DebugDisplay Hash) value-data (Annotation A)
@@ -242,13 +245,70 @@
 
 (getter instantiation: instantiation/ty-args instantiation/s-args)
 
+(derive (Eq Ord DebugDisplay Hash) value-data Const
+  (const:integer Bool U64)
+  (const:fp-number F64)
+  (const:string String)
+  (const:char Char)
+  (const:sexp (S Construct)))
+
+(instance Display.Const (Display Const)
+  (function (display! w a)
+    (match a
+      [(const:integer (let signed?) (let v)) (display! w (s-rep:integer signed? v))]
+      [(const:fp-number (let v)) (display! w (s-rep:fp-number v))]
+      [(const:string (let s)) (display! w (s-rep:string s))]
+      [(const:char (let c)) (display! w (s-rep:char c))]
+      [(const:sexp (let s)) (display-all! w "'" s)])))
+
 ; TODO
+(derive (DebugDisplay) data Root)
 (derive (DebugDisplay) data DataTypeCon)
 (derive (DebugDisplay) data DataValueCon)
 (derive (DebugDisplay) data BuiltinTypeCon)
 (derive (DebugDisplay) data BuiltinValueCon)
 (derive (DebugDisplay) data ClassCon)
 (derive (DebugDisplay) data InstanceCon)
+
+; ---------------------------
+
+; A type-erased NodeId.
+(derive (Eq Ord DebugDisplay Hash) value-data Construct
+  (construct: U64 (NodeId Never))) ; kind-id type-erased-node-id
+
+(instance Display.Construct (Display Construct)
+  (function (display! w a)
+    (with1 (construct: _ (let nid)) a
+      (display! w nid))))
+
+(function (construct/module c) {(-> Construct ModuleId)}
+  (with1 (construct: _ (let nid)) c
+    (node-id/module nid)))
+
+($$ begin
+  ($for-each
+    [$kind-id $kind-name $type]
+    ([0 Root Root]
+
+     [10 KindAnn (Annotation Kind)]
+     [11 KindUse KindUse]
+
+     [20 TypeAnn (Annotation Type)]
+     [21 SchemeAnn (Annotation Scheme)]
+     [22 TypeUse TypeUse]
+     [23 TypeParameter TypeParameter]
+     [24 Constraint Constraint]
+     [25 ConstraintUse ConstraintUse])
+
+    (begin
+      (instance ($symbol-concat Conv.From. $kind-name .To.Construct) (Conv (NodeId $type) Construct)
+        (function (conv a)
+          (construct: $kind-id (node-id/reinterpret-unchecked a))))
+
+      (instance ($symbol-concat Conv.From.Construct.To. $kind-name) (Conv Construct (Option (NodeId $type)))
+        (function (conv a)
+          (with1 (construct: (let type-id) (let node-id)) a
+            (when? (eq? type-id $kind-id) (node-id/reinterpret-unchecked node-id))))))))
 
 ; ---------------------------
 

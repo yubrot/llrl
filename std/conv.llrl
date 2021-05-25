@@ -3,7 +3,7 @@
 (import "std/prelude/stage-0" _)
 (import "std/num-literals" _)
 (import "std/preprocess" $$)
-(export Conv conv conv-from conv-to Conv._)
+(export Conv conv conv-from conv-to conv-to? Conv._)
 
 (class (Conv From To)
   (function (conv a) {(-> From To)}))
@@ -22,8 +22,18 @@
     [_
       (err "Expected (conv-to ty a)")]))
 
+(macro (conv-to? s)
+  (s/match s
+    [(_ ,ty ,a)
+      (ok `(annotate (,\conv ,a) (,\Option ,ty)))]
+    [_
+      (err "Expected (conv-to? ty a)")]))
+
 (instance Conv.Identity (forall A) (Conv A A)
   (transparent-function (conv a) a))
+
+(instance Conv.Just (forall A) (Conv A (Option A))
+  (transparent-function (conv a) (some a)))
 
 ($$ begin
   ($for-each
