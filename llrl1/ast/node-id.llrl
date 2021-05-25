@@ -52,6 +52,9 @@
 (function (node-id/new-unchecked mid id) {(forall A) (-> ModuleId U32 (NodeId A))}
   (node-id: (bw| (conv (module-id/index mid)) (bw<< (conv id) 32))))
 
+(function (node-id/components nid) {(forall A) (-> (NodeId A) (: ModuleId U32))}
+  (: (node-id/module nid) (node-id/index-in-module nid)))
+
 (function (node-id/module nid) {(forall A) (-> (NodeId A) ModuleId)}
   (module-id: (conv (node-id/value nid))))
 

@@ -41,12 +41,12 @@
 (derive (DebugDisplay) value-data (SRep A)
   (s-rep:integer Bool U64)
   (s-rep:fp-number F64)
+  (s-rep:bool Bool)
   (s-rep:symbol String)
   (s-rep:string String)
   (s-rep:char Char)
   (s-rep:cons (S A) (S A))
   s-rep:nil
-  (s-rep:bool Bool)
   (s-rep:pure A))
 
 (instance Display.SRep (forall A) (Display (SRep A)) (where (Display A))
@@ -59,6 +59,8 @@
         [(s-rep:integer #f (let v))
           (display! w v)]
         [(s-rep:fp-number (let v))
+          (display! w v)]
+        [(s-rep:bool (let v))
           (display! w v)]
         [(s-rep:symbol (let s))
           (display! w s)]
@@ -73,8 +75,6 @@
           (display-all! w "(" car (tail: cdr) ")")]
         [s-rep:nil
           (display! w "()")]
-        [(s-rep:bool (let v))
-          (display! w v)]
         [(s-rep:pure (let v))
           (display! w v)]))))
 

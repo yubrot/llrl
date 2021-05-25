@@ -1,7 +1,32 @@
 (import "~/util" _)
-(import "~/ast/node-id" NodeId _.NodeId)
-(export Kind _.Kind kind:_ kind/_)
-(export KindUse _.KindUse)
+(import "~/ast/node-id" NodeId _.NodeId node-id/_ module-id/_)
+(export Annotation _.Annotation annotation: annotation/_
+        Generic generic/_)
+(export Kind _.Kind kind:_ kind/_ KindUse _.KindUse)
+(export Type _.Type type:_ type/_ TypeUse _.TypeUse
+        TypeCon _.TypeCon type-con:_ type-con/_
+        Constraint _.Constraint constraint:_ constraint/_
+        ConstraintRep _.ConstraintRep constraint-rep:_ constraint-rep/_ ConstraintUse _.ConstraintUse
+        TypeParameter _.TypeParameter type-parameter: type-parameter/_
+        Scheme _.Scheme scheme: scheme/_
+        Satisfaction _.Satisfaction satisfaction:_ satisfaction/_
+        SatisfactionByPremise _.SatisfactionByPremise satisfaction-by-premise:
+        SatisfactionByInstance _.SatisfactionByInstance satisfaction-by-instance:
+        Instantiation _.Instantiation instantiation: instantiation/_)
+(export DataTypeCon DataValueCon BuiltinTypeCon BuiltinValueCon ClassCon InstanceCon)
+(export builtin/_)
+
+(derive (Eq Ord DebugDisplay Hash) value-data (Annotation A)
+  (annotation: (NodeId (Annotation A)) A))
+
+(getter annotation: annotation/id annotation/body)
+
+(class (Generic A)
+  (function (generic/types a) {(-> A (Array TypeParameter))})
+  (function (generic/constraints a) {(-> A (Array Constraint))})
+  (function (generic/monomorphic? a) {(-> A Bool)}
+    (and (array/empty? (generic/types a))
+         (array/empty? (generic/constraints a)))))
 
 ; In llrl, `Kind` represents the type of the language construct.
 ;
@@ -36,38 +61,11 @@
       [(kind:error _)])
     (f a)))
 
-(instance ContextualDisplay.Kind (forall C) (ContextualDisplay Kind C) (where (ContextualDisplay (NodeId KindUse) C))
-  (function (contextual-display! w a ctx)
-    (match a
-      [(kind:unresolved (let id))
-        (display! w (contextual: id ctx))]
-      [kind:type
-        (display! w "*")]
-      [kind:constraint
-        (display! w "Constraint")]
-      [kind:satisfaction
-        (display! w "Satisfaction")]
-      [kind:value
-        (display! w "Value")]
-      [kind:macro
-        (display! w "Macro")]
-      [(kind:fun (let args) (let ret))
-        (display-all! w
-          "(-> "
-          (|> (it/chain args (some ret))
-              (it/map [^1 (contextual: %1 ctx)])
-              (it/format " "))
-          ")")]
-      [(kind:error (let e))
-        (display! w e)])))
-
 (function (kind/contains-error? k) {(-> Kind Bool)}
   (|> k
       (dfs (case
-        [(kind:error _)
-          (err unit)]
-        [_
-          (ok unit)]))
+        [(kind:error _) (err unit)]
+        [_ (ok unit)]))
       (is? (err _))))
 
 (function (kind/first-class? k) {(-> Kind Bool)}
@@ -85,4 +83,270 @@
     (kind:fun args ret)))
 
 ; The bottom type for kind uses.
-(derive (Eq Ord DebugDisplay Hash) value-data KindUse)
+(derive (Eq Ord DebugDisplay Hash) data KindUse)
+
+; In llrl, `Type` represents a type-level expression or the type of values itself.
+;
+; Only a `Type` whose kind is `kind:type` can have a type-of relationship with values.
+(derive (Eq Ord DebugDisplay Hash) data Type
+  (type:unresolved (NodeId TypeUse))
+  (type:con TypeCon)
+  (type:app Type (Array Type))
+  (type:gen (NodeId TypeParameter))
+  (type:error String))
+
+(instance Dfs.Type (Dfs Type)
+  (function (dfs f a)
+    (match a
+      [(type:unresolved _)]
+      [(type:con _)]
+      [(type:app (let callee) (let args))
+        (dfs f callee)!
+        (for (let arg) args (dfs f arg)!)]
+      [(type:gen _)]
+      [(type:error _)])
+    (f a)))
+
+(function (type/contains-error? t) {(-> Type Bool)}
+  (|> t
+      (dfs (case
+        [(type:error _) (err unit)]
+        [_ (ok unit)]))
+      (is? (err _))))
+
+(function (type/tuple? t) {(-> Type (Option (Array Type)))}
+  (cond?
+    [when-match
+      ([(type:app (type:con (let con)) (let args)) t]
+       [(some (let size)) (type-con/tuple? con)]
+       [#t (and (ne? size 0) (eq? size (array/length args)))])
+      args]
+    [when-match
+      ([(type:con (let con)) t]
+       [(some 0) (type-con/tuple? con)])
+      array/empty]))
+
+(function (type/fun? t) {(-> Type (Option (: (Array Type) Type)))}
+  (with? ([(type:app (type:con (let con)) (let args)) t]
+          [(some (let arity)) (type-con/fun? con)]
+          [(some (: (let ret) (let args))) (array/split-last? args)]
+          [#t (eq? arity (array/length args))])
+    (: args ret)))
+
+(function (type/app callee args) {(-> Type (Array Type) Type)}
+  (if (array/empty? args)
+    callee
+    (type:app callee args)))
+
+; The bottom type for type uses.
+(derive (Eq Ord DebugDisplay Hash) data TypeUse)
+
+(derive (Eq Ord DebugDisplay Hash) value-data TypeCon
+  (type-con:data (NodeId DataTypeCon))
+  (type-con:builtin (NodeId BuiltinTypeCon)))
+
+(function (type-con/fun arity) {(-> U64 TypeCon)}
+  (type-con:builtin (builtin/fun arity)))
+
+(function (type-con/fun? con) {(-> TypeCon (Option U64))}
+  (if-match1 (type-con:builtin (let id)) con
+    (builtin/fun? id)
+    none))
+
+(function (type-con/tuple size) {(-> U64 TypeCon)}
+  (type-con:data (builtin/tuple-type size)))
+
+(function (type-con/tuple? con) {(-> TypeCon (Option U64))}
+  (if-match1 (type-con:data (let id)) con
+    (builtin/tuple-type? id)
+    none))
+
+(function type-con/unit (type-con:data (builtin/tuple-type 0)))
+(function type-con/bool (type-con:data builtin/bool))
+(function type-con/i8 (type-con:builtin builtin/i8))
+(function type-con/i16 (type-con:builtin builtin/i16))
+(function type-con/i32 (type-con:builtin builtin/i32))
+(function type-con/i64 (type-con:builtin builtin/i64))
+(function type-con/u8 (type-con:builtin builtin/u8))
+(function type-con/u16 (type-con:builtin builtin/u16))
+(function type-con/u32 (type-con:builtin builtin/u32))
+(function type-con/u64 (type-con:builtin builtin/u64))
+(function type-con/f32 (type-con:builtin builtin/f32))
+(function type-con/f64 (type-con:builtin builtin/f64))
+(function type-con/string (type-con:builtin builtin/string))
+(function type-con/char (type-con:builtin builtin/char))
+(function type-con/captured-use (type-con:builtin builtin/captured-use))
+(function type-con/option (type-con:data builtin/option))
+(function type-con/result (type-con:data builtin/result))
+(function type-con/syntax (type-con:builtin builtin/syntax-type))
+(function type-con/sexp (type-con:data builtin/sexp))
+
+(derive (Eq Ord DebugDisplay) value-data Constraint
+  (constraint: (NodeId Constraint) ConstraintRep))
+
+(getter constraint: constraint/id constraint/rep)
+
+(function (constraint/class id cls cls-args) {(-> (NodeId Constraint) (NodeId ClassCon) (Array Type) Constraint)}
+  (constraint: id (constraint-rep:class cls cls-args)))
+
+(function (constraint/number ty) {(-> Type Constraint)}
+  (constraint/class builtin/number-constraint builtin/number (array ty)))
+
+(function (constraint/fp-number ty) {(-> Type Constraint)}
+  (constraint/class builtin/fp-number-constraint builtin/fp-number (array ty)))
+
+(derive (Eq Ord DebugDisplay) value-data ConstraintRep
+  (constraint-rep:unresolved (NodeId ConstraintUse) (Array Type))
+  (constraint-rep:class (NodeId ClassCon) (Array Type)))
+
+; The bottom type for constraint uses.
+(derive (Eq Ord DebugDisplay Hash) data ConstraintUse)
+
+(derive (DebugDisplay) value-data TypeParameter
+  (type-parameter: (NodeId TypeParameter) (Option (Annotation Kind))))
+
+(getter type-parameter: type-parameter/id type-parameter/kind-ann)
+
+(derive (DebugDisplay) value-data Scheme
+  (scheme: (Array TypeParameter) (Array Constraint) Type))
+
+(instance Generic.Scheme (Generic Scheme)
+  (function (generic/types a) (scheme/ty-params a))
+  (function (generic/constraints a) (scheme/s-params a)))
+
+(getter scheme: scheme/ty-params scheme/s-params scheme/body)
+
+(derive (DebugDisplay) value-data Satisfaction
+  (satisfaction:by-premise SatisfactionByPremise)
+  (satisfaction:by-instance SatisfactionByInstance)
+  (satisfaction:error String))
+
+(instance Dfs.Satisfaction (Dfs Satisfaction)
+  (function (dfs f a)
+    (match a
+      [(satisfaction:by-premise _)]
+      [(satisfaction:by-instance (satisfaction-by-instance: _ (let inst)))
+        (for (let s) (instantiation/s-args inst)
+          (dfs f s)!)]
+      [(satisfaction:error _)])
+    (f a)))
+
+(derive (DebugDisplay) value-data SatisfactionByPremise
+  (satisfaction-by-premise: (NodeId Constraint) (Array (NodeId Constraint)))) ; id path
+
+(derive (DebugDisplay) value-data SatisfactionByInstance
+  (satisfaction-by-instance: (NodeId InstanceCon) Instantiation)) ; use instantiation
+
+(derive (DebugDisplay) value-data Instantiation
+  (instantiation: (Array Type) (Array Satisfaction)))
+
+(getter instantiation: instantiation/ty-args instantiation/s-args)
+
+; TODO
+(derive (DebugDisplay) data DataTypeCon)
+(derive (DebugDisplay) data DataValueCon)
+(derive (DebugDisplay) data BuiltinTypeCon)
+(derive (DebugDisplay) data BuiltinValueCon)
+(derive (DebugDisplay) data ClassCon)
+(derive (DebugDisplay) data InstanceCon)
+
+; ---------------------------
+
+(function LIMIT_VARIADIC_SIZE 16)
+
+; 0..99 is reserved for function types
+(function (builtin/fun arity) {(-> U64 (NodeId BuiltinTypeCon))}
+  (assert (<= arity LIMIT_VARIADIC_SIZE) (string "Unsupported fun arity: " arity))
+  (node-id/new-unchecked module-id/builtin (conv arity)))
+
+(function (builtin/fun? id) {( -> (NodeId BuiltinTypeCon) (Option U64))}
+  (with1 (: (let mid) (let index)) (node-id/components id)
+    (if (and (module-id/builtin? mid) (<= index LIMIT_VARIADIC_SIZE))
+      (some (conv index))
+      none)))
+
+; 100..199 is reserved for tuple types
+(function (builtin/tuple-type size) {(-> U64 (NodeId DataTypeCon))}
+  (assert (<= size LIMIT_VARIADIC_SIZE) (string "Unsupported tuple size: " size))
+  (node-id/new-unchecked module-id/builtin (+ 100 (conv size))))
+
+(function (builtin/tuple-type? id) {( -> (NodeId DataTypeCon) (Option U64))}
+  (with1 (: (let mid) (let index)) (node-id/components id)
+    (if (and (module-id/builtin? mid) (<= 100 index (+ 100 LIMIT_VARIADIC_SIZE)))
+      (some (conv (- index 100)))
+      none)))
+
+; 200..299 is reserved for tuple values
+(function (builtin/tuple size) {(-> U64 (NodeId DataValueCon))}
+  (assert (<= size LIMIT_VARIADIC_SIZE) (string "Unsupported tuple size: " size))
+  (node-id/new-unchecked module-id/builtin (+ 200 (conv size))))
+
+(function (builtin/tuple? id) {( -> (NodeId DataValueCon) (Option U64))}
+  (with1 (: (let mid) (let index)) (node-id/components id)
+    (if (and (module-id/builtin? mid) (<= 200 index (+ 200 LIMIT_VARIADIC_SIZE)))
+      (some (conv (- index 200)))
+      none)))
+
+($$ begin
+  ($for-each
+    [$index $id $kind]
+    ([300 bool DataTypeCon]
+     [301 false DataValueCon]
+     [302 true DataValueCon]
+
+     [311 i8 BuiltinTypeCon]
+     [312 i16 BuiltinTypeCon]
+     [313 i32 BuiltinTypeCon]
+     [314 i64 BuiltinTypeCon]
+
+     [321 u8 BuiltinTypeCon]
+     [322 u16 BuiltinTypeCon]
+     [323 u32 BuiltinTypeCon]
+     [324 u64 BuiltinTypeCon]
+
+     [331 f32 BuiltinTypeCon]
+     [332 f64 BuiltinTypeCon]
+
+     [340 string BuiltinTypeCon]
+
+     [350 char BuiltinTypeCon]
+
+     [360 captured-use BuiltinTypeCon]
+
+     [370 option DataTypeCon]
+     [371 none DataValueCon]
+     [372 some DataValueCon]
+
+     [380 result DataTypeCon]
+     [381 err DataValueCon]
+     [382 ok DataValueCon]
+
+     [400 number ClassCon]
+     [401 number-constraint Constraint]
+
+     [410 number-i8 InstanceCon]
+     [411 number-i16 InstanceCon]
+     [412 number-i32 InstanceCon]
+     [413 number-i64 InstanceCon]
+
+     [420 number-u8 InstanceCon]
+     [421 number-u16 InstanceCon]
+     [422 number-u32 InstanceCon]
+     [423 number-u64 InstanceCon]
+
+     [430 number-f32 InstanceCon]
+     [431 number-f64 InstanceCon]
+
+     [450 fp-number ClassCon]
+     [451 fp-number-constraint Constraint]
+
+     [480 fp-number-f32 InstanceCon]
+     [481 fp-number-f64 InstanceCon]
+
+     [500 syntax-type BuiltinTypeCon]
+     [501 syntax-value BuiltinValueCon]
+
+     [510 sexp DataTypeCon])
+
+    (function ($symbol-concat builtin/ $id) {(NodeId $kind)}
+      (node-id/new-unchecked module-id/builtin $index))))

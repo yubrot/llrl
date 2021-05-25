@@ -1,7 +1,8 @@
 (import "std/s" s/_)
 (import "~/ast/node-id" NodeId _.NodeId)
 (import "~/ast/data" _)
-(export KindBuilder kind-builder/_ build-kind KindBuilder.Ast)
+(export KindBuilder KindBuilder.Ast kind-builder/_ build-kind)
+(export TypeBuilder TypeBuilder.Ast type-builder/_ build-type)
 
 (class (KindBuilder A Ctx)
   (function (kind-builder/unresolved ctx id) {(-> Ctx (NodeId KindUse) A)})
@@ -12,6 +13,16 @@
   (function (kind-builder/macro ctx) {(-> Ctx A)})
   (function (kind-builder/fun ctx args ret) {(-> Ctx (Array A) A A)})
   (function (kind-builder/error ctx e) {(-> Ctx String A)}))
+
+(instance KindBuilder.Ast (KindBuilder Kind unit)
+  (function (kind-builder/unresolved ctx id) (kind:unresolved id))
+  (function (kind-builder/type ctx) kind:type)
+  (function (kind-builder/constraint ctx) kind:constraint)
+  (function (kind-builder/satisfaction ctx) kind:satisfaction)
+  (function (kind-builder/value ctx) kind:value)
+  (function (kind-builder/macro ctx) kind:macro)
+  (function (kind-builder/fun ctx args ret) (kind/fun args ret))
+  (function (kind-builder/error ctx e) (kind:error e)))
 
 (macro (build-kind s)
   (s/match s
@@ -29,6 +40,7 @@
       (ok `(,\kind-builder/value ,ctx))]
     [(_ ,ctx Macro)
       (ok `(,\kind-builder/macro ,ctx))]
+
     [(_ ,ctx (-> ,(s:list (s:symbol "unquote-splicing") (let expr)) ,ret))
       (let ([tmp-args (gensym)]
             [tmp-ret (gensym)])
@@ -45,6 +57,7 @@
                    [,tmp-ret (,\build-kind ,ctx ,ret)])
               (,\kind-builder/fun ,ctx ,tmp-args ,tmp-ret))))
         (err "Expected (build-kind ctx (-> arg ... ret))"))]
+
     [(_ ,ctx (error ,(s:list (s:symbol "unquote") (let e))))
       (ok `(,\kind-builder/error ,ctx ,e))]
     [(_ _ ,a)
@@ -52,12 +65,90 @@
     [_
       (err "Expected (build-kind ctx kind-form)")]))
 
-(instance KindBuilder.Ast (KindBuilder Kind unit)
-  (function (kind-builder/unresolved ctx id) (kind:unresolved id))
-  (function (kind-builder/type ctx) kind:type)
-  (function (kind-builder/constraint ctx) kind:constraint)
-  (function (kind-builder/satisfaction ctx) kind:satisfaction)
-  (function (kind-builder/value ctx) kind:value)
-  (function (kind-builder/macro ctx) kind:macro)
-  (function (kind-builder/fun ctx args ret) (kind/fun args ret))
-  (function (kind-builder/error ctx e) (kind:error e)))
+(class (TypeBuilder A Ctx)
+  (function (type-builder/unresolved ctx id) {(-> Ctx (NodeId TypeUse) A)})
+  (function (type-builder/con ctx con) {(-> Ctx TypeCon A)})
+  (function (type-builder/app ctx callee args) {(-> Ctx A (Array A) A)})
+  (function (type-builder/gen ctx id) {(-> Ctx (NodeId TypeParameter) A)})
+  (function (type-builder/error ctx e) {(-> Ctx String A)})
+
+  (function (type-builder/data ctx id) {(-> Ctx (NodeId DataTypeCon) A)}
+    (type-builder/con ctx (type-con:data id)))
+
+  (function (type-builder/builtin ctx id) {(-> Ctx (NodeId BuiltinTypeCon) A)}
+    (type-builder/con ctx (type-con:builtin id)))
+
+  (function (type-builder/unit ctx) {(-> Ctx A)}
+    (type-builder/con ctx type-con/unit))
+
+  (function (type-builder/tuple ctx tys) {(-> Ctx (Array A) A)}
+    (if (array/empty? tys)
+      (type-builder/unit ctx)
+      (type-builder/app ctx (type-builder/con ctx (type-con/tuple (array/length tys))) tys)))
+
+  (function (type-builder/fun ctx args ret) {(-> Ctx (Array A) A A)}
+    (type-builder/app ctx
+      (type-builder/con ctx (type-con/fun (array/length args)))
+      (collect (it/chain args (some ret))))))
+
+(instance TypeBuilder.Ast (TypeBuilder Type unit)
+  (function (type-builder/unresolved ctx id) (type:unresolved id))
+  (function (type-builder/con ctx con) (type:con con))
+  (function (type-builder/app ctx callee args) (type:app callee args))
+  (function (type-builder/gen ctx id) (type:gen id))
+  (function (type-builder/error ctx e) (type:error e)))
+
+(macro (build-type s)
+  (s/match s
+    [(_ ,ctx ,(s:list (s:symbol "unquote") (let expr)))
+      (ok expr)]
+    [(_ ,ctx (unresolved ,(s:list (s:symbol "unquote") (let id))))
+      (ok `(,\type-builder/unresolved ,ctx ,id))]
+    [(_ ,ctx (con ,(s:list (s:symbol "unquote") (let con))))
+      (ok `(,\type-builder/con ,ctx ,con))]
+    [(_ ,ctx (gen ,(s:list (s:symbol "unquote") (let id))))
+      (ok `(,\type-builder/gen ,ctx ,id))]
+    [(_ ,ctx (data ,(s:list (s:symbol "unquote") (let id))))
+      (ok `(,\type-builder/data ,ctx ,id))]
+    [(_ ,ctx (builtin ,(s:list (s:symbol "unquote") (let id))))
+      (ok `(,\type-builder/builtin ,ctx ,id))]
+    [(_ ,ctx unit)
+      (ok `(,\type-builder/unit ,ctx))]
+
+    [(_ ,ctx (: ,(s:list (s:symbol "unquote-splicing") (let expr))))
+      (ok `(,\type-builder/tuple ,ctx ,expr))]
+    [(_ ,ctx (: ,@tys))
+      (ok `(,\type-builder/tuple ,ctx (,\array ,@(s/map [^1 `(,\build-type ,ctx ,%1)] tys)!)))]
+
+    [(_ ,ctx (-> ,(s:list (s:symbol "unquote-splicing") (let expr)) ,ret))
+      (let ([tmp-args (gensym)]
+            [tmp-ret (gensym)])
+        (ok
+          `(let ([,tmp-args ,expr]
+                 [,tmp-ret (,\build-type ,ctx ,ret)])
+            (,\type-builder/fun ,ctx ,tmp-args ,tmp-ret))))]
+    [(_ ,ctx (-> ,@args-ret))
+      (if-match1 (some (: (let args) (let ret))) (s/unsnoc args-ret)!
+        (let ([tmp-args (gensym)]
+              [tmp-ret (gensym)])
+          (ok
+            `(let ([,tmp-args (,\array ,@(s/map [^1 `(,\build-type ,ctx ,%1)] args)!)]
+                   [,tmp-ret (,\build-type ,ctx ,ret)])
+              (,\type-builder/fun ,ctx ,tmp-args ,tmp-ret))))
+        (err "Expected (build-type ctx (-> arg ... ret))"))]
+
+    [(_ ,ctx (error ,(s:list (s:symbol "unquote") (let e))))
+      (ok `(,\type-builder/error ,ctx ,e))]
+
+    [(_ ,ctx (,callee ,@args))
+      (let ([tmp-callee (gensym)]
+            [tmp-args (gensym)])
+        (ok
+          `(let ([,tmp-callee (,\build-type ,ctx ,callee)]
+                 [,tmp-args (,\array ,@(s/map [^1 `(,\build-type ,ctx ,%1)] args)!)])
+            (,\type-builder/app ,ctx ,tmp-callee ,tmp-args))))]
+
+    [(_ _ ,a)
+      (err (string "Unknown type form: " a))]
+    [_
+      (err "Expected (build-type ctx type-form)")]))

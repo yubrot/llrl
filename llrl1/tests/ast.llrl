@@ -2,6 +2,7 @@
 (import "~/ast/node-id" _)
 (import "~/ast/data" _)
 (import "~/ast/builder" _)
+(import "~/ast/display" _)
 (println! "llrl1/tests/ast")
 
 (let* ([gen (node-id-generator/new (module-id/from-index 1))]
@@ -35,6 +36,7 @@
   (assert (kind/contains-error? (build-kind unit (error ,"a"))))
   (assert (kind/contains-error? (build-kind unit (-> * (error ,"a") *))))
 
+  (assert-eq? "$" (show (build-kind unit (unresolved ,a))))
   (assert-eq? "*" (show (build-kind unit *)))
   (assert-eq? "Constraint" (show (build-kind unit Constraint)))
   (assert-eq? "Satisfaction" (show (build-kind unit Satisfaction)))
@@ -43,6 +45,64 @@
   (assert-eq? "(-> * * *)" (show (build-kind unit (-> * * *))))
   (assert-eq? "(-> (-> * *) * *)" (show (build-kind unit (-> (-> * *) * *)))))
 
-(instance ContextualDisplay.KindUse.ForTest (ContextualDisplay (NodeId KindUse) unit)
-  (function (contextual-display! w a ctx)
-    (assert #f)))
+(let* ([gen (node-id-generator/new (module-id/from-index 1))]
+       [a (node-id-generator/next! gen)]
+       [b (node-id-generator/next! gen)]
+       [(show t) {(-> Type String)} (string (contextual: t unit))])
+  (assert-eq? (type:unresolved a) (build-type unit (unresolved ,a)))
+  (assert-eq? (type:con type-con/bool) (build-type unit (con ,(type-con:data builtin/bool))))
+  (assert-eq? (type:con type-con/bool) (build-type unit (data ,builtin/bool)))
+  (assert-eq? (type:con type-con/string) (build-type unit (builtin ,builtin/string)))
+  (assert-eq? (type:gen b) (build-type unit (gen ,b)))
+  (assert-eq? (type:con type-con/unit) (build-type unit unit))
+  (assert-eq? (type:con type-con/unit) (build-type unit (:)))
+  (assert-eq? (type:app (type:con (type-con/tuple 2)) (array (type:con type-con/i32) (type:con type-con/char)))
+              (build-type unit (: ,@(array (type:con type-con/i32) (type:con type-con/char)))))
+  (assert-eq? (type:app (type:con (type-con/tuple 2)) (array (type:con type-con/unit) (type:con type-con/unit)))
+              (build-type unit (: unit unit)))
+  (assert-eq? (type:app (type:con (type-con/tuple 3)) (array (type:unresolved a) (type:gen b) (type:con type-con/unit)))
+              (build-type unit (: (unresolved ,a) (gen ,b) unit)))
+  (assert-eq? (type:app (type:con (type-con/fun 1)) (array (type:con type-con/unit) (type:con type-con/unit)))
+              (build-type unit (-> unit unit)))
+  (assert-eq? (type:app (type:con (type-con/fun 2)) (array (type:con type-con/unit) (type:gen b) (type:con type-con/unit)))
+              (build-type unit (-> unit (gen ,b) unit)))
+  (assert-eq? (type:app (type:con (type-con/fun 2)) (array (type:unresolved a) (type:gen b) (type:con type-con/unit)))
+              (build-type unit (-> ,@(array (type:unresolved a) (type:gen b)) unit)))
+  (assert-eq? (type:app (type:unresolved a) (array (type:gen b)))
+              (build-type unit ((unresolved ,a) (gen ,b))))
+  (assert-eq? (type:error "var") (build-type unit (error ,"var")))
+
+  (assert (not (type/contains-error? (build-type unit unit))))
+  (assert (type/contains-error? (build-type unit (error ,"a"))))
+  (assert (type/contains-error? (build-type unit (-> unit (error ,"a") unit))))
+
+  (assert-eq? "unit" (show (build-type unit unit)))
+  (assert-eq? "(: unit unit)" (show (build-type unit (: unit unit))))
+  (assert-eq? "(-> unit unit)" (show (build-type unit (-> unit unit))))
+  (assert-eq? "(-> (-> $ $) unit unit)" (show (build-type unit (-> (-> (unresolved ,a) (gen ,b)) unit unit))))
+  (assert-eq? "($ $)" (show (build-type unit ((unresolved ,a) (gen ,b))))))
+
+(let* ([gen (node-id-generator/new (module-id/from-index 1))]
+       [(id!) (node-id-generator/next! gen)]
+       [(show s) {(-> Scheme String)} (string (contextual: s unit))])
+  (assert-eq? "{unit}"
+    (show (scheme: (array) (array) (build-type unit unit))))
+  (assert-eq? "{(forall $) unit}"
+    (show (scheme: (array (type-parameter: (id!) none)) (array) (build-type unit unit))))
+  (assert-eq? "{(forall $ [$ *]) unit}"
+    (show (scheme: (array (type-parameter: (id!) none) (type-parameter: (id!) (some (annotation: (id!) (build-kind unit *))))) (array) (build-type unit unit))))
+  (assert-eq? "{unit (where $)}"
+    (show (scheme: (array) (array (constraint/class (id!) (id!) (array))) (build-type unit unit))))
+  (assert-eq? "{unit (where ($ $))}"
+    (show (scheme: (array) (array (constraint/number (type:gen (id!)))) (build-type unit unit))))
+  (assert-eq? "{(forall $) $ (where ($ $))}"
+    (let1 a (id!)
+      (show (scheme: (array (type-parameter: a none))
+                     (array (constraint/number (type:gen a)))
+                     (build-type unit (gen ,a)))))))
+
+($$ begin
+  ($for-each $ty [KindUse TypeUse DataTypeCon BuiltinTypeCon TypeParameter ConstraintUse ClassCon]
+    (instance ($symbol-concat ContextualDisplay. $ty .ForTest) (ContextualDisplay (NodeId $ty) unit)
+      (function (contextual-display! w a ctx)
+        (display! w "$")))))

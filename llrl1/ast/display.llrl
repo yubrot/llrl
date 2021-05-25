@@ -1,0 +1,133 @@
+(import "~/util" _)
+(import "~/ast/node-id" NodeId _.NodeId)
+(import "~/ast/data" _)
+(export KindDisplayContext KindDisplayContext.Default)
+(export TypeDisplayContext TypeDisplayContext.Default)
+(export ContextualDisplay._)
+
+(class (KindDisplayContext C)
+  (where (ContextualDisplay (NodeId KindUse) C)))
+
+(instance KindDisplayContext.Default (forall C) (KindDisplayContext C)
+  (where (ContextualDisplay (NodeId KindUse) C)))
+
+(class (TypeDisplayContext C)
+  (where (KindDisplayContext C)
+         (ContextualDisplay (NodeId TypeUse) C)
+         (ContextualDisplay (NodeId DataTypeCon) C)
+         (ContextualDisplay (NodeId BuiltinTypeCon) C)
+         (ContextualDisplay (NodeId TypeParameter) C)
+         (ContextualDisplay (NodeId ConstraintUse) C)
+         (ContextualDisplay (NodeId ClassCon) C)))
+
+(instance TypeDisplayContext.Default (forall C) (TypeDisplayContext C)
+  (where (KindDisplayContext C)
+         (ContextualDisplay (NodeId TypeUse) C)
+         (ContextualDisplay (NodeId DataTypeCon) C)
+         (ContextualDisplay (NodeId BuiltinTypeCon) C)
+         (ContextualDisplay (NodeId TypeParameter) C)
+         (ContextualDisplay (NodeId ConstraintUse) C)
+         (ContextualDisplay (NodeId ClassCon) C)))
+
+(instance ContextualDisplay.Kind (forall C) (ContextualDisplay Kind C) (where (KindDisplayContext C))
+  (function (contextual-display! w a ctx)
+    (match a
+      [(kind:unresolved (let id))
+        (display! w (contextual: id ctx))]
+      [kind:type
+        (display! w "*")]
+      [kind:constraint
+        (display! w "Constraint")]
+      [kind:satisfaction
+        (display! w "Satisfaction")]
+      [kind:value
+        (display! w "Value")]
+      [kind:macro
+        (display! w "Macro")]
+      [(kind:fun (let args) (let ret))
+        (display-all! w
+          "(-> "
+          (|> (it/chain args (some ret))
+              (it/map [^1 (contextual: %1 ctx)])
+              (it/format " "))
+          ")")]
+      [(kind:error (let e))
+        (display! w e)])))
+
+(instance ContextualDisplay.Type (forall C) (ContextualDisplay Type C) (where (TypeDisplayContext C))
+  (function (contextual-display! w a ctx)
+    (cond
+      [when-match1 (some (: (let args) (let ret))) (type/fun? a)
+        (display-all! w
+          "(-> "
+          (|> (it/chain args (some ret))
+              (it/map [^1 (contextual: %1 ctx)])
+              (it/format " "))
+          ")")]
+      [when-match1 (some (let tys)) (type/tuple? a)
+        (if (array/empty? tys)
+          (display! w "unit")
+          (display-all! w "(: " (it/format " " (it/map [^1 (contextual: %1 ctx)] tys)) ")"))]
+      [else
+        (match a
+          [(type:unresolved (let id))
+            (display! w (contextual: id ctx))]
+          [(type:con (let con))
+            (display! w (contextual: con ctx))]
+          [(type:app (let callee) (let args))
+            (display-all! w
+              "("
+              (|> (it/chain (some callee) args)
+                  (it/map [^1 (contextual: %1 ctx)])
+                  (it/format " "))
+              ")")]
+          [(type:gen (let id))
+            (display! w (contextual: id ctx))]
+          [(type:error (let e))
+            (display! w e)])])))
+
+(instance ContextualDisplay.TypeCon (forall C) (ContextualDisplay TypeCon C) (where (TypeDisplayContext C))
+  (function (contextual-display! w a ctx)
+    (match a
+      [(type-con:data (let id))
+        (display! w (contextual: id ctx))]
+      [(type-con:builtin (let id))
+        (display! w (contextual: id ctx))])))
+
+(instance ContextualDisplay.Constraint (forall C) (ContextualDisplay Constraint C) (where (TypeDisplayContext C))
+  (function (contextual-display! w a ctx)
+    (display! w (contextual: (constraint/rep a) ctx))))
+
+(instance ContextualDisplay.ConstraintRep (forall C) (ContextualDisplay ConstraintRep C) (where (TypeDisplayContext C))
+  (function (contextual-display! w a ctx)
+    (match a
+      [(constraint-rep:unresolved (let id) (let args))
+        (if (array/empty? args)
+          (display! w (contextual: id ctx))
+          (display-all! w "(" (contextual: id ctx) " " (it/format " " (it/map [^1 (contextual: %1 ctx)] args)) ")"))]
+      [(constraint-rep:class (let id) (let args))
+        (if (array/empty? args)
+          (display! w (contextual: id ctx))
+          (display-all! w "(" (contextual: id ctx) " " (it/format " " (it/map [^1 (contextual: %1 ctx)] args)) ")"))])))
+
+(instance ContextualDisplay.TypeParameter (forall C) (ContextualDisplay TypeParameter C) (where (TypeDisplayContext C))
+  (function (contextual-display! w a ctx)
+    (if-match1 (some (let ann)) (type-parameter/kind-ann a)
+      (display-all! w "[" (contextual: (type-parameter/id a) ctx) " " (contextual: (annotation/body ann) ctx) "]")
+      (display! w (contextual: (type-parameter/id a) ctx)))))
+
+(instance ContextualDisplay.Scheme (forall C) (ContextualDisplay Scheme C) (where (TypeDisplayContext C))
+  (function (contextual-display! w a ctx)
+    (display! w "{")!
+    (when (not (array/empty? (scheme/ty-params a)))
+      (display-all! w
+        "(forall "
+        (it/format " " (it/map [^1 (contextual: %1 ctx)] (scheme/ty-params a)))
+        ") ")!)
+    (display! w (contextual: (scheme/body a) ctx))!
+    (when (not (array/empty? (scheme/s-params a)))
+      (display-all! w
+        " (where "
+        (it/format " " (it/map [^1 (contextual: %1 ctx)] (scheme/s-params a)))
+        ")")!)
+    (display! w "}")))
