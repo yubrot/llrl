@@ -48,9 +48,6 @@ macro_rules! define_construct {
 }
 
 define_construct! {
-    // root
-    Root(Root),
-
     // kind
     KindAnn(Annotation<Kind>),
     KindUse(Use<KindUse>),

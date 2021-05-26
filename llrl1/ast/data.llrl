@@ -383,25 +383,22 @@
 (derive (Eq Ord DebugDisplay Hash) data ExprUse)
 
 (derive (Eq Ord DebugDisplay Hash) value-data Value
-  )
-  ; (value:function (NodeId Function))
-  ; (value:c-function (NodeId CFunction))
-  ; (value:builtin-op (NodeId BuiltinOp))
-  ; (value:class-method (NodeId ClassMethod))
-  ; (value:parameter (NodeId Parameter))
-  ; (value:local-var (NodeId LocalVar))
-  ; (value:local-fun (NodeId LocalFun))
-  ; (value:pattern-var (NodeId PatternVar)))
+  (value:function (NodeId Function))
+  (value:c-function (NodeId CFunction))
+  (value:builtin-op (NodeId BuiltinOp))
+  (value:class-method (NodeId ClassMethod))
+  (value:parameter (NodeId Parameter))
+  (value:local-var (NodeId LocalVar))
+  (value:local-fun (NodeId LocalFun))
+  (value:pattern-var (NodeId PatternVar)))
 
 (function (value/static? v) {(-> Value Bool)}
-  #f)
-  ; (is?
-  ;   (some _)
-  ;   (match? v
-  ;     [value:function]
-  ;     [value:c-function]
-  ;     [value:builtin-op]
-  ;     [value:class-method])))
+  (is? (some _)
+    (match? v
+      [(value:function _)]
+      [(value:c-function _)]
+      [(value:builtin-op _)]
+      [(value:class-method _)])))
 
 (derive (Eq Ord DebugDisplay Hash) value-data ValueCon
   (value-con:data (NodeId DataValueCon))
@@ -509,19 +506,374 @@
 (getter pattern-var: pattern-var/id pattern-var/as-pat)
 
 ; ---------------------------
-; TODO
-(export DataTypeCon DataValueCon BuiltinTypeCon BuiltinValueCon ClassCon InstanceCon Parameter)
+; Declarations
 
-(derive (DebugDisplay) data Root)
-(derive (DebugDisplay) data DataTypeCon)
-(derive (DebugDisplay) data DataValueCon)
-(derive (DebugDisplay) data BuiltinTypeCon)
-(derive (DebugDisplay) data BuiltinValueCon)
-(derive (DebugDisplay) data ClassCon)
-(derive (DebugDisplay) data InstanceCon)
+(export Function _.Function function: function/_)
+(export CFunction _.CFunction c-function: c-function/_)
+(export BuiltinOp _.BuiltinOp builtin-op: builtin-op/_)
+(export Macro _.Macro macro: macro/_)
+(export DataTypeCon _.DataTypeCon data-type-con: data-type-con/_)
+(export DataRepr _.DataRepr data-repr:_)
+(export DataValueCon _.DataValueCon data-value-con: data-value-con/_)
+(export DataType data-type: data-type/_)
+(export BuiltinTypeCon _.BuiltinTypeCon builtin-type-con: builtin-type-con/_)
+(export BuiltinValueCon _.BuiltinValueCon builtin-value-con: builtin-value-con/_)
+(export BuiltinType builtin-type: builtin-type/_)
+(export ValueConField _.ValueconField value-con-field: value-con-field/_)
+(export ClassCon _.ClassCon class-con: class-con/_)
+(export ClassMethod _.ClassMethod class-method: class-method/_)
+(export Class class: class/_)
+(export InstanceCon _.InstanceCon instance-con: instance-con/_)
+(export InstanceMethod _.InstanceMethod instance-method: instance-method/_)
+(export Instance instance: instance/_)
+(export Parameter _.Parameter parameter: parameter/_)
+
+(derive (DebugDisplay) value-data Function
+  (function:
+    (NodeId Function)            ; id
+    Bool                         ; transparent?
+    (Option (Array Parameter))   ; params
+    (Option (Annotation Scheme)) ; ann
+    Expr))                       ; body
+
+(getter function:
+  function/id
+  function/transparent?
+  function/params
+  function/ann
+  function/body)
+
+(derive (DebugDisplay) value-data CFunction
+  (c-function:
+    (NodeId Function) ; id
+    (Annotation Type) ; ann
+    String))          ; c-name
+
+(getter c-function:
+  c-function/id
+  c-function/ann
+  c-function/c-name)
+
+(derive (DebugDisplay) value-data BuiltinOp
+  (builtin-op:
+    (NodeId BuiltinOp)  ; id
+    (Annotation Scheme) ; ann
+    String))            ; builtin-name
+
+(getter builtin-op:
+  builtin-op/id
+  builtin-op/ann
+  builtin-op/builtin-name)
+
+(derive (DebugDisplay) value-data Macro
+  (macro:
+    (NodeId BuiltinOp)  ; id
+    Parameter           ; param
+    Expr))              ; body
+
+(getter macro:
+  macro/id
+  macro/param
+  macro/body)
+
+(function macro/src-ty {Type}
+  ; (Syntax Sexp)
+  (type:app (type:con type-con/syntax) (array (type:con type-con/sexp))))
+
+(function macro/dest-ty {Type}
+  ; (Result (Syntax Sexp) String)
+  (type:app
+    (type:con type-con/result)
+    (array (type:app (type:con type-con/syntax) (array (type:con type-con/sexp)))
+           (type:con type-con/string))))
+
+(derive (DebugDisplay) value-data DataTypeCon
+  (data-type-con:
+    (NodeId DataTypeCon)            ; id
+    DataRepr                        ; repr
+    (Array TypeParameter)           ; ty-params
+    (Array (NodeId DataValueCon)))) ; value-cons
+
+(instance Generic.DataTypeCon (Generic DataTypeCon)
+  (function (generic/types con) (data-type-con/ty-params con))
+  (function (generic/constraints con) array/empty))
+
+(getter data-type-con:
+  data-type-con/id
+  data-type-con/repr
+  data-type-con/ty-params
+  data-type-con/value-cons)
+
+(function (data-type-con/index-of dvcon-id dtycon) {( -> (NodeId DataValueCon) DataTypeCon (Option U64))}
+  (|> dtycon
+      data-type-con/value-cons
+      (it/find-index? [^1 (eq? %1 dvcon-id)])))
+
+(derive (Eq Ord DebugDisplay Hash) value-data DataRepr
+  data-repr:default
+  data-repr:value
+  data-repr:c)
+
+(derive (DebugDisplay) value-data DataValueCon
+  (data-value-con:
+    (NodeId DataValueCon)          ; id
+    (Option (Array ValueConField)) ; fields
+    (NodeId DataTypeCon)))         ; type-con
+
+(getter data-value-con:
+  data-value-con/id
+  data-value-con/fields
+  data-value-con/type-con)
+
+(function (data-value-con/scheme dtycon dvcon) {(-> DataTypeCon DataValueCon Scheme)}
+  (assert-eq? (data-type-con/id dtycon) (data-value-con/type-con dvcon))
+  (let* ([ty-params (data-type-con/ty-params dtycon)]
+         [ret
+           (type/app
+             (type:con (type-con:data (data-type-con/id dtycon)))
+             (collect (it/map [^1 (type:gen (type-parameter/id %1))] ty-params)))]
+         [body
+           (if-match1 (some (let fields)) (data-value-con/fields dvcon)
+             (type/app
+               (type:con (type-con/fun (array/length fields)))
+               (collect (it/chain (it/map value-con-field/ty fields) (some ret))))
+             ret)])
+    (scheme: ty-params array/empty body)))
+
+(value-data DataType
+  (data-type: DataTypeCon (-> (Iterator DataValueCon))))
+
+(function (data-type/con dt) {(-> DataType DataTypeCon)}
+  (with1 (data-type: (let con) _) dt
+    con))
+
+(function (data-type/value-cons dt) {(-> DataType (Iterator DataValueCon))}
+  (with1 (data-type: _ (let value-cons)) dt
+    (value-cons)))
+
+(function (data-type/fields-on-every-value-cons dt) {(-> DataType (Iterator ValueConField))}
+  (with1 (data-type: _ (let value-cons)) dt
+    (|> (value-cons)
+        (it/flat-map data-value-con/fields)
+        (it/flat-map id))))
+
+(derive (DebugDisplay) value-data BuiltinTypeCon
+  (builtin-type-con:
+    (NodeId BuiltinTypeCon)            ; id
+    (Array TypeParameter)              ; ty-params
+    String                             ; builtin-name
+    (Array (NodeId BuiltinValueCon)))) ; value-cons
+
+(instance Generic.BuiltinTypeCon (Generic BuiltinTypeCon)
+  (function (generic/types con) (builtin-type-con/ty-params con))
+  (function (generic/constraints con) array/empty))
+
+(getter builtin-type-con:
+  builtin-type-con/id
+  builtin-type-con/ty-params
+  builtin-type-con/builtin-name
+  builtin-type-con/value-cons)
+
+(function (builtin-type-con/index-of bvcon-id btycon) {( -> (NodeId BuiltinValueCon) BuiltinTypeCon (Option U64))}
+  (|> btycon
+      builtin-type-con/value-cons
+      (it/find-index? [^1 (eq? %1 bvcon-id)])))
+
+(derive (DebugDisplay) value-data BuiltinValueCon
+  (builtin-value-con:
+    (NodeId BuiltinValueCon)       ; id
+    String                         ; builtin-name
+    (Option (Array ValueConField)) ; fields
+    (NodeId BuiltinTypeCon)))      ; type-con
+
+(getter builtin-value-con:
+  builtin-value-con/id
+  builtin-value-con/builtin-name
+  builtin-value-con/fields
+  builtin-value-con/type-con)
+
+(function (builtin-value-con/scheme btycon bvcon) {(-> BuiltinTypeCon BuiltinValueCon Scheme)}
+  (assert-eq? (builtin-type-con/id btycon) (builtin-value-con/type-con bvcon))
+  (let* ([ty-params (builtin-type-con/ty-params btycon)]
+         [ret
+           (type/app
+             (type:con (type-con:builtin (builtin-type-con/id btycon)))
+             (collect (it/map [^1 (type:gen (type-parameter/id %1))] ty-params)))]
+         [body
+           (if-match1 (some (let fields)) (builtin-value-con/fields bvcon)
+             (type/app
+               (type:con (type-con/fun (array/length fields)))
+               (collect (it/chain (it/map value-con-field/ty fields) (some ret))))
+             ret)])
+    (scheme: ty-params array/empty body)))
+
+(value-data BuiltinType
+  (builtin-type: BuiltinTypeCon (-> (Iterator BuiltinValueCon))))
+
+(function (builtin-type/con dt) {(-> BuiltinType BuiltinTypeCon)}
+  (with1 (builtin-type: (let con) _) dt
+    con))
+
+(function (builtin-type/value-cons dt) {(-> BuiltinType (Iterator BuiltinValueCon))}
+  (with1 (builtin-type: _ (let value-cons)) dt
+    (value-cons)))
+
+(function (builtin-type/fields-on-every-value-cons dt) {(-> BuiltinType (Iterator ValueConField))}
+  (with1 (builtin-type: _ (let value-cons)) dt
+    (|> (value-cons)
+        (it/flat-map builtin-value-con/fields)
+        (it/flat-map id))))
+
+(derive (DebugDisplay) value-data ValueConField
+  (value-con-field: (NodeId ValueConField) Type))
+
+(getter value-con-field: value-con-field/id value-con-field/ty)
+
+(derive (DebugDisplay) value-data ClassCon
+  (class-con:
+    (NodeId ClassCon)              ; id
+    Bool                           ; sealed?
+    (NodeId Constraint)            ; constraint-id
+    (Array TypeParameter)          ; ty-params
+    (Array Constraint)             ; superclasses
+    (Array (NodeId ClassMethod)))) ; methods
+
+(instance Generic.ClassCon (Generic ClassCon)
+  (function (generic/types con) (class-con/ty-params con))
+  (function (generic/constraints con) array/empty))
+
+(getter class-con:
+  class-con/id
+  class-con/sealed?
+  class-con/constraint-id
+  class-con/ty-params
+  class-con/superclasses
+  class-con/methods)
+
+(function (class-con/constraint con) {(-> ClassCon Constraint)}
+  (constraint/class
+    (class-con/constraint-id con)
+    (class-con/id con)
+    (collect (it/map [^1 (type:gen (type-parameter/id %1))] (class-con/ty-params con)))))
+
+(derive (DebugDisplay) value-data ClassMethod
+  (class-method:
+    (NodeId ClassMethod)       ; id
+    (Annotation Scheme)        ; ann
+    (Option (Array Parameter)) ; params
+    (Option Expr)              ; default-body
+    (NodeId ClassCon)))        ; class-con
+
+(getter class-method:
+  class-method/id
+  class-method/ann
+  class-method/params
+  class-method/default-body
+  class-method/class-con)
+
+(function (class-method/arity method) {(-> ClassMethod (Option U64))}
+  (option/map array/length (class-method/params method)))
+
+(function (class-method/external-scheme class-con method) {(-> ClassCon ClassMethod Scheme)}
+  (assert-eq? (class-method/class-con method) (class-con/id class-con))
+  (scheme:
+    ; [method_tp_1, method_tp2, .., class_tp_1, class_tp_2, ..]
+    (collect (it/chain
+      (|> method class-method/ann annotation/body scheme/ty-params)
+      (|> class-con class-con/ty-params)))
+    ; [method_constraint_1, method_constraint_2, .., class_constraint]
+    (collect (it/chain
+      (|> method class-method/ann annotation/body scheme/s-params)
+      (|> class-con class-con/constraint some)))
+    (|> method class-method/ann annotation/body scheme/body)))
+
+(function (class-method/expand-external-instantiation inst method) {(-> Instantiation ClassMethod (: Instantiation Instantiation))}
+  (let ([ty-count (|> method class-method/ann annotation/body scheme/ty-params array/length)]
+        [sa-count (|> method class-method/ann annotation/body scheme/s-params array/length)])
+    (with1 (instantiation: (let tys) (let sas)) inst
+      (: (instantiation: (array/skip ty-count tys) (array/skip sa-count sas))
+         (instantiation: (array/take ty-count tys) (array/take sa-count sas))))))
+
+(value-data Class
+  (class: ClassCon (-> (Iterator ClassMethod))))
+
+(function (class/con c) {(-> Class ClassCon)}
+  (with1 (class: (let con) _) c
+    con))
+
+(function (class/methods c) {(-> Class (Iterator ClassMethod))}
+  (with1 (class: _ (let methods)) c
+    (methods)))
+
+(function (class/constraints-on-interface c) {(-> Class (Iterator Constraint))}
+  (with1 (class: (let con) (let methods)) c
+    (it/chain (class-con/superclasses con)
+              (it/flat-map [^1 (|> %1 class-method/ann annotation/body scheme/s-params)] (methods)))))
+
+(derive (DebugDisplay) value-data InstanceCon
+  (instance-con:
+    (NodeId InstanceCon)              ; id
+    (Array TypeParameter)             ; ty-params
+    (Array Constraint)                ; s-params
+    Constraint                        ; target
+    (Array (NodeId InstanceMethod)))) ; methods
+
+(instance Generic.InstanceCon (Generic InstanceCon)
+  (function (generic/types con) (instance-con/ty-params con))
+  (function (generic/constraints con) (instance-con/s-params con)))
+
+(getter instance-con:
+  instance-con/id
+  instance-con/ty-params
+  instance-con/s-params
+  instance-con/target
+  instance-con/methods)
+
+(derive (DebugDisplay) value-data InstanceMethod
+  (instance-method:
+    (NodeId InstanceMethod)       ; id
+    Bool                          ; transparent?
+    (Option (Annotation Scheme))  ; ann
+    (Option (Array Parameter))    ; params
+    Expr                          ; body
+    (Option (NodeId ClassMethod)) ; class-method?
+    (NodeId InstanceCon)))        ; instance-con
+
+(getter instance-method:
+  instance-method/id
+  instance-method/transparent?
+  instance-method/ann
+  instance-method/params
+  instance-method/body
+  instance-method/class-method?
+  instance-method/instance-con)
+
+(function (instance-method/arity method) {(-> InstanceMethod (Option U64))}
+  (option/map array/length (instance-method/params method)))
+
+(function (instance-method/class-method method) {(-> InstanceMethod (NodeId ClassMethod))}
+  (if-match1 (some (let id)) (instance-method/class-method? method)
+    id
+    (assert #f "instance-method/class-method: unresolved class method")))
+
+(value-data Instance
+  (instance: InstanceCon (-> (Iterator InstanceMethod))))
+
+(function (instance/con i) {(-> Instance InstanceCon)}
+  (with1 (instance: (let con) _) i
+    con))
+
+(function (instance/methods i) {(-> Instance (Iterator InstanceMethod))}
+  (with1 (instance: _ (let methods)) i
+    (methods)))
+
+(function (instance/find-method? id i) {(-> (NodeId ClassMethod) Instance (Option InstanceMethod))}
+  (it/find? [^1 (eq? id (instance-method/class-method %1))] (instance/methods i)))
 
 (derive (DebugDisplay) value-data Parameter
   (parameter: (NodeId Parameter)))
+
+(getter parameter: parameter/id)
 
 ; ---------------------------
 ; Constants
@@ -565,9 +917,7 @@
 ($$ begin
   ($for-each
     [$kind-id $kind-name $type]
-    ([0 Root Root]
-
-     [10 KindAnn (Annotation Kind)]
+    ([10 KindAnn (Annotation Kind)]
      [11 KindUse KindUse]
 
      [20 TypeAnn (Annotation Type)]
@@ -587,12 +937,20 @@
      [41 PatternUse PatternUse]
      [42 PatternVar PatternVar]
 
+     [50 Function Function]
+     [51 CFunction CFunction]
+     [52 BuiltinOp BuiltinOp]
+     [53 Macro Macro]
      [54 DataTypeCon DataTypeCon]
      [55 DataValueCon DataValueCon]
      [56 BuiltinTypeCon BuiltinTypeCon]
      [57 BuiltinValueCon BuiltinValueCon]
+     [58 ValueConField ValueConField]
      [59 ClassCon ClassCon]
-     [61 InstanceCon InstanceCon])
+     [60 ClassMethod ClassMethod]
+     [61 InstanceCon InstanceCon]
+     [62 InstanceMethod InstanceMethod]
+     [63 Parameter Parameter])
 
     (begin
       (instance ($symbol-concat Conv.From. $kind-name .To.Construct) (Conv (NodeId $type) Construct)
@@ -623,23 +981,22 @@
 (instance Conv.From.Construct.To.Value (Conv Construct (Option Value))
   (function (conv a)
     (cond?
-      ; [when-match1 (some (let id)) (conv a)
-      ;   (value:function id)]
-      ; [when-match1 (some (let id)) (conv a)
-      ;   (value:c-function id)]
-      ; [when-match1 (some (let id)) (conv a)
-      ;   (value:builtin-op id)]
-      ; [when-match1 (some (let id)) (conv a)
-      ;   (value:class-method id)]
-      ; [when-match1 (some (let id)) (conv a)
-      ;   (value:parameter id)]
-      ; [when-match1 (some (let id)) (conv a)
-      ;   (value:local-var id)]
-      ; [when-match1 (some (let id)) (conv a)
-      ;   (value:local-fun id)]
-      ; [when-match1 (some (let id)) (conv a)
-      ;   (value:pattern-var id)]
-        )))
+      [when-match1 (some (let id)) (conv a)
+        (value:function id)]
+      [when-match1 (some (let id)) (conv a)
+        (value:c-function id)]
+      [when-match1 (some (let id)) (conv a)
+        (value:builtin-op id)]
+      [when-match1 (some (let id)) (conv a)
+        (value:class-method id)]
+      [when-match1 (some (let id)) (conv a)
+        (value:parameter id)]
+      [when-match1 (some (let id)) (conv a)
+        (value:local-var id)]
+      [when-match1 (some (let id)) (conv a)
+        (value:local-fun id)]
+      [when-match1 (some (let id)) (conv a)
+        (value:pattern-var id)])))
 
 ; ---------------------------
 ; Builtins
