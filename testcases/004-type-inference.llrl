@@ -880,14 +880,14 @@
 
 (test-module
   (pass (type-of function foo {(forall _0) (-> _0 _0)})
-        (type-of local-function bar {(forall _1.0) (-> _1.0 _0)}))
+        (type-of local-fun bar {(forall _1.0) (-> _1.0 _0)}))
   (function (foo x)
     (let ([(bar y) x])
       x)))
 
 (test-module
   (pass (type-of function foo {(forall _0) (-> _0 _0)})
-        (type-of local-function bar {(-> _0 _0)}))
+        (type-of local-fun bar {(-> _0 _0)}))
   (function (foo x)
     (let ([(bar y) (if #t y x)])
       x)))
@@ -899,7 +899,7 @@
 
 (test-module
   (pass (type-of function foo {(forall _0) (-> _0 _0)})
-        (type-of local-function bar {(forall _1.0) (-> _1.0 unit) (where (Hello _1.0))}))
+        (type-of local-fun bar {(forall _1.0) (-> _1.0 unit) (where (Hello _1.0))}))
   (class (Hello A)
     (function (hello x) {(-> A unit)}))
   (function (foo x)
@@ -908,7 +908,7 @@
 
 (test-module
   (pass (type-of function foo {(forall _0) (-> _0 _0) (where (Hello _0))})
-        (type-of local-function bar {(forall _1.0) (-> _1.0 unit)}))
+        (type-of local-fun bar {(forall _1.0) (-> _1.0 unit)}))
   (class (Hello A)
     (function (hello x) {(-> A unit)}))
   (function (foo x)
@@ -916,16 +916,16 @@
       x)))
 
 (test-module
-  (pass (type-of local-function bar {(forall _1.0) (-> _1.0 _1.0) (where (Number _1.0))})
-        (type-of local-function baz {(forall _1.0) (-> _1.0 I32 _1.0) (where (Number _1.0))}))
+  (pass (type-of local-fun bar {(forall _1.0) (-> _1.0 _1.0) (where (Number _1.0))})
+        (type-of local-fun baz {(forall _1.0) (-> _1.0 I32 _1.0) (where (Number _1.0))}))
   (function (foo x)
     (let ([(bar y) (if #t y (baz y 0))]
           [(baz y z) (if #t 0 (bar y))])
       x)))
 
 (test-module
-  (pass (type-of local-function bar {(forall _1.0) (-> _1.0 (: _0 _1.0))})
-        (type-of local-function baz {(forall _2.0) (-> _2.0 (: _0 _1.0 _2.0))}))
+  (pass (type-of local-fun bar {(forall _1.0) (-> _1.0 (: _0 _1.0))})
+        (type-of local-fun baz {(forall _2.0) (-> _2.0 (: _0 _1.0 _2.0))}))
   (function (foo x)
     (let ([(bar y)
             (let ([(baz z)
@@ -987,8 +987,8 @@
             (if #t (foo x) y)]))))
 
 (test-module
-  (pass (type-of local-function even {(-> N Bool)})
-        (type-of local-function odd {(-> N Bool)})
+  (pass (type-of local-fun even {(-> N Bool)})
+        (type-of local-fun odd {(-> N Bool)})
         (type-of local-var t {Bool}))
   (data N
     z
@@ -999,8 +999,8 @@
     t))
 
 (test-module
-  (pass (type-of local-function f {(forall _1.0) (-> _1.0 unit)})
-        (type-of local-function g {(forall _1.0) (-> _1.0 _1.0)}))
+  (pass (type-of local-fun f {(forall _1.0) (-> _1.0 unit)})
+        (type-of local-fun g {(forall _1.0) (-> _1.0 _1.0)}))
   (function bottom bottom)
   (let ([x bottom])
     (let ([(f a) x]
@@ -1017,7 +1017,7 @@
   (function (foo)
     (let ([(bar) empty]))))
 
-(test-module (pass (type-of local-function bar {(-> unit)}))
+(test-module (pass (type-of local-fun bar {(-> unit)}))
   (class Empty
     (function empty {unit}))
   (function (foo) {(-> unit) (where Empty)}

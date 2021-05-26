@@ -213,8 +213,8 @@ impl Resolve for Root {
 
 impl Resolve for Function {
     fn resolve(ctx: &mut impl Context, target: &mut Self) -> Result<()> {
-        ctx.resolve(&mut target.scheme)?;
-        let mut ctx = ctx.on(&target.scheme)?;
+        ctx.resolve(&mut target.ann)?;
+        let mut ctx = ctx.on(&target.ann)?;
         ctx.resolve(&mut target.params)?;
         let mut ctx = ctx.on(&target.params)?;
         ctx.resolve(&mut target.body)
@@ -223,13 +223,13 @@ impl Resolve for Function {
 
 impl Resolve for CFunction {
     fn resolve(ctx: &mut impl Context, target: &mut Self) -> Result<()> {
-        ctx.resolve(&mut target.ty)
+        ctx.resolve(&mut target.ann)
     }
 }
 
 impl Resolve for BuiltinOp {
     fn resolve(ctx: &mut impl Context, target: &mut Self) -> Result<()> {
-        ctx.resolve(&mut target.scheme)
+        ctx.resolve(&mut target.ann)
     }
 }
 
@@ -281,8 +281,8 @@ impl Resolve for ClassCon {
 
 impl Resolve for ClassMethod {
     fn resolve(ctx: &mut impl Context, target: &mut Self) -> Result<()> {
-        ctx.resolve(&mut target.scheme)?;
-        let mut ctx = ctx.on(&target.scheme)?;
+        ctx.resolve(&mut target.ann)?;
+        let mut ctx = ctx.on(&target.ann)?;
         ctx.resolve(&mut target.params)?;
         let mut ctx = ctx.on(&target.params)?;
         ctx.resolve(&mut target.default_body)
@@ -300,8 +300,8 @@ impl Resolve for InstanceCon {
 
 impl Resolve for InstanceMethod {
     fn resolve(ctx: &mut impl Context, target: &mut Self) -> Result<()> {
-        ctx.resolve(&mut target.scheme)?;
-        let mut ctx = ctx.on(&target.scheme)?;
+        ctx.resolve(&mut target.ann)?;
+        let mut ctx = ctx.on(&target.ann)?;
         ctx.resolve(&mut target.params)?;
         let mut ctx = ctx.on(&target.params)?;
         ctx.resolve(&mut target.body)
@@ -316,7 +316,7 @@ impl Resolve for Parameter {
 
 impl Resolve for TypeParameter {
     fn resolve(ctx: &mut impl Context, target: &mut Self) -> Result<()> {
-        ctx.resolve(&mut target.kind)
+        ctx.resolve(&mut target.ann)
     }
 }
 
@@ -379,7 +379,7 @@ impl Resolve for Expr {
             }
             ExprRep::Annotate(ref mut annotate) => {
                 ctx.resolve(&mut annotate.body)?;
-                ctx.resolve(&mut annotate.ty)
+                ctx.resolve(&mut annotate.ann)
             }
             ExprRep::Let(ref mut let_) => {
                 {
@@ -423,15 +423,15 @@ impl Resolve for Expr {
 
 impl Resolve for LocalVar {
     fn resolve(ctx: &mut impl Context, target: &mut Self) -> Result<()> {
-        ctx.resolve(&mut target.ty)?;
+        ctx.resolve(&mut target.ann)?;
         ctx.resolve(&mut target.init)
     }
 }
 
-impl Resolve for LocalFunction {
+impl Resolve for LocalFun {
     fn resolve(ctx: &mut impl Context, target: &mut Self) -> Result<()> {
-        ctx.resolve(&mut target.scheme)?;
-        let mut ctx = ctx.on(&target.scheme)?;
+        ctx.resolve(&mut target.ann)?;
+        let mut ctx = ctx.on(&target.ann)?;
         ctx.resolve(&mut target.params)?;
         let mut ctx = ctx.on(&target.params)?;
         ctx.resolve(&mut target.body)
@@ -584,7 +584,7 @@ impl Bind for LocalVar {
     }
 }
 
-impl Bind for LocalFunction {
+impl Bind for LocalFun {
     fn traverse_defs(&self, f: &mut impl FnMut(Construct) -> Result<()>) -> Result<()> {
         f(self.id.into())
     }

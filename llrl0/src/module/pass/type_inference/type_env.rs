@@ -28,7 +28,7 @@ impl<'a, E: External> TypeEnv<'a, E> {
     pub fn function_scheme(&self, id: ast::NodeId<ast::Function>) -> Option<&'a ast::Scheme> {
         if id.module() == self.local_ast_root.id.module() {
             self.local_ast_root.functions[&id]
-                .scheme
+                .ann
                 .as_ref()
                 .map(|ann| &ann.body)
         } else {
@@ -44,7 +44,7 @@ impl<'a, E: External> TypeEnv<'a, E> {
 
     pub fn c_function_type(&self, id: ast::NodeId<ast::CFunction>) -> &'a ast::Type {
         if id.module() == self.local_ast_root.id.module() {
-            &self.local_ast_root.c_functions[&id].ty.body
+            &self.local_ast_root.c_functions[&id].ann.body
         } else {
             self.external
                 .module(id.module())
@@ -56,7 +56,7 @@ impl<'a, E: External> TypeEnv<'a, E> {
 
     pub fn builtin_op_scheme(&self, id: ast::NodeId<ast::BuiltinOp>) -> &'a ast::Scheme {
         if id.module() == self.local_ast_root.id.module() {
-            &self.local_ast_root.builtin_ops[&id].scheme.body
+            &self.local_ast_root.builtin_ops[&id].ann.body
         } else {
             self.external
                 .module(id.module())
@@ -118,7 +118,7 @@ impl<'a, E: External> TypeEnv<'a, E> {
     ) -> Cow<'a, ast::Scheme> {
         if id.module() == self.local_ast_root.id.module() {
             let method = &self.local_ast_root.class_methods[&id];
-            let class_con = &self.local_ast_root.class_cons[&method.class];
+            let class_con = &self.local_ast_root.class_cons[&method.class_con];
             Cow::Owned(method.to_external_scheme(class_con))
         } else {
             Cow::Borrowed(

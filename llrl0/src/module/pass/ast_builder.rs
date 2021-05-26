@@ -206,7 +206,7 @@ impl Build<syntax::Function<'_>> for Function {
             id: ctx.next_id(source.name.loc, source.name.sym),
             transparent: source.transparent,
             params,
-            scheme,
+            ann: scheme,
             body,
         })
     }
@@ -223,7 +223,7 @@ impl Build<syntax::CFunction<'_>> for CFunction {
 
         Ok(CFunction {
             id: ctx.next_id(source.name.loc, source.name.sym),
-            ty,
+            ann: ty,
             c_name: source.c_name.to_string(),
         })
     }
@@ -234,7 +234,7 @@ impl Build<syntax::BuiltinOp<'_>> for BuiltinOp {
         let scheme = ctx.build(source.scheme)?;
         Ok(BuiltinOp {
             id: ctx.next_id(source.name.loc, source.name.sym),
-            scheme,
+            ann: scheme,
             builtin_name: source.builtin_name.to_string(),
         })
     }
@@ -368,10 +368,10 @@ impl Build<syntax::Class<'_>> for (ClassCon, Vec<ClassMethod>) {
                 };
                 let class_method = ClassMethod {
                     id: ctx.next_id(source.name.loc, source.name.sym),
-                    scheme,
+                    ann: scheme,
                     params,
                     default_body,
-                    class: class_con.id,
+                    class_con: class_con.id,
                 };
                 class_con.methods.push(class_method.id);
                 Ok(class_method)
@@ -411,10 +411,10 @@ impl Build<syntax::Instance<'_>> for (InstanceCon, Vec<InstanceMethod>) {
                     id: ctx.next_id(source.name.loc, source.name.sym),
                     transparent: source.transparent,
                     params,
-                    scheme,
+                    ann: scheme,
                     body,
                     class_method,
-                    instance: instance_con.id,
+                    instance_con: instance_con.id,
                 };
                 instance_con.methods.push(instance_method.id);
                 Ok(instance_method)
@@ -556,7 +556,7 @@ impl Build<syntax::Expr<'_>> for ExprRep {
     }
 }
 
-impl Build<&'_ Sexp> for Either<LocalVar, LocalFunction> {
+impl Build<&'_ Sexp> for Either<LocalVar, LocalFun> {
     fn build(ctx: &mut impl Context, source: &'_ Sexp) -> Result<Self> {
         let source = ctx.expand_macro(source)?;
         let source = ctx.matches::<syntax::LocalDef>(&source)?;
@@ -564,16 +564,16 @@ impl Build<&'_ Sexp> for Either<LocalVar, LocalFunction> {
     }
 }
 
-impl Build<syntax::LocalDef<'_>> for Either<LocalVar, LocalFunction> {
+impl Build<syntax::LocalDef<'_>> for Either<LocalVar, LocalFun> {
     fn build(ctx: &mut impl Context, source: syntax::LocalDef<'_>) -> Result<Self> {
         let params = ctx.build(source.params)?;
         let scheme = ctx.build(source.scheme)?;
         let body = ctx.build((source.loc, source.body))?;
         match params {
-            Some(params) => Ok(Right(LocalFunction {
+            Some(params) => Ok(Right(LocalFun {
                 id: ctx.next_id(source.name.loc, source.name.sym),
                 params,
-                scheme,
+                ann: scheme,
                 body,
             })),
             None => {
@@ -588,7 +588,7 @@ impl Build<syntax::LocalDef<'_>> for Either<LocalVar, LocalFunction> {
 
                 Ok(Left(LocalVar {
                     id: ctx.next_id(source.name.loc, source.name.sym),
-                    ty,
+                    ann: ty,
                     init: body,
                 }))
             }
@@ -746,7 +746,7 @@ impl Build<syntax::TypeParameter<'_>> for TypeParameter {
         let kind = ctx.build(source.kind_ann)?;
         Ok(TypeParameter {
             id: ctx.next_id(source.name.loc, source.name.sym),
-            kind,
+            ann: kind,
         })
     }
 }

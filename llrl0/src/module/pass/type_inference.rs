@@ -539,13 +539,13 @@ impl<'a, E: External> Context<'a, E> {
         for group in topological_sort::run(
             functions
                 .values()
-                .filter(|f| f.scheme.is_none())
+                .filter(|f| f.ann.is_none())
                 .map(|f| (f.id, f)),
         ) {
             self.infer_impl_functions(group.as_slice())?;
         }
 
-        for f in functions.values().filter(|f| f.scheme.is_some()) {
+        for f in functions.values().filter(|f| f.ann.is_some()) {
             self.infer_expl_function(&f)?;
         }
 
@@ -557,7 +557,7 @@ impl<'a, E: External> Context<'a, E> {
             return Ok(());
         }
 
-        debug_assert!(functions.iter().all(|f| f.scheme.is_none()));
+        debug_assert!(functions.iter().all(|f| f.ann.is_none()));
         let mut scope = u::Scope::new();
 
         let ret_tys = functions
@@ -625,7 +625,7 @@ impl<'a, E: External> Context<'a, E> {
     }
 
     fn infer_expl_function(&mut self, f: &ast::Function) -> Result<()> {
-        debug_assert!(f.scheme.is_some());
+        debug_assert!(f.ann.is_some());
         let mut scope = u::Scope::new();
 
         let scheme = self.type_of(f.id).clone();
@@ -667,7 +667,7 @@ impl<'a, E: External> Context<'a, E> {
     ) -> Result<()> {
         let mut scope = u::Scope::new_inner(outer_scope);
 
-        let mut scheme = self.u_ctx.import(&method.scheme);
+        let mut scheme = self.u_ctx.import(&method.ann);
         scope.register_scoped_gen_types(scheme.generic_types());
         scheme.subst_types(scope.scoped_gen_types(), &mut self.u_ctx);
         self.install_premise_constraints(scope.context_premise_mut(), scheme.s_params);
@@ -714,11 +714,11 @@ impl<'a, E: External> Context<'a, E> {
         let class_method_ann = &self
             .type_env
             .class_method(*method.class_method.get_resolved())
-            .scheme;
+            .ann;
 
         let mut orig_scheme = self.u_ctx.import(&class_method_ann.body);
         orig_scheme.subst_types(class_inst_map, &mut self.u_ctx);
-        let mut scheme = match method.scheme {
+        let mut scheme = match method.ann {
             Some(ref inst_method_ann) => {
                 let inst_scheme = self.u_ctx.import(inst_method_ann);
                 if !inst_scheme.alpha_equal(&orig_scheme, &mut self.u_ctx) {
@@ -825,8 +825,8 @@ impl<'a, E: External> Context<'a, E> {
 
     fn infer_expr_let(&mut self, es: &mut ExprScope, let_: &ast::ExprLet) -> Result<u::Type> {
         // 0. insert explicit function schemes
-        for f in let_.local_functions().filter(|f| f.scheme.is_some()) {
-            let mut scheme = self.u_ctx.import(f.scheme.as_ref().unwrap());
+        for f in let_.local_functions().filter(|f| f.ann.is_some()) {
+            let mut scheme = self.u_ctx.import(f.ann.as_ref().unwrap());
             scheme.subst_types(es.scope.scoped_gen_types(), &mut self.u_ctx);
             self.u_types.schemes.insert(f.id.into(), scheme);
         }
@@ -834,21 +834,21 @@ impl<'a, E: External> Context<'a, E> {
         // 1. infer implicit local functions
         for group in topological_sort::run(
             let_.local_functions()
-                .filter(|f| f.scheme.is_none())
+                .filter(|f| f.ann.is_none())
                 .map(|f| (f.id, f)),
         ) {
             self.infer_impl_local_functions(es.scope, group.as_slice())?;
         }
 
         // 2. infer explicit local functions
-        for f in let_.local_functions().filter(|f| f.scheme.is_some()) {
+        for f in let_.local_functions().filter(|f| f.ann.is_some()) {
             self.infer_expl_local_function(es.scope, f)?;
         }
 
         // 3. infer local variables
         for var in let_.local_vars() {
             let a = self.infer_expr(es, &var.init)?;
-            if let Some(ref b) = var.ty {
+            if let Some(ref b) = var.ann {
                 let b = self.u_ctx.import(b);
                 let b = self.u_ctx.subst(es.scope.scoped_gen_types(), b);
                 self.unify_on(var.id, a, b)?;
@@ -872,7 +872,7 @@ impl<'a, E: External> Context<'a, E> {
         annotate: &ast::ExprAnnotate,
     ) -> Result<u::Type> {
         let a = self.infer_expr(es, &annotate.body)?;
-        let b = self.u_ctx.import(&annotate.ty);
+        let b = self.u_ctx.import(&annotate.ann);
         let b = self.u_ctx.subst(es.scope.scoped_gen_types(), b);
         self.unify_on(annotate.body.id, a, b)?;
         Ok(a)
@@ -899,13 +899,13 @@ impl<'a, E: External> Context<'a, E> {
     fn infer_impl_local_functions(
         &mut self,
         outer_scope: &mut u::Scope,
-        functions: &[&ast::LocalFunction],
+        functions: &[&ast::LocalFun],
     ) -> Result<()> {
         if functions.is_empty() {
             return Ok(());
         }
 
-        debug_assert!(functions.iter().all(|f| f.scheme.is_none()));
+        debug_assert!(functions.iter().all(|f| f.ann.is_none()));
         let mut scope = u::Scope::new_inner(outer_scope);
 
         let ret_tys = functions
@@ -931,7 +931,7 @@ impl<'a, E: External> Context<'a, E> {
             f.body.dfs_do(|expr| {
                 if_chain! {
                     if let ast::ExprRep::Use(ref use_) = expr.rep;
-                    if let ast::Value::LocalFunction(id) = *use_.get_resolved();
+                    if let ast::Value::LocalFun(id) = *use_.get_resolved();
                     if functions.iter().any(|f| f.id == id);
                     then {
                         self.u_types
@@ -948,12 +948,12 @@ impl<'a, E: External> Context<'a, E> {
     fn infer_expl_local_function(
         &mut self,
         outer_scope: &mut u::Scope,
-        f: &ast::LocalFunction,
+        f: &ast::LocalFun,
     ) -> Result<()> {
-        debug_assert!(f.scheme.is_some());
+        debug_assert!(f.ann.is_some());
         let mut scope = u::Scope::new_inner(outer_scope);
 
-        let mut scheme = self.u_ctx.import(f.scheme.as_ref().unwrap());
+        let mut scheme = self.u_ctx.import(f.ann.as_ref().unwrap());
         scope.register_scoped_gen_types(scheme.generic_types());
         scheme.subst_types(scope.scoped_gen_types(), &mut self.u_ctx);
         self.install_premise_constraints(scope.context_premise_mut(), scheme.s_params);
@@ -1218,7 +1218,7 @@ impl<'a, 'd, E: External> TypeOf<'d, ast::Value> for Context<'a, E> {
             ast::Value::ClassMethod(id) => Left(self.type_of(id)),
             ast::Value::Parameter(id) => Right(self.type_of(id)),
             ast::Value::LocalVar(id) => Right(self.type_of(id)),
-            ast::Value::LocalFunction(id) => Left(self.type_of(id)),
+            ast::Value::LocalFun(id) => Left(self.type_of(id)),
             ast::Value::PatternVar(id) => Right(self.type_of(id)),
         }
     }
@@ -1250,7 +1250,7 @@ macro_rules! impl_pre_inserted_scheme_construct {
     };
 }
 
-impl_pre_inserted_scheme_construct!(ast::LocalFunction);
+impl_pre_inserted_scheme_construct!(ast::LocalFun);
 
 macro_rules! impl_pre_inserted_type_construct {
     ($ty:ty) => {

@@ -140,10 +140,10 @@ impl<'a> topological_sort::DependencyList<NodeId<Function>> for Expr {
     }
 }
 
-impl<'a> topological_sort::DependencyList<NodeId<LocalFunction>> for Expr {
-    fn traverse_dependencies(&self, f: &mut impl FnMut(&NodeId<LocalFunction>)) {
+impl<'a> topological_sort::DependencyList<NodeId<LocalFun>> for Expr {
+    fn traverse_dependencies(&self, f: &mut impl FnMut(&NodeId<LocalFun>)) {
         self.dfs_do(|e| match e.rep {
-            ExprRep::Use(Use::Resolved(Value::LocalFunction(id), _)) => f(&id),
+            ExprRep::Use(Use::Resolved(Value::LocalFun(id), _)) => f(&id),
             _ => {}
         });
     }
@@ -190,11 +190,11 @@ impl ExprRep {
         Self::Capture(use_.into())
     }
 
-    pub fn annotate(body: Expr, ty: Annotation<Type>) -> Self {
-        Self::Annotate(Box::new(ExprAnnotate { body, ty }))
+    pub fn annotate(body: Expr, ann: Annotation<Type>) -> Self {
+        Self::Annotate(Box::new(ExprAnnotate { body, ann }))
     }
 
-    pub fn let_(defs: Vec<Either<LocalVar, LocalFunction>>, body: Expr) -> Self {
+    pub fn let_(defs: Vec<Either<LocalVar, LocalFun>>, body: Expr) -> Self {
         Self::Let(Box::new(ExprLet { defs, body }))
     }
 
@@ -223,7 +223,7 @@ pub enum Value {
     ClassMethod(NodeId<ClassMethod>),
     Parameter(NodeId<Parameter>),
     LocalVar(NodeId<LocalVar>),
-    LocalFunction(NodeId<LocalFunction>),
+    LocalFun(NodeId<LocalFun>),
     PatternVar(NodeId<PatternVar>),
     // Con(ValueCon), // directly overwritten as ExprRep::Con
 }
@@ -273,9 +273,9 @@ impl From<NodeId<LocalVar>> for Value {
     }
 }
 
-impl From<NodeId<LocalFunction>> for Value {
-    fn from(id: NodeId<LocalFunction>) -> Self {
-        Self::LocalFunction(id)
+impl From<NodeId<LocalFun>> for Value {
+    fn from(id: NodeId<LocalFun>) -> Self {
+        Self::LocalFun(id)
     }
 }
 
@@ -296,7 +296,7 @@ impl TryFrom<Construct> for Value {
             Construct::ClassMethod(id) => Ok(id.into()),
             Construct::Parameter(id) => Ok(id.into()),
             Construct::LocalVar(id) => Ok(id.into()),
-            Construct::LocalFunction(id) => Ok(id.into()),
+            Construct::LocalFun(id) => Ok(id.into()),
             Construct::PatternVar(id) => Ok(id.into()),
             _ => Err(()),
         }
@@ -370,7 +370,7 @@ pub struct ExprApply {
 
 #[derive(Debug, Clone)]
 pub struct ExprLet {
-    pub defs: Vec<Either<LocalVar, LocalFunction>>,
+    pub defs: Vec<Either<LocalVar, LocalFun>>,
     pub body: Expr,
 }
 
@@ -379,7 +379,7 @@ impl ExprLet {
         self.defs.iter().filter_map(|def| def.as_ref().left())
     }
 
-    pub fn local_functions(&self) -> impl Iterator<Item = &LocalFunction> {
+    pub fn local_functions(&self) -> impl Iterator<Item = &LocalFun> {
         self.defs.iter().filter_map(|def| def.as_ref().right())
     }
 
@@ -391,7 +391,7 @@ impl ExprLet {
 pub struct ExprLetBindingContext<'a>(&'a ExprLet);
 
 impl<'a> ExprLetBindingContext<'a> {
-    pub fn defs(&self) -> impl Iterator<Item = &LocalFunction> {
+    pub fn defs(&self) -> impl Iterator<Item = &LocalFun> {
         // * local functions mutual recursion is allowed
         // * local variables are initialized after the local functions are prepared
         self.0.local_functions()
@@ -407,7 +407,7 @@ pub struct ExprSeq {
 #[derive(Debug, Clone)]
 pub struct ExprAnnotate {
     pub body: Expr,
-    pub ty: Annotation<Type>,
+    pub ann: Annotation<Type>,
 }
 
 #[derive(Debug, Clone)]
@@ -432,20 +432,20 @@ pub struct ExprMatch {
 #[derive(Debug, Clone)]
 pub struct LocalVar {
     pub id: NodeId<LocalVar>,
-    pub ty: Option<Annotation<Type>>,
+    pub ann: Option<Annotation<Type>>,
     pub init: Expr,
 }
 
 #[derive(Debug, Clone)]
-pub struct LocalFunction {
-    pub id: NodeId<LocalFunction>,
+pub struct LocalFun {
+    pub id: NodeId<LocalFun>,
     pub params: Vec<Parameter>,
-    pub scheme: Option<Annotation<Scheme>>,
+    pub ann: Option<Annotation<Scheme>>,
     pub body: Expr,
 }
 
-impl<'a> topological_sort::DependencyList<NodeId<LocalFunction>> for LocalFunction {
-    fn traverse_dependencies(&self, f: &mut impl FnMut(&NodeId<LocalFunction>)) {
+impl<'a> topological_sort::DependencyList<NodeId<LocalFun>> for LocalFun {
+    fn traverse_dependencies(&self, f: &mut impl FnMut(&NodeId<LocalFun>)) {
         self.body.traverse_dependencies(f);
     }
 }

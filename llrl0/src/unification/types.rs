@@ -559,7 +559,7 @@ impl<E: KindEnvironment> Export<Gen> for Context<E> {
     fn export(&mut self, src: &Gen) -> Self::Dest {
         ast::TypeParameter {
             id: *src,
-            kind: None,
+            ann: None,
         }
     }
 }

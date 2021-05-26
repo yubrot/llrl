@@ -124,7 +124,7 @@ pub(super) enum ModuleValidationTarget {
     Instance,
     InstanceMethod,
     LocalVar,
-    LocalFunction,
+    LocalFun,
 }
 
 impl ModuleValidationTarget {
@@ -155,7 +155,7 @@ impl ModuleValidationTarget {
             Self::Instance => find::<ast::InstanceCon>(module, name),
             Self::InstanceMethod => find::<ast::InstanceMethod>(module, name),
             Self::LocalVar => find::<ast::LocalVar>(module, name),
-            Self::LocalFunction => find::<ast::LocalFunction>(module, name),
+            Self::LocalFun => find::<ast::LocalFun>(module, name),
         }
     }
 }
@@ -176,7 +176,7 @@ impl fmt::Display for ModuleValidationTarget {
             Self::Instance => write!(f, "instance"),
             Self::InstanceMethod => write!(f, "instance-method"),
             Self::LocalVar => write!(f, "local-var"),
-            Self::LocalFunction => write!(f, "local-function"),
+            Self::LocalFun => write!(f, "local-fun"),
         }
     }
 }
@@ -200,7 +200,7 @@ impl<'a> m::Match<'a> for ModuleValidationTarget {
                 "instance" => Ok(Self::Instance),
                 "instance-method" => Ok(Self::InstanceMethod),
                 "local-var" => Ok(Self::LocalVar),
-                "local-function" => Ok(Self::LocalFunction),
+                "local-fun" => Ok(Self::LocalFun),
                 _ => Err(Self::error(s)),
             }
         } else {

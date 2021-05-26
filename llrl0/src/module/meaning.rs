@@ -146,7 +146,7 @@ impl InferredKinds {
             | Construct::InstanceCon(_)
             | Construct::InstanceMethod(_)
             | Construct::TypeParameter(_)
-            | Construct::LocalFunction(_) => self.map.get(&construct).map(Cow::Borrowed),
+            | Construct::LocalFun(_) => self.map.get(&construct).map(Cow::Borrowed),
             Construct::Macro(_) => Some(Cow::Owned(Kind::Macro)),
             Construct::DataValueCon(_)
             | Construct::Parameter(_)
@@ -169,7 +169,7 @@ impl InferredKinds {
             | Construct::InstanceCon(_)
             | Construct::InstanceMethod(_)
             | Construct::TypeParameter(_)
-            | Construct::LocalFunction(_) => self.map.insert(construct, kind),
+            | Construct::LocalFun(_) => self.map.insert(construct, kind),
             Construct::Macro(_)
             | Construct::DataValueCon(_)
             | Construct::Parameter(_)
@@ -205,7 +205,7 @@ impl InferredTypes {
             | Construct::BuiltinValueCon(_)
             | Construct::ClassMethod(_)
             | Construct::InstanceMethod(_)
-            | Construct::LocalFunction(_) => self.schemes.get(&construct),
+            | Construct::LocalFun(_) => self.schemes.get(&construct),
             _ => None,
         }
     }
@@ -219,7 +219,7 @@ impl InferredTypes {
             | Construct::BuiltinValueCon(_)
             | Construct::ClassMethod(_)
             | Construct::InstanceMethod(_)
-            | Construct::LocalFunction(_) => self.schemes.insert(construct, scheme),
+            | Construct::LocalFun(_) => self.schemes.insert(construct, scheme),
             _ => panic!("{} cannot have scheme", construct),
         };
     }

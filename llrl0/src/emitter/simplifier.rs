@@ -176,7 +176,7 @@ impl Simplify for ast::CFunction {
     type Dest = CtDef;
 
     fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
-        let (params, ret_ty) = match self.ty.body.matches_fun() {
+        let (params, ret_ty) = match self.ann.body.matches_fun() {
             Some((param_tys, ret_ty)) => {
                 let params = env
                     .simplify(param_tys)
@@ -186,7 +186,7 @@ impl Simplify for ast::CFunction {
                 let ret_ty = env.simplify(ret_ty);
                 (params, ret_ty)
             }
-            None => (Vec::new(), env.simplify(&self.ty.body)),
+            None => (Vec::new(), env.simplify(&self.ann.body)),
         };
 
         let rt = Rt::c_call(
@@ -213,7 +213,7 @@ impl Simplify for ast::BuiltinOp {
 
     fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         let unit = env.module_map().textual_unit_of(self.id).unwrap();
-        let (ct_params, params, ret_ty) = env.simplify_scheme(None, &self.scheme.body);
+        let (ct_params, params, ret_ty) = env.simplify_scheme(None, &self.ann.body);
 
         let ct_args = ct_params.iter().map(|p| Ct::Id(*p)).collect();
         let args = params.iter().map(|p| Rt::Local(p.id)).collect();
@@ -412,13 +412,13 @@ impl<'a> Simplify for ast::ClassMethod {
 
     fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         if let Some(ref body) = self.default_body {
-            let class = env.module_map().ast(self.class).unwrap();
+            let class = env.module_map().ast(self.class_con).unwrap();
 
             let mut class_ct_params = env.simplify(&class.con.ty_params);
             class_ct_params.push(env.simplify(&class.con.constraint()));
 
             let (method_ct_params, params, ret_ty) =
-                env.simplify_scheme(Some(self.params.as_ref()), &self.scheme.body);
+                env.simplify_scheme(Some(self.params.as_ref()), &self.ann.body);
 
             let body = env.simplify(body);
 
@@ -445,7 +445,7 @@ impl<'a> Simplify for ast::InstanceMethod {
     type Dest = CtDef;
 
     fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
-        let inst = env.module_map().ast(self.instance).unwrap();
+        let inst = env.module_map().ast(self.instance_con).unwrap();
         let scheme = env.module_map().scheme_of(self.id).unwrap();
 
         let mut inst_ct_params = env.simplify(&inst.con.ty_params);
@@ -501,13 +501,13 @@ impl Simplify for ast::Expr {
                 }
                 ast::Value::CFunction(id) => {
                     let f = Ct::Id(env.issue_ct(id));
-                    let autocall = !map.ast(id).unwrap().ty.body.is_fun();
+                    let autocall = !map.ast(id).unwrap().ann.body.is_fun();
                     Rt::autocall(Rt::Capture(f, None), autocall)
                 }
                 ast::Value::BuiltinOp(id) => {
                     let f = Ct::Id(env.issue_ct(id));
                     let ct_args = env.simplify(map.instantiation_of(self.id).unwrap());
-                    let autocall = !map.ast(id).unwrap().scheme.body.body.is_fun();
+                    let autocall = !map.ast(id).unwrap().ann.body.body.is_fun();
                     Rt::autocall(Rt::Capture(Ct::generic_inst(f, ct_args), None), autocall)
                 }
                 ast::Value::ClassMethod(id) => {
@@ -525,7 +525,7 @@ impl Simplify for ast::Expr {
                 }
                 ast::Value::Parameter(id) => Rt::Local(env.issue_rt(id)),
                 ast::Value::LocalVar(id) => Rt::Local(env.issue_rt(id)),
-                ast::Value::LocalFunction(id) => {
+                ast::Value::LocalFun(id) => {
                     let id = env.issue_rt(id);
                     let ct_args = env.simplify(map.instantiation_of(self.id).unwrap());
                     Rt::LocalFun(id, ct_args)
@@ -616,7 +616,7 @@ impl Simplify for (ast::Pattern, ast::Expr) {
     }
 }
 
-impl Simplify for ast::LocalFunction {
+impl Simplify for ast::LocalFun {
     type Dest = RtFunction;
 
     fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {

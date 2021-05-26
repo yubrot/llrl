@@ -68,7 +68,7 @@ define_construct! {
     // expr
     Expr(Expr),
     LocalVar(LocalVar),
-    LocalFunction(LocalFunction),
+    LocalFun(LocalFun),
     ValueUse(Use<Value>),
     Capture(Use<Construct>),
 

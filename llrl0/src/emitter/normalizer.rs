@@ -1,5 +1,5 @@
 //! Normalizes the IR by evaluating Ct.
-//! All generic CtDef instantiations and LocalFunction definitions are lifted to the top level.
+//! All generic CtDef instantiations and LocalFun definitions are lifted to the top level.
 
 use super::{ir::*, rewriter, traverser};
 use if_chain::if_chain;

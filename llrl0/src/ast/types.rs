@@ -414,7 +414,7 @@ impl ConstraintRep {
 #[derive(Debug, Clone)]
 pub struct TypeParameter {
     pub id: NodeId<TypeParameter>,
-    pub kind: Option<Annotation<Kind>>,
+    pub ann: Option<Annotation<Kind>>,
 }
 
 #[derive(Debug, Clone, new)]
@@ -610,7 +610,7 @@ impl<F: TypeFormatter> ContextualDisplay<F> for Use<NodeId<ClassCon>> {
 
 impl<F: TypeFormatter> ContextualDisplay<F> for TypeParameter {
     fn fmt_with(&self, ctx: &F, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.kind {
+        match self.ann {
             Some(ref kind) => {
                 write!(f, "[{} {}]", self.id.fmt_on(ctx), kind.body.fmt_on(ctx))
             }

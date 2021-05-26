@@ -82,26 +82,26 @@ impl Root {
         for cls in self.class_cons.values() {
             for m in cls.methods.iter() {
                 ensure(self.class_methods.contains_key(m), cls.id)?;
-                ensure(self.class_methods[m].class == cls.id, cls.id)?;
+                ensure(self.class_methods[m].class_con == cls.id, cls.id)?;
             }
         }
 
         for m in self.class_methods.values() {
-            ensure(self.class_cons.contains_key(&m.class), m.id)?;
-            ensure(self.class_cons[&m.class].methods.contains(&m.id), m.id)?;
+            ensure(self.class_cons.contains_key(&m.class_con), m.id)?;
+            ensure(self.class_cons[&m.class_con].methods.contains(&m.id), m.id)?;
         }
 
         for inst in self.instance_cons.values() {
             for m in inst.methods.iter() {
                 ensure(self.instance_methods.contains_key(m), inst.id)?;
-                ensure(self.instance_methods[m].instance == inst.id, inst.id)?;
+                ensure(self.instance_methods[m].instance_con == inst.id, inst.id)?;
             }
         }
 
         for m in self.instance_methods.values() {
-            ensure(self.instance_cons.contains_key(&m.instance), m.id)?;
+            ensure(self.instance_cons.contains_key(&m.instance_con), m.id)?;
             ensure(
-                self.instance_cons[&m.instance].methods.contains(&m.id),
+                self.instance_cons[&m.instance_con].methods.contains(&m.id),
                 m.id,
             )?;
         }

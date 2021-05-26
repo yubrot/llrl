@@ -106,7 +106,7 @@ impl<'a, E: External> Context<'a, E> {
                 .iter()
                 .map(|tp| {
                     let kind = self.kind_of(tp.id);
-                    if let Some(ref kind_ann) = tp.kind {
+                    if let Some(ref kind_ann) = tp.ann {
                         let ann_kind = self.u_ctx.import(&kind_ann.body);
                         self.unify_on(kind_ann.id, kind, ann_kind)?;
                     }
@@ -272,21 +272,21 @@ impl<'a, E: External> Infer<[ast::Class<'_>]> for Context<'a, E> {
         for cls in target.iter() {
             self.setup_generic(cls.con.id, cls.con, u::Kind::Constraint)?;
             for method in cls.methods() {
-                self.setup_generic(method.id, &method.scheme.body, u::Kind::Value)?;
+                self.setup_generic(method.id, &method.ann.body, u::Kind::Value)?;
             }
         }
 
         for cls in target.iter() {
             self.infer(&cls.con.superclasses)?;
             for method in cls.methods() {
-                self.infer(&method.scheme)?;
+                self.infer(&method.ann)?;
             }
         }
 
         for cls in target.iter() {
             self.fix_generic(cls.con.id, cls.con)?;
             for method in cls.methods() {
-                self.fix_generic(method.id, &method.scheme.body)?;
+                self.fix_generic(method.id, &method.ann.body)?;
             }
         }
 
@@ -304,7 +304,7 @@ impl<'a, E: External> Infer<ast::Instance<'_>> for Context<'a, E> {
     fn infer(&mut self, inst: &ast::Instance<'_>) -> Result<Self::Result> {
         self.setup_generic(inst.con.id, inst.con, u::Kind::Satisfaction)?;
         for method in inst.methods() {
-            if let Some(ref scheme) = method.scheme {
+            if let Some(ref scheme) = method.ann {
                 self.setup_generic(method.id, &scheme.body, u::Kind::Value)?;
             }
         }
@@ -313,14 +313,14 @@ impl<'a, E: External> Infer<ast::Instance<'_>> for Context<'a, E> {
         self.infer(&inst.con.target)?;
 
         for method in inst.methods() {
-            if let Some(ref scheme) = method.scheme {
+            if let Some(ref scheme) = method.ann {
                 self.infer(scheme)?;
             }
         }
 
         self.fix_generic(inst.con.id, inst.con)?;
         for method in inst.methods() {
-            if let Some(ref scheme) = method.scheme {
+            if let Some(ref scheme) = method.ann {
                 self.fix_generic(method.id, &scheme.body)?;
             }
         }
@@ -337,7 +337,7 @@ impl<'a, E: External> Infer<ast::Function> for Context<'a, E> {
     type Result = ();
 
     fn infer(&mut self, target: &ast::Function) -> Result<Self::Result> {
-        if let Some(ref scheme) = target.scheme {
+        if let Some(ref scheme) = target.ann {
             self.setup_generic(target.id, &scheme.body, u::Kind::Value)?;
             self.infer(scheme)?;
             self.fix_generic(target.id, &scheme.body)?;
@@ -350,7 +350,7 @@ impl<'a, E: External> Infer<ast::CFunction> for Context<'a, E> {
     type Result = ();
 
     fn infer(&mut self, target: &ast::CFunction) -> Result<Self::Result> {
-        self.infer(&target.ty)
+        self.infer(&target.ann)
     }
 }
 
@@ -358,17 +358,17 @@ impl<'a, E: External> Infer<ast::BuiltinOp> for Context<'a, E> {
     type Result = ();
 
     fn infer(&mut self, target: &ast::BuiltinOp) -> Result<Self::Result> {
-        self.setup_generic(target.id, &target.scheme.body, u::Kind::Value)?;
-        self.infer(&target.scheme)?;
-        self.fix_generic(target.id, &target.scheme.body)
+        self.setup_generic(target.id, &target.ann.body, u::Kind::Value)?;
+        self.infer(&target.ann)?;
+        self.fix_generic(target.id, &target.ann.body)
     }
 }
 
-impl<'a, E: External> Infer<ast::LocalFunction> for Context<'a, E> {
+impl<'a, E: External> Infer<ast::LocalFun> for Context<'a, E> {
     type Result = ();
 
-    fn infer(&mut self, target: &ast::LocalFunction) -> Result<Self::Result> {
-        if let Some(ref scheme) = target.scheme {
+    fn infer(&mut self, target: &ast::LocalFun) -> Result<Self::Result> {
+        if let Some(ref scheme) = target.ann {
             self.setup_generic(target.id, &scheme.body, u::Kind::Value)?;
             self.infer(scheme)?;
             self.fix_generic(target.id, &scheme.body)?;
@@ -389,13 +389,13 @@ impl<'a, E: External> Infer<ast::Expr> for Context<'a, E> {
                         self.infer(local_function)?;
                     }
                     for local_var in let_.local_vars() {
-                        if let Some(ref ty) = local_var.ty {
+                        if let Some(ref ty) = local_var.ann {
                             self.infer(ty)?;
                         }
                     }
                     Ok(())
                 }
-                ast::ExprRep::Annotate(ref annotate) => self.infer(&annotate.ty),
+                ast::ExprRep::Annotate(ref annotate) => self.infer(&annotate.ann),
                 _ => Ok(()),
             })
     }

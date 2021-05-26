@@ -7,7 +7,7 @@ pub struct Function {
     pub id: NodeId<Function>,
     pub transparent: bool,
     pub params: Option<Vec<Parameter>>,
-    pub scheme: Option<Annotation<Scheme>>,
+    pub ann: Option<Annotation<Scheme>>,
     pub body: Expr,
 }
 
@@ -20,14 +20,14 @@ impl<'a> topological_sort::DependencyList<NodeId<Function>> for Function {
 #[derive(Debug, Clone)]
 pub struct CFunction {
     pub id: NodeId<CFunction>,
-    pub ty: Annotation<Type>,
+    pub ann: Annotation<Type>,
     pub c_name: String,
 }
 
 #[derive(Debug, Clone)]
 pub struct BuiltinOp {
     pub id: NodeId<BuiltinOp>,
-    pub scheme: Annotation<Scheme>,
+    pub ann: Annotation<Scheme>,
     pub builtin_name: String,
 }
 
@@ -256,10 +256,10 @@ impl<'a> topological_sort::DependencyList<NodeId<ClassCon>> for ClassCon {
 #[derive(Debug, Clone)]
 pub struct ClassMethod {
     pub id: NodeId<ClassMethod>,
-    pub scheme: Annotation<Scheme>,
+    pub ann: Annotation<Scheme>,
     pub params: Option<Vec<Parameter>>,
     pub default_body: Option<Expr>,
-    pub class: NodeId<ClassCon>,
+    pub class_con: NodeId<ClassCon>,
 }
 
 impl ClassMethod {
@@ -268,11 +268,11 @@ impl ClassMethod {
     }
 
     pub fn to_external_scheme(&self, class: &ClassCon) -> Scheme {
-        debug_assert_eq!(self.class, class.id);
+        debug_assert_eq!(self.class_con, class.id);
 
         // [method_tp_1, method_tp2, .., class_tp_1, class_tp_2, ..]
         let ty_params = self
-            .scheme
+            .ann
             .body
             .ty_params
             .iter()
@@ -282,7 +282,7 @@ impl ClassMethod {
 
         // [method_constraint_1, method_constraint_2, .., class_constraint]
         let s_params = self
-            .scheme
+            .ann
             .body
             .s_params
             .iter()
@@ -290,7 +290,7 @@ impl ClassMethod {
             .chain(std::iter::once(class.constraint()))
             .collect();
 
-        Scheme::new(ty_params, s_params, self.scheme.body.body.clone())
+        Scheme::new(ty_params, s_params, self.ann.body.body.clone())
     }
 
     pub fn expand_external_instantiation(
@@ -299,11 +299,11 @@ impl ClassMethod {
     ) -> (Instantiation, Instantiation) {
         let instance_ty_args = instantiation
             .ty_args
-            .drain(self.scheme.body.ty_params.len()..)
+            .drain(self.ann.body.ty_params.len()..)
             .collect();
         let instance_s_args = instantiation
             .s_args
-            .drain(self.scheme.body.s_params.len()..)
+            .drain(self.ann.body.s_params.len()..)
             .collect();
         (
             Instantiation::new(instance_ty_args, instance_s_args),
@@ -329,7 +329,7 @@ impl<'a> Class<'a> {
     pub fn constraints_on_interface(self) -> impl Iterator<Item = &'a Constraint> {
         self.con.superclasses.iter().chain(
             self.methods()
-                .flat_map(|method| method.scheme.body.s_params.iter()),
+                .flat_map(|method| method.ann.body.s_params.iter()),
         )
     }
 }
@@ -366,10 +366,10 @@ pub struct InstanceMethod {
     pub id: NodeId<InstanceMethod>,
     pub transparent: bool,
     pub params: Option<Vec<Parameter>>,
-    pub scheme: Option<Annotation<Scheme>>,
+    pub ann: Option<Annotation<Scheme>>,
     pub body: Expr,
     pub class_method: Use<NodeId<ClassMethod>>,
-    pub instance: NodeId<InstanceCon>,
+    pub instance_con: NodeId<InstanceCon>,
 }
 
 impl InstanceMethod {
