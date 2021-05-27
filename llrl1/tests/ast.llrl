@@ -3,6 +3,7 @@
 (import "~/ast/data" _)
 (import "~/ast/builder" _)
 (import "~/ast/display" _)
+(import "~/ast/root" _)
 (println! "llrl1/tests/ast")
 
 (let* ([gen (node-id-generator/new (module-id/from-index 1))]

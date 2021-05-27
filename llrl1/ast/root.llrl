@@ -1,0 +1,186 @@
+(import "~/util" _)
+(import "std/ord-map" [Map OrdMap] _.OrdMap [map/_ ord-map/_])
+(import "~/ast/node-id" _)
+(import "~/ast/data" _)
+(export Root root/_)
+
+(data Root
+  (root:
+    (NodeId Root)
+    (Map (NodeId Function) Function)
+    (Map (NodeId CFunction) CFunction)
+    (Map (NodeId BuiltinOp) BuiltinOp)
+    (Map (NodeId Macro) Macro)
+    (Map (NodeId DataTypeCon) DataTypeCon)
+    (Map (NodeId DataValueCon) DataValueCon)
+    (Map (NodeId BuiltinTypeCon) BuiltinTypeCon)
+    (Map (NodeId BuiltinValueCon) BuiltinValueCon)
+    (Map (NodeId ClassCon) ClassCon)
+    (Map (NodeId ClassMethod) ClassMethod)
+    (Map (NodeId InstanceCon) InstanceCon)
+    (Map (NodeId InstanceMethod) InstanceMethod)
+    (Vector InitExpr)))
+
+(getter root:
+  root/id
+  root/functions
+  root/c-functions
+  root/builtin-ops
+  root/macros
+  root/data-type-cons
+  root/data-value-cons
+  root/builtin-type-cons
+  root/builtin-value-cons
+  root/class-cons
+  root/class-methods
+  root/instance-cons
+  root/instance-methods
+  root/init-expressions)
+
+(function (root/new id) {(-> (NodeId Root) Root)}
+  (root:
+    id
+    map/empty
+    map/empty
+    map/empty
+    map/empty
+    map/empty
+    map/empty
+    map/empty
+    map/empty
+    map/empty
+    map/empty
+    map/empty
+    map/empty
+    vector/empty))
+
+(function (root/verify-relations r) {(-> Root (Result unit Construct))}
+  (let ([(ensure c cond)
+          (if-match1 (some _) cond
+            (ok unit)
+            (err (conv c)))]
+        [(ensure-relation parents parent/id parent/children children child/id child/parent-id)
+          (for (let parent) (map/values parents)
+            (for (let child-id) (parent/children parent)
+              (ensure
+                (parent/id parent)
+                (with?
+                  ([(some (let child)) (map/get? child-id children)]
+                   [#t (eq? (parent/id parent) (child/parent-id child))])))!))
+          (for (let child) (map/values children)
+            (ensure
+              (child/id child)
+              (with?
+                ([(some (let parent)) (map/get? (child/parent-id child) parents)]
+                 [#t (it/any? [^1 (eq? %1 (child/id child))] (parent/children parent))])))!)
+          (ok unit)])
+    (ensure-relation
+      (root/data-type-cons r) data-type-con/id data-type-con/value-cons
+      (root/data-value-cons r) data-value-con/id data-value-con/type-con)!
+    (ensure-relation
+      (root/builtin-type-cons r) builtin-type-con/id builtin-type-con/value-cons
+      (root/builtin-value-cons r) builtin-value-con/id builtin-value-con/type-con)!
+    (ensure-relation
+      (root/class-cons r) class-con/id class-con/methods
+      (root/class-methods r) class-method/id class-method/class-con)!
+    (ensure-relation
+      (root/instance-cons r) instance-con/id instance-con/methods
+      (root/instance-methods r) instance-method/id instance-method/instance-con)!
+    (ok unit)))
+
+(function (relation con parent children parent/children)
+  (con parent [^0 (it/filter-map [^1 (map/get? %1 children)] (parent/children parent))]))
+
+(function (root/data-types r) {(-> Root (Iterator DataType))}
+  (|> r
+      root/data-type-cons
+      map/values
+      (it/map [^1 (relation data-type: %1 (root/data-value-cons r) data-type-con/value-cons)])))
+
+(function (root/builtin-types r) {(-> Root (Iterator BuiltinType))}
+  (|> r
+      root/builtin-type-cons
+      map/values
+      (it/map [^1 (relation builtin-type: %1 (root/builtin-value-cons r) builtin-type-con/value-cons)])))
+
+(function (root/classes r) {(-> Root (Iterator Class))}
+  (|> r
+      root/class-cons
+      map/values
+      (it/map [^1 (relation class: %1 (root/class-methods r) class-con/methods)])))
+
+(function (root/instances r) {(-> Root (Iterator Instance))}
+  (|> r
+      root/instance-cons
+      map/values
+      (it/map [^1 (relation instance: %1 (root/instance-methods r) instance-con/methods)])))
+
+(function (root/expressions r) {(-> Root (Iterator Expr))}
+  (|> (|> r root/functions map/values (it/map function/body))
+      (it/chain (|> r root/macros map/values (it/map macro/body)))
+      (it/chain (|> r root/class-methods map/values (it/filter-map class-method/default-body)))
+      (it/chain (|> r root/instance-methods map/values (it/map instance-method/body)))
+      (it/chain (|> r root/init-expressions (it/filter-map (case1? (init-expr:eval (let e)) e))))))
+
+(function (root/constructs r) {(-> Root (Iterator Construct))}
+  (let1 (constructs f) (|> r f map/keys (it/map conv))
+    (|> (constructs root/functions)
+        (it/chain (constructs root/c-functions))
+        (it/chain (constructs root/builtin-ops))
+        (it/chain (constructs root/macros))
+        (it/chain (constructs root/data-type-cons))
+        (it/chain (constructs root/builtin-type-cons))
+        (it/chain (constructs root/class-cons))
+        (it/chain (constructs root/instance-cons)))))
+
+(function (root/function? id r) {(-> (NodeId Function) Root (Option Function))}
+  (map/get? id (root/functions r)))
+
+(function (root/c-function? id r) {(-> (NodeId CFunction) Root (Option CFunction))}
+  (map/get? id (root/c-functions r)))
+
+(function (root/builtin-op? id r) {(-> (NodeId BuiltinOp) Root (Option BuiltinOp))}
+  (map/get? id (root/builtin-ops r)))
+
+(function (root/macro? id r) {(-> (NodeId Macro) Root (Option Macro))}
+  (map/get? id (root/macros r)))
+
+(function (root/data-type? id r) {(-> (NodeId DataTypeCon) Root (Option DataType))}
+  (with1? (some (let con)) (root/data-type-con? id r)
+    (relation data-type: con (root/data-value-cons r) data-type-con/value-cons)))
+
+(function (root/data-type-con? id r) {(-> (NodeId DataTypeCon) Root (Option DataTypeCon))}
+  (map/get? id (root/data-type-cons r)))
+
+(function (root/data-value-con? id r) {(-> (NodeId DataValueCon) Root (Option DataValueCon))}
+  (map/get? id (root/data-value-cons r)))
+
+(function (root/builtin-type? id r) {(-> (NodeId BuiltinTypeCon) Root (Option BuiltinType))}
+  (with1? (some (let con)) (root/builtin-type-con? id r)
+    (relation builtin-type: con (root/builtin-value-cons r) builtin-type-con/value-cons)))
+
+(function (root/builtin-type-con? id r) {(-> (NodeId BuiltinTypeCon) Root (Option BuiltinTypeCon))}
+  (map/get? id (root/builtin-type-cons r)))
+
+(function (root/builtin-value-con? id r) {(-> (NodeId BuiltinValueCon) Root (Option BuiltinValueCon))}
+  (map/get? id (root/builtin-value-cons r)))
+
+(function (root/class? id r) {(-> (NodeId ClassCon) Root (Option Class))}
+  (with1? (some (let con)) (root/class-con? id r)
+    (relation class: con (root/class-methods r) class-con/methods)))
+
+(function (root/class-con? id r) {(-> (NodeId ClassCon) Root (Option ClassCon))}
+  (map/get? id (root/class-cons r)))
+
+(function (root/class-method? id r) {(-> (NodeId ClassMethod) Root (Option ClassMethod))}
+  (map/get? id (root/class-methods r)))
+
+(function (root/instance? id r) {(-> (NodeId InstanceCon) Root (Option Instance))}
+  (with1? (some (let con)) (root/instance-con? id r)
+    (relation instance: con (root/instance-methods r) instance-con/methods)))
+
+(function (root/instance-con? id r) {(-> (NodeId InstanceCon) Root (Option InstanceCon))}
+  (map/get? id (root/instance-cons r)))
+
+(function (root/instance-method? id r) {(-> (NodeId InstanceMethod) Root (Option InstanceMethod))}
+  (map/get? id (root/instance-methods r)))
