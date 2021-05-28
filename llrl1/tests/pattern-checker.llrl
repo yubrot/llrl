@@ -1,0 +1,116 @@
+(import "~/pattern-checker" _)
+
+; A tag type for tests
+(derive (Eq Ord DebugDisplay Hash) value-data T
+  (t:tuple U64)
+  t:option:some
+  t:option:none
+  t:vec3
+  (t:num I32))
+
+(instance Display.T (Display T)
+  (function (display! w a)
+    (match a
+      [(t:tuple _) (display! w "(:)")]
+      [t:option:some (display! w "some")]
+      [t:option:none (display! w "none")]
+      [t:vec3 (display! w "vec3")]
+      [(t:num (let n)) (display! w n)])))
+
+(instance Tag.T (Tag T)
+  (function (tag/arity a)
+    (match a
+      [(t:tuple (let n)) n]
+      [t:option:some 1]
+      [t:option:none 0]
+      [t:vec3 3]
+      [(t:num _) 0]))
+
+  (function (tag/finite-siblings? a)
+    (match? a
+      [(t:tuple _) (array a)]
+      [t:option:some (array t:option:some t:option:none)]
+      [t:option:none (array t:option:some t:option:none)]
+      [t:vec3 (array t:vec3)]))
+
+  (function (tag/tuple? t) {(-> T (Option U64))}
+    (with1? (t:tuple (let n)) t
+      n)))
+
+(function /w pattern:wildcard {(Pattern T)})
+(function /u (pattern:constructor (t:tuple 0) array/empty))
+(function (/tuple2 a b) (pattern:constructor (t:tuple 2) (array a b)))
+(function (/tuple3 a b c) (pattern:constructor (t:tuple 3) (array a b c)))
+(function (/some a) (pattern:constructor t:option:some (array a)))
+(function /none (pattern:constructor t:option:none array/empty))
+(function (/num n) (pattern:constructor (t:num n) array/empty))
+(function (/vec3 a b c) (pattern:constructor t:vec3 (array a b c)))
+
+(assert-eq? "_" (string /w))
+(assert-eq? "(some _)" (string (/some /w)))
+(assert-eq? "(some (some _))" (string (/some (/some /w))))
+(assert-eq? "(vec3 _ _ _)" (string (/vec3 /w /w /w)))
+(assert-eq? "(: _ _)" (string (/tuple2 /w /w)))
+(assert-eq? "unit" (string /u))
+(assert-eq? "123" (string (/num 123)))
+
+(assert (not (pattern/incompatible? /w /none)))
+(assert (not (pattern/incompatible? /none /none)))
+(assert (pattern/incompatible? /none (/some /w)))
+(assert (not (pattern/incompatible? (/some (/num 1)) (/some /w))))
+(assert (pattern/incompatible? (/some (/num 1)) (/some (/num 2))))
+(assert (not (pattern/incompatible? (/some (/num 1)) (/some (/num 1)))))
+
+(function (check1 ps) {(-> (Array (Pattern T)) (Result unit (Error T)))}
+  (check (it/map [^1 (row/new (array %1))] ps)))
+
+(function (non-exhaustive ps)
+  (error:non-exhaustive (matrix/new (collect (it/map [^1 (row/new (array %1))] ps)))))
+
+(function (useless p)
+  (error:useless (row/new (array p))))
+
+(assert-eq? (ok unit)
+            (check1 (array /w)))
+(assert-eq? (ok unit)
+            (check1 (array (/some /w) /none)))
+(assert-eq? (err (non-exhaustive (array /none)))
+            (check1 (array (/some /w))))
+(assert-eq? (err (non-exhaustive (array (/some /w))))
+            (check1 (array /none)))
+(assert-eq? (err (non-exhaustive (array (/some /none))))
+            (check1 (array (/some (/some /w)) /none)))
+(assert-eq? (err (non-exhaustive (array (/some /none))))
+            (check1 (array (/some (/some (/some /w))) /none))) ; TODO: cover (/some (/some /none))
+(assert-eq? (err (non-exhaustive (array (/tuple2 (/some /w) (/some /w)))))
+            (check1 (array (/tuple2 (/some /w) /none) (/tuple2 /none /w))))
+(assert-eq? (ok unit)
+            (check1 (array (/tuple2 (/some /w) /none) (/tuple2 /none /w) (/tuple2 (/some /w) (/some /w)))))
+(assert-eq? (err (non-exhaustive (array (/tuple2 (/some /w) (/some /w)) (/tuple2 /none /none))))
+            (check1 (array (/tuple2 (/some /w) /none) (/tuple2 /none (/some /w)))))
+(assert-eq? (err (non-exhaustive (array /w)))
+            (check1 (array (/num 123))))
+(assert-eq? (ok unit)
+            (check1 (array (/num 123) /w)))
+
+(assert-eq? (err (useless /w))
+            (check1 (array /w /w)))
+(assert-eq? (err (useless (/some /w)))
+            (check1 (array (/some /w) (/some /w) /w)))
+(assert-eq? (ok unit)
+            (check1 (array (/some (/some /w)) (/some /w) /w)))
+(assert-eq? (err (useless (/some (/some /w))))
+            (check1 (array (/some /w) (/some (/some /w)) /none)))
+(assert-eq? (err (useless (/num 0)))
+            (check1 (array (/num 0) (/num 0) /w)))
+(assert-eq? (ok unit)
+            (check1 (array (/num 0) (/num 1) /w)))
+(assert-eq? (ok unit)
+            (check1 (array (/tuple2 (/some /w) /none) (/tuple2 (/some (/some /w)) (/some /w)) /w)))
+(assert-eq? (err (useless (/tuple2 (/some (/some /w)) (/some /w))))
+            (check1 (array (/tuple2 (/some /w) /w) (/tuple2 (/some (/some /w)) (/some /w)) /w)))
+(assert-eq? (ok unit)
+            (check1 (array (/tuple2 (/some /w) /none)
+                           (/tuple2 /none (/some /w))
+                           (/tuple2 /none /none)
+                           (/tuple2 (/some /w) (/some /w)))))

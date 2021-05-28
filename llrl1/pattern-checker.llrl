@@ -1,0 +1,290 @@
+(import "std/ord-set" _)
+(import "~/util" _)
+(export Error _.Error error:_)
+(export check useless-check exhaustiveness-check)
+(export Tag tag/_)
+(export Pattern _.Pattern pattern:_ pattern/_)
+(export Row _.Row row/_)
+(export Matrix _.Matrix matrix/_)
+
+(derive (Eq Ord DebugDisplay Hash) value-data (Error T)
+  (error:useless (Row T))
+  (error:non-exhaustive (Matrix T)))
+
+(function (check rows) {(forall T S) (-> (S (Row T)) (Result unit (Error T))) (where (Tag T) (Iterate S))}
+  (let1 m (ref matrix/row-empty)
+    (for (let row) rows
+      (set! m (result/map-err error:useless (useless-check ~m row))!))
+
+    (let1 m (exhaustiveness-check ~m)
+      (if (matrix/row-empty? m)
+        (ok unit)
+        (err (error:non-exhaustive m))))))
+
+(function (useless-check m r) {(forall T) (-> (Matrix T) (Row T) (Result (Matrix T) (Row T))) (where (Tag T))}
+  (if
+    (let1 related-m (matrix/translate it/filter [^1 (not (row/incompatible? %1 r))] m)
+      (matrix/compute-usefulness r related-m))
+    (ok
+      (matrix/concat-row
+        (matrix/translate it/filter [^1 (matrix/compute-usefulness %1 (matrix/new (array r)))] m)
+        r))
+    (err r)))
+
+(function (exhaustiveness-check m) {(forall T) (-> (Matrix T) (Matrix T)) (where (Tag T))}
+  (matrix/compute-missing (option/unwrap 0 (matrix/column-length m)) m))
+
+(class (Tag T) (where (Ord T))
+  (function (tag/arity a) {(-> T U64)})
+  (function (tag/finite-siblings? a) {(-> T (Option (Array T)))})
+
+  (function (tag/complete? tags) {(-> (OrdSet T) Bool)}
+    (if-match ([(some (let tag)) (ord-set/min? tags)]
+               [(some (let ts)) (tag/finite-siblings? tag)])
+      (eq? (array/length ts) (ord-set/length tags))
+      #f))
+
+  (function (tag/tuple? t) {(-> T (Option U64))}
+    none))
+
+(derive (Eq Ord DebugDisplay Hash) value-data (Pattern T)
+  (pattern:constructor T (Array (Pattern T)))
+  pattern:wildcard)
+
+(instance Display.Pattern (forall T) (Display (Pattern T)) (where (Tag T) (Display T))
+  (function (display! w a)
+    (when-match1 (some (let ps)) (pattern/tuple? a)
+      (if (array/empty? ps)
+        (display! w "unit")!
+        (display-all! w "(: " (it/format " " ps) ")")!)
+      (return (ok unit)))
+    (match a
+      [(pattern:constructor (let tag) (let ps))
+        (if (array/empty? ps)
+          (display! w tag)
+          (display-all! w "(" tag " " (it/format " " ps) ")"))]
+      [pattern:wildcard
+        (display! w "_")])))
+
+(instance ContextualDisplay.Pattern (forall T C) (ContextualDisplay (Pattern T) C) (where (Tag T) (ContextualDisplay T C))
+  (function (contextual-display! w a ctx)
+    (when-match1 (some (let ps)) (pattern/tuple? a)
+      (if (array/empty? ps)
+        (display! w "unit")!
+        (display-all! w "(: " (it/format " " (it/map [^1 (contextual: %1 ctx)] ps)) ")")!)
+      (return (ok unit)))
+    (match a
+      [(pattern:constructor (let tag) (let ps))
+        (if (array/empty? ps)
+          (display! w (contextual: tag ctx))
+          (display-all! w "(" (contextual: tag ctx) " " (it/format " " (it/map [^1 (contextual: %1 ctx)] ps)) ")"))]
+      [pattern:wildcard
+        (display! w "_")])))
+
+(function (pattern/incompatible? p q) {(forall T) (-> (Pattern T) (Pattern T) Bool) (where (Eq T))}
+  (match (: p q)
+    [(: (pattern:constructor (let pt) (let ps))
+        (pattern:constructor (let qt) (let qs)))
+      (or (ne? pt qt)
+          (it/any? (case1 (: (let p) (let q)) (pattern/incompatible? p q)) (it/zip ps qs)))]
+    [_
+      #f]))
+
+(function (pattern/collect-head-tags! set p) {(forall T) (-> (OrdSet T) (Pattern T) unit) (where (Ord T))}
+  (when-match1 (pattern:constructor (let tag) _) p
+    (ord-set/insert! tag set)))
+
+(function (pattern/tuple? p) {(forall T) (-> (Pattern T) (Option (Array (Pattern T)))) (where (Tag T))}
+  (with? ([(pattern:constructor (let tag) (let ps)) p]
+          [(some (let n)) (tag/tuple? tag)]
+          [#t (eq? n (array/length ps))])
+    ps))
+
+(derive (Eq Ord DebugDisplay Hash) value-data (Row T)
+  (row: (Array (Pattern T))))
+
+(getter row: row/patterns)
+
+(function row/empty {(forall T) (Row T)}
+  (row: array/empty))
+
+(function (row/new ps) {(forall T) (-> (Array (Pattern T)) (Row T))}
+  (row: ps))
+
+(function (row/empty? r) {(forall T) (-> (Row T) Bool)}
+  (array/empty? (row/patterns r)))
+
+(function (row/length r) {(forall T) (-> (Row T) U64)}
+  (array/length (row/patterns r)))
+
+(function (row/incompatible? r1 r2) {(forall T) (-> (Row T) (Row T) Bool) (where (Eq T))}
+  (assert-eq? (row/length r1) (row/length r2))
+  (it/any?
+    (case1 (: (let p) (let q)) (pattern/incompatible? p q))
+    (it/zip (row/patterns r1) (row/patterns r2))))
+
+(function (row/collect-head-tags! set r) {(forall T) (-> (OrdSet T) (Row T) unit) (where (Ord T))}
+  (when-match1 (some (let p)) (row/head? r)
+    (pattern/collect-head-tags! set p)))
+
+(function (row/head? r) {(forall T) (-> (Row T) (Option (Pattern T)))}
+  (get? (row/patterns r)[0]))
+
+(function (row/take-head? r) {(forall T) (-> (Row T) (Option (: (Pattern T) (Row T))))}
+  (with1? (some (: (let p) (let ps))) (array/split-first? (row/patterns r))
+    (: p (row/new ps))))
+
+(function (row/with-head p r) {(forall T) (-> (Pattern T) (Row T) (Row T))}
+  (row/new (array/unshift p (row/patterns r))))
+
+(function (row/split len r) {(forall T) (-> U64 (Row T) (: (Array (Pattern T)) (Row T)))}
+  (with1 (: (let ps) (let qs)) (array/split-at len (row/patterns r))
+  (: ps (row/new qs))))
+
+(function (row/concat ps r) {(forall T S) (-> (S (Pattern T)) (Row T) (Row T)) (where (Iterate S))}
+  (row/new (collect (it/chain ps (row/patterns r)))))
+
+(function (row/specialize? tag r) {(forall T) (-> T (Row T) (Option (Row T))) (where (Tag T))}
+  (match (row/take-head? r)
+    [(some (: (pattern:constructor (let t) (let ps)) (let r)))
+      (when? (eq? t tag) (row/concat ps r))]
+    [(some (: pattern:wildcard (let r)))
+      (some (row/concat (iterator/repeat (tag/arity tag) pattern:wildcard) r))]
+    [_
+      none]))
+
+(function (row/restore-specialized tag r) {(forall T) (-> T (Row T) (Row T)) (where (Tag T))}
+  (with1 (: (let ps) (let r)) (row/split (tag/arity tag) r)
+    (row/with-head (pattern:constructor tag ps) r)))
+
+(function (row/defaults? r) {(forall T) (-> (Row T) (Option (Row T)))}
+  (with1? (some (: pattern:wildcard (let r))) (row/take-head? r)
+    r))
+
+(derive (Eq Ord DebugDisplay Hash) value-data (Matrix T)
+  (mat: (Array (Row T))))
+
+(getter mat: matrix/rows)
+
+(function (matrix/new rows) {(forall T) (-> (Array (Row T)) (Matrix T))}
+  (assert
+    (if-match1 (some (: (let r) (let rows))) (array/split-first? rows)
+      (it/all? [^1 (eq? (row/length r) (row/length %1))] rows)
+      #t))
+  (mat: rows))
+
+(function matrix/row-empty {(forall T) (Matrix T)}
+  (mat: array/empty))
+
+(function (matrix/row-empty? m) {(forall T) (-> (Matrix T) Bool)}
+  (array/empty? (matrix/rows m)))
+
+(function (matrix/row-length m) {(forall T) (-> (Matrix T) U64)}
+  (array/length (matrix/rows m)))
+
+(function (matrix/column-empty row-len) {(forall T) (-> U64 (Matrix T))}
+  (matrix/new (array/new row/empty row-len)))
+
+(function (matrix/column-empty? m) {(forall T) (-> (Matrix T) (Option Bool))}
+  (with1? (some (: (let r) (let rows))) (array/split-first? (matrix/rows m))
+    (row/empty? r)))
+
+(function (matrix/column-length m) {(forall T) (-> (Matrix T) (Option U64))}
+  (with1? (some (: (let r) (let rows))) (array/split-first? (matrix/rows m))
+    (row/length r)))
+
+(function (matrix/collect-head-tags m) {(forall T) (-> (Matrix T) (OrdSet T)) (where (Ord T))}
+  (let1 set ord-set/empty
+    (for (let row) (matrix/rows m) (row/collect-head-tags! set row))
+    set))
+
+(function (matrix/concat-row m r) {(forall T) (-> (Matrix T) (Row T) (Matrix T))}
+  (assert
+    (if-match1 (some (let n)) (matrix/column-length m)
+      (eq? n (row/length r))
+      #t))
+  (matrix/new (array/push r (matrix/rows m))))
+
+(function (matrix/concat-rows m1 m2) {(forall T) (-> (Matrix T) (Matrix T) (Matrix T))}
+  (assert
+    (if-match ([(some (let n)) (matrix/column-length m1)]
+               [(some (let m)) (matrix/column-length m2)])
+      (eq? n m)
+      #t))
+  (matrix/new (array/concat (matrix/rows m1) (matrix/rows m2))))
+
+(function (matrix/translate f a m)
+  {(forall T A) (-> (-> A (Array (Row T)) (Iterator (Row T))) A (Matrix T) (Matrix T))}
+  (|> (matrix/rows m) (f a) collect matrix/new))
+
+(function (matrix/specialize tag m) {(forall T) (-> T (Matrix T) (Matrix T)) (where (Tag T))}
+  (matrix/translate it/filter-map [^1 (row/specialize? tag %1)] m))
+
+(function (matrix/restore-specialized tag m) {(forall T) (-> T (Matrix T) (Matrix T)) (where (Tag T))}
+  (matrix/translate it/map [^1 (row/restore-specialized tag %1)] m))
+
+(function (matrix/defaults m) {(forall T) (-> (Matrix T) (Matrix T))}
+  (matrix/translate it/filter-map row/defaults? m))
+
+(function (matrix/compute-usefulness r m) {(forall T) (-> (Row T) (Matrix T) Bool) (where (Tag T))}
+  (when (matrix/row-empty? m) (return #t))
+  (assert-eq? (some (row/length r)) (matrix/column-length m))
+  (match (row/take-head? r)
+    [(some (: (pattern:constructor (let tag) (let ps)) (let r)))
+      (matrix/compute-usefulness
+        ; Equivalent of (row/specialize tag original-r)
+        (row/concat ps r)
+        (matrix/specialize tag m))
+      ]
+    [(some (: pattern:wildcard (let r)))
+      (let1 tags (matrix/collect-head-tags m)
+        (if (tag/complete? tags)
+          (it/any?
+            (lambda (tag)
+              (matrix/compute-usefulness
+                ; Equivalent of (row/specialize tag original-r)
+                (row/concat (iterator/repeat (tag/arity tag) pattern:wildcard) r)
+                (matrix/specialize tag m)))
+            tags)
+          (matrix/compute-usefulness r (matrix/defaults m))))]
+    [_
+      #f]))
+
+(function (matrix/compute-missing column-len m) {(forall T) (-> U64 (Matrix T) (Matrix T)) (where (Tag T))}
+  (when (matrix/row-empty? m)
+    (let1 row (row/new (collect (iterator/repeat column-len pattern:wildcard)))
+      (return (matrix/new (array row)))))
+
+  (assert-eq? (matrix/column-length m) (some column-len))
+  (when (is? (some #t) (matrix/column-empty? m))
+    (return matrix/row-empty))
+
+  (let1 tags (matrix/collect-head-tags m)
+    (when (tag/complete? tags)
+      (return (it/fold
+        (lambda (result tag)
+          (|> (matrix/specialize tag m)
+              (matrix/compute-missing (+ column-len (tag/arity tag) -1))
+              (matrix/restore-specialized tag)
+              (matrix/concat-rows result)))
+        matrix/row-empty
+        tags)))
+
+    (let ([heads
+            (if-match1 (some (let siblings)) (option/then tag/finite-siblings? (ord-set/min? tags))
+              (|> siblings
+                  (it/filter-map (lambda (tag)
+                    (when? (not (ord-set/has? tag tags))
+                      (pattern:constructor tag (collect (iterator/repeat (tag/arity tag) pattern:wildcard))))))
+                  collect)
+              (array pattern:wildcard))]
+          [tails (matrix/compute-missing (- column-len 1) (matrix/defaults m))])
+
+      (|> tails
+          matrix/rows
+          (it/flat-map (lambda (tail)
+            (|> heads
+                (it/map (lambda (head)
+                  (row/with-head head tail))))))
+          collect
+          matrix/new))))
