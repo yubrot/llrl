@@ -1,0 +1,96 @@
+(import "std/integer" integer/max Integer.U32)
+(import "~/util" _)
+(export Error _.Error error:_)
+(export Var _.Var var/_)
+(export Vars _.Vars vars/_)
+(export Level _.Level level/_)
+
+(derive (Eq Ord DebugDisplay) value-data Error
+  error:occurs-check-failed
+  error:mismatch)
+
+(instance Display.Error (Display Error)
+  (function (display! w a)
+    (match a
+      [error:occurs-check-failed
+        (display! w "Occurs check failed")]
+      [error:mismatch
+        (display! w "Mismatch")])))
+
+(derive (DebugDisplay) value-data (Var A)
+  (var: U32))
+
+(instance Eq.Var (forall A) (Eq (Var A))
+  (function (eq? a b)
+    (eq? (var/index a) (var/index b))))
+
+(instance Ord.Var (forall A) (Ord (Var A))
+  (function (compare a b)
+    (compare (var/index a) (var/index b))))
+
+(instance Hash.Var (forall A) (Hash (Var A))
+  (function (hash! s a)
+    (hash! s (var/index a))))
+
+(instance Display.Var (forall A) (Display (Var A))
+  (function (display! w a)
+    (display-all! w "_" (var/index a))))
+
+(function (var/from-index index) {(forall A) (-> U64 (Var A))}
+  (var: (conv index)))
+
+(function (var/index var) {(forall A) (-> (Var A) U64)}
+  (with1 (var: (let index)) var
+    (conv index)))
+
+(derive (DebugDisplay) value-data (Vars A)
+  (vars: U32 U32)) ; [from,to)
+
+(instance Eq.Vars (forall A) (Eq (Vars A))
+  (function (eq? a b)
+    (eq? (vars/range a) (vars/range b))))
+
+(instance Ord.Vars (forall A) (Ord (Vars A))
+  (function (compare a b)
+    (compare (vars/range a) (vars/range b))))
+
+(instance Hash.Vars (forall A) (Hash (Vars A))
+  (function (hash! s a)
+    (hash! s (vars/range a))))
+
+(instance Conv.From.Var.To.Vars (forall A) (Conv (Var A) (Vars A))
+  (function (conv a)
+    (vars/from-index-count (var/index a) 1)))
+
+(getter vars: vars/from vars/to)
+
+(function (vars/range vars) {(forall A) (-> (Vars A) (: U32 U32))}
+  (with1 (vars: (let from) (let to)) vars
+    (: from to)))
+
+(function (vars/from-index-count index count) {(forall A) (-> U64 U64 (Vars A))}
+  (if (eq? count 0)
+    (vars: 0 0)
+    (vars: (conv index) (conv (+ index count)))))
+
+(function (vars/length vars) {(forall A) (-> (Vars A) U32)}
+  (with1 (vars: (let from) (let to)) vars
+    (- to from)))
+
+(function (vars/vars vars) {(forall A) (-> (Vars A) (Iterator (Var A)))}
+  (with1 (vars: (let from) (let to)) vars
+    (it/map var: (iterator/range from to 1))))
+
+(derive (Eq Ord DebugDisplay Hash) value-data Level
+  (level: U32))
+
+(getter level: level/depth)
+
+(function level/top {Level}
+  (level: 0))
+
+(function level/bottom {Level}
+  (level: integer/max))
+
+(function (level/down lv) {(-> Level Level)}
+  (level: (+ (level/depth lv) 1)))

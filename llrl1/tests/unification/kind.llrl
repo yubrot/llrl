@@ -1,0 +1,71 @@
+(import "~/ast" build-kind KindBuilder.Ast)
+(import "~/unification/kind" _ [u/_ context/_])
+
+(let* ([ctx (u/new)]
+       [a (u/alloc-var! ctx)]
+       [b (u/alloc-var! ctx)]
+       [c (u/alloc-var! ctx)])
+  (assert-ne? a b)
+  (assert-ne? b c))
+
+(let* ([ctx (u/new)]
+       [a (u/new-var! ctx)]
+       [b (u/new-var! ctx)]
+       [c (u/new-var! ctx)]
+       [f (build-kind ctx (-> * ,a ,b))]
+       [g (build-kind ctx (-> ,f ,c *))])
+  (assert-eq? (ok unit) (u/default-vars! g kind:type ctx))
+  (assert-eq? kind:type (u/resolve! a ctx))
+  (assert-eq? kind:type (u/resolve! b ctx))
+  (assert-eq? kind:type (u/resolve! c ctx)))
+
+(let* ([ctx (u/new)]
+       [a (build-kind unit (-> (-> * *) * Constraint))]
+       [b (u/import! a ctx)]
+       [b (u/export! b unit ctx)])
+  (assert-eq? a b))
+
+(let* ([ctx (u/new)]
+       [a (build-kind unit (-> (-> * *) * Constraint))]
+       [b (u/import! a ctx)]
+       [b (u/export! b unit ctx)])
+  (assert-eq? a b))
+
+(let1 ctx (u/new)
+  (assert-eq? (ok unit) (u/unify! kind:type kind:type ctx))
+  (assert-eq? (ok unit) (u/unify! kind:constraint kind:constraint ctx))
+  (assert-eq? (err error:mismatch) (u/unify! kind:constraint kind:type ctx))
+  (let* ([a (u/new-var! ctx)]
+         [b (u/new-var! ctx)]
+         [f (build-kind ctx (-> ,a ,b))])
+    (assert-eq? (err error:mismatch) (u/unify! kind:type f ctx)))
+  (let* ([a (u/new-var! ctx)]
+         [b (u/new-var! ctx)]
+         [f (build-kind ctx (-> * * ,a))]
+         [g (build-kind ctx (-> ,b ,a))])
+    (assert-eq? (err error:mismatch) (u/unify! f g ctx)))
+  (let* ([a (u/new-var! ctx)]
+         [b (u/new-var! ctx)]
+         [f (build-kind ctx (-> * ,b))]
+         [g (build-kind ctx (-> ,a Constraint))])
+    (assert-eq? (ok unit) (u/unify! f g ctx))
+    (assert-eq? kind:type (u/resolve! a ctx))
+    (assert-eq? kind:constraint (u/resolve! b ctx)))
+  (let* ([a (u/new-var! ctx)]
+         [b (u/new-var! ctx)]
+         [c (u/new-var! ctx)]
+         [d (u/new-var! ctx)]
+         [f (build-kind ctx (-> ,a ,a))]
+         [g (build-kind ctx (-> ,b ,c))]
+         [h (build-kind ctx (-> ,d *))])
+    (assert-eq? (ok unit) (u/unify! f g ctx))
+    (assert-eq? (ok unit) (u/unify! g h ctx))
+    (assert-eq? kind:type (u/resolve! a ctx))
+    (assert-eq? kind:type (u/resolve! b ctx))
+    (assert-eq? kind:type (u/resolve! c ctx))
+    (assert-eq? kind:type (u/resolve! d ctx)))
+  (let* ([a (u/new-var! ctx)]
+         [b (u/new-var! ctx)]
+         [f (build-kind ctx (-> ,a ,b))])
+    (assert-eq? (err error:occurs-check-failed) (u/unify! f a ctx))
+    (assert-eq? (err error:occurs-check-failed) (u/unify! a f ctx))))

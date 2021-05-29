@@ -1,0 +1,192 @@
+(import "~/util" _)
+(import "~/unification/common" _ [common/_ _])
+(import "~/ast" [ast/_ _])
+(export [_ common/_])
+(export Kind _.Kind kind:_)
+(export Context _.Context context/_ Resolve Resolve._)
+
+(derive (Eq Ord DebugDisplay Hash) value-data Kind
+  (kind:var (Var Kind))
+  kind:type
+  kind:constraint
+  kind:satisfaction
+  kind:value
+  kind:macro
+  (kind:fun (Vars Kind) (Var Kind)))
+
+(derive (DebugDisplay) value-data Context
+  (context: (Vector Kind)))
+
+(instance KindBuilder.Context (ast/KindBuilder Kind Context)
+  (function (kind-builder/unresolved ctx id)
+    (assert #f (string "Unsupported kind: unresolved: " id)))
+  (function (kind-builder/type ctx) kind:type)
+  (function (kind-builder/constraint ctx) kind:constraint)
+  (function (kind-builder/satisfaction ctx) kind:satisfaction)
+  (function (kind-builder/value ctx) kind:value)
+  (function (kind-builder/macro ctx) kind:macro)
+  (function (kind-builder/fun ctx args ret)
+    (if (array/empty? args)
+      ret
+      (let ([args (context/alloc-binds! args ctx)]
+            [ret (context/alloc-bind! ret ctx)])
+        (kind:fun args ret))))
+  (function (kind-builder/error ctx e)
+    (assert #f (string "Unsupported kind: error: " e))))
+
+(getter context: pool)
+
+(function (context/new) {(-> Context)}
+  (let1 vec (vector/with-capacity 21)
+    (vector/push! kind:type vec)         ; 0
+    (vector/push! kind:constraint vec)   ; 1
+    (vector/push! kind:satisfaction vec) ; 2
+    (vector/push! kind:value vec)        ; 3
+    (vector/push! kind:macro vec)        ; 4
+    (for _ (iterator/range 0 16 1)       ; 5 .. 21
+      (vector/push! kind:type vec))
+    (context: vec)))
+
+(function (context/alloc-var! ctx) {(-> Context (Var Kind))}
+  (let1 var (|> ctx pool vector/length var/from-index)
+    (vector/push! (kind:var var) (pool ctx))
+    var))
+
+(function (context/alloc-bind! k ctx) {(-> Kind Context (Var Kind))}
+  (match k
+    [(kind:var (let var)) var]
+    [kind:type (var/from-index 0)]
+    [kind:constraint (var/from-index 1)]
+    [kind:satisfaction (var/from-index 2)]
+    [kind:value (var/from-index 3)]
+    [kind:macro (var/from-index 4)]
+    [_
+      (let1 var (|> ctx pool vector/length var/from-index)
+        (vector/push! k (pool ctx))
+        var)]))
+
+(function (context/alloc-binds! ks ctx) {(-> (Array Kind) Context (Vars Kind))}
+  (cond
+    [(and (<= (array/length ks) 16) (it/all? [^1 (eq? kind:type %1)] ks))
+      (vars/from-index-count 5 (array/length ks))]
+    [(eq? (array/length ks) 1)
+      (conv (context/alloc-bind! (get ks[0]) ctx))]
+    [else
+      (let1 vars (vars/from-index-count (vector/length (pool ctx)) (array/length ks))
+        (vector/append! ks (pool ctx))
+        vars)]))
+
+(function (context/new-var! ctx) {(-> Context Kind)}
+  (kind:var (context/alloc-var! ctx)))
+
+(function (context/unify! a b ctx) {(forall A B) (-> A B Context (Result unit Error)) (where (Resolve A) (Resolve B))}
+  (let ([a (context/resolve! a ctx)]
+        [b (context/resolve! b ctx)])
+    (cond
+      [when (eq? a b)
+        (ok unit)]
+      [when-match1 (some (: (let var) (let k)))
+                   (match? (: a b)
+                     [(: (kind:var (let var)) (let k)) (: var k)]
+                     [(: (let k) (kind:var (let var))) (: var k)])
+        (when (context/occurs-check? k var ctx) (err error:occurs-check-failed)!)
+        (set! (pool ctx)[(var/index var)] k)
+        (ok unit)]
+      [when-match1 (: (kind:fun (let a-args) (let a-ret)) (kind:fun (let b-args) (let b-ret)))
+                   (: a b)
+        (when (ne? (vars/length a-args) (vars/length b-args)) (err error:mismatch)!)
+        (for (: (let a) (let b)) (it/zip (vars/vars a-args) (vars/vars b-args))
+          (context/unify! a b ctx)!)
+        (context/unify! a-ret b-ret ctx)]
+      [else
+        (err error:mismatch)])))
+
+(function (context/dfs f kind ctx) {(forall K Error) (-> (-> Kind (Result unit Error)) K Context (Result unit Error)) (where (Resolve K))}
+  (let1 kind (context/resolve! kind ctx)
+    (match kind
+      [(kind:var _)]
+      [kind:type]
+      [kind:constraint]
+      [kind:satisfaction]
+      [kind:value]
+      [kind:macro]
+      [(kind:fun (let args) (let ret))
+        (for (let arg) (vars/vars args)
+          (context/dfs f arg ctx)!)
+        (context/dfs f ret ctx)!])
+    (f kind)))
+
+(function (context/occurs-check? kind var ctx) {(forall K) (-> K (Var Kind) Context Bool) (where (Resolve K))}
+  (let1 (occur? k) (if-match1 (kind:var (let v)) k (eq? v var) #f)
+    (is? (err _) (context/dfs [^1 (if (occur? %1) (err unit) (ok unit))] kind ctx))))
+
+(function (context/default-vars! kind default-kind ctx) {(forall K) (-> K Kind Context (Result unit Error)) (where (Resolve K))}
+  (match (context/resolve! kind ctx)
+    [(kind:var (let var))
+      (context/unify! var default-kind ctx)]
+    [kind:type
+      (ok unit)]
+    [kind:constraint
+      (ok unit)]
+    [kind:satisfaction
+      (ok unit)]
+    [kind:value
+      (ok unit)]
+    [kind:macro
+      (ok unit)]
+    [(kind:fun (let args) (let ret))
+      (for (let arg) (vars/vars args) (context/default-vars! arg default-kind ctx)!)
+      (context/default-vars! ret default-kind ctx)]))
+
+(function (context/import! kind ctx) {(-> ast/Kind Context Kind)}
+  (ast/build-kind ctx (ast ,kind)))
+
+(function (context/export! kind builder-ctx ctx) {(forall A B Ctx) (-> A Ctx Context B) (where (Resolve A) (ast/KindBuilder B Ctx))}
+  (match (context/resolve! kind ctx)
+    [(kind:var (let var))
+      (ast/build-kind builder-ctx (error ,(string var)))]
+    [kind:type
+      (ast/build-kind builder-ctx *)]
+    [kind:constraint
+      (ast/build-kind builder-ctx Constraint)]
+    [kind:satisfaction
+      (ast/build-kind builder-ctx Satisfaction)]
+    [kind:value
+      (ast/build-kind builder-ctx Value)]
+    [kind:macro
+      (ast/build-kind builder-ctx Macro)]
+    [(kind:fun (let args) (let ret))
+      (let ([args (|> args vars/vars (it/map [^1 (context/export! %1 builder-ctx ctx)]) collect)]
+            [ret (context/export! ret builder-ctx ctx)])
+        (ast/build-kind builder-ctx (-> ,@args ,ret)))]))
+
+(class (Resolve K)
+  (function (context/resolve! k ctx) {(-> K Context Kind)})
+  (function (context/unresolve! k ctx) {(-> K Context (Var Kind))}))
+
+(instance Resolve.Var (Resolve (Var Kind))
+  (function (context/resolve! var ctx)
+    (match (get (pool ctx)[(var/index var)])
+      [(kind:var (let v))
+        (if (ne? v var)
+          (let1 k (context/resolve! v ctx)
+            (set! (pool ctx)[(var/index var)] k)
+            k)
+          (kind:var v))]
+      [(let k) k]))
+  (function (context/unresolve! var ctx)
+    var))
+
+(instance Resolve.Kind (Resolve Kind)
+  (function (context/resolve! k ctx)
+    (if-match1 (kind:var (let v)) k
+      (context/resolve! v ctx)
+      k))
+  (function (context/unresolve! k ctx)
+    (context/alloc-bind! k ctx)))
+
+(instance Resolve.AstKind (Resolve ast/Kind)
+  (function (context/resolve! k ctx)
+    (context/import! k ctx))
+  (function (context/unresolve! k ctx)
+    (context/unresolve! (context/import! k ctx) ctx)))

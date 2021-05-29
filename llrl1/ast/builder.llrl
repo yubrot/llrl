@@ -12,7 +12,20 @@
   (function (kind-builder/value ctx) {(-> Ctx A)})
   (function (kind-builder/macro ctx) {(-> Ctx A)})
   (function (kind-builder/fun ctx args ret) {(-> Ctx (Array A) A A)})
-  (function (kind-builder/error ctx e) {(-> Ctx String A)}))
+  (function (kind-builder/error ctx e) {(-> Ctx String A)})
+  (function (kind-builder/rebuild ctx k) {(-> Ctx Kind A)}
+    (match k
+      [(kind:unresolved (let id)) (kind-builder/unresolved ctx id)]
+      [kind:type (kind-builder/type ctx)]
+      [kind:constraint (kind-builder/constraint ctx)]
+      [kind:satisfaction (kind-builder/satisfaction ctx)]
+      [kind:value (kind-builder/value ctx)]
+      [kind:macro (kind-builder/macro ctx)]
+      [(kind:fun (let args) (let ret))
+        (let ([args (|> args (it/map [^1 (kind-builder/rebuild ctx %1)]) collect)]
+              [ret (kind-builder/rebuild ctx ret)])
+          (kind-builder/fun ctx args ret))]
+      [(kind:error (let e)) (kind-builder/error ctx e)])))
 
 (instance KindBuilder.Ast (KindBuilder Kind unit)
   (function (kind-builder/unresolved ctx id) (kind:unresolved id))
@@ -60,6 +73,8 @@
 
     [(_ ,ctx (error ,(s:list (s:symbol "unquote") (let e))))
       (ok `(,\kind-builder/error ,ctx ,e))]
+    [(_ ,ctx (ast ,(s:list (s:symbol "unquote") (let e))))
+      (ok `(,\kind-builder/rebuild ,ctx ,e))]
     [(_ _ ,a)
       (err (string "Unknown kind form: " a))]
     [_
@@ -89,7 +104,18 @@
   (function (type-builder/fun ctx args ret) {(-> Ctx (Array A) A A)}
     (type-builder/app ctx
       (type-builder/con ctx (type-con/fun (array/length args)))
-      (collect (it/chain args (some ret))))))
+      (collect (it/chain args (some ret)))))
+
+  (function (type-builder/rebuild ctx t) {(-> Ctx Type A)}
+    (match t
+      [(type:unresolved (let id)) (type-builder/unresolved ctx id)]
+      [(type:con (let con)) (type-builder/con ctx con)]
+      [(type:app (let callee) (let args))
+        (let ([callee (type-builder/rebuild ctx callee)]
+              [args (|> args (it/map [^1 (type-builder/rebuild ctx %1)]) collect)])
+          (type-builder/app ctx callee args))]
+      [(type:gen (let id)) (type-builder/gen ctx id)]
+      [(type:error (let e)) (type-builder/error ctx e)])))
 
 (instance TypeBuilder.Ast (TypeBuilder Type unit)
   (function (type-builder/unresolved ctx id) (type:unresolved id))
@@ -139,6 +165,9 @@
 
     [(_ ,ctx (error ,(s:list (s:symbol "unquote") (let e))))
       (ok `(,\type-builder/error ,ctx ,e))]
+
+    [(_ ,ctx (ast ,(s:list (s:symbol "unquote") (let e))))
+      (ok `(,\type-builder/rebuild ,ctx ,e))]
 
     [(_ ,ctx (,callee ,@args))
       (let ([tmp-callee (gensym)]

@@ -9,3 +9,4 @@
 (import "~/tests/syntax")
 (import "~/tests/ast")
 (import "~/tests/pattern-checker")
+(import "~/tests/unification/kind")
