@@ -119,10 +119,10 @@ impl Constraint {
                 .all(|(a, b)| ctx.equal_on_subst(map, a, b))
     }
 
-    pub fn compute_lowest_level<E: KindEnvironment>(&self, ctx: &mut Context<E>) -> Level {
+    pub fn compute_shallowest_level<E: KindEnvironment>(&self, ctx: &mut Context<E>) -> Level {
         self.types()
-            .map(|ty| ctx.compute_lowest_level(ty))
-            .fold(Level::top(), Level::lower)
+            .map(|ty| ctx.compute_shallowest_level(ty))
+            .fold(Level::top(), std::cmp::max)
     }
 
     pub fn enumerate_vars<E: KindEnvironment>(

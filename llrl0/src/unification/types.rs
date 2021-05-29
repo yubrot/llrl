@@ -289,15 +289,15 @@ impl<E: KindEnvironment> Context<E> {
         f(ty)
     }
 
-    pub fn compute_lowest_level<T>(&mut self, ty: T) -> Level
+    pub fn compute_shallowest_level<T>(&mut self, ty: T) -> Level
     where
         Self: Resolve<T>,
     {
         let mut level = Level::top();
         self.dfs(ty, &mut |ty| {
             match ty {
-                Type::Var(_, _, lv) => level = level.lower(lv),
-                Type::Gen(_, lv) => level = level.lower(lv),
+                Type::Var(_, _, lv) => level = level.max(lv),
+                Type::Gen(_, lv) => level = level.max(lv),
                 _ => {}
             }
             Ok::<(), ()>(())
@@ -321,7 +321,7 @@ impl<E: KindEnvironment> Context<E> {
     {
         self.dfs(ty, &mut |ty| {
             if let Type::Var(var, _, level) = ty {
-                if level.is_on_level(min_level) {
+                if min_level <= level {
                     result.insert(var);
                 }
             }
@@ -361,11 +361,11 @@ impl<E: KindEnvironment> Context<E> {
     fn adjust_level(&mut self, ty: Type, target_lv: Level) -> Result<(), Error> {
         let mut targets = Vec::new();
         self.dfs(ty, &mut |ty| match ty {
-            Type::Var(var, k, lv) if lv.is_under_level(target_lv) => {
+            Type::Var(var, k, lv) if target_lv < lv => {
                 targets.push((var, k));
                 Ok(())
             }
-            Type::Gen(_, lv) if lv.is_under_level(target_lv) => Err(Error::Mismatch),
+            Type::Gen(_, lv) if target_lv < lv => Err(Error::Mismatch),
             _ => Ok(()),
         })?;
 
@@ -377,8 +377,8 @@ impl<E: KindEnvironment> Context<E> {
 
     fn deny_adjust_required_level(&mut self, ty: Type, target_lv: Level) -> Result<(), Error> {
         self.dfs(ty, &mut |ty| match ty {
-            Type::Var(_, _, lv) if lv.is_under_level(target_lv) => Err(Error::Mismatch),
-            Type::Gen(_, lv) if lv.is_under_level(target_lv) => Err(Error::Mismatch),
+            Type::Var(_, _, lv) if target_lv < lv => Err(Error::Mismatch),
+            Type::Gen(_, lv) if target_lv < lv => Err(Error::Mismatch),
             _ => Ok(()),
         })
     }
@@ -660,11 +660,11 @@ mod tests {
         let a = Level::top();
         let b = a.down();
         let c = b.down();
-        assert!(a.is_on_level(a));
-        assert!(b.is_on_level(a));
-        assert!(c.is_on_level(a));
-        assert!(!a.is_on_level(b));
-        assert!(!b.is_on_level(c));
+        assert!(a <= a);
+        assert!(a <= b);
+        assert!(a <= c);
+        assert!(!(b <= a));
+        assert!(!(c <= b));
     }
 
     #[test]
@@ -894,8 +894,8 @@ mod tests {
         let c = ctx.new_type_var(Level::top().down().down());
         let f = build_type!(ctx, (-> {a} {b} {c}));
         let g = Type::Gen(gen_0, Level::top().down());
-        assert_eq!(ctx.compute_lowest_level(f), Level::top().down().down());
-        assert_eq!(ctx.compute_lowest_level(g), Level::top().down());
+        assert_eq!(ctx.compute_shallowest_level(f), Level::top().down().down());
+        assert_eq!(ctx.compute_shallowest_level(g), Level::top().down());
     }
 
     #[test]

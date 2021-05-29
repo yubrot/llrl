@@ -156,17 +156,4 @@ impl Level {
     pub fn down(self) -> Self {
         Self(self.0 + 1)
     }
-
-    pub fn is_on_level(self, other: Self) -> bool {
-        other.0 <= self.0
-    }
-
-    pub fn is_under_level(self, other: Self) -> bool {
-        // `other` has a greater depth than `self`
-        other.0 < self.0
-    }
-
-    pub fn lower(self, other: Self) -> Self {
-        Self(std::cmp::max(self.0, other.0))
-    }
 }

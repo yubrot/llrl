@@ -263,7 +263,7 @@ impl<'a, E: External> Context<'a, E> {
         mut outer: Option<&mut u::Scope>,
     ) -> Result<(Vec<u::Gen>, Vec<u::Constraint>)> {
         debug_assert!(match outer {
-            Some(ref outer_scope) => scope.level().is_under_level(outer_scope.level()),
+            Some(ref outer_scope) => outer_scope.level() < scope.level(),
             None => scope.level() == u::Level::top(),
         });
 
@@ -278,8 +278,7 @@ impl<'a, E: External> Context<'a, E> {
             // If the current level is not a top-level and the constraint does not contain
             // the types on the current level, it can be deferred to the outer scope.
             if outer.is_some()
-                && current_level
-                    .is_under_level(constraint.body().compute_lowest_level(&mut self.u_ctx))
+                && constraint.body().compute_shallowest_level(&mut self.u_ctx) < current_level
             {
                 outer_constraints.push(constraint);
                 continue;
