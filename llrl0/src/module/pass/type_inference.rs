@@ -278,7 +278,7 @@ impl<'a, E: External> Context<'a, E> {
             // If the current level is not a top-level and the constraint does not contain
             // the types on the current level, it can be deferred to the outer scope.
             if outer.is_some()
-                && constraint.body().compute_shallowest_level(&mut self.u_ctx) < current_level
+                && constraint.body().compute_deepest_level(&mut self.u_ctx) < current_level
             {
                 outer_constraints.push(constraint);
                 continue;

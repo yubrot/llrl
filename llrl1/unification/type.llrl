@@ -1,0 +1,279 @@
+(import "std/ord-set" _)
+(import "std/ord-map" _)
+(import "~/util" _)
+(import "~/ast" NodeId Kind kind:_ TypeCon TypeParameter Construct [ast/_ _])
+(import "~/unification/common" _ [common/_ _])
+(export [_ common/_])
+(export Type _.Type type:_)
+(export KindEnvironment kind-env/_)
+(export Context _.Context context/_ Resolve Resolve._)
+
+(derive (Eq Ord DebugDisplay Hash) value-data Type
+  (type:var (Var Type) Kind Level)
+  (type:con TypeCon)
+  (type:app (Var Type) (Vars Type))
+  (type:gen (NodeId TypeParameter) Level))
+
+(derive (DebugDisplay) value-data (Context E)
+  (context: (Vector Type) E)) ; pool kind-env
+
+(instance TypeBuilder.Context (forall E) (ast/TypeBuilder Type (Context E))
+  (function (type-builder/unresolved ctx id)
+    (assert #f (string "Unsupported type: unresolved: " id)))
+  (function (type-builder/con ctx con)
+    (type:con con))
+  (function (type-builder/app ctx callee args)
+    (if (array/empty? args)
+      callee
+      (let ([callee (context/alloc-bind! callee ctx)]
+            [args (context/alloc-binds! args ctx)])
+          (type:app callee args))))
+  (function (type-builder/gen ctx id)
+    (type:gen id level/top))
+  (function (type-builder/error ctx e)
+    (assert #f (string "Unsupported type: error: " e))))
+
+(getter context: pool kind-env)
+
+(function (context/new kind-env) {(forall E) (-> E (Context E))}
+  (context: vector/empty kind-env))
+
+(function (context/alloc-var! kind level ctx) {(forall E) (-> Kind Level (Context E) (Var Type))}
+  (let1 var (|> ctx pool vector/length var/from-index)
+    (vector/push! (type:var var kind level) (pool ctx))
+    var))
+
+(function (context/alloc-bind! ty ctx) {(forall E) (-> Type (Context E) (Var Type))}
+  (match ty
+    [(type:var (let var) _ _) var]
+    [_
+      (let1 var (|> ctx pool vector/length var/from-index)
+        (vector/push! ty (pool ctx))
+        var)]))
+
+(function (context/alloc-binds! tys ctx) {(forall E) (-> (Array Type) (Context E) (Vars Type))}
+  (if (eq? (array/length tys) 1)
+    (conv (context/alloc-bind! (get tys[0]) ctx))
+    (let1 vars (vars/from-index-count (vector/length (pool ctx)) (array/length tys))
+      (vector/append! tys (pool ctx))
+      vars)))
+
+(function (context/new-var! kind level ctx) {(forall E) (-> Kind Level (Context E) Type)}
+  (type:var (context/alloc-var! kind level ctx) kind level))
+
+(function (context/new-type-var! level ctx) {(forall E) (-> Level (Context E) Type)}
+  (context/new-var! kind:type level ctx))
+
+(function (context/instantiate-gen! gen level ctx) {(forall E) (-> (NodeId TypeParameter) Level (Context E) Type) (where (KindEnvironment E))}
+  (let1 kind (context/get-kind (type:gen gen level/top) ctx)
+    (context/new-var! kind level ctx)))
+
+(class (KindEnvironment E)
+  (function (kind-env/resolve-kind c env) {(-> Construct E Kind)}))
+
+(function (context/get-kind ty ctx) {(forall E T) (-> T (Context E) Kind) (where (Resolve T) (KindEnvironment E))}
+  (match (context/resolve! ty ctx)
+    [(type:var _ (let kind) _)
+      kind]
+    [(type:con (let con))
+      (kind-env/resolve-kind (conv con) (kind-env ctx))]
+    [(type:app (let callee) _)
+      (match (context/get-kind callee ctx)
+        [(kind:fun _ (let ret)) ret]
+        [_ (assert #f "context/get-kind: Kind mismatch")])]
+    [(type:gen (let id) _)
+      (kind-env/resolve-kind (conv id) (kind-env ctx))]))
+
+(function (context/unify! a b ctx) {(forall A B E) (-> A B (Context E) (Result unit Error)) (where (Resolve A) (Resolve B) (KindEnvironment E))}
+  (let ([a (context/resolve! a ctx)]
+        [b (context/resolve! b ctx)])
+    (cond
+      [when (eq? a b)
+        (ok unit)]
+      [when-match1 (some (: (let var) (let k) (let lv) (let t)))
+                   (match? (: a b)
+                     [(: (type:var (let var) (let k) (let lv)) (let t)) (: var k lv t)]
+                     [(: (let t) (type:var (let var) (let k) (let lv))) (: var k lv t)])
+        (when (occurs-check? t var ctx) (err error:occurs-check-failed)!)
+        (when (ne? (context/get-kind t ctx) k) (err error:mismatch)!)
+        (set! (pool ctx)[(var/index var)] t)
+        (adjust-level! t lv ctx)]
+      [when-match ([(type:app (let a-callee) (let a-args)) a]
+                   [(type:app (let b-callee) (let b-args)) b])
+        (when (ne? (vars/length a-args) (vars/length b-args)) (err error:mismatch)!)
+        (context/unify! a-callee b-callee ctx)!
+        (for (: (let a) (let b)) (it/zip (vars/vars a-args) (vars/vars b-args))
+          (context/unify! a b ctx)!)
+        (ok unit)]
+      [else
+        (err error:mismatch)])))
+
+(function (context/match-to-right! a b ctx) {(forall A B E) (-> A B (Context E) (Result unit Error)) (where (Resolve A) (Resolve B) (KindEnvironment E))}
+  (let ([a (context/resolve! a ctx)]
+        [b (context/resolve! b ctx)])
+    (cond
+      [when (eq? a b)
+        (ok unit)]
+      [when-match1 (type:var (let var) (let k) (let lv)) a
+        ; In fact, occurs check is not required for all use cases of `match_to_right`.
+        ; Should we add an option to skip occurs check for optimization?
+        (when (occurs-check? b var ctx) (err error:occurs-check-failed)!)
+        (when (ne? (context/get-kind b ctx) k) (err error:mismatch)!)
+        (set! (pool ctx)[(var/index var)] b)
+        (deny-adjust-required-level b lv ctx)]
+      [when-match ([(type:app (let a-callee) (let a-args)) a]
+                   [(type:app (let b-callee) (let b-args)) b])
+
+        (when (ne? (vars/length a-args) (vars/length b-args)) (err error:mismatch)!)
+        (context/match-to-right! a-callee b-callee ctx)!
+        (for (: (let a) (let b)) (it/zip (vars/vars a-args) (vars/vars b-args))
+          (context/match-to-right! a b ctx)!)
+        (ok unit)]
+      [else
+        (err error:mismatch)])))
+
+(function (context/subst! map ty ctx) {(forall T E) (-> (OrdMap (NodeId TypeParameter) Type) T (Context E) Type) (where (Resolve T))}
+  (match (context/resolve! ty ctx)
+    [(let t (type:var _ _ _))
+      t]
+    [(let t (type:con _))
+      t]
+    [(type:app (let callee) (let args))
+      (let ([callee (context/subst! map callee ctx)]
+            [args (|> args vars/vars (it/map [^1 (context/subst! map %1 ctx)]) collect)])
+        (ast/build-type ctx (,callee ,@args)))]
+    [(let t (type:gen (let id) _))
+      (option/unwrap t (ord-map/get? id map))]))
+
+(function (equal-on? a b rec ctx) {(forall E) (-> Type Type (-> (Var Type) (Var Type) Bool) (Context E) Bool)}
+  (match (: a b)
+    [(: (type:var (let a) _ _) (type:var (let b) _ _))
+      (eq? a b)]
+    [(: (type:con (let a)) (type:con (let b)))
+      (eq? a b)]
+    [(: (type:app (let a-callee) (let a-args)) (type:app (let b-callee) (let b-args)))
+      (and (eq? (vars/length a-args) (vars/length b-args))
+           (rec a-callee b-callee)
+           (it/all? id (it/zip* rec (vars/vars a-args) (vars/vars b-args))))]
+    [(: (type:gen (let a) _) (type:gen (let b) _))
+      (eq? a b)]
+    [_
+      #f]))
+
+(function (context/equal? a b ctx) {(forall A B E) (-> A B (Context E) Bool) (where (Resolve A) (Resolve B))}
+  (let ([a (context/resolve! a ctx)]
+        [b (context/resolve! b ctx)])
+    (equal-on? a b [^2 (context/equal? %1 %2 ctx)] ctx)))
+
+(function (context/equal-on-subst? map a b ctx) {(forall A B E) (-> (OrdMap (NodeId TypeParameter) Type) A B (Context E) Bool) (where (Resolve A) (Resolve B))}
+  (let ([a (context/resolve! a ctx)]
+        [b (context/resolve! b ctx)])
+    (if-match ([(type:gen (let id) _) a]
+               [(some (let a)) (ord-map/get? id map)])
+      (context/equal-on-subst? map a b ctx)
+      (equal-on? a b [^2 (context/equal-on-subst? map %1 %2 ctx)] ctx))))
+
+(function (context/dfs f ty ctx) {(forall E T Error) (-> (-> Type (Result unit Error)) T (Context E) (Result unit Error)) (where (Resolve T))}
+  (let1 ty (context/resolve! ty ctx)
+    (match ty
+      [(type:var _ _ _)]
+      [(type:con _)]
+      [(type:app (let callee) (let args))
+        (context/dfs f callee ctx)!
+        (for (let arg) (vars/vars args)
+          (context/dfs f arg ctx)!)]
+      [(type:gen _ _)])
+    (f ty)))
+
+(function (occurs-check? ty var ctx) {(forall E T) (-> T (Var Type) (Context E) Bool) (where (Resolve T))}
+  (let1 (occur? ty) (if-match1 (type:var (let v) _ _) ty (eq? v var) #f)
+    (is? (err _) (context/dfs [^1 (if (occur? %1) (err unit) (ok unit))] ty ctx))))
+
+(function (context/compute-deepest-level ty ctx) {(forall E T) (-> T (Context E) Level) (where (Resolve T))}
+  (let1 level (ref level/top)
+    (result/unwrap* never (context/dfs
+      (lambda (ty)
+        (match ty
+          [(type:var _ _ (let lv)) (set! level (max ~level lv))]
+          [(type:gen _ (let lv)) (set! level (max ~level lv))]
+          [_])
+        (ok unit))
+      ty
+      ctx))
+    ~level))
+
+
+(function (context/get-vars ty min-level ctx) {(forall E T) (-> T Level (Context E) (OrdSet (Var Type))) (where (Resolve T))}
+  (let1 result ord-set/empty
+    (context/collect-vars! ty min-level result ctx)
+    result))
+
+(function (context/collect-vars! ty min-level set ctx) {(forall E T) (-> T Level (OrdSet (Var Type)) (Context E) unit) (where (Resolve T))}
+  (result/unwrap* never (context/dfs
+    (lambda (ty)
+      (when-match ([(type:var (let var) _ (let level)) ty]
+                   [#t (<= min-level level)])
+        (ord-set/insert! var set))
+      (ok unit))
+    ty
+    ctx)))
+
+(function (context/default-vars! ty default-ty ctx) {(forall E T) (-> T Type (Context E) (Result unit Error)) (where (Resolve T) (KindEnvironment E))}
+  (match (context/resolve! ty ctx)
+    [(type:var (let var) _ _)
+      (context/unify! var default-ty ctx)]
+    [(type:con _)
+      (ok unit)]
+    [(type:app (let callee) (let args))
+      (context/default-vars! callee default-ty ctx)!
+      (for (let arg) (vars/vars args) (context/default-vars! arg default-ty ctx)!)
+      (ok unit)]
+    [(type:gen _ _)
+      (ok unit)]))
+
+(function (adjust-level! ty target-lv ctx) {(forall E T) (-> T Level (Context E) (Result unit Error)) (where (Resolve T))}
+  (context/dfs
+    (lambda (ty)
+      (match ty
+        [(type:var (let var) (let kind) (let lv))
+          (when (< target-lv lv) (set! (pool ctx)[(var/index var)] (type:var var kind target-lv)))]
+        [(type:gen _ (let lv))
+          (when (< target-lv lv) (err error:mismatch)!)]
+        [_])
+      (ok unit))
+    ty
+    ctx))
+
+(function (deny-adjust-required-level ty target-lv ctx) {(forall E T) (-> T Level (Context E) (Result unit Error)) (where (Resolve T))}
+  (context/dfs
+    (lambda (ty)
+      (match ty
+        [(type:var _ _ (let lv))
+          (when (< target-lv lv) (err error:mismatch)!)]
+        [(type:gen _ (let lv))
+          (when (< target-lv lv) (err error:mismatch)!)]
+        [_])
+      (ok unit))
+    ty
+    ctx))
+
+(class (Resolve T)
+  (function (context/resolve! ty ctx) {(forall E) (-> T (Context E) Type)}))
+
+(instance Resolve.Var (Resolve (Var Type))
+  (function (context/resolve! var ctx)
+    (match (get (pool ctx)[(var/index var)])
+      [(let ty (type:var (let v) _ _))
+        (if (ne? v var)
+          (let1 ty (context/resolve! v ctx)
+            (set! (pool ctx)[(var/index var)] ty)
+            ty)
+          ty)]
+      [(let ty)
+        ty])))
+
+(instance Resolve.Type (Resolve Type)
+  (function (context/resolve! ty ctx)
+    (if-match1 (type:var (let v) _ _) ty
+      (context/resolve! v ctx)
+      ty)))

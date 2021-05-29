@@ -10,3 +10,4 @@
 (import "~/tests/syntax")
 (import "~/tests/ast")
 (import "~/tests/unification/kind")
+(import "~/tests/unification/type")

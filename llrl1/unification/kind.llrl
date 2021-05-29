@@ -89,7 +89,7 @@
                    (match? (: a b)
                      [(: (kind:var (let var)) (let k)) (: var k)]
                      [(: (let k) (kind:var (let var))) (: var k)])
-        (when (context/occurs-check? k var ctx) (err error:occurs-check-failed)!)
+        (when (occurs-check? k var ctx) (err error:occurs-check-failed)!)
         (set! (pool ctx)[(var/index var)] k)
         (ok unit)]
       [when-match1 (: (kind:fun (let a-args) (let a-ret)) (kind:fun (let b-args) (let b-ret)))
@@ -116,7 +116,7 @@
         (context/dfs f ret ctx)!])
     (f kind)))
 
-(function (context/occurs-check? kind var ctx) {(forall K) (-> K (Var Kind) Context Bool) (where (Resolve K))}
+(function (occurs-check? kind var ctx) {(forall K) (-> K (Var Kind) Context Bool) (where (Resolve K))}
   (let1 (occur? k) (if-match1 (kind:var (let v)) k (eq? v var) #f)
     (is? (err _) (context/dfs [^1 (if (occur? %1) (err unit) (ok unit))] kind ctx))))
 

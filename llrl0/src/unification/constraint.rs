@@ -119,9 +119,9 @@ impl Constraint {
                 .all(|(a, b)| ctx.equal_on_subst(map, a, b))
     }
 
-    pub fn compute_shallowest_level<E: KindEnvironment>(&self, ctx: &mut Context<E>) -> Level {
+    pub fn compute_deepest_level<E: KindEnvironment>(&self, ctx: &mut Context<E>) -> Level {
         self.types()
-            .map(|ty| ctx.compute_shallowest_level(ty))
+            .map(|ty| ctx.compute_deepest_level(ty))
             .fold(Level::top(), std::cmp::max)
     }
 

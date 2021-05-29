@@ -1,0 +1,209 @@
+(import "std/ord-map" _)
+(import "std/ord-set" _)
+(import "~/util" _)
+(import "~/ast" NodeId Kind kind:_ TypeCon TypeParameter Construct [ast/_ _])
+(import "~/unification/type" _ [u/_ context/_])
+
+(value-data TestEnv
+  (test-env: (OrdMap (NodeId TypeParameter) Kind)))
+
+(getter test-env: env-map)
+
+(instance KindEnvironment.TestEnv (KindEnvironment TestEnv)
+  (function (kind-env/resolve-kind c env)
+    (cond
+      [when-match ([(some (let con)) (conv c)]
+                   [(some (let n)) (ast/type-con/fun? con)])
+        (ast/build-kind unit (-> ,@(array/new kind:type (+ n 1)) *))]
+      [when-match ([(some (let con)) (conv c)]
+                   [(some (let n)) (ast/type-con/tuple? con)])
+        (ast/build-kind unit (-> ,@(array/new kind:type n) *))]
+      [when-match ([(some (let id)) (conv c)]
+                   [(some (let kind)) (ord-map/get? id (env-map env))])
+        kind]
+      [else
+        (assert #f (string "Unknown construct: " c))])))
+
+(function (test-context gens) {(-> (Array (: (NodeId TypeParameter) Kind)) (Context TestEnv))}
+  (u/new (test-env: (ord-map/collect gens))))
+
+(let* ([a level/top]
+       [b (level/down a)]
+       [c (level/down b)])
+  (assert (<= a a b c))
+  (assert (<= a a b c))
+  (assert (not (<= b a)))
+  (assert (not (<= c b))))
+
+(let* ([ctx (test-context array/empty)]
+       [a (u/alloc-var! kind:type level/top ctx)]
+       [b (u/alloc-var! kind:type level/top ctx)]
+       [c (u/alloc-var! kind:type level/top ctx)])
+  (assert-ne? a b)
+  (assert-ne? b c))
+
+(let* ([gen (ast/node-id-generator/new (ast/module-id/from-index 1))]
+       [tp-a (ast/node-id-generator/next! gen)]
+       [ctx (test-context (array (: tp-a (ast/build-kind unit (-> * * *)))))]
+       [a (type:con ast/type-con/unit)]
+       [b (type:gen tp-a level/top)]
+       [c (u/new-type-var! level/top ctx)]
+       [d (ast/build-type ctx (,b ,a ,c))])
+  (assert-eq? kind:type (u/get-kind a ctx))
+  (assert-eq? (ast/build-kind unit (-> * * *)) (u/get-kind b ctx))
+  (assert-eq? kind:type (u/get-kind c ctx))
+  (assert-eq? kind:type (u/get-kind d ctx)))
+
+(let* ([gen (ast/node-id-generator/new (ast/module-id/from-index 1))]
+       [tp-a (ast/node-id-generator/next! gen)]
+       [ctx (test-context (array (: tp-a kind:type)))])
+
+  (let* ([a (u/new-type-var! level/top ctx)]
+         [b (u/new-type-var! level/top ctx)]
+         [f (ast/build-type ctx (: ,a ,a))]
+         [g (ast/build-type ctx (: (gen ,tp-a) ,b))])
+    (assert-eq? (ok unit) (u/unify! f g ctx))
+    (assert-eq? (type:gen tp-a level/top) (u/resolve! a ctx))
+    (assert-eq? (type:gen tp-a level/top) (u/resolve! b ctx)))
+
+  (let* ([a (u/new-type-var! level/top ctx)]
+         [b (u/new-var! (ast/build-kind unit (-> * *)) level/top ctx)])
+    (assert-eq? (err error:mismatch) (u/unify! a b ctx)))
+
+  (let* ([x (u/new-type-var! level/top ctx)]
+         [y (u/new-type-var! level/top ctx)]
+         [f (ast/build-type ctx (-> ,x ,y))])
+    (assert-eq? (err error:occurs-check-failed) (u/unify! f x ctx))
+    (assert-eq? (err error:occurs-check-failed) (u/unify! x f ctx)))
+
+  (let* ([a (u/new-type-var! level/top ctx)]
+         [b (u/new-type-var! (|> level/top level/down) ctx)]
+         [c (u/new-type-var! (|> level/top level/down level/down) ctx)]
+         [d (u/new-type-var! (|> level/top level/down) ctx)]
+         [f (ast/build-type ctx (: ,a ,b ,c))])
+    (assert-eq? (ok unit) (u/unify! f d ctx))
+    (assert-eq? (some level/top) (with1? (type:var _ _ (let lv)) (u/resolve! a ctx) lv))
+    (assert-eq? (some (level/down level/top)) (with1? (type:var _ _ (let lv)) (u/resolve! b ctx) lv))
+    (assert-eq? (some (level/down level/top)) (with1? (type:var _ _ (let lv)) (u/resolve! c ctx) lv)))
+
+  (let* ([a (u/new-type-var! level/top ctx)]
+         [b (u/new-type-var! (|> level/top level/down) ctx)])
+    (assert-eq? (ok unit) (u/unify! a b ctx))
+    (assert-eq? (some level/top) (with1? (type:var _ _ (let lv)) (u/resolve! a ctx) lv))
+    (assert-eq? (some level/top) (with1? (type:var _ _ (let lv)) (u/resolve! b ctx) lv)))
+
+  (let* ([a (u/new-type-var! level/top ctx)]
+         [b (u/new-type-var! (|> level/top level/down) ctx)])
+    (assert-eq? (ok unit) (u/unify! b a ctx))
+    (assert-eq? (some level/top) (with1? (type:var _ _ (let lv)) (u/resolve! a ctx) lv))
+    (assert-eq? (some level/top) (with1? (type:var _ _ (let lv)) (u/resolve! b ctx) lv)))
+
+  (let* ([a (u/new-type-var! level/top ctx)]
+         [b (type:gen tp-a (|> level/top level/down))])
+    (assert-eq? (err error:mismatch) (u/unify! a b ctx)))
+
+  (let* ([a (u/new-type-var! (|> level/top level/down) ctx)]
+         [b (type:gen tp-a level/top)])
+    (assert-eq? (ok unit) (u/unify! a b ctx))))
+
+(let* ([gen (ast/node-id-generator/new (ast/module-id/from-index 1))]
+       [tp-a (ast/node-id-generator/next! gen)]
+       [ctx (test-context (array (: tp-a kind:type)))])
+
+  (let* ([a (u/new-type-var! level/top ctx)]
+         [b (u/new-type-var! level/top ctx)])
+    (assert-eq? (ok unit) (u/match-to-right! a b ctx))
+    (assert-eq? b (u/resolve! a ctx))
+    (assert-eq? b (u/resolve! b ctx)))
+
+  (let* ([a (type:gen tp-a level/top)]
+         [b (u/new-type-var! level/top ctx)])
+    (assert-eq? (err error:mismatch) (u/match-to-right! a b ctx))
+    (assert-eq? (ok unit) (u/match-to-right! b a ctx))
+    (assert-eq? (type:gen tp-a level/top) (u/resolve! b ctx)))
+
+  (let1 a (u/new-type-var! level/top ctx)
+    (assert-eq? (ok unit) (u/match-to-right! a a ctx)))
+
+  (let* ([a (u/new-type-var! level/top ctx)]
+         [b (u/new-type-var! level/top ctx)]
+         [f (ast/build-type ctx (-> ,a ,b))]
+         [g (ast/build-type ctx (-> (gen ,tp-a) unit)) {Type}])
+    (assert-eq? (ok unit) (u/match-to-right! f g ctx))
+    (assert-eq? (type:gen tp-a level/top) (u/resolve! a ctx))
+    (assert-eq? (type:con ast/type-con/unit) (u/resolve! b ctx)))
+
+  (let* ([a (u/new-type-var! level/top ctx)]
+         [b (u/new-type-var! (|> level/top level/down) ctx)])
+    (assert-eq? (err error:mismatch) (u/match-to-right! a b ctx)))
+
+  (let* ([a (u/new-type-var! (|> level/top level/down) ctx)]
+         [b (u/new-type-var! level/top ctx)])
+    (assert-eq? (ok unit) (u/match-to-right! a b ctx))
+    (assert-eq? b (u/resolve! a ctx)))
+
+  (let* ([a (u/new-type-var! level/top ctx)]
+         [b (type:gen tp-a (|> level/top level/down))])
+    (assert-eq? (err error:mismatch) (u/match-to-right! a b ctx)))
+
+  (let* ([a (u/new-type-var! (|> level/top level/down) ctx)]
+         [b (type:gen tp-a level/top)])
+    (assert-eq? (ok unit) (u/match-to-right! a b ctx))))
+
+(let* ([gen (ast/node-id-generator/new (ast/module-id/from-index 1))]
+       [tp-a (ast/node-id-generator/next! gen)]
+       [ctx (test-context (array (: tp-a kind:type)))])
+
+  (let* ([a (u/new-type-var! level/top ctx)]
+         [b (type:gen tp-a level/top)])
+    (assert (not (u/equal? a b ctx))))
+
+  (let* ([a (u/new-type-var! level/top ctx)]
+         [b (type:gen tp-a level/top)])
+    (assert-eq? (ok unit) (u/unify! a b ctx))
+    (assert (u/equal? a b ctx)))
+
+  (let* ([a (u/new-type-var! level/top ctx)]
+         [b (u/new-type-var! level/top ctx)]
+         [c (u/new-type-var! level/top ctx)]
+         [d (type:gen tp-a level/top)]
+         [f (ast/build-type ctx (: ,a ,b))]
+         [g (ast/build-type ctx (: ,c ,c))])
+    (assert-eq? (ok unit) (u/unify! a b ctx))
+    (assert-eq? (ok unit) (u/unify! b c ctx))
+    (assert-eq? (ok unit) (u/unify! c d ctx))
+    (assert (u/equal? f g ctx))))
+
+(let* ([gen (ast/node-id-generator/new (ast/module-id/from-index 1))]
+       [tp-a (ast/node-id-generator/next! gen)]
+       [tp-b (ast/node-id-generator/next! gen)]
+       [ctx (test-context (array (: tp-a kind:type) (: tp-b kind:type)))]
+       [a (u/new-type-var! level/top ctx)]
+       [b (u/new-type-var! level/top ctx)]
+       [f (ast/build-type ctx (-> (gen ,tp-a) (gen ,tp-b) (gen ,tp-a))) {Type}]
+       [g (u/subst! (ord-map (: tp-a a) (: tp-b b)) f ctx)]
+       [h (ast/build-type ctx (-> ,a ,b ,a))])
+  (assert (not (u/equal? f h ctx)))
+  (assert (u/equal? g h ctx)))
+
+(let* ([gen (ast/node-id-generator/new (ast/module-id/from-index 1))]
+       [tp-a (ast/node-id-generator/next! gen)]
+       [ctx (test-context (array (: tp-a kind:type)))]
+       [a (u/new-type-var! level/top ctx)]
+       [b (u/new-type-var! (|> level/top level/down) ctx)]
+       [c (u/new-type-var! (|> level/top level/down level/down) ctx)]
+       [f (ast/build-type ctx (-> ,a ,b ,c))]
+       [g (type:gen tp-a (|> level/top level/down))])
+  (assert-eq? (|> level/top level/down level/down) (u/compute-deepest-level f ctx))
+  (assert-eq? (|> level/top level/down) (u/compute-deepest-level g ctx)))
+
+(let* ([ctx (test-context array/empty)]
+       [a (u/new-type-var! level/top ctx)]
+       [b (u/new-type-var! (|> level/top level/down) ctx)]
+       [c (u/new-type-var! (|> level/top level/down level/down) ctx)]
+       [f (ast/build-type ctx (-> ,a ,b))]
+       [g (ast/build-type ctx (-> ,f ,c unit))])
+  (assert-eq? (ord-set (u/alloc-bind! a ctx) (u/alloc-bind! b ctx) (u/alloc-bind! c ctx))
+              (u/get-vars g level/top ctx))
+  (assert-eq? (ord-set (u/alloc-bind! b ctx) (u/alloc-bind! c ctx))
+              (u/get-vars g (|> level/top level/down) ctx)))

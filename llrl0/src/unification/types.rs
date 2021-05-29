@@ -289,7 +289,7 @@ impl<E: KindEnvironment> Context<E> {
         f(ty)
     }
 
-    pub fn compute_shallowest_level<T>(&mut self, ty: T) -> Level
+    pub fn compute_deepest_level<T>(&mut self, ty: T) -> Level
     where
         Self: Resolve<T>,
     {
@@ -894,12 +894,12 @@ mod tests {
         let c = ctx.new_type_var(Level::top().down().down());
         let f = build_type!(ctx, (-> {a} {b} {c}));
         let g = Type::Gen(gen_0, Level::top().down());
-        assert_eq!(ctx.compute_shallowest_level(f), Level::top().down().down());
-        assert_eq!(ctx.compute_shallowest_level(g), Level::top().down());
+        assert_eq!(ctx.compute_deepest_level(f), Level::top().down().down());
+        assert_eq!(ctx.compute_deepest_level(g), Level::top().down());
     }
 
     #[test]
-    fn test_enumerate_vars() {
+    fn test_get_vars() {
         let mut ctx = new_context(Vec::new());
         let a = ctx.new_type_var(Level::top());
         let b = ctx.new_type_var(Level::top().down());
