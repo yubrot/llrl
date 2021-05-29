@@ -1,6 +1,6 @@
 (import "~/util" _)
-(import "~/unification/common" _ [common/_ _])
 (import "~/ast" [ast/_ _])
+(import "~/unification/common" _ [common/_ _])
 (export [_ common/_])
 (export Kind _.Kind kind:_)
 (export Context _.Context context/_ Resolve Resolve._)
@@ -161,8 +161,7 @@
         (ast/build-kind builder-ctx (-> ,@args ,ret)))]))
 
 (class (Resolve K)
-  (function (context/resolve! k ctx) {(-> K Context Kind)})
-  (function (context/unresolve! k ctx) {(-> K Context (Var Kind))}))
+  (function (context/resolve! k ctx) {(-> K Context Kind)}))
 
 (instance Resolve.Var (Resolve (Var Kind))
   (function (context/resolve! var ctx)
@@ -173,20 +172,14 @@
             (set! (pool ctx)[(var/index var)] k)
             k)
           (kind:var v))]
-      [(let k) k]))
-  (function (context/unresolve! var ctx)
-    var))
+      [(let k) k])))
 
 (instance Resolve.Kind (Resolve Kind)
   (function (context/resolve! k ctx)
     (if-match1 (kind:var (let v)) k
       (context/resolve! v ctx)
-      k))
-  (function (context/unresolve! k ctx)
-    (context/alloc-bind! k ctx)))
+      k)))
 
 (instance Resolve.AstKind (Resolve ast/Kind)
   (function (context/resolve! k ctx)
-    (context/import! k ctx))
-  (function (context/unresolve! k ctx)
-    (context/unresolve! (context/import! k ctx) ctx)))
+    (context/import! k ctx)))

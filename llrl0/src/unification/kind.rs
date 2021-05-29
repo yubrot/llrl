@@ -239,7 +239,6 @@ impl ast::KindBuilder for Context {
 
 pub trait Resolve<K> {
     fn resolve(&mut self, k: K) -> Kind;
-    fn unresolve(&mut self, k: K) -> Var;
 }
 
 impl Resolve<Var> for Context {
@@ -253,10 +252,6 @@ impl Resolve<Var> for Context {
             k => k,
         }
     }
-
-    fn unresolve(&mut self, var: Var) -> Var {
-        var
-    }
 }
 
 impl Resolve<Kind> for Context {
@@ -266,20 +261,11 @@ impl Resolve<Kind> for Context {
             k => k,
         }
     }
-
-    fn unresolve(&mut self, k: Kind) -> Var {
-        self.alloc_bind(k)
-    }
 }
 
 impl<'a> Resolve<&'a ast::Kind> for Context {
     fn resolve(&mut self, k: &'a ast::Kind) -> Kind {
         self.import(k)
-    }
-
-    fn unresolve(&mut self, k: &'a ast::Kind) -> Var {
-        let k = self.import(k);
-        self.unresolve(k)
     }
 }
 
