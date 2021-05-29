@@ -146,11 +146,11 @@
     [(_ ,ctx (: ,@tys))
       (ok `(,\type-builder/tuple ,ctx (,\array ,@(s/map [^1 `(,\build-type ,ctx ,%1)] tys)!)))]
 
-    [(_ ,ctx (-> ,(s:list (s:symbol "unquote-splicing") (let expr)) ,ret))
+    [(_ ,ctx (-> ,(s:list (s:symbol "unquote-splicing") (let args)) ,ret))
       (let ([tmp-args (gensym)]
             [tmp-ret (gensym)])
         (ok
-          `(let ([,tmp-args ,expr]
+          `(let ([,tmp-args ,args]
                  [,tmp-ret (,\build-type ,ctx ,ret)])
             (,\type-builder/fun ,ctx ,tmp-args ,tmp-ret))))]
     [(_ ,ctx (-> ,@args-ret))
@@ -169,6 +169,13 @@
     [(_ ,ctx (ast ,(s:list (s:symbol "unquote") (let e))))
       (ok `(,\type-builder/rebuild ,ctx ,e))]
 
+    [(_ ,ctx (,callee ,(s:list (s:symbol "unquote-splicing") (let args))))
+      (let ([tmp-callee (gensym)]
+            [tmp-args (gensym)])
+        (ok
+          `(let ([,tmp-callee (,\build-type ,ctx ,callee)]
+                 [,tmp-args ,args])
+            (,\type-builder/app ,ctx ,tmp-callee ,tmp-args))))]
     [(_ ,ctx (,callee ,@args))
       (let ([tmp-callee (gensym)]
             [tmp-args (gensym)])

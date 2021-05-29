@@ -86,7 +86,7 @@
     [(: (pattern:constructor (let pt) (let ps))
         (pattern:constructor (let qt) (let qs)))
       (or (ne? pt qt)
-          (it/any? (case1 (: (let p) (let q)) (pattern/incompatible? p q)) (it/zip ps qs)))]
+          (it/any? id (it/zip* pattern/incompatible? ps qs)))]
     [_
       #f]))
 
@@ -119,9 +119,7 @@
 
 (function (row/incompatible? r1 r2) {(forall T) (-> (Row T) (Row T) Bool) (where (Eq T))}
   (assert-eq? (row/length r1) (row/length r2))
-  (it/any?
-    (case1 (: (let p) (let q)) (pattern/incompatible? p q))
-    (it/zip (row/patterns r1) (row/patterns r2))))
+  (it/any? id (it/zip* pattern/incompatible? (row/patterns r1) (row/patterns r2))))
 
 (function (row/collect-head-tags! set r) {(forall T) (-> (OrdSet T) (Row T) unit) (where (Ord T))}
   (when-match1 (some (let p)) (row/head? r)

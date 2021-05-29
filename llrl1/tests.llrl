@@ -1,6 +1,7 @@
 (import "~/tests/util")
 (import "~/tests/interning")
 (import "~/tests/path")
+(import "~/tests/pattern-checker")
 (import "~/tests/source-location")
 (import "~/tests/sexp/data")
 (import "~/tests/sexp/match")
@@ -8,5 +9,4 @@
 (import "~/tests/sexp/parser")
 (import "~/tests/syntax")
 (import "~/tests/ast")
-(import "~/tests/pattern-checker")
 (import "~/tests/unification/kind")

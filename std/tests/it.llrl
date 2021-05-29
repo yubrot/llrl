@@ -14,6 +14,8 @@
 
 (assert-eq? (array (: 1 4) (: 2 5) (: 3 6)) (collect (it/zip (array 1 2 3) (array 4 5 6))))
 
+(assert-eq? (array 5 7 9) (collect (it/zip* [^2 (+ %1 %2)] (array 1 2 3) (array 4 5 6))))
+
 (assert-eq? (array (zip-either:both 1 4) (zip-either:both 2 5)) (collect (it/zip-either (array 1 2) (array 4 5))))
 (assert-eq? (array (zip-either:both 1 4) (zip-either:both 2 5) (zip-either:right 6)) (collect (it/zip-either (array 1 2) (array 4 5 6))))
 (assert-eq? (array (zip-either:both 1 4) (zip-either:both 2 5) (zip-either:left 3)) (collect (it/zip-either (array 1 2 3) (array 4 5))))

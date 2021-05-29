@@ -48,6 +48,11 @@
         [it-b (iterate it-b)])
     (iterator/new [^0 (some (: (iterator/next! it-a)? (iterator/next! it-b)?))])))
 
+(function (it/zip* f it-a it-b) {(forall T S A B C) (-> (-> A B C) (T A) (S B) (Iterator C)) (where (Iterate T) (Iterate S))}
+  (let ([it-a (iterate it-a)]
+        [it-b (iterate it-b)])
+    (iterator/new [^0 (some (f (iterator/next! it-a)? (iterator/next! it-b)?))])))
+
 (function (it/zip-either it-a it-b) {(forall T S A B) (-> (T A) (S B) (Iterator (ZipEither A B))) (where (Iterate T) (Iterate S))}
   (let ([it-a (iterate it-a)]
         [it-b (iterate it-b)])

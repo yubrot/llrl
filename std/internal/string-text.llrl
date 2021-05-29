@@ -134,16 +134,13 @@
 (function (string/starts-with? prefix s) {(-> String String Bool)}
   (when (string/empty? prefix) (return #t))
   (and (<= (string/length prefix) (string/length s))
-       (it/all? (case1 (: (let a) (let b)) (= a b))
-                (it/zip (string/unsafe-array prefix)
-                        (string/unsafe-array s)))))
+       (it/all? id (it/zip* eq? (string/unsafe-array prefix) (string/unsafe-array s)))))
 
 (function (string/ends-with? suffix s) {(-> String String Bool)}
   (when (string/empty? suffix) (return #t))
   (and (<= (string/length suffix) (string/length s))
-       (it/all? (case1 (: (let a) (let b)) (= a b))
-                (it/zip (rev-iterate (string/unsafe-array suffix))
-                        (rev-iterate (string/unsafe-array s))))))
+       (it/all? id (it/zip* eq? (rev-iterate (string/unsafe-array suffix))
+                                (rev-iterate (string/unsafe-array s))))))
 
 (function (string/contains? part s) {(-> String String Bool)}
   (when (string/empty? part) (return #t))

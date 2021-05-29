@@ -166,13 +166,14 @@
 (instance Resolve.Var (Resolve (Var Kind))
   (function (context/resolve! var ctx)
     (match (get (pool ctx)[(var/index var)])
-      [(kind:var (let v))
+      [(let k (kind:var (let v)))
         (if (ne? v var)
           (let1 k (context/resolve! v ctx)
             (set! (pool ctx)[(var/index var)] k)
             k)
-          (kind:var v))]
-      [(let k) k])))
+          k)]
+      [(let k)
+        k])))
 
 (instance Resolve.Kind (Resolve Kind)
   (function (context/resolve! k ctx)

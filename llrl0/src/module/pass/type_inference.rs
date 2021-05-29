@@ -617,7 +617,7 @@ impl<'a, E: External> Context<'a, E> {
         constructs
             .map(|construct| {
                 let ty = self.u_types.schemes[&construct.into()].body;
-                self.u_ctx.enumerate_vars(ty, scope.level())
+                self.u_ctx.get_vars(ty, scope.level())
             })
             .fold1(|a, b| a.intersection(&b).copied().collect())
             .unwrap_or_default()

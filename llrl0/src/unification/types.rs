@@ -306,7 +306,7 @@ impl<E: KindEnvironment> Context<E> {
         level
     }
 
-    pub fn enumerate_vars<T>(&mut self, ty: T, min_level: Level) -> BTreeSet<Var>
+    pub fn get_vars<T>(&mut self, ty: T, min_level: Level) -> BTreeSet<Var>
     where
         Self: Resolve<T>,
     {
@@ -907,7 +907,7 @@ mod tests {
         let f = build_type!(ctx, (-> {a} {b}));
         let g = build_type!(ctx, (-> {f} {c} unit));
         assert_eq!(
-            ctx.enumerate_vars(g, Level::top().down()),
+            ctx.get_vars(g, Level::top().down()),
             vec![b, c]
                 .into_iter()
                 .map(|ty| ctx.alloc_bind(ty))

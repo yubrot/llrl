@@ -960,43 +960,28 @@
       (instance ($symbol-concat Conv.From.Construct.To. $kind-name) (Conv Construct (Option (NodeId $type)))
         (function (conv a)
           (with1 (construct: (let type-id) (let node-id)) a
-            (when? (eq? type-id $kind-id) (node-id/reinterpret-unchecked node-id))))))))
+            (when? (eq? type-id $kind-id) (node-id/reinterpret-unchecked node-id)))))))
 
-(instance Conv.From.Construct.To.TypeCon (Conv Construct (Option TypeCon))
-  (function (conv a)
-    (cond?
-      [when-match1 (some (let id)) (conv a)
-        (type-con:data id)]
-      [when-match1 (some (let id)) (conv a)
-        (type-con:builtin id)])))
+  ($for-each
+    [$type $con-prefix $con-names]
+    ([TypeCon type-con: (data builtin)]
+     [ValueCon value-con: (data builtin)]
+     [Value value: (function c-function builtin-op class-method parameter local-var local-fun pattern-var)])
 
-(instance Conv.From.Construct.To.ValueCon (Conv Construct (Option ValueCon))
-  (function (conv a)
-    (cond?
-      [when-match1 (some (let id)) (conv a)
-        (value-con:data id)]
-      [when-match1 (some (let id)) (conv a)
-        (value-con:builtin id)])))
+    (begin
+      (instance ($symbol-concat Conv.From. $type .To.Construct) (Conv $type Construct)
+        (function (conv a)
+          (match a
+            ($for-each $con-name $con-names
+              [(($symbol-concat $con-prefix $con-name) (let id))
+                (conv id)]))))
 
-(instance Conv.From.Construct.To.Value (Conv Construct (Option Value))
-  (function (conv a)
-    (cond?
-      [when-match1 (some (let id)) (conv a)
-        (value:function id)]
-      [when-match1 (some (let id)) (conv a)
-        (value:c-function id)]
-      [when-match1 (some (let id)) (conv a)
-        (value:builtin-op id)]
-      [when-match1 (some (let id)) (conv a)
-        (value:class-method id)]
-      [when-match1 (some (let id)) (conv a)
-        (value:parameter id)]
-      [when-match1 (some (let id)) (conv a)
-        (value:local-var id)]
-      [when-match1 (some (let id)) (conv a)
-        (value:local-fun id)]
-      [when-match1 (some (let id)) (conv a)
-        (value:pattern-var id)])))
+      (instance ($symbol-concat Conv.From.Construct.To. $type) (Conv Construct (Option $type))
+        (function (conv a)
+          (cond?
+            ($for-each $con-name $con-names
+              [when-match1 (some (let id)) (conv a)
+                (($symbol-concat $con-prefix $con-name) id)])))))))
 
 ; ---------------------------
 ; Builtins
