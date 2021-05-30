@@ -1,0 +1,91 @@
+(import "std/hash-map" _)
+(import "~/util" _)
+(import "~/path" Path path/_ PackageName ModuleName [path/_ _])
+(import "~/source-location" SourceLocator)
+(import "~/syntax" syntax:_ syntax/_)
+(import "~/sexp" Ss _.Ss ss/_)
+(import "~/sexp/lexer" [lexer/_ _])
+(import "~/sexp/parser" [parser/_ _] parser/_)
+(export Error _.Error error:_)
+(export Code _.Code code/_)
+(export CodeRep code-rep:_)
+
+; The error that occurred during the construction of the `Code`.
+(derive (Eq Ord DebugDisplay) value-data Error
+  error:package-not-found
+  error:module-not-found
+  (error:load-failed String)
+  (error:parse-failed parser/Error)
+  (error:invalid-import-path String path/Error)
+  error:cannot-import-module-itself)
+
+(instance Display.Error (Display Error)
+  (function (display! w a)
+    (match a
+      [error:package-not-found
+        (display! w "Package not found")]
+      [error:module-not-found
+        (display! w "Module not found")]
+      [(error:load-failed (let e))
+        (display-all! w "Load failed: " e)]
+      [(error:parse-failed (let e))
+        (display-all! w "Parse failed: " e)]
+      [(error:invalid-import-path (let path) (let e))
+        (display-all! w "Invalid import path " (debug path) ": " e)]
+      [error:cannot-import-module-itself
+        (display! w "Cannot import module itself")])))
+
+; `Code` is a representation to describe a llrl module.
+(derive (DebugDisplay) data (Code A)
+  (code:
+    Path                  ; path
+    Bool                  ; implicit-std?
+    (HashMap String Path) ; dependencies
+    (CodeRep A)           ; rep
+    (Array Error)))       ; errors
+
+(getter code: code/path code/implicit-std? code/dependencies code/rep code/errors)
+
+(function (code/from-error path error) {(forall A) (-> Path Error (Code A))}
+  (code: path #f hash-map/empty code-rep:empty (array error)))
+
+(function (code/from-source path source) {(forall A) (-> Path (Ss A) (Code A))}
+  (let ([dependencies hash-map/empty]
+        [errors vector/empty]
+        [implicit-std? (ref #t)])
+    (for (let s) (ss/elems source)
+      (cond
+        [when-match1 (ok unit) (syntax/no-implicit-std s)
+          (set! implicit-std? #f)]
+        [when-match1 (ok (syntax:import (let loc) (let p) (let targets))) (syntax/import s)
+          (match (path/from-string p)
+            [(ok (let import-path))
+              (let1
+                import-path
+                (if (|> import-path path/package path/package-name/current?)
+                  (path/new (path/package path) (path/module import-path))
+                  import-path)
+                (if (eq? import-path path)
+                  (vector/push! error:cannot-import-module-itself errors)
+                  (ignore (hash-map/insert! p import-path dependencies))))]
+            [(err (let e))
+              (vector/push! (error:invalid-import-path p e) errors)])]))
+    ; Every module except builtin depend on builtin.
+    (when (ne? path path/builtin)
+      (hash-map/insert! (string path/builtin) path/builtin dependencies))
+    ; Every module implicitly imports std.
+    ; This behavior can be disabled by (no-implicit-std).
+    (when ~implicit-std?
+      (if (eq? path path/std)
+        (vector/push! error:cannot-import-module-itself errors)
+        (ignore (hash-map/insert! (string path/std) path/std dependencies))))
+    (code: path ~implicit-std? dependencies (code-rep:source source) (vector/buffer errors))))
+
+(function (code/from-source-text path locator source-text) {(forall A) (-> Path SourceLocator String (Code A))}
+  (match (parser/parse-ss! (parser/new locator (lexer/lex source-text)))
+    [(ok (let source)) (code/from-source path source)]
+    [(err (let e)) (code/from-error path (error:parse-failed e))]))
+
+(derive (DebugDisplay) value-data (CodeRep A)
+  code-rep:empty
+  (code-rep:source (Ss A)))

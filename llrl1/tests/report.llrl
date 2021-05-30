@@ -1,4 +1,5 @@
 (import "~/report" _)
+(println! "llrl1/tests/report")
 
 (function (busy-loop iteration)
   (for _ (iterator/range 0 iteration 1)))

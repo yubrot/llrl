@@ -3,6 +3,7 @@
 (import "~/util" _)
 (import "~/ast" NodeId Kind kind:_ TypeCon TypeParameter Construct [ast/_ _])
 (import "~/unification/type" _ [u/_ context/_])
+(println! "llrl1/tests/unification/type")
 
 (value-data TestEnv
   (test-env: (OrdMap (NodeId TypeParameter) Kind)))

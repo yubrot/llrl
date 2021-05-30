@@ -1,0 +1,3 @@
+(no-implicit-std)
+(import "~/code/data" _)
+(export _)

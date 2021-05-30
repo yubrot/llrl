@@ -1,5 +1,6 @@
 (import "~/ast" build-kind KindBuilder.Ast)
 (import "~/unification/kind" _ [u/_ context/_])
+(println! "llrl1/tests/unification/kind")
 
 (let* ([ctx (u/new)]
        [a (u/alloc-var! ctx)]

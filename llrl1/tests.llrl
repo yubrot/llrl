@@ -12,3 +12,4 @@
 (import "~/tests/unification/kind")
 (import "~/tests/unification/type")
 (import "~/tests/report")
+(import "~/tests/code")
