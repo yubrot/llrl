@@ -1,0 +1,15 @@
+(import "~/report" _)
+
+(function (busy-loop iteration)
+  (for _ (iterator/range 0 iteration 1)))
+
+(function (run)
+  (let1 report (report/new)
+    (report/on report phase:collect-code (busy-loop 2000000))
+    (report/on report phase:build-module
+      (busy-loop 1000000)
+      (report/off report phase:build-module (busy-loop 1000000))
+      (busy-loop 1000000))
+    (print! report)))
+
+; (run)

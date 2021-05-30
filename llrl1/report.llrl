@@ -1,0 +1,79 @@
+(import "std/system" time)
+(import "std/ord-map" _)
+(import "~/util" _)
+(export Phase _.Phase phase:_)
+(export Report _.Report report/_)
+
+(derive (Eq Ord DebugDisplay Hash) value-data Phase
+  phase:collect-code
+  phase:build-module
+  phase:import
+  phase:build-ast
+  phase:resolve
+  phase:kind-inference
+  phase:type-inference
+  phase:validate
+  phase:export
+  phase:emit
+  phase:codegen
+  phase:jit
+  phase:finalize)
+
+(instance Display.Phase (Display Phase)
+  (function (display! w a)
+    (display! w (string/skip (string/length "phase:") (string (debug a))))))
+
+(derive (DebugDisplay) value-data Report
+  (report: (OrdMap Phase F64)))
+
+(instance Display.Report (Display Report)
+  (function (display! w a)
+    (for (: (let phase) (let duration)) (report/durations a)
+      (display-all! w phase ": " duration "s\n")!)
+    (ok unit)))
+
+(getter report: phases)
+
+(function (report/new) {(-> Report)}
+  (report: ord-map/empty))
+
+(function (report/durations report) {(-> Report (Iterator (: Phase F64)))}
+  (|> report phases ord-map/elems))
+
+(function (report/log! phase duration report) {(-> Phase F64 Report unit)}
+  (let1
+    duration
+    (if-match1 (some (let d)) (ord-map/get? phase (phases report))
+      (+ d duration)
+      duration)
+    (ignore (ord-map/insert! phase duration (phases report)))))
+
+(function (report/merge! other report) {(-> Report Report unit)}
+  (for (: (let phase) (let duration)) (report/durations other)
+    (report/log! phase duration report)))
+
+(macro (report/on s)
+  (s/match s
+    [(_ ,report ,phase ,@body)
+      (let ([tmp-duration (gensym)]
+            [tmp-ret (gensym)])
+        (ok
+          `(let ([,tmp-duration (,\time)]
+                 [,tmp-ret ,@body])
+            (,\report/log! ,phase (,\- (,\time) ,tmp-duration) ,report)
+            ,tmp-ret)))]
+    [_
+      (err "Expected (report/on report phase body ...)")]))
+
+(macro (report/off s)
+  (s/match s
+    [(_ ,report ,phase ,@body)
+      (let ([tmp-duration (gensym)]
+            [tmp-ret (gensym)])
+        (ok
+          `(let ([,tmp-duration (,\time)]
+                 [,tmp-ret ,@body])
+            (,\report/log! ,phase (,\- ,tmp-duration (,\time)) ,report)
+            ,tmp-ret)))]
+    [_
+      (err "Expected (report/off report phase body ...)")]))
