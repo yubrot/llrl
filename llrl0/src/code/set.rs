@@ -4,30 +4,31 @@ use crate::topological_sort;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
-pub struct CodeMap {
-    tree: HashMap<PackageName, HashMap<ModuleName, Code>>,
+pub struct CodeSet {
+    map: HashMap<PackageName, HashMap<ModuleName, Code>>,
 }
 
-impl CodeMap {
+impl CodeSet {
     pub fn new() -> Self {
         Self {
-            tree: HashMap::new(),
+            map: HashMap::new(),
         }
     }
 
-    pub fn insert(&mut self, path: Path, code: Code) {
-        self.tree
+    pub fn insert(&mut self, code: Code) {
+        let path = code.path.clone();
+        self.map
             .entry(path.package)
             .or_insert(HashMap::new())
             .insert(path.module, code);
     }
 
     pub fn packages(&self) -> &HashMap<PackageName, HashMap<ModuleName, Code>> {
-        &self.tree
+        &self.map
     }
 
     pub fn codes(&self) -> impl Iterator<Item = &Code> {
-        self.tree.values().flat_map(|codes| codes.values())
+        self.map.values().flat_map(|codes| codes.values())
     }
 
     pub fn errors(&self) -> impl Iterator<Item = (&Path, &Error)> {
@@ -37,7 +38,7 @@ impl CodeMap {
 
     pub fn resolve_dependencies_order(self) -> Result<Vec<Code>, Vec<Path>> {
         let sorted_codes =
-            topological_sort::run(self.tree.into_iter().flat_map(|(_, codes)| {
+            topological_sort::run(self.map.into_iter().flat_map(|(_, codes)| {
                 codes.into_iter().map(|(_, code)| (code.path.clone(), code))
             }));
 

@@ -1,4 +1,4 @@
-use super::{Code, CodeMap, Loader};
+use super::{Code, CodeSet, Loader};
 use crate::path::Path;
 use crate::report::{Phase, Report};
 use crate::source_loc::SourceLocationTable;
@@ -10,12 +10,12 @@ pub fn collect<'a>(
     loader: &Loader,
     source_location_table: &mut SourceLocationTable,
     report: &mut Report,
-) -> CodeMap {
+) -> CodeSet {
     report.enter_phase(Phase::CollectCode);
 
     let collector = Collector {
         ongoing: Mutex::new(HashSet::new()),
-        result: Mutex::new(CodeMap::new()),
+        result: Mutex::new(CodeSet::new()),
         source_location_table: Mutex::new(source_location_table),
         loader,
     };
@@ -32,7 +32,7 @@ pub fn collect<'a>(
 
 struct Collector<'l> {
     ongoing: Mutex<HashSet<Path>>,
-    result: Mutex<CodeMap>,
+    result: Mutex<CodeSet>,
     source_location_table: Mutex<&'l mut SourceLocationTable>,
     loader: &'l Loader,
 }
@@ -58,7 +58,7 @@ impl<'l> Collector<'l> {
 
             let code = self
                 .loader
-                .load(path.clone(), &mut locator)
+                .load(path, &mut locator)
                 .unwrap_or_else(|(path, error)| Code::from_error(path, error));
 
             self.source_location_table
@@ -69,7 +69,7 @@ impl<'l> Collector<'l> {
             for dep in code.dependencies.values() {
                 self.collect(scope, dep);
             }
-            self.result.lock().unwrap().insert(path, code);
+            self.result.lock().unwrap().insert(code);
         });
     }
 }

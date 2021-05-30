@@ -10,12 +10,12 @@ use std::collections::HashMap;
 mod collector;
 mod error;
 mod loader;
-mod map;
+mod set;
 
 pub use collector::collect;
 pub use error::Error;
 pub use loader::{LoadablePackage, LoadableSource, Loader};
-pub use map::CodeMap;
+pub use set::CodeSet;
 
 #[cfg(test)]
 mod tests;

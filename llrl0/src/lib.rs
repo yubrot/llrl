@@ -54,7 +54,7 @@ pub mod prelude {
     pub use super::report::{Phase, Report};
 
     pub use super::code::{
-        collect as collect_codes, Code, CodeMap, Error as CodeError, Loader as CodeLoader,
+        collect as collect_codes, Code, CodeSet, Error as CodeError, Loader as CodeLoader,
     };
 
     pub use super::module::{build as build_modules, Error as ModuleError, Module, ModuleId};
