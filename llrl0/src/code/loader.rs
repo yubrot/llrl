@@ -28,7 +28,7 @@ impl Loader {
         }
     }
 
-    pub fn add_module(&mut self, path: Path, p: impl Into<LoadableSource>) -> bool {
+    pub fn add_source(&mut self, path: Path, p: impl Into<LoadableSource>) -> bool {
         match self.loadable_packages.entry(path.package) {
             hash_map::Entry::Occupied(mut e) => match e.get_mut() {
                 LoadablePackage::InMemory(map) => {

@@ -558,7 +558,6 @@ impl Build<syntax::Expr<'_>> for ExprRep {
 
 impl Build<&'_ Sexp> for Either<LocalVar, LocalFun> {
     fn build(ctx: &mut impl Context, source: &'_ Sexp) -> Result<Self> {
-        let source = ctx.expand_macro(source)?;
         let source = ctx.matches::<syntax::LocalDef>(&source)?;
         ctx.build(source)
     }

@@ -93,7 +93,7 @@ fn test_collect() {
     ]
     .into_iter()
     {
-        assert!(loader.add_module(path.parse::<Path>().unwrap(), text.to_string()));
+        assert!(loader.add_source(path.parse::<Path>().unwrap(), text.to_string()));
     }
 
     let mut source_location_table = SourceLocationTable::new();

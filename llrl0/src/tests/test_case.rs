@@ -114,10 +114,10 @@ pub(super) enum TestTarget {
 impl TestTarget {
     fn prepare_loader(&self, sources: HashMap<String, Ss>) -> CodeLoader {
         let mut loader = CodeLoader::new();
-        loader.add_module(Path::builtin(), ast::builtin::module());
+        loader.add_source(Path::builtin(), ast::builtin::module());
 
         for (path, source) in sources {
-            assert!(loader.add_module(
+            assert!(loader.add_source(
                 path.parse::<Path>().unwrap_or_else(|e| panic!("{}", e)),
                 source,
             ));
@@ -125,10 +125,10 @@ impl TestTarget {
 
         match self {
             Self::Module => {
-                assert!(loader.add_module(Path::std(), test_std::prelude_module_for_module_test()));
+                assert!(loader.add_source(Path::std(), test_std::prelude_module_for_module_test()));
             }
             Self::Backend => {
-                assert!(loader.add_module(Path::std(), test_std::prelude_module_for_backend_test()));
+                assert!(loader.add_source(Path::std(), test_std::prelude_module_for_backend_test()));
             }
             Self::Std => {
                 assert!(loader.add_package(
