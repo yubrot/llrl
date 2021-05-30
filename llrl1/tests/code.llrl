@@ -2,8 +2,9 @@
 (println! "llrl1/tests/code")
 
 (import "std/hash-map" _)
+(import "std/hash-set" _)
 (import "~/path" [path/_ _] path/_)
-(import "~/source-location" source-locator/_)
+(import "~/source-location" source-location-table/_ source-locator/_)
 
 (let1
   code
@@ -44,3 +45,43 @@
   (assert-eq? 2 (array/length (code/errors code)))
   (assert-is? (error:invalid-import-path "../hello" _) (get (code/errors code)[0]))
   (assert-eq? error:cannot-import-module-itself (get (code/errors code)[1])))
+
+(function test-sources
+  (|> (array
+        (: "builtin" "")
+        (: "~" "(import \"~/bar\") (import \"std/a\")")
+        (: "~/foo" "(import \"~/bar\") (import \"std/b\")")
+        (: "~/bar" "(import \"~/baz\") (import \"std\")")
+        (: "std" "(import \"~/b\")")
+        (: "std/a" "(import \"~/b\")")
+        (: "std/b" "")
+        (: "std/c" "(hoge")
+        (: "std" "(no-implicit-std)"))
+      (it/map (case1 (: (let path) (let text))
+        (: (result/force (path/from-string path)) text)))))
+
+(function test-inputs
+  (|> (array "~" "~/foo" "std/c")
+      (it/map [^1 (result/force (path/from-string %1))])))
+
+(let ([loader (loader/new)]
+      [source-location-table (source-location-table/new)])
+
+  (for (: (let path) (let text)) test-sources
+    (loader/add-source! path text loader))
+
+  (let1 result (code-set/build! test-inputs loader source-location-table)
+    (assert-eq? (hash-set "~" "std" "builtin")
+                (|> result code-set/packages hash-map/keys (it/map [^1 (string %1)]) hash-set/collect))
+    (assert-eq? (hash-set "~" "~/foo" "~/bar" "~/baz" "std" "std/a" "std/b" "std/c" "std" "builtin")
+                (|> result code-set/codes (it/map [^1 (string (code/path %1))]) hash-set/collect))
+    (for (let code) (code-set/codes result)
+      (match (string (code/path code))
+        ["~/baz"
+          (assert-is? (some error:module-not-found)
+                      (get? (code/errors code)[0]))]
+        ["std/c"
+          (assert-is? (some (error:parse-failed _))
+                      (get? (code/errors code)[0]))]
+        [_
+          (assert (array/empty? (code/errors code)))]))))

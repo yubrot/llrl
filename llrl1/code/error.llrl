@@ -1,0 +1,29 @@
+(import "~/path" [PathError Error] [_.PathError _.Error])
+(import "~/sexp/parser" [ParseError Error] [_.ParseError _.Error])
+(export Error _.Error error:_)
+
+; The error that occurred during the construction of the `Code`.
+(derive (Eq Ord DebugDisplay) value-data Error
+  error:package-not-found
+  error:module-not-found
+  (error:load-failed String)
+  (error:parse-failed ParseError)
+  (error:invalid-import-path String PathError)
+  error:cannot-import-module-itself)
+
+(instance Display.Error (Display Error)
+  (function (display! w a)
+    (match a
+      [error:package-not-found
+        (display! w "Package not found")]
+      [error:module-not-found
+        (display! w "Module not found")]
+      [(error:load-failed (let e))
+        (display-all! w "Load failed: " e)]
+      [(error:parse-failed (let e))
+        (display-all! w "Parse failed: " e)]
+      [(error:invalid-import-path (let path) (let e))
+        (display-all! w "Invalid import path " (debug path) ": " e)]
+      [error:cannot-import-module-itself
+        (display! w "Cannot import module itself")])))
+
