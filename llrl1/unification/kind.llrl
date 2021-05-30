@@ -180,7 +180,3 @@
     (if-match1 (kind:var (let v)) k
       (context/resolve! v ctx)
       k)))
-
-(instance Resolve.AstKind (Resolve ast/Kind)
-  (function (context/resolve! k ctx)
-    (context/import! k ctx)))

@@ -25,12 +25,6 @@
        [b (u/export! b unit ctx)])
   (assert-eq? a b))
 
-(let* ([ctx (u/new)]
-       [a (build-kind unit (-> (-> * *) * Constraint))]
-       [b (u/import! a ctx)]
-       [b (u/export! b unit ctx)])
-  (assert-eq? a b))
-
 (let1 ctx (u/new)
   (assert-eq? (ok unit) (u/unify! kind:type kind:type ctx))
   (assert-eq? (ok unit) (u/unify! kind:constraint kind:constraint ctx))

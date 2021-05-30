@@ -1,6 +1,5 @@
 //! An implementation of the unification algorithm.
 
-pub mod constraint;
 pub mod kind;
 pub mod types;
 

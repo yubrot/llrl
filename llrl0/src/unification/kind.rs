@@ -263,12 +263,6 @@ impl Resolve<Kind> for Context {
     }
 }
 
-impl<'a> Resolve<&'a ast::Kind> for Context {
-    fn resolve(&mut self, k: &'a ast::Kind) -> Kind {
-        self.import(k)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

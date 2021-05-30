@@ -207,3 +207,11 @@
               (u/get-vars g level/top ctx))
   (assert-eq? (ord-set (u/alloc-bind! b ctx) (u/alloc-bind! c ctx))
               (u/get-vars g (|> level/top level/down) ctx)))
+
+(let* ([gen (ast/node-id-generator/new (ast/module-id/from-index 1))]
+       [tp-a (ast/node-id-generator/next! gen)]
+       [ctx (test-context (array (: tp-a kind:type)))]
+       [a (ast/build-type unit (-> (: (gen ,tp-a) (gen ,tp-a)) unit))]
+       [b (u/import! a ctx)]
+       [b (u/export! b unit ctx)])
+  (assert-eq? a b))

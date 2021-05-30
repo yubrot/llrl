@@ -202,7 +202,6 @@
       ctx))
     ~level))
 
-
 (function (context/get-vars ty min-level ctx) {(forall E T) (-> T Level (Context E) (OrdSet (Var Type))) (where (Resolve T))}
   (let1 result ord-set/empty
     (context/collect-vars! ty min-level result ctx)
@@ -256,6 +255,22 @@
       (ok unit))
     ty
     ctx))
+
+(function (context/import! ty ctx) {(forall E) (-> ast/Type (Context E) Type)}
+  (ast/build-type ctx (ast ,ty)))
+
+(function (context/export! ty builder-ctx ctx) {(forall A B Ctx E) (-> A Ctx (Context E) B) (where (Resolve A) (ast/TypeBuilder B Ctx))}
+  (match (context/resolve! ty ctx)
+    [(type:var (let var) _ _)
+      (ast/build-type builder-ctx (error ,(string var)))]
+    [(type:con (let con))
+      (ast/build-type builder-ctx (con ,con))]
+    [(type:app (let callee) (let args))
+      (let ([callee (context/export! callee builder-ctx ctx)]
+            [args (|> args vars/vars (it/map [^1 (context/export! %1 builder-ctx ctx)]) collect)])
+        (ast/build-type builder-ctx (,callee ,@args)))]
+    [(type:gen (let id) _)
+      (ast/build-type builder-ctx (gen ,id))]))
 
 (class (Resolve T)
   (function (context/resolve! ty ctx) {(forall E) (-> T (Context E) Type)}))
