@@ -4,6 +4,7 @@
 (import "std/integer" _.U64)
 (import "std/ref" Ref ref _.Ref)
 (import "std/iterator" _)
+(import "std/vector" Vector _.Vector vector/empty vector/push!)
 (export it/_ ZipEither zip-either:_ _.ZipEither)
 
 (function (it/count it) {(forall T A) (-> (T A) U64) (where (Iterate T))}
@@ -198,3 +199,23 @@
 
 (function (it/product it) {(forall T A) (-> (T A) A) (where (Iterate T) (Mul A) (One A))}
   (it/fold [^2 (* %1 %2)] one it))
+
+(function (it/traverse-option f it) {(forall T A B) (-> (-> A (Option B)) (T A) (Option (Vector B))) (where (Iterate T))}
+  (let1 buf vector/empty
+    (for (let a) it
+      (match (f a)
+        [(some (let a))
+          (vector/push! a buf)]
+        [none
+          (return none)]))
+    (some buf)))
+
+(function (it/traverse-result f it) {(forall T A B E) (-> (-> A (Result B E)) (T A) (Result (Vector B) E)) (where (Iterate T))}
+  (let1 buf vector/empty
+    (for (let a) it
+      (match (f a)
+        [(ok (let a))
+          (vector/push! a buf)]
+        [(err (let e))
+          (return (err e))]))
+    (ok buf)))

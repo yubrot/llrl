@@ -1,4 +1,5 @@
 ; Implementation of Arrays and Vectors, re-exported by std/array and std/vector.
+; NOTE: Maybe we should extract the Growable buffer implementation as a separated module.
 (no-implicit-std)
 
 (import "std/prelude/stage-1" _)

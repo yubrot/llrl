@@ -54,3 +54,13 @@
 
 (assert-eq? 10 (it/sum (array 1 2 3 4)))
 (assert-eq? 24 (it/product (array 1 2 3 4)))
+
+(assert-eq? (some (vector 1 2 3 4))
+            (it/traverse-option [^1 (when? (ne? %1 0) %1)] (array 1 2 3 4)))
+(assert-eq? none
+            (it/traverse-option [^1 (when? (ne? %1 0) %1)] (array 1 2 0 3 4)))
+
+(assert-eq? (ok (vector 1 2 3 4))
+            (it/traverse-result [^1 (if (ne? %1 0) (ok %1) (err unit))] (array 1 2 3 4)))
+(assert-eq? (err unit)
+            (it/traverse-result [^1 (if (ne? %1 0) (ok %1) (err unit))] (array 1 2 0 3 4)))
