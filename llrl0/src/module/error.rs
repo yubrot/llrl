@@ -1,4 +1,4 @@
-use super::{Binding, Formatter, ModuleMap, TextualUnit};
+use super::{Formatter, LocatedConstruct, ModuleMap, TextualUnit};
 use crate::ast;
 use crate::formatting::ContextualDisplay;
 use crate::pattern_matching;
@@ -24,7 +24,7 @@ pub trait ErrorContext {
 pub enum PassErrorContext {}
 
 impl ErrorContext for PassErrorContext {
-    type Def = Binding;
+    type Def = LocatedConstruct;
     type Use = ast::Construct;
     type ClassUse = ast::NodeId<ast::ClassCon>;
     type InstanceUse = ast::NodeId<ast::InstanceCon>;
@@ -386,8 +386,8 @@ impl<M: ModuleMap> PassToResult<M> {
         }
     }
 
-    fn def(&self, binding: Binding) -> SourceLocation {
-        binding.loc
+    fn def(&self, c: LocatedConstruct) -> SourceLocation {
+        c.loc
     }
 
     fn use_(&self, construct: ast::Construct) -> TextualUnit {

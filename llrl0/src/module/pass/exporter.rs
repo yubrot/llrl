@@ -17,16 +17,20 @@ pub fn run(module: &mut Module, source: &Ss) -> Result<()> {
                         None => src,
                     };
 
-                    for (name, binding) in module.top_level.iter() {
+                    for (name, c) in module.top_level.iter() {
                         if let Some(name) = src.deconstruct(name) {
-                            module.exports.add(&dest.construct(name), binding)?;
+                            if let Some(old_c) = module.exports.add(&dest.construct(name), c) {
+                                Err(Error::conflicting_exports(name, old_c, c))?;
+                            }
                         }
                     }
                 } else {
                     let name = select.name.unwrap_or(select.target);
 
-                    if let Some(binding) = module.top_level.get(select.target.sym) {
-                        module.exports.add(name.sym, binding)?;
+                    if let Some(c) = module.top_level.get(select.target.sym) {
+                        if let Some(old_c) = module.exports.add(name.sym, c) {
+                            Err(Error::conflicting_exports(name.sym, old_c, c))?;
+                        }
                     } else {
                         Err(Error::unresolved(
                             select.loc,

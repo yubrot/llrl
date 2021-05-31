@@ -1,6 +1,6 @@
 use super::{
-    Binding, Error, External, LocalScope, Module, ModuleMap, Result, Scope, TextualInformation,
-    TextualUnit,
+    Error, External, LocalScope, LocatedConstruct, Module, ModuleMap, Result, Scope,
+    TextualInformation, TextualUnit,
 };
 use crate::ast::*;
 use either::*;
@@ -84,7 +84,7 @@ impl<'a, S: Scope> Context for ContextImpl<'a, S> {
     {
         let unit = self.textual_information.get(use_).unwrap();
         match self.scope.get(&unit.name) {
-            Some(binding) => Ok((binding.construct, unit)),
+            Some(c) => Ok((c.construct, unit)),
             None => Err(Error::unresolved(unit.loc, kind, &unit.name)),
         }
     }
@@ -94,7 +94,7 @@ impl<'a, S: Scope> Context for ContextImpl<'a, S> {
         let mut scope = self.scope.enter_scope();
         bind.traverse_defs(&mut |def| {
             let unit = textual_information.get(def).unwrap();
-            scope.define(&unit.name, Binding::new(unit.loc, def))
+            scope.define(&unit.name, LocatedConstruct::new(unit.loc, def))
         })?;
         Ok(ContextImpl {
             textual_information,

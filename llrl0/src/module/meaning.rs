@@ -1,4 +1,3 @@
-use super::{pass, Binding, Error};
 use crate::ast::*;
 use crate::source_loc::SourceLocation;
 use once_cell::sync::Lazy;
@@ -6,13 +5,32 @@ use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::convert::TryFrom;
 
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy, Hash)]
+pub struct LocatedConstruct {
+    pub loc: SourceLocation,
+    pub construct: Construct,
+}
+
+impl LocatedConstruct {
+    pub fn new(loc: SourceLocation, construct: impl Into<Construct>) -> Self {
+        Self {
+            loc,
+            construct: construct.into(),
+        }
+    }
+
+    pub fn with_loc(self, loc: SourceLocation) -> Self {
+        Self { loc, ..self }
+    }
+}
+
 /// Dependencies of the module.
 pub type Imports = HashSet<ModuleId>;
 
-/// The set of binding that the module is exporting.
+/// The set of located constructs that the module is exporting.
 #[derive(Debug, Clone)]
 pub struct Exports {
-    map: HashMap<String, Binding>,
+    map: HashMap<String, LocatedConstruct>,
 }
 
 impl Exports {
@@ -22,20 +40,18 @@ impl Exports {
         }
     }
 
-    pub fn add(&mut self, name: &str, binding: Binding) -> pass::Result<()> {
-        match self.map.insert(name.to_string(), binding) {
-            Some(old_binding) if old_binding.construct != binding.construct => {
-                Err(Error::conflicting_exports(name, old_binding, binding))
-            }
-            _ => Ok(()),
+    pub fn add(&mut self, name: &str, c: LocatedConstruct) -> Option<LocatedConstruct> {
+        match self.map.insert(name.to_string(), c) {
+            Some(old_c) if old_c.construct != c.construct => Some(old_c),
+            _ => None,
         }
     }
 
-    pub fn iter<'a>(&'a self) -> impl Iterator<Item = (&'a str, Binding)> + 'a {
+    pub fn iter<'a>(&'a self) -> impl Iterator<Item = (&'a str, LocatedConstruct)> + 'a {
         self.map.iter().map(|(name, def)| (name.as_str(), *def))
     }
 
-    pub fn get(&self, name: &str) -> Option<Binding> {
+    pub fn get(&self, name: &str) -> Option<LocatedConstruct> {
         self.map.get(name).copied()
     }
 }

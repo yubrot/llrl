@@ -1,4 +1,4 @@
-use super::{pass, Module, ModuleId, TextualUnit};
+use super::{Module, ModuleId, TextualUnit};
 use crate::ast;
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -53,16 +53,6 @@ pub trait ModuleMap {
 impl<'a, T: ModuleMap> ModuleMap for &'a T {
     fn module_of(&self, mid: ModuleId) -> &Module {
         T::module_of(*self, mid)
-    }
-}
-
-impl<'a, E: pass::External> ModuleMap for (&'a Module, &'a E) {
-    fn module_of(&self, mid: ModuleId) -> &Module {
-        if mid == self.0.id() {
-            self.0
-        } else {
-            self.1.module(mid)
-        }
     }
 }
 

@@ -27,6 +27,16 @@ pub trait External {
     ) -> std::result::Result<Sexp, String>;
 }
 
+impl<'a, E: External> ModuleMap for (&'a Module, &'a E) {
+    fn module_of(&self, mid: ModuleId) -> &Module {
+        if mid == self.0.id() {
+            self.0
+        } else {
+            self.1.module(mid)
+        }
+    }
+}
+
 pub fn run(module: &mut Module, code: &Code, external: &impl External) -> Result<()> {
     for path in code.dependencies.values() {
         let import_module = external

@@ -133,7 +133,7 @@ impl Module {
     fn define_function(&mut self, function: ast::Function) -> pass::Result<()> {
         let unit = self.textual_information.get(function.id).unwrap();
         self.top_level
-            .define(&unit.name, Binding::new(unit.loc, function.id))?;
+            .define(&unit.name, LocatedConstruct::new(unit.loc, function.id))?;
         self.ast_root.functions.insert(function.id, function);
         Ok(())
     }
@@ -141,7 +141,7 @@ impl Module {
     fn define_c_function(&mut self, c_function: ast::CFunction) -> pass::Result<()> {
         let unit = self.textual_information.get(c_function.id).unwrap();
         self.top_level
-            .define(&unit.name, Binding::new(unit.loc, c_function.id))?;
+            .define(&unit.name, LocatedConstruct::new(unit.loc, c_function.id))?;
         self.ast_root.c_functions.insert(c_function.id, c_function);
         Ok(())
     }
@@ -149,7 +149,7 @@ impl Module {
     fn define_builtin_op(&mut self, builtin_op: ast::BuiltinOp) -> pass::Result<()> {
         let unit = self.textual_information.get(builtin_op.id).unwrap();
         self.top_level
-            .define(&unit.name, Binding::new(unit.loc, builtin_op.id))?;
+            .define(&unit.name, LocatedConstruct::new(unit.loc, builtin_op.id))?;
         self.ast_root.builtin_ops.insert(builtin_op.id, builtin_op);
         Ok(())
     }
@@ -157,7 +157,7 @@ impl Module {
     fn define_macro(&mut self, macro_: ast::Macro) -> pass::Result<()> {
         let unit = self.textual_information.get(macro_.id).unwrap();
         self.top_level
-            .define(&unit.name, Binding::new(unit.loc, macro_.id))?;
+            .define(&unit.name, LocatedConstruct::new(unit.loc, macro_.id))?;
         self.ast_root.macros.insert(macro_.id, macro_);
         Ok(())
     }
@@ -165,7 +165,7 @@ impl Module {
     fn define_data_type_con(&mut self, con: ast::DataTypeCon) -> pass::Result<()> {
         let unit = self.textual_information.get(con.id).unwrap();
         self.top_level
-            .define(&unit.name, Binding::new(unit.loc, con.id))?;
+            .define(&unit.name, LocatedConstruct::new(unit.loc, con.id))?;
         self.ast_root.data_type_cons.insert(con.id, con);
         Ok(())
     }
@@ -173,7 +173,7 @@ impl Module {
     fn define_data_value_con(&mut self, con: ast::DataValueCon) -> pass::Result<()> {
         let unit = self.textual_information.get(con.id).unwrap();
         self.top_level
-            .define(&unit.name, Binding::new(unit.loc, con.id))?;
+            .define(&unit.name, LocatedConstruct::new(unit.loc, con.id))?;
         self.ast_root.data_value_cons.insert(con.id, con);
         Ok(())
     }
@@ -181,7 +181,7 @@ impl Module {
     fn define_builtin_type_con(&mut self, con: ast::BuiltinTypeCon) -> pass::Result<()> {
         let unit = self.textual_information.get(con.id).unwrap();
         self.top_level
-            .define(&unit.name, Binding::new(unit.loc, con.id))?;
+            .define(&unit.name, LocatedConstruct::new(unit.loc, con.id))?;
         self.ast_root.builtin_type_cons.insert(con.id, con);
         Ok(())
     }
@@ -189,7 +189,7 @@ impl Module {
     fn define_builtin_value_con(&mut self, con: ast::BuiltinValueCon) -> pass::Result<()> {
         let unit = self.textual_information.get(con.id).unwrap();
         self.top_level
-            .define(&unit.name, Binding::new(unit.loc, con.id))?;
+            .define(&unit.name, LocatedConstruct::new(unit.loc, con.id))?;
         self.ast_root.builtin_value_cons.insert(con.id, con);
         Ok(())
     }
@@ -197,7 +197,7 @@ impl Module {
     fn define_class_con(&mut self, con: ast::ClassCon) -> pass::Result<()> {
         let unit = self.textual_information.get(con.id).unwrap();
         self.top_level
-            .define(&unit.name, Binding::new(unit.loc, con.id))?;
+            .define(&unit.name, LocatedConstruct::new(unit.loc, con.id))?;
         self.ast_root.class_cons.insert(con.id, con);
         Ok(())
     }
@@ -205,7 +205,7 @@ impl Module {
     fn define_class_method(&mut self, method: ast::ClassMethod) -> pass::Result<()> {
         let unit = self.textual_information.get(method.id).unwrap();
         self.top_level
-            .define(&unit.name, Binding::new(unit.loc, method.id))?;
+            .define(&unit.name, LocatedConstruct::new(unit.loc, method.id))?;
         self.ast_root.class_methods.insert(method.id, method);
         Ok(())
     }
@@ -213,7 +213,7 @@ impl Module {
     fn define_instance_con(&mut self, con: ast::InstanceCon) -> pass::Result<()> {
         let unit = self.textual_information.get(con.id).unwrap();
         self.top_level
-            .define(&unit.name, Binding::new(unit.loc, con.id))?;
+            .define(&unit.name, LocatedConstruct::new(unit.loc, con.id))?;
         self.ast_root.instance_cons.insert(con.id, con);
         Ok(())
     }

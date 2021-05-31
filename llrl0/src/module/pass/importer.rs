@@ -81,18 +81,16 @@ pub fn run(module: &mut Module, source: &Ss, code: &Code, external: &impl Extern
                         None => src,
                     };
 
-                    for (name, binding) in import_module.exports.iter() {
+                    for (name, c) in import_module.exports.iter() {
                         if let Some(name) = src.deconstruct(name) {
-                            module.top_level.define(&dest.construct(name), binding)?;
+                            module.top_level.define(&dest.construct(name), c)?;
                         }
                     }
                 } else {
                     let name = select.name.unwrap_or(select.target);
 
-                    if let Some(binding) = import_module.exports.get(select.target.sym) {
-                        module
-                            .top_level
-                            .define(name.sym, binding.with_loc(name.loc))?;
+                    if let Some(c) = import_module.exports.get(select.target.sym) {
+                        module.top_level.define(name.sym, c.with_loc(name.loc))?;
                     } else {
                         Err(Error::unresolved(
                             select.loc,
@@ -111,15 +109,15 @@ pub fn run(module: &mut Module, source: &Ss, code: &Code, external: &impl Extern
         let std_module = external.find_module(&Path::std()).unwrap();
         module.add_init_expr(ast::InitExpr::EnsureInitialized(std_module.id()));
 
-        for (name, binding) in std_module.exports.iter() {
+        for (name, c) in std_module.exports.iter() {
             if module.top_level.get(name).is_none() {
-                module.top_level.define(name, binding)?;
+                module.top_level.define(name, c)?;
             }
         }
     }
 
-    for (_, binding) in module.top_level.iter() {
-        if let ast::Construct::InstanceCon(id) = binding.construct {
+    for (_, c) in module.top_level.iter() {
+        if let ast::Construct::InstanceCon(id) = c.construct {
             debug_assert_ne!(id.module(), module.id());
             module
                 .available_instances
