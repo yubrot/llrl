@@ -1,0 +1,3 @@
+(no-implicit-std)
+(import "~/module/meaning" _)
+(export _)

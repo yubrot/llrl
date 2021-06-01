@@ -1,0 +1,234 @@
+(import "std/hash-map" _)
+(import "std/ord-map" _)
+(import "std/ord-set" _)
+(import "~/util" _)
+(import "~/source-location" SourceLocation _.SourceLocation)
+(import "~/ast" _)
+(export LocatedConstruct _.LocatedConstruct located-construct Conv.From.LocatedConstruct._)
+(export Imports _.Imports imports/_)
+(export Exports _.Exports exports/_)
+(export SymbolMap _.SymbolMap symbol-map/_)
+(export Symbol _.Symbol symbol/_)
+(export AvailableInstances _.AvailableInstances available-instances/_)
+(export InferredKinds _.InferredKinds inferred-kinds/_)
+(export InferredTypes _.InferredTypes inferred-types/_)
+
+(derive (Eq Ord DebugDisplay Hash) value-data LocatedConstruct
+  (located-construct: SourceLocation Construct))
+
+(function (located-construct loc construct) {(forall A) (-> SourceLocation A LocatedConstruct) (where (Conv A Construct))}
+  (located-construct: loc (conv construct)))
+
+(getter located-construct: located-construct/location located-construct/construct)
+
+(instance Conv.From.LocatedConstruct.To.SourceLocation (Conv LocatedConstruct SourceLocation)
+  (function (conv a) (located-construct/location a)))
+
+(instance Conv.From.LocatedConstruct.To.Construct (Conv LocatedConstruct Construct)
+  (function (conv a) (located-construct/construct a)))
+
+; Dependencies of the module.
+(derive (DebugDisplay) value-data Imports
+  (imports: (OrdSet ModuleId)))
+
+(function (imports/new) {(-> Imports)}
+  (imports: ord-set/empty))
+
+(function (imports/add! mid imports) {(-> ModuleId Imports Bool)}
+  (with1 (imports: (let set)) imports
+    (ord-set/insert! mid set)))
+
+(function (imports/module-ids imports) {(-> Imports (Iterator ModuleId))}
+  (with1 (imports: (let set)) imports
+    (iterate set)))
+
+; The set of located constructs that the module is exporting.
+(derive (DebugDisplay) value-data Exports
+  (exports: (HashMap String LocatedConstruct)))
+
+(function (exports/new) {(-> Exports)}
+  (exports: hash-map/empty))
+
+(function (exports/add! name c exports) {(-> String LocatedConstruct Exports (Option LocatedConstruct))}
+  (with1 (exports: (let map)) exports
+    (with? ([(some (let old-c)) (hash-map/insert! name c map)]
+            [#t (ne? (conv-to Construct old-c) (conv-to Construct c))])
+      old-c)))
+
+(function (exports/elems exports) {(-> Exports (Iterator (: String LocatedConstruct)))}
+  (with1 (exports: (let map)) exports
+    (hash-map/elems map)))
+
+(function (exports/get? name exports) {(-> String Exports (Option LocatedConstruct))}
+  (with1 (exports: (let map)) exports
+    (hash-map/get? name map)))
+
+(derive (DebugDisplay) value-data SymbolMap
+  (symbol-map: (HashMap Construct Symbol)))
+
+(function (symbol-map/new) {(-> SymbolMap)}
+  (symbol-map: hash-map/empty))
+
+(function (symbol-map/get? id sm) {(forall A) (-> A SymbolMap (Option Symbol)) (where (Conv A Construct))}
+  (with1 (symbol-map: (let map)) sm
+    (hash-map/get? (conv id) map)))
+
+(function (symbol-map/set! id loc name sm) {(forall A) (-> A SourceLocation String SymbolMap unit) (where (Conv A Construct))}
+  (with1 (symbol-map: (let map)) sm
+    (ignore (hash-map/insert! (conv id) (symbol: loc name) map))))
+
+(function (symbol-map/find-occurences? name sm) {(forall A) (-> String SymbolMap (Iterator A)) (where (Conv Construct (Option A)))}
+  (with1 (symbol-map: (let map)) sm
+    (|> map
+        hash-map/elems
+        (it/filter-map (case1 (: (let construct) (let symbol))
+          (if (eq? (symbol/name symbol) name)
+            (conv construct)
+            none))))))
+
+(derive (DebugDisplay) value-data Symbol
+  (symbol: SourceLocation String))
+
+(getter symbol: symbol/loc symbol/name)
+
+(function (symbol/new loc name) {(-> SourceLocation String Symbol)}
+  (symbol: loc name))
+
+(derive (DebugDisplay) value-data AvailableInstances
+  (available-instances: (OrdMap (NodeId ClassCon) (OrdSet (NodeId InstanceCon)))))
+
+(getter available-instances: available-instances)
+
+(function (available-instances/new) {(-> AvailableInstances)}
+  (available-instances: ord-map/empty))
+
+(function (available-instances/add! con ai) {(-> InstanceCon AvailableInstances unit)}
+  (match (|> con instance-con/target constraint/rep)
+    [(constraint-rep:unresolved _ _)
+      (assert #f "available-instances/add!: unresolved constraint")]
+    [(constraint-rep:class (let id) _)
+      (match (ord-map/get? id (available-instances ai))
+        [(some (let set))
+          (ignore (ord-set/insert! (instance-con/id con) set))]
+        [none
+          (ignore (ord-map/insert! id (ord-set (instance-con/id con)) (available-instances ai)))])]))
+
+(function dummy-instances ord-set/empty)
+
+(function (available-instances/get id ai) {(-> (NodeId ClassCon) AvailableInstances (OrdSet (NodeId InstanceCon)))}
+  (|> (available-instances ai)
+      (ord-map/get? id)
+      (option/unwrap dummy-instances)))
+
+(derive (DebugDisplay) value-data InferredKinds
+  (inferred-kinds: (OrdMap Construct Kind)))
+
+(getter inferred-kinds: inferred-kinds)
+
+(function (inferred-kinds/new) {(-> InferredKinds)}
+  (inferred-kinds: ord-map/empty))
+
+(function (inferred-kinds/get? c ik) {(forall A) (-> A InferredKinds (Option Kind)) (where (Conv A Construct))}
+  (let ([map (inferred-kinds ik)]
+        [construct (conv c)])
+    (match (kind-group construct)
+      [kind-group:inferred
+        (ord-map/get? construct map)]
+      [(kind-group:fixed (let kind))
+        (some kind)]
+      [kind-group:unkinded
+        none])))
+
+(function (inferred-kinds/set! c kind ik) {(forall A) (-> A Kind InferredKinds unit) (where (Conv A Construct))}
+  (let ([map (inferred-kinds ik)]
+        [construct (conv c)])
+    (match (kind-group construct)
+      [kind-group:inferred
+        (ignore (ord-map/insert! construct kind map))]
+      [(kind-group:fixed _)
+        (assert #f (string "Kind of " construct " is fixed"))]
+      [kind-group:unkinded
+        (assert #f (string "Kind of " construct " is undefined"))])))
+
+(value-data KindGroup
+  kind-group:inferred
+  (kind-group:fixed Kind)
+  kind-group:unkinded)
+
+(function (kind-group construct) {(-> Construct KindGroup)}
+  ($$ cond
+    ($for-each $ty [Function CFunction BuiltinOp DataTypeCon BuiltinTypeCon ClassCon ClassMethod InstanceCon InstanceMethod TypeParameter LocalFun]
+      [when-match1 (some _) (conv-to? (NodeId $ty) construct)
+        kind-group:inferred])
+    [when-match1 (some _) (conv-to? (NodeId Macro) construct)
+      (kind-group:fixed kind:macro)]
+    ($for-each $ty [DataValueCon BuiltinValueCon Parameter LocalVar PatternVar]
+      [when-match1 (some _) (conv-to? (NodeId $ty) construct)
+        (kind-group:fixed kind:value)])
+    [else
+      kind-group:unkinded]))
+
+(derive (DebugDisplay) data InferredTypes
+  (inferred-types: (OrdMap Construct Scheme) (OrdMap Construct Type) (OrdMap Construct Instantiation)))
+
+(getter inferred-types: inferred-schemes inferred-types inferred-instantiations)
+
+(function (inferred-types/new) {(-> InferredTypes)}
+  (inferred-types: ord-map/empty ord-map/empty ord-map/empty))
+
+(function (inferred-types/scheme? c it) {(forall A) (-> A InferredTypes (Option Scheme)) (where (Conv A Construct))}
+  (let ([schemes (inferred-schemes it)]
+        [construct (conv c)])
+    (if (has-scheme? construct)
+      (ord-map/get? construct schemes)
+      none)))
+
+(function (inferred-types/set-scheme! c scheme it) {(forall A) (-> A Scheme InferredTypes unit) (where (Conv A Construct))}
+  (let ([schemes (inferred-schemes it)]
+        [construct (conv c)])
+    (if (has-scheme? construct)
+      (ignore (ord-map/insert! construct scheme schemes))
+      (assert #f (string construct " cannot have scheme")))))
+
+(function (inferred-types/type? c it) {(forall A) (-> A InferredTypes (Option Type)) (where (Conv A Construct))}
+  (let ([types (inferred-types it)]
+        [construct (conv c)])
+    (if (has-type? construct)
+      (ord-map/get? construct types)
+      none)))
+
+(function (inferred-types/set-type! c ty it) {(forall A) (-> A Type InferredTypes unit) (where (Conv A Construct))}
+  (let ([types (inferred-types it)]
+        [construct (conv c)])
+    (if (has-type? construct)
+      (ignore (ord-map/insert! construct ty types))
+      (assert #f (string construct " cannot have type")))))
+
+(function (inferred-instantiations/instantiation? c it) {(forall A) (-> A InferredTypes (Option Instantiation)) (where (Conv A Construct))}
+  (let ([instantiations (inferred-instantiations it)]
+        [construct (conv c)])
+    (if (has-instantiation? construct)
+      (ord-map/get? construct instantiations)
+      none)))
+
+(function (inferred-instantiations/set-instantiation! c ty it) {(forall A) (-> A Instantiation InferredTypes unit) (where (Conv A Construct))}
+  (let ([instantiations (inferred-instantiations it)]
+        [construct (conv c)])
+    (if (has-instantiation? construct)
+      (ignore (ord-map/insert! construct ty instantiations))
+      (assert #f (string construct " cannot have instantiation")))))
+
+(function (has-scheme? construct) {(-> Construct Bool)}
+  ($$ or
+    ($for-each $ty [Function BuiltinOp DataValueCon BuiltinValueCon ClassMethod InstanceMethod LocalFun]
+      (is? (some _) (conv-to? (NodeId $ty) construct)))))
+
+(function (has-type? construct) {(-> Construct Bool)}
+  ($$ or
+    ($for-each $ty [CFunction LocalVar PatternVar Parameter Expr Pattern]
+      (is? (some _) (conv-to? (NodeId $ty) construct)))))
+
+(function (has-instantiation? construct) {(-> Construct Bool)}
+  ($$ or
+    ($for-each $ty [InstanceCon Expr Pattern]
+      (is? (some _) (conv-to? (NodeId $ty) construct)))))

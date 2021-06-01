@@ -13,3 +13,4 @@
 (import "~/tests/unification/type")
 (import "~/tests/report")
 (import "~/tests/code")
+(import "~/tests/module")
