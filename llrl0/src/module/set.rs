@@ -4,7 +4,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-pub trait ModuleMap {
+pub trait ModuleSet {
     fn module_of(&self, mid: ModuleId) -> &Module;
 
     fn ast<'a, T: ast::RootConstruct<'a>>(&'a self, id: ast::NodeId<T>) -> Option<T::Dest> {
@@ -48,19 +48,19 @@ pub trait ModuleMap {
     }
 }
 
-impl<'a, T: ModuleMap> ModuleMap for &'a T {
+impl<'a, T: ModuleSet> ModuleSet for &'a T {
     fn module_of(&self, mid: ModuleId) -> &Module {
         T::module_of(*self, mid)
     }
 }
 
-impl ModuleMap for HashMap<ModuleId, Module> {
+impl ModuleSet for HashMap<ModuleId, Module> {
     fn module_of(&self, mid: ModuleId) -> &Module {
         &self[&mid]
     }
 }
 
-impl ModuleMap for HashMap<ModuleId, Arc<Module>> {
+impl ModuleSet for HashMap<ModuleId, Arc<Module>> {
     fn module_of(&self, mid: ModuleId) -> &Module {
         &self[&mid]
     }

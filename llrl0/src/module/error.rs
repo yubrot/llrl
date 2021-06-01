@@ -1,4 +1,4 @@
-use super::{Formatter, LocatedConstruct, ModuleMap, Symbol};
+use super::{Formatter, LocatedConstruct, ModuleSet, Symbol};
 use crate::ast;
 use crate::formatting::ContextualDisplay;
 use crate::pattern_matching;
@@ -122,7 +122,7 @@ impl<Ctx: ErrorContext> Error<Ctx> {
 }
 
 impl Error<PassErrorContext> {
-    pub fn into_result_error<M: ModuleMap>(self, formatter: Formatter<M>) -> Error {
+    pub fn into_result_error<M: ModuleSet>(self, formatter: Formatter<M>) -> Error {
         PassToResult { formatter }.error(self)
     }
 }
@@ -318,7 +318,7 @@ struct PassToResult<M> {
     formatter: Formatter<M>,
 }
 
-impl<M: ModuleMap> PassToResult<M> {
+impl<M: ModuleSet> PassToResult<M> {
     fn error(&self, error: Error<PassErrorContext>) -> Error {
         match error {
             Error::DependentModuleBuildFailed => Error::DependentModuleBuildFailed,

@@ -27,7 +27,7 @@ pub trait External {
     ) -> std::result::Result<Sexp, String>;
 }
 
-impl<'a, E: External> ModuleMap for (&'a Module, &'a E) {
+impl<'a, E: External> ModuleSet for (&'a Module, &'a E) {
     fn module_of(&self, mid: ModuleId) -> &Module {
         if mid == self.0.id() {
             self.0

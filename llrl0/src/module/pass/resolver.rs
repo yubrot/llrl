@@ -1,5 +1,5 @@
 use super::{
-    Error, External, LocalScope, LocatedConstruct, Module, ModuleMap, Result, Scope, Symbol,
+    Error, External, LocalScope, LocatedConstruct, Module, ModuleSet, Result, Scope, Symbol,
     SymbolMap,
 };
 use crate::ast::*;
@@ -20,11 +20,11 @@ pub fn run(module: &mut Module, external: &impl External) -> Result<()> {
 
     for inst in module.ast_root.instance_cons.values() {
         let inst_unit = module.symbol_map.get(inst.id).unwrap();
-        let module_map = (&*module, external);
+        let module_set = (&*module, external);
         let (class, mut method_table) = {
             let ConstraintRep::Class(ref class, _) = inst.target.rep;
             let class = *class.get_resolved();
-            let module = module_map.module_of(class.module());
+            let module = module_set.module_of(class.module());
             let class = module.ast_root().get(class).unwrap();
             let method_table = class
                 .methods()

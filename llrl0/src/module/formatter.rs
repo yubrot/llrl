@@ -1,4 +1,4 @@
-use super::{ModuleMap, Symbol};
+use super::{ModuleSet, Symbol};
 use crate::ast;
 use crate::formatting::ContextualDisplay as _;
 use derive_new::new;
@@ -10,7 +10,7 @@ pub struct Formatter<M> {
     map: M,
 }
 
-impl<M: ModuleMap> Formatter<M> {
+impl<M: ModuleSet> Formatter<M> {
     pub fn symbol_of(&self, construct: impl Into<ast::Construct>) -> Option<&Symbol> {
         self.map.symbol_of(construct)
     }
@@ -24,13 +24,13 @@ impl<M: ModuleMap> Formatter<M> {
     }
 }
 
-impl<M: ModuleMap> ast::KindFormatter for Formatter<M> {
+impl<M: ModuleSet> ast::KindFormatter for Formatter<M> {
     fn fmt_kind_use(&self, f: &mut fmt::Formatter<'_>, id: ast::Use<ast::KindUse>) -> fmt::Result {
         write!(f, "{}", self.name_of(id))
     }
 }
 
-impl<M: ModuleMap> ast::TypeFormatter for Formatter<M> {
+impl<M: ModuleSet> ast::TypeFormatter for Formatter<M> {
     fn fmt_type_use(&self, f: &mut fmt::Formatter<'_>, id: ast::Use<ast::TypeUse>) -> fmt::Result {
         write!(f, "{}", self.name_of(id))
     }
@@ -68,7 +68,7 @@ impl<M: ModuleMap> ast::TypeFormatter for Formatter<M> {
     }
 }
 
-impl<M: ModuleMap> ast::ValueConFormatter for Formatter<M> {
+impl<M: ModuleSet> ast::ValueConFormatter for Formatter<M> {
     fn fmt_data_value_con(
         &self,
         f: &mut fmt::Formatter<'_>,
@@ -92,7 +92,7 @@ impl<M: ModuleMap> ast::ValueConFormatter for Formatter<M> {
     }
 }
 
-impl<M: ModuleMap> ast::PatternFormatter for Formatter<M> {
+impl<M: ModuleSet> ast::PatternFormatter for Formatter<M> {
     fn fmt_pattern_var(
         &self,
         f: &mut fmt::Formatter<'_>,

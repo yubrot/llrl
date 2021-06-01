@@ -1,6 +1,6 @@
 use super::TestContext;
 use crate::formatting::ContextualDisplay as _;
-use crate::module::{Formatter, ModuleMap};
+use crate::module::{Formatter, ModuleSet};
 use crate::prelude::*;
 use crate::sexp::{self, matcher as m};
 use itertools::Itertools;
@@ -17,7 +17,7 @@ pub(super) enum ModuleValidation {
 impl ModuleValidation {
     pub(super) fn run(
         &self,
-        module_map: &impl ModuleMap,
+        module_set: &impl ModuleSet,
         entry_module: &Module,
         ctx: &TestContext,
     ) {
@@ -33,8 +33,8 @@ impl ModuleValidation {
                         name
                     ),
                 };
-                let inferred_kind = match module_map.kind_of(construct) {
-                    Some(kind) => kind.fmt_on(&Formatter::new(&module_map)).to_string(),
+                let inferred_kind = match module_set.kind_of(construct) {
+                    Some(kind) => kind.fmt_on(&Formatter::new(&module_set)).to_string(),
                     None => panic!("{}: Cannot get kind of {}", ctx.header(), name),
                 };
 
@@ -58,10 +58,10 @@ impl ModuleValidation {
                         name
                     ),
                 };
-                let inferred_type = match module_map.type_of(construct) {
-                    Some(ty) => format!("{{{}}}", ty.fmt_on(&Formatter::new(&module_map))),
-                    None => match module_map.scheme_of(construct) {
-                        Some(scheme) => scheme.fmt_on(&Formatter::new(&module_map)).to_string(),
+                let inferred_type = match module_set.type_of(construct) {
+                    Some(ty) => format!("{{{}}}", ty.fmt_on(&Formatter::new(&module_set))),
+                    None => match module_set.scheme_of(construct) {
+                        Some(scheme) => scheme.fmt_on(&Formatter::new(&module_set)).to_string(),
                         None => panic!("{}: Cannot get type of {}", ctx.header(), name),
                     },
                 };

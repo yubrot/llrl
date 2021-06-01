@@ -1,4 +1,4 @@
-use super::{Error, External, Module, ModuleMap, Result};
+use super::{Error, External, Module, ModuleSet, Result};
 use crate::ast::{self, Dfs as _};
 use crate::pattern_matching as p;
 use std::collections::HashMap;
@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 pub fn run(module: &Module, external: &impl External) -> Result<()> {
     let mut ctx = Context {
-        module_map: &(module, external),
+        module_set: &(module, external),
         type_finite_cons: HashMap::new(),
         value_con_tags: HashMap::new(),
     };
@@ -32,12 +32,12 @@ pub fn run(module: &Module, external: &impl External) -> Result<()> {
 }
 
 struct Context<'a, M> {
-    module_map: &'a M,
+    module_set: &'a M,
     type_finite_cons: HashMap<ast::TypeCon, Rc<[p::FiniteCon]>>,
     value_con_tags: HashMap<ast::ValueCon, p::Tag>,
 }
 
-impl<'a, M: ModuleMap> Context<'a, M> {
+impl<'a, M: ModuleSet> Context<'a, M> {
     fn validate_match(&mut self, match_: &ast::ExprMatch) -> Result<()> {
         let rows = match_
             .clauses
@@ -62,17 +62,17 @@ impl<'a, M: ModuleMap> Context<'a, M> {
     }
 
     fn value_cons_of(&mut self, type_con: ast::TypeCon) -> Rc<[p::FiniteCon]> {
-        let map = self.module_map;
+        let set = self.module_set;
         Rc::clone(
             self.type_finite_cons
                 .entry(type_con)
                 .or_insert_with(|| match type_con {
                     ast::TypeCon::Data(id) => {
-                        let con = map.ast(id).unwrap();
+                        let con = set.ast(id).unwrap();
                         con.value_cons().map(|con| con.into()).collect()
                     }
                     ast::TypeCon::Builtin(id) => {
-                        let con = map.ast(id).unwrap();
+                        let con = set.ast(id).unwrap();
                         con.value_cons().map(|con| con.into()).collect()
                     }
                 }),
@@ -85,8 +85,8 @@ impl<'a, M: ModuleMap> Context<'a, M> {
         }
 
         let finite_cons = self.value_cons_of(match value_con {
-            ast::ValueCon::Data(id) => self.module_map.ast(id).unwrap().type_con.into(),
-            ast::ValueCon::Builtin(id) => self.module_map.ast(id).unwrap().type_con.into(),
+            ast::ValueCon::Data(id) => self.module_set.ast(id).unwrap().type_con.into(),
+            ast::ValueCon::Builtin(id) => self.module_set.ast(id).unwrap().type_con.into(),
         });
         let finite_con = *finite_cons
             .iter()

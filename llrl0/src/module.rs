@@ -7,17 +7,17 @@ use crate::topological_sort;
 mod builder;
 mod error;
 mod formatter;
-mod map;
 mod meaning;
 mod pass;
 mod scope;
+mod set;
 
 pub use builder::{build, Backend};
 pub use error::{Error, PassErrorContext, TextualErrorContext};
 pub use formatter::Formatter;
-pub use map::ModuleMap;
 pub use meaning::*;
 pub use scope::*;
+pub use set::ModuleSet;
 
 pub type Result<T> = std::result::Result<T, Error>;
 

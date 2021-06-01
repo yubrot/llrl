@@ -2,7 +2,7 @@ use super::{
     branch_expander, data_expander, heap2stack, ir::*, normalizer, rewriter, simplifier, traverser,
 };
 use crate::ast;
-use crate::module::ModuleMap;
+use crate::module::ModuleSet;
 use derive_new::new;
 use if_chain::if_chain;
 use std::collections::{hash_map, BTreeSet, HashMap};
@@ -49,13 +49,13 @@ impl Context {
     pub fn populate<T>(
         &mut self,
         src: &T,
-        map: &impl ModuleMap,
+        set: &impl ModuleSet,
     ) -> (T::Dest, impl Iterator<Item = (CtId, &Arc<CtDef>)>)
     where
         T: simplifier::Simplify,
         T::Dest: traverser::Traverse + rewriter::Rewrite,
     {
-        let mut dest = simplifier::simplify(src, &mut SimplifierContext::new(self, map));
+        let mut dest = simplifier::simplify(src, &mut SimplifierContext::new(self, set));
         normalizer::normalize(&mut dest, self);
 
         let generation = self.next_generation;
@@ -214,14 +214,14 @@ struct Generation(usize);
 #[derive(Debug, new)]
 struct SimplifierContext<'a, 'm, M> {
     context: &'a mut Context,
-    module_map: &'m M,
+    module_set: &'m M,
 }
 
-impl<'a, 'm, M: ModuleMap> simplifier::Env<'m> for SimplifierContext<'a, 'm, M> {
-    type ModuleMap = M;
+impl<'a, 'm, M: ModuleSet> simplifier::Env<'m> for SimplifierContext<'a, 'm, M> {
+    type ModuleSet = M;
 
-    fn module_map(&self) -> &'m Self::ModuleMap {
-        self.module_map
+    fn module_set(&self) -> &'m Self::ModuleSet {
+        self.module_set
     }
 
     fn alloc_ct(&mut self) -> CtId {
@@ -229,10 +229,10 @@ impl<'a, 'm, M: ModuleMap> simplifier::Env<'m> for SimplifierContext<'a, 'm, M> 
     }
 
     fn issue_ct(&mut self, construct: impl Into<ast::Construct>) -> CtId {
-        let module_map = self.module_map;
+        let module_set = self.module_set;
         let construct = construct.into();
         self.context.bind_ct(CtKey::Construct(construct), |ctx| {
-            SimplifierContext::new(ctx, module_map).simplify_def(construct)
+            SimplifierContext::new(ctx, module_set).simplify_def(construct)
         })
     }
 
