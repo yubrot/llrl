@@ -415,6 +415,11 @@
 (function (value-con/bool value) {(-> Bool ValueCon)}
   (value-con:data (if value builtin/true builtin/false)))
 
+(function (value-con/bool? con) {(-> ValueCon (Option Bool))}
+  (cond?
+    [(eq? con (value-con/bool #t)) #t]
+    [(eq? con (value-con/bool #f)) #f]))
+
 (function value-con/unit (value-con:data (builtin/tuple 0)))
 (function value-con/none (value-con:data builtin/none))
 (function value-con/some (value-con:data builtin/some))

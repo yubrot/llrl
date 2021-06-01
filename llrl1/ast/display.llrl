@@ -45,6 +45,18 @@
          (ContextualDisplay (NodeId PatternUse) C)
          (ContextualDisplay (NodeId PatternVar) C)))
 
+(class (AstDisplayContext C)
+  (where (KindDisplayContext C)
+         (TypeDisplayContext C)
+         (ValueDisplayContext C)
+         (PatternDisplayContext C)))
+
+(instance AstDisplayContext.Default (forall C) (AstDisplayContext C)
+  (where (KindDisplayContext C)
+         (TypeDisplayContext C)
+         (ValueDisplayContext C)
+         (PatternDisplayContext C)))
+
 (instance ContextualDisplay.Kind (forall C) (ContextualDisplay Kind C) (where (KindDisplayContext C))
   (function (contextual-display! w a ctx)
     (match a

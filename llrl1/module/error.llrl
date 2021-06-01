@@ -1,0 +1,148 @@
+(import "~/util" _)
+(import "~/source-location" SourceLocation _.SourceLocation)
+(import "~/syntax" [SyntaxError Error] [_.SyntaxError _.Error])
+(import "~/unification/common" [UnificationError Error] [_.UnificationError _.Error])
+(import "~/ast" _)
+(export Error _.Error error:_ error/_ ErrorFocus error-focus:_)
+
+; Error during module building.
+(derive (DebugDisplay) data Error
+  error:dependent-module-build-failed
+  (error:syntax SyntaxError)
+  (error:multiple-declarations String SourceLocation SourceLocation)
+  (error:conflicting-exports String SourceLocation SourceLocation)
+  (error:duplicated-identifier String SourceLocation SourceLocation)
+  (error:wildcard-port-name-must-be-wildcard SourceLocation)
+  (error:unresolved SourceLocation String String)
+  (error:cannot-declare-sealed-class-instance-in-another-module SourceLocation)
+  (error:macro-expansion-failed SourceLocation String)
+  (error:cannot-use-macro-defined-in-the-same-module SourceLocation)
+  (error:class-method-type-scheme-unspecified SourceLocation)
+  (error:cannot-generalize SourceLocation)
+  (error:cannot-unify-kind Kind Kind UnificationError)
+  (error:unsupported-kind Kind)
+  (error:cyclic-classes (Array (NodeId ClassCon)))
+  (error:overlapping-instances (Array (NodeId InstanceCon)))
+  (error:no-matching-instances Constraint (Array Constraint))
+  (error:recursion-limit-exceeded Constraint)
+  error:cannot-use-return-in-this-context
+  (error:cannot-unify-type Type Type UnificationError)
+  (error:cannot-resolve-ambiguity Type (Array Constraint))
+  (error:arity-mismatch (Option U64) (Option U64))
+  (error:method-type-scheme-mismatch Scheme Scheme)
+  error:build-satisfaction-failed-at-this-scope
+  (error:useless-pattern Pattern)
+  (error:non-exhaustive-pattern (Array Pattern))
+  (error:on Construct Error)
+  (error:required-for Constraint Error))
+
+(instance ContextualDisplay.Error (forall C) (ContextualDisplay Error C)
+  (where (ContextualDisplay SourceLocation C)
+         (ContextualDisplay ErrorFocus C)
+         (ContextualDisplay Kind C)
+         (ContextualDisplay Type C)
+         (ContextualDisplay Scheme C)
+         (ContextualDisplay Constraint C)
+         (ContextualDisplay Pattern C)
+         (ContextualDisplay SyntaxError C))
+  (function (contextual-display! w a ctx)
+    (match a
+      [error:dependent-module-build-failed
+        (display! w "Dependent module build failed")]
+      [(error:syntax (let e))
+        (display! w (contextual: e ctx))]
+      [(error:multiple-declarations (let name) (let a) (let b))
+        (display-all! w (contextual: b ctx) ": Multiple declarations: " name " is first declared at " (contextual: a ctx))]
+      [(error:conflicting-exports (let name) (let a) (let b))
+        (display-all! w (contextual: b ctx) ": Conflicting exports: " name " is first exported at " (contextual: a ctx))]
+      [(error:duplicated-identifier (let name) (let a) (let b))
+        (display-all! w (contextual: b ctx) ": Duplicated identifier: " name " is first defined at " (contextual: a ctx))]
+      [(error:wildcard-port-name-must-be-wildcard (let loc))
+        (display-all! w (contextual: loc ctx) ": Wildcard port name must be wildcard")]
+      [(error:unresolved (let loc) (let kind) (let name))
+        (display-all! w (contextual: loc ctx) ": Unresolved " kind " " name)]
+      [(error:cannot-declare-sealed-class-instance-in-another-module (let loc))
+        (display-all! w (contextual: loc ctx) ": Cannot declare sealed-class instance in another module")]
+      [(error:macro-expansion-failed (let loc) (let e))
+        (display-all! w (contextual: loc ctx) ": Macro expansion failed: " e)]
+      [(error:cannot-use-macro-defined-in-the-same-module (let loc))
+        (display-all! w (contextual: loc ctx) ": Cannot use macro defined in the same module")]
+      [(error:class-method-type-scheme-unspecified (let loc))
+        (display-all! w (contextual: loc ctx) ": Class method type scheme unspecified")]
+      [(error:cannot-generalize (let loc))
+        (display-all! w (contextual: loc ctx) ": Cannot generalize this declaration")]
+      [(error:cannot-unify-kind (let a) (let b) (let e))
+        (display-all! w "Cannot unify kind " (contextual: a ctx) " with " (contextual: b ctx) ": " e)]
+      [(error:unsupported-kind (let k))
+        (display-all! w "Unsupported kind `" (contextual: k ctx) "`: Only forms consisting of `*` and `->` are supported")]
+      [(error:cyclic-classes (let classes))
+        (display! w "Cyclic classes detected: ")!
+        (for (: (let i) (let c)) (it/with-index classes)
+          (when (ne? i 0) (display! w ", ")!)
+          (display-all! w (name-of c ctx) " (defined at " (loc-of c ctx) ")")!)
+        (ok unit)]
+      [(error:overlapping-instances (let insts))
+        (display! w "Overlapping instances detected: ")!
+        (for (: (let i) (let c)) (it/with-index insts)
+          (when (ne? i 0) (display! w ", ")!)
+          (display-all! w (name-of c ctx) " (defined at " (loc-of c ctx) ")")!)
+        (ok unit)]
+      [(error:no-matching-instances (let c) (let cs))
+        (display-all! w "No matching instances: Cannot satisfy " (contextual: c ctx))!
+        (when (not (array/empty? cs))
+          (display! w " (where ")!
+          (for (: (let i) (let c)) (it/with-index cs)
+            (when (ne? i 0) (display! w ", ")!)
+            (display! w (contextual: c ctx))!)
+          (display! w ")")!)
+        (ok unit)]
+      [(error:recursion-limit-exceeded (let c))
+        (display-all! w "Recursion limit exceeded: Cannot satisfy " (contextual: c ctx))]
+      [error:cannot-use-return-in-this-context
+        (display! w "Cannot use return in this context")]
+      [(error:cannot-unify-type (let a) (let b) (let e))
+        (display-all! w "Cannot unify type " (contextual: a ctx) " with " (contextual: b ctx) ": " e)]
+      [(error:cannot-resolve-ambiguity (let ty) (let cs))
+        (display-all! w "Cannot resolve ambiguity: No matching defaulting candidate types for " (contextual: ty ctx))!
+        (when (not (array/empty? cs))
+          (display! w " (where ")!
+          (for (: (let i) (let c)) (it/with-index cs)
+            (when (ne? i 0) (display! w ", ")!)
+            (display! w (contextual: c ctx))!)
+          (display! w ")")!)
+        (ok unit)]
+      [(error:arity-mismatch (let a) (let b))
+        (display! w "Arity mismatch: ")!
+        (if-match1 (some (let n)) a
+          (display-all! w "(" (it/format " " (iterator/repeat (+ n 1) "_")) ")")!
+          (display! w "_")!)
+        (display! w " with ")!
+        (if-match1 (some (let n)) b
+          (display-all! w "(" (it/format " " (iterator/repeat (+ n 1) "_")) ")")!
+          (display! w "_")!)
+        (ok unit)]
+      [(error:method-type-scheme-mismatch (let a) (let b))
+        (display-all! w "Method type scheme mismatch: " (contextual: a ctx) " with " (contextual: b ctx))]
+      [error:build-satisfaction-failed-at-this-scope
+        (display! w "Build satisfaction failed at this scope")]
+      [(error:useless-pattern (let p))
+        (display-all! w "Useless pattern: " (contextual: p ctx))]
+      [(error:non-exhaustive-pattern (let ps))
+        (display-all! w "Non-exhaustive pattern: the following patterns are not covered: " (|> ps (it/map [^1 (contextual: %1 ctx)]) (it/format " | ")))]
+      [(error:on (let c) (let e))
+        (display-all! w (loc-of c ctx) ": " (contextual: e ctx))]
+      [(error:required-for (let c) (let e))
+        (display-all! w (contextual: e ctx) ": (required for " (contextual: c ctx) ")")])))
+
+(function (error/drop-context-info e) {(-> Error Error)}
+  (match e
+    [(error:on _ (let e)) (error/drop-context-info e)]
+    [(error:required-for _ (let e)) (error/drop-context-info e)]
+    [_ e]))
+
+(value-data ErrorFocus
+  (error-focus:name-of Construct)
+  (error-focus:loc-of Construct))
+
+(function (name-of c ctx) (contextual: (error-focus:name-of (conv c)) ctx))
+(function (loc-of c ctx) (contextual: (error-focus:loc-of (conv c)) ctx))
