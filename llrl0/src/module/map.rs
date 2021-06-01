@@ -1,4 +1,4 @@
-use super::{Module, ModuleId, TextualUnit};
+use super::{Module, ModuleId, Symbol};
 use crate::ast;
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -11,11 +11,9 @@ pub trait ModuleMap {
         self.module_of(id.module()).ast_root().get(id)
     }
 
-    fn textual_unit_of(&self, construct: impl Into<ast::Construct>) -> Option<&TextualUnit> {
+    fn symbol_of(&self, construct: impl Into<ast::Construct>) -> Option<&Symbol> {
         let construct = construct.into();
-        self.module_of(construct.module())
-            .textual_information
-            .get(construct)
+        self.module_of(construct.module()).symbol_map.get(construct)
     }
 
     fn kind_of(&self, construct: impl Into<ast::Construct>) -> Option<Cow<ast::Kind>> {

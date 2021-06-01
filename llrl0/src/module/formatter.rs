@@ -1,4 +1,4 @@
-use super::{ModuleMap, TextualUnit};
+use super::{ModuleMap, Symbol};
 use crate::ast;
 use crate::formatting::ContextualDisplay as _;
 use derive_new::new;
@@ -11,13 +11,13 @@ pub struct Formatter<M> {
 }
 
 impl<M: ModuleMap> Formatter<M> {
-    pub fn textual_unit_of(&self, construct: impl Into<ast::Construct>) -> Option<&TextualUnit> {
-        self.map.textual_unit_of(construct)
+    pub fn symbol_of(&self, construct: impl Into<ast::Construct>) -> Option<&Symbol> {
+        self.map.symbol_of(construct)
     }
 
     pub fn name_of(&self, construct: impl Into<ast::Construct>) -> Cow<str> {
         let construct = construct.into();
-        self.textual_unit_of(construct).map_or_else(
+        self.symbol_of(construct).map_or_else(
             || construct.to_string().into(),
             |unit| unit.name.as_str().into(),
         )

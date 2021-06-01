@@ -34,7 +34,7 @@ pub struct Module {
     top_level: TopLevel,
     imports: Imports,
     exports: Exports,
-    textual_information: TextualInformation,
+    symbol_map: SymbolMap,
     available_instances: AvailableInstances,
     inferred_kinds: InferredKinds,
     inferred_types: InferredTypes,
@@ -92,8 +92,8 @@ impl Module {
         &self.exports
     }
 
-    pub fn textual_information(&self) -> &TextualInformation {
-        &self.textual_information
+    pub fn symbol_map(&self) -> &SymbolMap {
+        &self.symbol_map
     }
 
     pub fn available_instances(&self) -> &AvailableInstances {
@@ -122,7 +122,7 @@ impl Module {
             top_level: TopLevel::new(),
             imports: Imports::new(),
             exports: Exports::new(),
-            textual_information: TextualInformation::new(),
+            symbol_map: SymbolMap::new(),
             available_instances: AvailableInstances::new(),
             inferred_kinds: InferredKinds::new(),
             inferred_types: InferredTypes::new(),
@@ -131,89 +131,93 @@ impl Module {
     }
 
     fn define_function(&mut self, function: ast::Function) -> pass::Result<()> {
-        let unit = self.textual_information.get(function.id).unwrap();
+        let symbol = self.symbol_map.get(function.id).unwrap();
         self.top_level
-            .define(&unit.name, LocatedConstruct::new(unit.loc, function.id))?;
+            .define(&symbol.name, LocatedConstruct::new(symbol.loc, function.id))?;
         self.ast_root.functions.insert(function.id, function);
         Ok(())
     }
 
     fn define_c_function(&mut self, c_function: ast::CFunction) -> pass::Result<()> {
-        let unit = self.textual_information.get(c_function.id).unwrap();
-        self.top_level
-            .define(&unit.name, LocatedConstruct::new(unit.loc, c_function.id))?;
+        let symbol = self.symbol_map.get(c_function.id).unwrap();
+        self.top_level.define(
+            &symbol.name,
+            LocatedConstruct::new(symbol.loc, c_function.id),
+        )?;
         self.ast_root.c_functions.insert(c_function.id, c_function);
         Ok(())
     }
 
     fn define_builtin_op(&mut self, builtin_op: ast::BuiltinOp) -> pass::Result<()> {
-        let unit = self.textual_information.get(builtin_op.id).unwrap();
-        self.top_level
-            .define(&unit.name, LocatedConstruct::new(unit.loc, builtin_op.id))?;
+        let symbol = self.symbol_map.get(builtin_op.id).unwrap();
+        self.top_level.define(
+            &symbol.name,
+            LocatedConstruct::new(symbol.loc, builtin_op.id),
+        )?;
         self.ast_root.builtin_ops.insert(builtin_op.id, builtin_op);
         Ok(())
     }
 
     fn define_macro(&mut self, macro_: ast::Macro) -> pass::Result<()> {
-        let unit = self.textual_information.get(macro_.id).unwrap();
+        let symbol = self.symbol_map.get(macro_.id).unwrap();
         self.top_level
-            .define(&unit.name, LocatedConstruct::new(unit.loc, macro_.id))?;
+            .define(&symbol.name, LocatedConstruct::new(symbol.loc, macro_.id))?;
         self.ast_root.macros.insert(macro_.id, macro_);
         Ok(())
     }
 
     fn define_data_type_con(&mut self, con: ast::DataTypeCon) -> pass::Result<()> {
-        let unit = self.textual_information.get(con.id).unwrap();
+        let symbol = self.symbol_map.get(con.id).unwrap();
         self.top_level
-            .define(&unit.name, LocatedConstruct::new(unit.loc, con.id))?;
+            .define(&symbol.name, LocatedConstruct::new(symbol.loc, con.id))?;
         self.ast_root.data_type_cons.insert(con.id, con);
         Ok(())
     }
 
     fn define_data_value_con(&mut self, con: ast::DataValueCon) -> pass::Result<()> {
-        let unit = self.textual_information.get(con.id).unwrap();
+        let symbol = self.symbol_map.get(con.id).unwrap();
         self.top_level
-            .define(&unit.name, LocatedConstruct::new(unit.loc, con.id))?;
+            .define(&symbol.name, LocatedConstruct::new(symbol.loc, con.id))?;
         self.ast_root.data_value_cons.insert(con.id, con);
         Ok(())
     }
 
     fn define_builtin_type_con(&mut self, con: ast::BuiltinTypeCon) -> pass::Result<()> {
-        let unit = self.textual_information.get(con.id).unwrap();
+        let symbol = self.symbol_map.get(con.id).unwrap();
         self.top_level
-            .define(&unit.name, LocatedConstruct::new(unit.loc, con.id))?;
+            .define(&symbol.name, LocatedConstruct::new(symbol.loc, con.id))?;
         self.ast_root.builtin_type_cons.insert(con.id, con);
         Ok(())
     }
 
     fn define_builtin_value_con(&mut self, con: ast::BuiltinValueCon) -> pass::Result<()> {
-        let unit = self.textual_information.get(con.id).unwrap();
+        let symbol = self.symbol_map.get(con.id).unwrap();
         self.top_level
-            .define(&unit.name, LocatedConstruct::new(unit.loc, con.id))?;
+            .define(&symbol.name, LocatedConstruct::new(symbol.loc, con.id))?;
         self.ast_root.builtin_value_cons.insert(con.id, con);
         Ok(())
     }
 
     fn define_class_con(&mut self, con: ast::ClassCon) -> pass::Result<()> {
-        let unit = self.textual_information.get(con.id).unwrap();
+        let symbol = self.symbol_map.get(con.id).unwrap();
         self.top_level
-            .define(&unit.name, LocatedConstruct::new(unit.loc, con.id))?;
+            .define(&symbol.name, LocatedConstruct::new(symbol.loc, con.id))?;
         self.ast_root.class_cons.insert(con.id, con);
         Ok(())
     }
 
     fn define_class_method(&mut self, method: ast::ClassMethod) -> pass::Result<()> {
-        let unit = self.textual_information.get(method.id).unwrap();
+        let symbol = self.symbol_map.get(method.id).unwrap();
         self.top_level
-            .define(&unit.name, LocatedConstruct::new(unit.loc, method.id))?;
+            .define(&symbol.name, LocatedConstruct::new(symbol.loc, method.id))?;
         self.ast_root.class_methods.insert(method.id, method);
         Ok(())
     }
 
     fn define_instance_con(&mut self, con: ast::InstanceCon) -> pass::Result<()> {
-        let unit = self.textual_information.get(con.id).unwrap();
+        let symbol = self.symbol_map.get(con.id).unwrap();
         self.top_level
-            .define(&unit.name, LocatedConstruct::new(unit.loc, con.id))?;
+            .define(&symbol.name, LocatedConstruct::new(symbol.loc, con.id))?;
         self.ast_root.instance_cons.insert(con.id, con);
         Ok(())
     }

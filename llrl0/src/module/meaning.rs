@@ -57,31 +57,30 @@ impl Exports {
 }
 
 #[derive(Debug, Clone)]
-pub struct TextualInformation {
-    map: HashMap<Construct, TextualUnit>,
+pub struct SymbolMap {
+    map: HashMap<Construct, Symbol>,
 }
 
-impl TextualInformation {
+impl SymbolMap {
     pub fn new() -> Self {
         Self {
             map: HashMap::new(),
         }
     }
 
-    pub fn get(&self, id: impl Into<Construct>) -> Option<&TextualUnit> {
+    pub fn get(&self, id: impl Into<Construct>) -> Option<&Symbol> {
         self.map.get(&id.into())
     }
 
     pub fn set(&mut self, id: impl Into<Construct>, loc: SourceLocation, name: impl Into<String>) {
-        self.map
-            .insert(id.into(), TextualUnit::new(loc, name.into()));
+        self.map.insert(id.into(), Symbol::new(loc, name.into()));
     }
 
-    pub fn find<T: TryFrom<Construct>>(&self, name: &str) -> Vec<T> {
+    pub fn find_occurences<T: TryFrom<Construct>>(&self, name: &str) -> Vec<T> {
         self.map
             .iter()
-            .filter_map(move |(construct, unit)| {
-                if unit.name == *name {
+            .filter_map(move |(construct, s)| {
+                if s.name == *name {
                     T::try_from(*construct).ok()
                 } else {
                     None
@@ -92,12 +91,12 @@ impl TextualInformation {
 }
 
 #[derive(Debug, Clone)]
-pub struct TextualUnit {
+pub struct Symbol {
     pub loc: SourceLocation,
     pub name: String,
 }
 
-impl TextualUnit {
+impl Symbol {
     pub fn new(loc: SourceLocation, name: impl Into<String>) -> Self {
         Self {
             loc,
@@ -165,6 +164,7 @@ impl InferredKinds {
             | Construct::LocalFun(_) => self.map.get(&construct).map(Cow::Borrowed),
             Construct::Macro(_) => Some(Cow::Owned(Kind::Macro)),
             Construct::DataValueCon(_)
+            | Construct::BuiltinValueCon(_)
             | Construct::Parameter(_)
             | Construct::LocalVar(_)
             | Construct::PatternVar(_) => Some(Cow::Owned(Kind::Value)),
@@ -188,6 +188,7 @@ impl InferredKinds {
             | Construct::LocalFun(_) => self.map.insert(construct, kind),
             Construct::Macro(_)
             | Construct::DataValueCon(_)
+            | Construct::BuiltinValueCon(_)
             | Construct::Parameter(_)
             | Construct::LocalVar(_)
             | Construct::PatternVar(_) => panic!("Kind of {} is reserved", construct),

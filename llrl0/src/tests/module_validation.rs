@@ -134,8 +134,8 @@ impl ModuleValidationTarget {
             ast::NodeId<T>: TryFrom<ast::Construct> + Into<ast::Construct>,
         {
             module
-                .textual_information()
-                .find::<ast::NodeId<T>>(name)
+                .symbol_map()
+                .find_occurences::<ast::NodeId<T>>(name)
                 .into_iter()
                 .map(|id| id.into())
                 .collect()

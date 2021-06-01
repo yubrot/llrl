@@ -2,7 +2,7 @@
 
 use super::ir::*;
 use crate::ast;
-use crate::module::{ModuleMap, TextualUnit};
+use crate::module::{ModuleMap, Symbol};
 
 pub fn simplify<'m, T: Simplify>(src: &T, env: &mut impl Env<'m>) -> T::Dest {
     Simplify::simplify(src, env)
@@ -212,12 +212,12 @@ impl Simplify for ast::BuiltinOp {
     type Dest = CtDef;
 
     fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
-        let unit = env.module_map().textual_unit_of(self.id).unwrap();
+        let symbol = env.module_map().symbol_of(self.id).unwrap();
         let (ct_params, params, ret_ty) = env.simplify_scheme(None, &self.ann.body);
 
         let ct_args = ct_params.iter().map(|p| Ct::Id(*p)).collect();
         let args = params.iter().map(|p| Rt::Local(p.id)).collect();
-        let rt = builtin_rt(unit, &self.builtin_name, ct_args, args);
+        let rt = builtin_rt(symbol, &self.builtin_name, ct_args, args);
 
         CtDef::generic(
             ct_params,
@@ -333,14 +333,14 @@ impl Simplify for ast::BuiltinValueCon {
     type Dest = CtDef;
 
     fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
-        let unit = env.module_map().textual_unit_of(self.id).unwrap();
+        let symbol = env.module_map().symbol_of(self.id).unwrap();
         let scheme = env.module_map().scheme_of(self.id).unwrap();
 
         let (ct_params, params, ty) = env.simplify_scheme(None, scheme);
 
         let ct_args = ct_params.iter().map(|p| Ct::Id(*p)).collect();
         let args = params.iter().map(|p| Rt::Local(p.id)).collect();
-        let rt = builtin_rt(unit, &self.builtin_name, ct_args, args);
+        let rt = builtin_rt(symbol, &self.builtin_name, ct_args, args);
 
         CtDef::generic(
             ct_params,
@@ -554,12 +554,12 @@ impl Simplify for ast::Expr {
                 let args = env.simplify(&apply.args);
                 if let ast::ExprRep::Con(con) = apply.callee.rep {
                     if con == ast::ValueCon::SYNTAX && args.len() == 1 {
-                        let unit = map.textual_unit_of(self.id).unwrap();
+                        let symbol = map.symbol_of(self.id).unwrap();
                         let body = args.into_iter().next().unwrap();
                         let mut ct_args =
                             env.simplify(map.instantiation_of(apply.callee.id).unwrap());
                         assert_eq!(ct_args.len(), 1);
-                        return Rt::construct_syntax(unit.loc, ct_args.remove(0), body);
+                        return Rt::construct_syntax(symbol.loc, ct_args.remove(0), body);
                     }
                 }
                 let callee = env.simplify(&apply.callee);
@@ -567,8 +567,8 @@ impl Simplify for ast::Expr {
             }
             ast::ExprRep::Capture(ref use_) => {
                 let construct = *use_.get_resolved();
-                let unit = map.textual_unit_of(self.id).unwrap();
-                Rt::Const(env.simplify_const_sexp(Sexp::Use(construct).pack(unit.loc)))
+                let symbol = map.symbol_of(self.id).unwrap();
+                Rt::Const(env.simplify_const_sexp(Sexp::Use(construct).pack(symbol.loc)))
             }
             ast::ExprRep::Annotate(ref annotate) => env.simplify(&annotate.body),
             ast::ExprRep::Let(ref let_) => {
@@ -795,7 +795,7 @@ fn builtin_ct(name: &str, args: &[CtId]) -> Ct {
     }
 }
 
-fn builtin_rt(unit: &TextualUnit, name: &str, mut ct_args: Vec<Ct>, mut args: Vec<Rt>) -> Rt {
+fn builtin_rt(symbol: &Symbol, name: &str, mut ct_args: Vec<Ct>, mut args: Vec<Rt>) -> Rt {
     use std::mem::take;
 
     match (name, ct_args.as_mut_slice(), args.as_mut_slice()) {
@@ -894,7 +894,7 @@ fn builtin_rt(unit: &TextualUnit, name: &str, mut ct_args: Vec<Ct>, mut args: Ve
         ("array.alloc", [ty], [a]) => Rt::alloc_array(Location::Heap, take(ty), take(a)),
         ("array.stackalloc", [ty], [a]) => Rt::alloc_array(Location::Stack, take(ty), take(a)),
         ("integer.to-ptr", [ty], [a]) => Rt::unary(Unary::IToPtr(take(ty)), take(a)),
-        ("syntax", [ty], [a]) => Rt::construct_syntax(unit.loc, take(ty), take(a)),
+        ("syntax", [ty], [a]) => Rt::construct_syntax(symbol.loc, take(ty), take(a)),
         ("panic", _, [a]) => Rt::unary(Unary::Panic, take(a)),
         (name, _, _) => panic!(
             "Unsupported builtin-value {} (ct_args={}, args={})",

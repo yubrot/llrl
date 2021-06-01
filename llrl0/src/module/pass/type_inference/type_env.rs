@@ -1,4 +1,4 @@
-use super::{AvailableInstances, External, ModuleId, TextualInformation};
+use super::{AvailableInstances, External, ModuleId, SymbolMap};
 use crate::ast;
 use derive_new::new;
 use std::borrow::Cow;
@@ -8,7 +8,7 @@ pub struct TypeEnv<'a, E> {
     available_instances: &'a AvailableInstances,
     local_ast_id_generator: &'a mut ast::NodeIdGenerator,
     local_ast_root: &'a ast::Root,
-    textual_information: &'a mut TextualInformation,
+    symbol_map: &'a mut SymbolMap,
     external: &'a E,
 }
 
@@ -153,8 +153,8 @@ impl<'a, E: External> TypeEnv<'a, E> {
         name: impl Into<String>,
     ) -> ast::NodeId<ast::TypeParameter> {
         let gen = self.local_ast_id_generator.generate();
-        let loc = self.textual_information.get(related_construct).unwrap().loc;
-        self.textual_information.set(gen, loc, name);
+        let loc = self.symbol_map.get(related_construct).unwrap().loc;
+        self.symbol_map.set(gen, loc, name);
         gen
     }
 }

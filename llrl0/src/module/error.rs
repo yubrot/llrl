@@ -1,4 +1,4 @@
-use super::{Formatter, LocatedConstruct, ModuleMap, TextualUnit};
+use super::{Formatter, LocatedConstruct, ModuleMap, Symbol};
 use crate::ast;
 use crate::formatting::ContextualDisplay;
 use crate::pattern_matching;
@@ -40,9 +40,9 @@ pub enum TextualErrorContext {}
 
 impl ErrorContext for TextualErrorContext {
     type Def = SourceLocation;
-    type Use = TextualUnit;
-    type ClassUse = TextualUnit;
-    type InstanceUse = TextualUnit;
+    type Use = Symbol;
+    type ClassUse = Symbol;
+    type InstanceUse = Symbol;
     type Kind = String;
     type Type = String;
     type Constraint = String;
@@ -390,19 +390,16 @@ impl<M: ModuleMap> PassToResult<M> {
         c.loc
     }
 
-    fn use_(&self, construct: ast::Construct) -> TextualUnit {
-        self.formatter.textual_unit_of(construct).cloned().unwrap()
+    fn use_(&self, construct: ast::Construct) -> Symbol {
+        self.formatter.symbol_of(construct).cloned().unwrap()
     }
 
-    fn class_use(&self, class_use: ast::NodeId<ast::ClassCon>) -> TextualUnit {
-        self.formatter.textual_unit_of(class_use).cloned().unwrap()
+    fn class_use(&self, class_use: ast::NodeId<ast::ClassCon>) -> Symbol {
+        self.formatter.symbol_of(class_use).cloned().unwrap()
     }
 
-    fn instance_use(&self, instance_use: ast::NodeId<ast::InstanceCon>) -> TextualUnit {
-        self.formatter
-            .textual_unit_of(instance_use)
-            .cloned()
-            .unwrap()
+    fn instance_use(&self, instance_use: ast::NodeId<ast::InstanceCon>) -> Symbol {
+        self.formatter.symbol_of(instance_use).cloned().unwrap()
     }
 
     fn kind(&self, kind: ast::Kind) -> String {

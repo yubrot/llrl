@@ -104,7 +104,7 @@ impl<'a, E: External> Context for ContextImpl<'a, E> {
             None
         };
         let id = id.unwrap_or_else(|| self.module.ast_id_generator.generate());
-        self.module.textual_information.set(id, loc, name);
+        self.module.symbol_map.set(id, loc, name);
         id
     }
 
@@ -115,10 +115,8 @@ impl<'a, E: External> Context for ContextImpl<'a, E> {
         Construct: TryInto<NodeId<T>> + TryInto<NodeId<S>>,
     {
         let new_id = id.reinterpret_unchecked::<S>();
-        let unit = self.module.textual_information.get(id).unwrap().clone();
-        self.module
-            .textual_information
-            .set(new_id, unit.loc, unit.name);
+        let symbol = self.module.symbol_map.get(id).unwrap().clone();
+        self.module.symbol_map.set(new_id, symbol.loc, symbol.name);
         new_id
     }
 

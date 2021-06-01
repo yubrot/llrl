@@ -1,6 +1,5 @@
 use super::{
-    AvailableInstances, Error, External, InferredKinds, Module, ModuleId, Result,
-    TextualInformation,
+    AvailableInstances, Error, External, InferredKinds, Module, ModuleId, Result, SymbolMap,
 };
 use crate::ast::{self, Dfs as _};
 use crate::topological_sort;
@@ -34,7 +33,7 @@ pub fn run(module: &mut Module, external: &impl External) -> Result<()> {
             &module.available_instances,
             &mut module.ast_id_generator,
             &module.ast_root,
-            &mut module.textual_information,
+            &mut module.symbol_map,
             external,
         ),
         overlap_checked_available_instances: HashSet::new(),

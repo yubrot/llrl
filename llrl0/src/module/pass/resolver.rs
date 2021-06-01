@@ -1,6 +1,6 @@
 use super::{
-    Error, External, LocalScope, LocatedConstruct, Module, ModuleMap, Result, Scope,
-    TextualInformation, TextualUnit,
+    Error, External, LocalScope, LocatedConstruct, Module, ModuleMap, Result, Scope, Symbol,
+    SymbolMap,
 };
 use crate::ast::*;
 use either::*;
@@ -9,7 +9,7 @@ use std::convert::TryInto;
 
 pub fn run(module: &mut Module, external: &impl External) -> Result<()> {
     let mut ctx = ContextImpl {
-        textual_information: &module.textual_information,
+        symbol_map: &module.symbol_map,
         scope: &mut module.top_level,
     };
     ctx.resolve(&mut module.ast_root)?;
@@ -19,7 +19,7 @@ pub fn run(module: &mut Module, external: &impl External) -> Result<()> {
     }
 
     for inst in module.ast_root.instance_cons.values() {
-        let inst_unit = module.textual_information.get(inst.id).unwrap();
+        let inst_unit = module.symbol_map.get(inst.id).unwrap();
         let module_map = (&*module, external);
         let (class, mut method_table) = {
             let ConstraintRep::Class(ref class, _) = inst.target.rep;
@@ -29,9 +29,9 @@ pub fn run(module: &mut Module, external: &impl External) -> Result<()> {
             let method_table = class
                 .methods()
                 .map(|method| {
-                    let unit = module.textual_information.get(method.id).unwrap();
+                    let symbol = module.symbol_map.get(method.id).unwrap();
                     let info = (method.id, method.arity(), method.default_body.is_none());
-                    (unit.name.to_string(), info)
+                    (symbol.name.to_string(), info)
                 })
                 .collect::<HashMap<_, _>>();
             (class, method_table)
@@ -46,14 +46,14 @@ pub fn run(module: &mut Module, external: &impl External) -> Result<()> {
         for method in inst.methods.iter() {
             let method = module.ast_root.instance_methods.get_mut(method).unwrap();
             if let Use::Unresolved(id) = method.class_method {
-                let unit = module.textual_information.get(id).unwrap();
-                if let Some((id, arity, _)) = method_table.remove(&unit.name) {
+                let symbol = module.symbol_map.get(id).unwrap();
+                if let Some((id, arity, _)) = method_table.remove(&symbol.name) {
                     if arity != method.arity() {
                         Err(Error::ArityMismatch(arity, method.arity()))?;
                     }
                     method.class_method.set_resolved(id);
                 } else {
-                    Err(Error::unresolved(unit.loc, "class-method", &unit.name))?
+                    Err(Error::unresolved(symbol.loc, "class-method", &symbol.name))?
                 }
             }
         }
@@ -73,38 +73,35 @@ pub fn run(module: &mut Module, external: &impl External) -> Result<()> {
 }
 
 struct ContextImpl<'a, S> {
-    textual_information: &'a TextualInformation,
+    symbol_map: &'a SymbolMap,
     scope: S,
 }
 
 impl<'a, S: Scope> Context for ContextImpl<'a, S> {
-    fn get<T>(&self, use_: NodeId<Use<T>>, kind: &'static str) -> Result<(Construct, &TextualUnit)>
+    fn get<T>(&self, use_: NodeId<Use<T>>, kind: &'static str) -> Result<(Construct, &Symbol)>
     where
         Construct: From<NodeId<Use<T>>>,
     {
-        let unit = self.textual_information.get(use_).unwrap();
-        match self.scope.get(&unit.name) {
-            Some(c) => Ok((c.construct, unit)),
-            None => Err(Error::unresolved(unit.loc, kind, &unit.name)),
+        let symbol = self.symbol_map.get(use_).unwrap();
+        match self.scope.get(&symbol.name) {
+            Some(c) => Ok((c.construct, symbol)),
+            None => Err(Error::unresolved(symbol.loc, kind, &symbol.name)),
         }
     }
 
     fn on(&mut self, bind: &impl Bind) -> Result<ContextImpl<LocalScope>> {
-        let textual_information = self.textual_information;
+        let symbol_map = self.symbol_map;
         let mut scope = self.scope.enter_scope();
         bind.traverse_defs(&mut |def| {
-            let unit = textual_information.get(def).unwrap();
-            scope.define(&unit.name, LocatedConstruct::new(unit.loc, def))
+            let symbol = symbol_map.get(def).unwrap();
+            scope.define(&symbol.name, LocatedConstruct::new(symbol.loc, def))
         })?;
-        Ok(ContextImpl {
-            textual_information,
-            scope,
-        })
+        Ok(ContextImpl { symbol_map, scope })
     }
 }
 
 trait Context: Sized {
-    fn get<T>(&self, use_: NodeId<Use<T>>, kind: &'static str) -> Result<(Construct, &TextualUnit)>
+    fn get<T>(&self, use_: NodeId<Use<T>>, kind: &'static str) -> Result<(Construct, &Symbol)>
     where
         Construct: From<NodeId<Use<T>>>;
 
