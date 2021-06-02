@@ -83,14 +83,16 @@ pub fn run(module: &mut Module, source: &Ss, code: &Code, external: &impl Extern
 
                     for (name, c) in import_module.exports.iter() {
                         if let Some(name) = src.deconstruct(name) {
-                            module.top_level.define(&dest.construct(name), c)?;
+                            module
+                                .top_level
+                                .define(&dest.construct(name), c.with_loc(select.loc))?;
                         }
                     }
                 } else {
                     let name = select.name.unwrap_or(select.target);
 
                     if let Some(c) = import_module.exports.get(select.target.sym) {
-                        module.top_level.define(name.sym, c.with_loc(name.loc))?;
+                        module.top_level.define(name.sym, c.with_loc(select.loc))?;
                     } else {
                         Err(Error::unresolved(
                             select.loc,
@@ -111,7 +113,7 @@ pub fn run(module: &mut Module, source: &Ss, code: &Code, external: &impl Extern
 
         for (name, c) in std_module.exports.iter() {
             if module.top_level.get(name).is_none() {
-                module.top_level.define(name, c)?;
+                module.top_level.define(name, c.with_loc(source.loc))?;
             }
         }
     }
