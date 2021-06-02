@@ -204,14 +204,14 @@
       (ignore (ord-map/insert! construct ty types))
       (assert #f (string construct " cannot have type")))))
 
-(function (inferred-instantiations/instantiation? c it) {(forall A) (-> A InferredTypes (Option Instantiation)) (where (Conv A Construct))}
+(function (inferred-types/instantiation? c it) {(forall A) (-> A InferredTypes (Option Instantiation)) (where (Conv A Construct))}
   (let ([instantiations (inferred-instantiations it)]
         [construct (conv c)])
     (if (has-instantiation? construct)
       (ord-map/get? construct instantiations)
       none)))
 
-(function (inferred-instantiations/set-instantiation! c ty it) {(forall A) (-> A Instantiation InferredTypes unit) (where (Conv A Construct))}
+(function (inferred-types/set-instantiation! c ty it) {(forall A) (-> A Instantiation InferredTypes unit) (where (Conv A Construct))}
   (let ([instantiations (inferred-instantiations it)]
         [construct (conv c)])
     (if (has-instantiation? construct)

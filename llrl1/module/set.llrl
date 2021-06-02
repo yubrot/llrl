@@ -1,0 +1,57 @@
+(import "std/ord-map" _)
+(import "~/util" _)
+(import "~/ast" _)
+(import "~/module/meaning" _)
+(import "~/module/unit" ModuleId _.ModuleId Module module/_)
+(export ModuleSet ModuleSet._ module-set/_)
+
+(class (ModuleSet S)
+  (function (module-set/get? mid set) {(-> ModuleId S (Option Module))})
+
+  (function (module-set/get mid set) {(-> ModuleId S Module)}
+    (match (module-set/get? mid set)
+      [(some (let m)) m]
+      [none (assert #f (string "module-set/get: Module not found for " mid))]))
+
+  (function (module-set/ast? f nid set) {(forall A B) (-> (-> (NodeId A) Root (Option B)) (NodeId A) S (Option B))}
+    (|> (module-set/get? (node-id/module nid) set)?
+        module/ast-root
+        (f nid)))
+
+  (function (module-set/symbol? c set) {(forall A) (-> A S (Option Symbol)) (where (Conv A Construct))}
+    (let1 construct (conv c)
+      (|> (module-set/get? (construct/module construct) set)?
+          module/symbol-map
+          (symbol-map/get? construct))))
+
+  (function (module-set/kind? c set) {(forall A) (-> A S (Option Kind)) (where (Conv A Construct))}
+    (let1 construct (conv c)
+      (|> (module-set/get? (construct/module construct) set)?
+          module/inferred-kinds
+          (inferred-kinds/get? construct))))
+
+  (function (module-set/type? c set) {(forall A) (-> A S (Option Type)) (where (Conv A Construct))}
+    (let1 construct (conv c)
+      (|> (module-set/get? (construct/module construct) set)?
+          module/inferred-types
+          (inferred-types/type? construct))))
+
+  (function (module-set/scheme? c set) {(forall A) (-> A S (Option Scheme)) (where (Conv A Construct))}
+    (let1 construct (conv c)
+      (|> (module-set/get? (construct/module construct) set)?
+          module/inferred-types
+          (inferred-types/scheme? construct))))
+
+  (function (module-set/instantiation? c set) {(forall A) (-> A S (Option Instantiation)) (where (Conv A Construct))}
+    (let1 construct (conv c)
+      (|> (module-set/get? (construct/module construct) set)?
+          module/inferred-types
+          (inferred-types/instantiation? construct)))))
+
+(instance ModuleSet.Module (ModuleSet Module)
+  (function (module-set/get? mid m)
+    (when? (eq? mid (module/id m)) m)))
+
+(instance ModuleSet.OrdMap (ModuleSet (OrdMap ModuleId Module))
+  (function (module-set/get? mid map)
+    (ord-map/get? mid map)))
