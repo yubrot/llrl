@@ -29,6 +29,8 @@
       (err "Expected ($for-each $vars (exprs ...) body ...)")]
     [($for-each . _)
       (err "$for-each cannot be appeared in preprocess top-level")]
+    [($symbol ,expr)
+      (ok (s:symbol (run/symbol expr)!))]
     [($symbol-concat ,@exprs)
       (ok (s:symbol (run/symbol-concat (s/traverse (lambda (s) (run ctx s)) exprs)!)!))]
     [($cut ,expr)
@@ -72,6 +74,13 @@
       (err "$for-each: The sizes of vars and exprs are different")]
     [_
       (err "$for-each: Expected ... [$var ...] ([expr ...] ...) or $var (expr ...) ...")]))
+
+(function (run/symbol expr)
+  (match expr
+    [(s:string (let s))
+      (ok s)]
+    [_
+      (err "$symbol: Expected string")]))
 
 (function (run/symbol-concat exprs)
   (s/match exprs

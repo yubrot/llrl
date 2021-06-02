@@ -41,6 +41,9 @@
                     (s:cons (s:bool #t) (s:string "c")))
   ($$ s:list ($for-each [$a $b] ([#t "a"] [#f "b"] [#t "c"]) '($a . $b))))
 
+(assert-is? (s:symbol "foo")
+  ($$ '($symbol "foo")))
+
 (assert-is? (s:symbol "foobarbaz")
   ($$ '($symbol-concat foo bar baz)))
 
