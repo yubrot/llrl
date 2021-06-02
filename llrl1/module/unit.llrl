@@ -1,0 +1,85 @@
+(import "~/util" _)
+(import "~/path" Path _.Path)
+(import "~/report" _)
+(import "~/ast" [ast/_ _] ModuleId _.ModuleId)
+(import "~/module/error" _)
+(import "~/module/meaning" _)
+(import "~/module/scope" _)
+(export ModuleId _.ModuleId Module _.Module module/_)
+
+; The unit of the compilation and semantic analysis of the llrl programming language.
+; Every construct of the language belongs to one of the modules, and every semantic
+; information is also stored here.
+(derive (DebugDisplay) data Module
+  (module:
+    Path                ; path
+    ast/NodeIdGenerator ; ast-id-generator
+    ast/Root            ; ast-root
+    TopLevel            ; top-level
+    Imports             ; imports
+    Exports             ; exports
+    SymbolMap           ; symbol-map
+    AvailableInstances  ; available-instances
+    InferredKinds       ; inferred-kinds
+    InferredTypes       ; inferred-types
+    Report))            ; report
+
+(getter module:
+  module/path
+  ast-id-generator
+  module/ast-root
+  module/top-level
+  module/imports
+  module/exports
+  module/symbol-map
+  module/available-instances
+  module/inferred-kinds
+  module/inferred-types
+  module/report)
+
+(function (module/id module) {(-> Module ModuleId)}
+  (|> module module/ast-root ast/root/id ast/node-id/module))
+
+(function (module/issue-node-id! module) {(forall A) (-> Module (ast/NodeId A))}
+  (|> module ast-id-generator ast/node-id-generator/next!))
+
+(function (module/new-uninitialized mid path) {(-> ModuleId Path Module)}
+  (let* ([ast-id-generator (ast/node-id-generator/new mid)]
+         [ast-root (ast/root/new (ast/node-id-generator/next! ast-id-generator))])
+    (module:
+      path
+      ast-id-generator
+      ast-root
+      (top-level/new)
+      (imports/new)
+      (exports/new)
+      (symbol-map/new)
+      (available-instances/new)
+      (inferred-kinds/new)
+      (inferred-types/new)
+      (report/new))))
+
+($$ begin
+  ($for-each
+    [$name $type]
+    ([function Function]
+     [c-function CFunction]
+     [builtin-op BuiltinOp]
+     [macro Macro]
+     [data-type-con DataTypeCon]
+     [data-value-con DataValueCon]
+     [builtin-type-con BuiltinTypeCon]
+     [builtin-value-con BuiltinValueCon]
+     [class-con ClassCon]
+     [class-method ClassMethod]
+     [instance-con InstanceCon]
+     [instance-method InstanceMethod])
+    (function (($symbol-concat module/define- $name ($symbol "!")) x module)
+      {(-> ($symbol-concat ast/ $type) Module (Result unit Error))}
+      (with1 (symbol: (let loc) (let name)) (|> module module/symbol-map (symbol-map/get? (($symbol-concat ast/ $name /id) x)) option/force)
+        (scope/define! name (located-construct loc (($symbol-concat ast/ $name /id) x)) (module/top-level module))!
+        (($symbol-concat ast/root/add- $name ($symbol "!")) x (module/ast-root module))
+        (ok unit)))))
+
+(function (module/add-init-expr! expr module) {(-> ast/InitExpr Module unit)}
+  (vector/push! expr (|> module module/ast-root ast/root/init-expressions)))

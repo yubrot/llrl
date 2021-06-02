@@ -2,9 +2,9 @@
 (import "std/ord-map" [Map OrdMap] _.OrdMap [map/_ ord-map/_])
 (import "~/ast/node-id" _)
 (import "~/ast/data" _)
-(export Root root/_)
+(export Root _.Root root/_)
 
-(data Root
+(derive (DebugDisplay) data Root
   (root:
     (NodeId Root)
     (Map (NodeId Function) Function)
@@ -133,54 +133,39 @@
         (it/chain (constructs root/class-cons))
         (it/chain (constructs root/instance-cons)))))
 
-(function (root/function? id r) {(-> (NodeId Function) Root (Option Function))}
-  (map/get? id (root/functions r)))
-
-(function (root/c-function? id r) {(-> (NodeId CFunction) Root (Option CFunction))}
-  (map/get? id (root/c-functions r)))
-
-(function (root/builtin-op? id r) {(-> (NodeId BuiltinOp) Root (Option BuiltinOp))}
-  (map/get? id (root/builtin-ops r)))
-
-(function (root/macro? id r) {(-> (NodeId Macro) Root (Option Macro))}
-  (map/get? id (root/macros r)))
-
 (function (root/data-type? id r) {(-> (NodeId DataTypeCon) Root (Option DataType))}
   (with1? (some (let con)) (root/data-type-con? id r)
     (relation data-type: con (root/data-value-cons r) data-type-con/value-cons)))
-
-(function (root/data-type-con? id r) {(-> (NodeId DataTypeCon) Root (Option DataTypeCon))}
-  (map/get? id (root/data-type-cons r)))
-
-(function (root/data-value-con? id r) {(-> (NodeId DataValueCon) Root (Option DataValueCon))}
-  (map/get? id (root/data-value-cons r)))
 
 (function (root/builtin-type? id r) {(-> (NodeId BuiltinTypeCon) Root (Option BuiltinType))}
   (with1? (some (let con)) (root/builtin-type-con? id r)
     (relation builtin-type: con (root/builtin-value-cons r) builtin-type-con/value-cons)))
 
-(function (root/builtin-type-con? id r) {(-> (NodeId BuiltinTypeCon) Root (Option BuiltinTypeCon))}
-  (map/get? id (root/builtin-type-cons r)))
-
-(function (root/builtin-value-con? id r) {(-> (NodeId BuiltinValueCon) Root (Option BuiltinValueCon))}
-  (map/get? id (root/builtin-value-cons r)))
-
 (function (root/class? id r) {(-> (NodeId ClassCon) Root (Option Class))}
   (with1? (some (let con)) (root/class-con? id r)
     (relation class: con (root/class-methods r) class-con/methods)))
 
-(function (root/class-con? id r) {(-> (NodeId ClassCon) Root (Option ClassCon))}
-  (map/get? id (root/class-cons r)))
-
-(function (root/class-method? id r) {(-> (NodeId ClassMethod) Root (Option ClassMethod))}
-  (map/get? id (root/class-methods r)))
-
 (function (root/instance? id r) {(-> (NodeId InstanceCon) Root (Option Instance))}
   (with1? (some (let con)) (root/instance-con? id r)
     (relation instance: con (root/instance-methods r) instance-con/methods)))
+($$ begin
+  ($for-each
+    [$name $type]
+    ([function Function]
+     [c-function CFunction]
+     [builtin-op BuiltinOp]
+     [macro Macro]
+     [data-type-con DataTypeCon]
+     [data-value-con DataValueCon]
+     [builtin-type-con BuiltinTypeCon]
+     [builtin-value-con BuiltinValueCon]
+     [class-con ClassCon]
+     [class-method ClassMethod]
+     [instance-con InstanceCon]
+     [instance-method InstanceMethod])
+    (begin
+      (function (($symbol-concat root/ $name ($symbol "?")) id r) {(-> (NodeId $type) Root (Option $type))}
+        (map/get? id (($symbol-concat root/ $name s) r)))
 
-(function (root/instance-con? id r) {(-> (NodeId InstanceCon) Root (Option InstanceCon))}
-  (map/get? id (root/instance-cons r)))
-
-(function (root/instance-method? id r) {(-> (NodeId InstanceMethod) Root (Option InstanceMethod))}
-  (map/get? id (root/instance-methods r)))
+      (function (($symbol-concat root/add- $name ($symbol "!")) x r) {(-> $type Root (Option $type))}
+        (map/insert! (($symbol-concat $name /id) x) x (($symbol-concat root/ $name s) r))))))

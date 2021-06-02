@@ -8,7 +8,7 @@
 (export Imports _.Imports imports/_)
 (export Exports _.Exports exports/_)
 (export SymbolMap _.SymbolMap symbol-map/_)
-(export Symbol _.Symbol symbol/_)
+(export Symbol _.Symbol symbol: symbol/_)
 (export AvailableInstances _.AvailableInstances available-instances/_)
 (export InferredKinds _.InferredKinds inferred-kinds/_)
 (export InferredTypes _.InferredTypes inferred-types/_)

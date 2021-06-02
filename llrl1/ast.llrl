@@ -2,5 +2,6 @@
 (import "~/ast/node-id" _)
 (import "~/ast/data" _)
 (import "~/ast/display" _)
+(import "~/ast/root" _)
 (import "~/ast/builder" KindBuilder build-kind TypeBuilder build-type _.Ast)
 (export _)

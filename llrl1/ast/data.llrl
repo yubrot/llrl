@@ -550,9 +550,9 @@
 
 (derive (DebugDisplay) value-data CFunction
   (c-function:
-    (NodeId Function) ; id
-    (Annotation Type) ; ann
-    String))          ; c-name
+    (NodeId CFunction) ; id
+    (Annotation Type)  ; ann
+    String))           ; c-name
 
 (getter c-function:
   c-function/id
@@ -572,9 +572,9 @@
 
 (derive (DebugDisplay) value-data Macro
   (macro:
-    (NodeId BuiltinOp)  ; id
-    Parameter           ; param
-    Expr))              ; body
+    (NodeId Macro) ; id
+    Parameter      ; param
+    Expr))         ; body
 
 (getter macro:
   macro/id
