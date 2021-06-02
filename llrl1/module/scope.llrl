@@ -1,0 +1,68 @@
+(import "std/hash-map" _)
+(import "~/util" _)
+(import "~/ast" Construct _.Construct)
+(import "~/module/error" _)
+(import "~/module/meaning" LocatedConstruct _.LocatedConstruct located-construct)
+(export Scope scope/_ TopLevel _.TopLevel top-level/_ LocalScope _.LocalScope)
+
+; A key-value store for language constructs.
+(class (Scope S)
+  (function (scope/get? name s) {(-> String S (Option LocatedConstruct))})
+  (function (scope/local f s) {(forall A) (-> (-> LocalScope A) S A)})
+  (function (scope/define! name c s) {(-> String LocatedConstruct S (Result unit Error))}))
+
+(derive (DebugDisplay) value-data TopLevel
+  (top-level: (HashMap String LocatedConstruct)))
+
+(instance Scope.TopLevel (Scope TopLevel)
+  (function (scope/get? name s)
+    (hash-map/get? name (top-map s)))
+
+  (function (scope/local f s)
+    (with-local-scope! f (top-map s)))
+
+  (function (scope/define! name c s)
+    (if-match1 (some (let old-c)) (hash-map/insert! name c (top-map s))
+      (if (eq? (conv-to Construct old-c) (conv-to Construct c))
+        (ok unit)
+        (err (error:multiple-declarations name (conv old-c) (conv c))))
+      (ok unit))))
+
+(getter top-level: top-map)
+
+(function (top-level/new) {(-> TopLevel)}
+  (top-level: hash-map/empty))
+
+(function (top-level/elems t) {(-> TopLevel (Iterator (: String LocatedConstruct)))}
+  (hash-map/elems (top-map t)))
+
+(derive (DebugDisplay) value-data LocalScope
+  (local-scope: (HashMap String LocatedConstruct) (HashMap String (Option LocatedConstruct))))
+
+(instance Scope.LocalScope (Scope LocalScope)
+  (function (scope/get? name s)
+    (hash-map/get? name (local-map s)))
+
+  (function (scope/local f s)
+    (with-local-scope! f (local-map s)))
+
+  (function (scope/define! name c s)
+    (if-match1 (some _) (hash-map/insert! name (hash-map/remove! name (local-map s)) (local-stash s))
+      (err (error:duplicated-identifier
+        name
+        (conv (|> (local-stash s) (hash-map/get? name) option/force option/force))
+        (conv c)))
+      (begin
+        (hash-map/insert! name c (local-map s))
+        (ok unit)))))
+
+(getter local-scope: local-map local-stash)
+
+(function (with-local-scope! f local-map)
+  (let* ([local-stash hash-map/empty]
+         [result (f (local-scope: local-map local-stash))])
+    (for (: (let name) (let c)) (hash-map/elems local-stash)
+      (if-match1 (some (let c)) c
+        (hash-map/insert! name c local-map)
+        (hash-map/remove! name local-map)))
+    result))

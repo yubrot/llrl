@@ -4,7 +4,7 @@
 (import "~/util" _)
 (import "~/source-location" SourceLocation _.SourceLocation)
 (import "~/ast" _)
-(export LocatedConstruct _.LocatedConstruct located-construct Conv.From.LocatedConstruct._)
+(export LocatedConstruct _.LocatedConstruct located-construct)
 (export Imports _.Imports imports/_)
 (export Exports _.Exports exports/_)
 (export SymbolMap _.SymbolMap symbol-map/_)
@@ -21,10 +21,10 @@
 
 (getter located-construct: located-construct/location located-construct/construct)
 
-(instance Conv.From.LocatedConstruct.To.SourceLocation (Conv LocatedConstruct SourceLocation)
+(instance Conv.To.SourceLocation.From.LocatedConstruct (Conv LocatedConstruct SourceLocation)
   (function (conv a) (located-construct/location a)))
 
-(instance Conv.From.LocatedConstruct.To.Construct (Conv LocatedConstruct Construct)
+(instance Conv.To.Construct.From.LocatedConstruct (Conv LocatedConstruct Construct)
   (function (conv a) (located-construct/construct a)))
 
 ; Dependencies of the module.

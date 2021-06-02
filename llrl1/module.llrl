@@ -1,4 +1,5 @@
 (no-implicit-std)
 (import "~/module/meaning" _)
 (import "~/module/error" _)
+(import "~/module/scope" _)
 (export _)
