@@ -11,7 +11,7 @@ mod resolver;
 mod type_inference;
 mod validator;
 
-pub type Error = super::Error<PassErrorContext>;
+pub type Error = super::Error<BuilderErrorContext>;
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// An abstract representation of the outside of the module.

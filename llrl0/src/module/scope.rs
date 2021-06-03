@@ -1,11 +1,11 @@
-use super::{pass, Error, LocatedConstruct};
+use super::{builder, Error, LocatedConstruct};
 use std::collections::HashMap;
 
 /// A key-value store for language constructs.
 pub trait Scope: Sized {
     fn get(&self, name: &str) -> Option<LocatedConstruct>;
     fn enter_scope(&mut self) -> LocalScope;
-    fn define(&mut self, name: &str, c: LocatedConstruct) -> pass::Result<()>;
+    fn define(&mut self, name: &str, c: LocatedConstruct) -> builder::Result<()>;
 }
 
 impl<'a, T: Scope> Scope for &'a mut T {
@@ -17,7 +17,7 @@ impl<'a, T: Scope> Scope for &'a mut T {
         T::enter_scope(*self)
     }
 
-    fn define(&mut self, name: &str, c: LocatedConstruct) -> pass::Result<()> {
+    fn define(&mut self, name: &str, c: LocatedConstruct) -> builder::Result<()> {
         T::define(*self, name, c)
     }
 }
@@ -48,7 +48,7 @@ impl Scope for TopLevel {
         LocalScope::new(&mut self.map)
     }
 
-    fn define(&mut self, name: &str, c: LocatedConstruct) -> pass::Result<()> {
+    fn define(&mut self, name: &str, c: LocatedConstruct) -> builder::Result<()> {
         match self.map.insert(name.to_string(), c) {
             Some(old_c) if old_c.construct != c.construct => {
                 Err(Error::multiple_declarations(name, old_c, c))
@@ -92,7 +92,7 @@ impl<'a> Scope for LocalScope<'a> {
         LocalScope::new(&mut self.map)
     }
 
-    fn define(&mut self, name: &str, c: LocatedConstruct) -> pass::Result<()> {
+    fn define(&mut self, name: &str, c: LocatedConstruct) -> builder::Result<()> {
         if self
             .stash
             .insert(name.to_string(), self.map.remove(name))

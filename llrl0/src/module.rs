@@ -4,15 +4,15 @@ use crate::path::Path;
 use crate::report::Report;
 use crate::topological_sort;
 
+mod builder;
 mod error;
 mod formatter;
 mod meaning;
 mod parallel;
-mod pass;
 mod scope;
 mod set;
 
-pub use error::{Error, PassErrorContext, TextualErrorContext};
+pub use error::{BuilderErrorContext, Error, TextualErrorContext};
 pub use formatter::Formatter;
 pub use meaning::*;
 pub use parallel::{build as parallel_build, Backend};
@@ -43,7 +43,7 @@ pub struct Module {
 
 impl Module {
     /// Build the module from `Code`.
-    pub fn build(mid: ModuleId, code: &Code, external: &impl pass::External) -> Result<Self> {
+    pub fn build(mid: ModuleId, code: &Code, external: &impl builder::External) -> Result<Self> {
         use once_cell::sync::Lazy;
         use std::sync::Mutex;
 
@@ -59,7 +59,7 @@ impl Module {
         }
 
         let mut module = Module::new(mid, code.path.clone());
-        match pass::run(&mut module, code, external) {
+        match builder::run(&mut module, code, external) {
             Ok(()) => {
                 if mid == ModuleId::builtin() {
                     let mut module = module.clone();
@@ -130,7 +130,7 @@ impl Module {
         }
     }
 
-    fn define_function(&mut self, function: ast::Function) -> pass::Result<()> {
+    fn define_function(&mut self, function: ast::Function) -> builder::Result<()> {
         let symbol = self.symbol_map.get(function.id).unwrap();
         self.top_level
             .define(&symbol.name, LocatedConstruct::new(symbol.loc, function.id))?;
@@ -138,7 +138,7 @@ impl Module {
         Ok(())
     }
 
-    fn define_c_function(&mut self, c_function: ast::CFunction) -> pass::Result<()> {
+    fn define_c_function(&mut self, c_function: ast::CFunction) -> builder::Result<()> {
         let symbol = self.symbol_map.get(c_function.id).unwrap();
         self.top_level.define(
             &symbol.name,
@@ -148,7 +148,7 @@ impl Module {
         Ok(())
     }
 
-    fn define_builtin_op(&mut self, builtin_op: ast::BuiltinOp) -> pass::Result<()> {
+    fn define_builtin_op(&mut self, builtin_op: ast::BuiltinOp) -> builder::Result<()> {
         let symbol = self.symbol_map.get(builtin_op.id).unwrap();
         self.top_level.define(
             &symbol.name,
@@ -158,7 +158,7 @@ impl Module {
         Ok(())
     }
 
-    fn define_macro(&mut self, macro_: ast::Macro) -> pass::Result<()> {
+    fn define_macro(&mut self, macro_: ast::Macro) -> builder::Result<()> {
         let symbol = self.symbol_map.get(macro_.id).unwrap();
         self.top_level
             .define(&symbol.name, LocatedConstruct::new(symbol.loc, macro_.id))?;
@@ -166,7 +166,7 @@ impl Module {
         Ok(())
     }
 
-    fn define_data_type_con(&mut self, con: ast::DataTypeCon) -> pass::Result<()> {
+    fn define_data_type_con(&mut self, con: ast::DataTypeCon) -> builder::Result<()> {
         let symbol = self.symbol_map.get(con.id).unwrap();
         self.top_level
             .define(&symbol.name, LocatedConstruct::new(symbol.loc, con.id))?;
@@ -174,7 +174,7 @@ impl Module {
         Ok(())
     }
 
-    fn define_data_value_con(&mut self, con: ast::DataValueCon) -> pass::Result<()> {
+    fn define_data_value_con(&mut self, con: ast::DataValueCon) -> builder::Result<()> {
         let symbol = self.symbol_map.get(con.id).unwrap();
         self.top_level
             .define(&symbol.name, LocatedConstruct::new(symbol.loc, con.id))?;
@@ -182,7 +182,7 @@ impl Module {
         Ok(())
     }
 
-    fn define_builtin_type_con(&mut self, con: ast::BuiltinTypeCon) -> pass::Result<()> {
+    fn define_builtin_type_con(&mut self, con: ast::BuiltinTypeCon) -> builder::Result<()> {
         let symbol = self.symbol_map.get(con.id).unwrap();
         self.top_level
             .define(&symbol.name, LocatedConstruct::new(symbol.loc, con.id))?;
@@ -190,7 +190,7 @@ impl Module {
         Ok(())
     }
 
-    fn define_builtin_value_con(&mut self, con: ast::BuiltinValueCon) -> pass::Result<()> {
+    fn define_builtin_value_con(&mut self, con: ast::BuiltinValueCon) -> builder::Result<()> {
         let symbol = self.symbol_map.get(con.id).unwrap();
         self.top_level
             .define(&symbol.name, LocatedConstruct::new(symbol.loc, con.id))?;
@@ -198,7 +198,7 @@ impl Module {
         Ok(())
     }
 
-    fn define_class_con(&mut self, con: ast::ClassCon) -> pass::Result<()> {
+    fn define_class_con(&mut self, con: ast::ClassCon) -> builder::Result<()> {
         let symbol = self.symbol_map.get(con.id).unwrap();
         self.top_level
             .define(&symbol.name, LocatedConstruct::new(symbol.loc, con.id))?;
@@ -206,7 +206,7 @@ impl Module {
         Ok(())
     }
 
-    fn define_class_method(&mut self, method: ast::ClassMethod) -> pass::Result<()> {
+    fn define_class_method(&mut self, method: ast::ClassMethod) -> builder::Result<()> {
         let symbol = self.symbol_map.get(method.id).unwrap();
         self.top_level
             .define(&symbol.name, LocatedConstruct::new(symbol.loc, method.id))?;
@@ -214,7 +214,7 @@ impl Module {
         Ok(())
     }
 
-    fn define_instance_con(&mut self, con: ast::InstanceCon) -> pass::Result<()> {
+    fn define_instance_con(&mut self, con: ast::InstanceCon) -> builder::Result<()> {
         let symbol = self.symbol_map.get(con.id).unwrap();
         self.top_level
             .define(&symbol.name, LocatedConstruct::new(symbol.loc, con.id))?;
@@ -222,7 +222,7 @@ impl Module {
         Ok(())
     }
 
-    fn add_instance_method(&mut self, method: ast::InstanceMethod) -> pass::Result<()> {
+    fn add_instance_method(&mut self, method: ast::InstanceMethod) -> builder::Result<()> {
         self.ast_root.instance_methods.insert(method.id, method);
         Ok(())
     }

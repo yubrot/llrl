@@ -1,4 +1,4 @@
-use super::{pass, Error, Module, ModuleId};
+use super::{builder, Error, Module, ModuleId};
 use crate::ast::{self, builtin};
 use crate::code::Code;
 use crate::path::Path;
@@ -196,7 +196,7 @@ impl<'a, B: Backend> ModuleBuildingContext<'a, B> {
     }
 }
 
-impl<'a, B: Backend> pass::External for ModuleBuildingContext<'a, B> {
+impl<'a, B: Backend> builder::External for ModuleBuildingContext<'a, B> {
     fn module(&self, mid: ModuleId) -> &Module {
         let ctx = self.ctx;
         let arena = self.deps_arena;
