@@ -1,4 +1,5 @@
 (import "~/util" _)
+(import "~/path" Path _.Path)
 (import "~/source-location" SourceLocation _.SourceLocation)
 (import "~/syntax" [SyntaxError Error] [_.SyntaxError _.Error])
 (import "~/unification/common" [UnificationError Error] [_.UnificationError _.Error])
@@ -7,7 +8,7 @@
 
 ; Error during module building.
 (derive (DebugDisplay) data Error
-  error:dependent-module-build-failed
+  (error:cannot-find-module Path)
   (error:syntax SyntaxError)
   (error:multiple-declarations String SourceLocation SourceLocation)
   (error:conflicting-exports String SourceLocation SourceLocation)
@@ -51,8 +52,8 @@
 (instance ContextualDisplay.Error (forall C) (ContextualDisplay Error C) (where (ErrorDisplayContext C))
   (function (contextual-display! w a ctx)
     (match a
-      [error:dependent-module-build-failed
-        (display! w "Dependent module build failed")]
+      [(error:cannot-find-module (let path))
+        (display-all! w "Cannot find module \"" path "\"")]
       [(error:syntax (let e))
         (display! w (contextual: e ctx))]
       [(error:multiple-declarations (let name) (let a) (let b))

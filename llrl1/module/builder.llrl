@@ -1,0 +1,94 @@
+(import "std/hash-set" _)
+(import "std/hash-map" _)
+(import "std/ord-map" _)
+(import "~/util" _)
+(import "~/path" Path _.Path path/_)
+(import "~/sexp" S _.S)
+(import "~/ast" _)
+(import "~/report" Report report/_ phase:_)
+(import "~/code" Code _.Code code/_ code-rep:_)
+(import "~/module/error" _)
+(import "~/module/meaning" _)
+(import "~/module/unit" _)
+(import "~/module/set" _)
+(import "~/module/builder/external" _)
+(export Backend Backend.unit backend/_ module/build!)
+
+(class (Backend B)
+  (function (backend/add-module! module entry-point? b) {(-> Module Bool B unit)})
+  (function (backend/execute-macro! id s e) {(-> (NodeId Macro) (S Construct) B (Result (S Construct) String))}))
+
+(instance Backend.unit (Backend unit)
+  (function (backend/add-module! module entry-point? b))
+  (function (backend/execute-macro! id s e) (err "Unsupported")))
+
+; Build a set of modules from the codes. The codes must be sorted by dependency order.
+(function (module/build! codes entry-points backend report)
+  {(forall B)
+   (-> (Array (Code Construct)) (HashSet Path) B Report (: (OrdMap ModuleId Module) (Option Error)))
+   (where (Backend B))}
+  (when (array/empty? codes) (return (: ord-map/empty none)))
+
+  ; (module-id 0) must be builtin
+  (assert-eq? (code/path (get codes[0])) path/builtin)
+  ; Every other module must depend on builtin
+  (assert (it/all? [^1 (hash-map/has? (string path/builtin) (code/dependencies %1))] (it/skip 1 codes)))
+    ; Every implicit-std? enabled module must depend on std
+  (assert (it/all? [^1 (or (code/implicit-std? %1)
+                           (hash-map/has? (string path/std) (code/dependencies %1)))] codes))
+
+  (let* ([modules ord-map/empty]
+         [path-to-module hash-map/empty]
+         [external (module-build-context: modules path-to-module backend)])
+    (report/on report phase:build-module
+      (for (: (let index) (let code)) (it/with-index codes)
+        (let* ([path (code/path code)]
+               [mid (module-id/from-index (conv index))]
+               [module (module/new-uninitialized mid path)]
+               [result (semantic-analysis! module code external)])
+          (report/merge! (module/report module) report)
+          (ord-map/insert! mid module modules)
+          (when-match1 (err (let e)) result (return (: modules (some e))))
+          (hash-map/insert! path mid path-to-module)
+          (backend/add-module! module (hash-set/has? path entry-points) backend))))
+    (: modules none)))
+
+(value-data (ModuleBuildContext B)
+  (module-build-context: (OrdMap ModuleId Module) (HashMap Path ModuleId) B))
+
+(instance External.ModuleBuildContext (forall B) (External (ModuleBuildContext B)) (where (Backend B))
+  (function (external/module? mid e)
+    (with1 (module-build-context: (let modules) _ _) e
+      (ord-map/get? mid modules)))
+
+  (function (external/module-by-path? path e)
+    (with1 (module-build-context: (let modules) (let path-map) _) e
+      (ord-map/get? (hash-map/get? path path-map)? modules)))
+
+  (function (external/execute-macro! id s e)
+    (with1 (module-build-context: _ _ (let backend)) e
+      (backend/execute-macro! id s backend))))
+
+(function (semantic-analysis! module code external)
+  {(forall E) (-> Module (Code Construct) E (Result unit Error)) (where (External E))}
+
+  ; code/dependencies (Path) -> module/imports (ModuleId)
+  (for (let path) (|> code code/dependencies hash-map/values)
+    (match (external/module-by-path? path external)
+      [(some (let module))
+        (imports/add! (module/id module) (module/imports module))]
+      [none
+        (err (error:cannot-find-module path))!]))
+
+  (match (code/rep code)
+    [code-rep:empty]
+    [(code-rep:source (let source))
+      ; TODO: report/on builder/importer
+      ; TODO: report/on builder/ast-builder
+      ; TODO: report/on builder/resolver
+      ; TODO: report/on builder/kind-inference
+      ; TODO: report/on builder/type-inference
+      ; TODO: report/on builder/validator
+      ; TODO: report/on builder/exporter
+      ])
+  (ok unit))

@@ -5,4 +5,5 @@
 (import "~/module/unit" _)
 (import "~/module/set" _)
 (import "~/module/display-context" _)
+(import "~/module/builder" _)
 (export _)
