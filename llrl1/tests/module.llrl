@@ -1,2 +1,10 @@
 (import "~/module" _)
 (println! "llrl1/tests/module")
+
+(import "~/util" _)
+(import "~/ast" _)
+(import "~/source-location" SourceLocationTable)
+
+(function (display-context-satisfies-error-display-context error s slt)
+  {(forall S) (-> Error S SourceLocationTable String) (where (ModuleSet S))}
+  (string (contextual: error (display-context s slt))))

@@ -48,6 +48,10 @@
           module/inferred-types
           (inferred-types/instantiation? construct)))))
 
+(instance ModuleSet.unit (ModuleSet unit)
+  (function (module-set/get? mid m)
+    none))
+
 (instance ModuleSet.Module (ModuleSet Module)
   (function (module-set/get? mid m)
     (when? (eq? mid (module/id m)) m)))
