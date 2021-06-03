@@ -4,18 +4,18 @@ use crate::path::Path;
 use crate::report::Report;
 use crate::topological_sort;
 
-mod builder;
 mod error;
 mod formatter;
 mod meaning;
+mod parallel;
 mod pass;
 mod scope;
 mod set;
 
-pub use builder::{build, Backend};
 pub use error::{Error, PassErrorContext, TextualErrorContext};
 pub use formatter::Formatter;
 pub use meaning::*;
+pub use parallel::{build as parallel_build, Backend};
 pub use scope::*;
 pub use set::ModuleSet;
 

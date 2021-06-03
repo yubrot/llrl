@@ -57,7 +57,9 @@ pub mod prelude {
         collect as collect_codes, Code, CodeSet, Error as CodeError, Loader as CodeLoader,
     };
 
-    pub use super::module::{build as build_modules, Error as ModuleError, Module, ModuleId};
+    pub use super::module::{
+        parallel_build as build_modules, Error as ModuleError, Module, ModuleId,
+    };
 
     pub use super::emitter::{Backend, BackendValue, Emitter};
 
