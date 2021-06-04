@@ -25,6 +25,13 @@
                 (err (error: (s/location s) "proper list"))])])
     (go s)))
 
+(function (syntax/symbol s)
+  (match s
+    [(s*symbol (let sym))
+      (ok sym)]
+    [_
+      (err (error: (s/location s) "<symbol>"))]))
+
 (value-data SyntaxName
   (syntax:name SourceLocation String))
 

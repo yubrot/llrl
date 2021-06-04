@@ -127,7 +127,7 @@
   (assert-eq? "($ _ _)" (show (pattern-rep:unresolved (id!) (some (array (pattern: (id!) pattern-rep:wildcard) (pattern: (id!) pattern-rep:wildcard)))))))
 
 ($$ begin
-  ($for-each $ty [KindUse TypeUse DataTypeCon BuiltinTypeCon TypeParameter ConstraintUse ClassCon DataValueCon BuiltinValueCon PatternUse PatternVar]
+  ($for-each $ty [KindUse TypeUse DataTypeCon BuiltinTypeCon TypeParameter ConstraintUse ClassCon InstanceCon DataValueCon BuiltinValueCon PatternUse PatternVar]
     (instance ($symbol-concat ContextualDisplay. $ty .ForTest) (ContextualDisplay (NodeId $ty) unit)
       (function (contextual-display! w a ctx)
         (display! w "$")))))

@@ -16,7 +16,8 @@
          (ContextualDisplay (NodeId BuiltinTypeCon) C)
          (ContextualDisplay (NodeId TypeParameter) C)
          (ContextualDisplay (NodeId ConstraintUse) C)
-         (ContextualDisplay (NodeId ClassCon) C)))
+         (ContextualDisplay (NodeId ClassCon) C)
+         (ContextualDisplay (NodeId InstanceCon) C)))
 
 (instance TypeDisplayContext.Default (forall C) (TypeDisplayContext C)
   (where (KindDisplayContext C)
@@ -25,7 +26,8 @@
          (ContextualDisplay (NodeId BuiltinTypeCon) C)
          (ContextualDisplay (NodeId TypeParameter) C)
          (ContextualDisplay (NodeId ConstraintUse) C)
-         (ContextualDisplay (NodeId ClassCon) C)))
+         (ContextualDisplay (NodeId ClassCon) C)
+         (ContextualDisplay (NodeId InstanceCon) C)))
 
 (class (ValueDisplayContext C)
   (where (ContextualDisplay (NodeId DataValueCon) C)

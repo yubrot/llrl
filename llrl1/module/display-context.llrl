@@ -37,7 +37,7 @@
             (display! w "<unknown location>")])])))
 
 ($$ begin
-  ($for-each $ty [KindUse TypeUse TypeParameter ConstraintUse PatternUse PatternVar DataTypeCon BuiltinTypeCon BuiltinValueCon ClassCon]
+  ($for-each $ty [KindUse TypeUse TypeParameter ConstraintUse PatternUse PatternVar DataTypeCon BuiltinTypeCon BuiltinValueCon ClassCon InstanceCon]
     (instance ($symbol-concat ContextualDisplay. $ty .DisplayContext)
       (forall S) (ContextualDisplay (NodeId $ty) (DisplayContext S)) (where (ModuleSet S))
       (function (contextual-display! w a ctx)

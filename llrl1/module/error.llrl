@@ -4,7 +4,7 @@
 (import "~/syntax" [SyntaxError Error] [_.SyntaxError _.Error])
 (import "~/unification/common" [UnificationError Error] [_.UnificationError _.Error])
 (import "~/ast" _)
-(export ErrorDisplayContext ErrorDisplayContext.Default Error _.Error error:_ error/_ ErrorFocus error-focus:_)
+(export Error _.Error error:_ error/_ ErrorFocus error-focus:_)
 
 ; Error during module building.
 (derive (DebugDisplay) data Error
@@ -37,19 +37,11 @@
   (error:on Construct Error)
   (error:required-for Constraint Error))
 
-(class (ErrorDisplayContext C)
+(instance ContextualDisplay.Error (forall C) (ContextualDisplay Error C)
   (where (ContextualDisplay SourceLocation C)
          (ContextualDisplay SyntaxError C)
          (ContextualDisplay ErrorFocus C)
-         (AstDisplayContext C)))
-
-(instance ErrorDisplayContext.Default (forall C) (ErrorDisplayContext C)
-  (where (ContextualDisplay SourceLocation C)
-         (ContextualDisplay SyntaxError C)
-         (ContextualDisplay ErrorFocus C)
-         (AstDisplayContext C)))
-
-(instance ContextualDisplay.Error (forall C) (ContextualDisplay Error C) (where (ErrorDisplayContext C))
+         (AstDisplayContext C))
   (function (contextual-display! w a ctx)
     (match a
       [(error:cannot-find-module (let path))
