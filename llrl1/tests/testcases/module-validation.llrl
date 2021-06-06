@@ -1,0 +1,120 @@
+(import "std/hash-set" _)
+(import "~" _)
+(import "~/module/meaning" symbol-map/find-occurences?)
+(import "~/sexp" s*_ syntax-sugar:annotate)
+(import "~/syntax" [syntax-error: error:] syntax/list-of syntax/symbol)
+(export ModuleValidation _.ModuleValidation module-validation/_ syntax/module-validation)
+
+(derive (DebugDisplay) value-data ModuleValidation
+  (:kind-of ValidationTarget String String)
+  (:type-of ValidationTarget String String))
+
+(function (module-validation/validate ctx module-set entry-module validation)
+  {(forall C S) (-> C S Module ModuleValidation (Result unit String)) (where (ast/AstDisplayContext C) (ModuleSet S))}
+  (match validation
+    [(:kind-of (let target) (let name) (let kind))
+      (let1 construct (validation-target/get entry-module name target)!
+        (if-match1 (some (let inferred-kind)) (module-set/kind? construct module-set)
+          (let1 inferred-kind (string (contextual: inferred-kind ctx))
+            (if (eq? inferred-kind kind)
+              (ok unit)
+              (err (string "Expected kind `" kind "` but got `" inferred-kind "`"))))
+          (err (string "Cannot get kind of " name))))]
+    [(:type-of (let target) (let name) (let ty-ann))
+      (let1 construct (validation-target/get entry-module name target)!
+        (cond
+          [when-match1 (some (let inferred-type)) (module-set/type? construct module-set)
+            (let1 inferred-ty-ann (string "{" (contextual: inferred-type ctx) "}")
+              (if (eq? inferred-ty-ann ty-ann)
+                (ok unit)
+                (err (string "Expected type `" ty-ann "` but got `" inferred-ty-ann "`"))))]
+          [when-match1 (some (let inferred-scheme)) (module-set/scheme? construct module-set)
+            (let1 inferred-ty-ann (string (contextual: inferred-scheme ctx))
+              (if (eq? inferred-ty-ann ty-ann)
+                (ok unit)
+                (err (string "Expected type `" ty-ann "` but got `" inferred-ty-ann "`"))))]
+          [else
+            (err (string "Cannot get type of " name))]))]))
+
+(function (syntax/module-validation s)
+  (match s
+    [(s*list (s*symbol "kind-of") (let target) (s*symbol (let name)) (let k))
+      (ok (:kind-of (syntax/validation-target target)! name (string k)))]
+    [(s*list (s*symbol "type-of") (let target) (let body))
+      (match (s/syntax-sugar? body)
+        [(some (syntax-sugar:annotate (s*symbol (let name)) (let ss)))
+          (ok (:type-of (syntax/validation-target target)! name (string "{" (it/format " " (syntax/list-of ok ss)!) "}")))]
+        [_
+          (err (syntax-error: (s/location s) "<module-validation>"))])]
+    [_
+      (err (syntax-error: (s/location s) "<module-validation>"))]))
+
+(derive (DebugDisplay) value-data ValidationTarget
+  target:data
+  target:builtin-type
+  target:data-value-con
+  target:builtin-value-con
+  target:function
+  target:c-function
+  target:builtin-op
+  target:macro
+  target:class
+  target:class-method
+  target:instance
+  target:instance-method
+  target:local-var
+  target:local-fun)
+
+(instance Display.ValidationTarget (Display ValidationTarget)
+  (function (display! w a)
+    (display! w (string/skip (string/length "target:") (string (debug a))))))
+
+(function (validation-target/get module name target) {(-> Module String ValidationTarget (Result ast/Construct String))}
+  ($$ match target
+    ($for-each
+      [$name $type]
+      ([data ast/DataTypeCon]
+       [builtin-type ast/BuiltinTypeCon]
+       [data-value-con ast/DataValueCon]
+       [builtin-value-con ast/BuiltinValueCon]
+       [function ast/Function]
+       [c-function ast/CFunction]
+       [builtin-op ast/BuiltinOp]
+       [macro ast/Macro]
+       [class ast/ClassCon]
+       [class-method ast/ClassMethod]
+       [instance ast/InstanceCon]
+       [instance-method ast/InstanceMethod]
+       [local-var ast/LocalVar]
+       [local-fun ast/LocalFun])
+      [($symbol-concat target: $name)
+        (let1
+          constructs
+          (|> module
+              module/symbol-map
+              (symbol-map/find-occurences? name)
+              (it/map [^1 (conv-from (ast/NodeId $type) %1)])
+              collect)
+          (if (eq? (array/length constructs) 1)
+            (ok (get constructs[0]))
+            (err (string "There are two or more " target " constructs named " name))))])))
+
+(function (syntax/validation-target s)
+  (if-match1 (s*symbol (let name)) s
+    (match name
+      ["data" (ok target:data)]
+      ["builtin-type" (ok target:builtin-type)]
+      ["data-value-con" (ok target:data-value-con)]
+      ["builtin-value-con" (ok target:builtin-value-con)]
+      ["function" (ok target:function)]
+      ["c-function" (ok target:c-function)]
+      ["builtin-op" (ok target:builtin-op)]
+      ["macro" (ok target:macro)]
+      ["class" (ok target:class)]
+      ["class-method" (ok target:class-method)]
+      ["instance" (ok target:instance)]
+      ["instance-method" (ok target:instance-method)]
+      ["local-var" (ok target:local-var)]
+      ["local-fun" (ok target:local-fun)]
+      [_ (err (syntax-error: (s/location s) "<validation-target>"))])
+    (err (syntax-error: (s/location s) "<validation-target>"))))

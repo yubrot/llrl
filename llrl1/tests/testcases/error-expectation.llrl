@@ -1,0 +1,158 @@
+(import "std/hash-set" _)
+(import "~" _)
+(import "~/sexp" s*_)
+(import "~/syntax" [syntax-error: error:] syntax/list-of syntax/symbol)
+(export ErrorExpectation _.ErrorExpectation error-expectation/_ syntax/error-expectation)
+
+(derive (DebugDisplay) value-data ErrorExpectation
+  :syntax
+  (:macro-expansion String)
+  (:multiple-declarations String)
+  (:conflicting-exports String)
+  (:duplicated-identifier String)
+  (:unresolved String String)
+  :cannot-declare-sealed-class-instance-in-another-module
+  :cannot-use-macro-defined-in-the-same-module
+  :class-method-type-scheme-unspecified
+  :cannot-generalize
+  (:unify-kind UnificationError)
+  :unsupported-kind
+  (:cyclic-classes (HashSet String))
+  (:overlapping-instances (HashSet String))
+  :no-matching-instances
+  :recursion-limit-exceeded
+  :cannot-use-return-in-this-context
+  (:unify-type UnificationError)
+  :cannot-resolve-ambiguity
+  :arity-mismatch
+  :method-type-scheme-mismatch
+  (:useless-pattern String)
+  (:non-exhaustive-pattern (HashSet String)))
+
+(function (error-expectation/matches? e ctx expectation)
+  {(forall C) (-> ModuleError C ErrorExpectation Bool) (where (ast/AstDisplayContext C))}
+  (let1 e (module-error/drop-context-info e)
+    (match expectation
+      [:syntax
+        (is? (module-error:syntax _) e)]
+      [(:macro-expansion (let a))
+        (if-match1 (module-error:macro-expansion-failed _ (let b)) e
+          (eq? a b)
+          #f)]
+      [(:multiple-declarations (let a))
+        (if-match1 (module-error:multiple-declarations (let b) _ _) e
+          (eq? a b)
+          #f)]
+      [(:conflicting-exports (let a))
+        (if-match1 (module-error:conflicting-exports (let b) _ _) e
+          (eq? a b)
+          #f)]
+      [(:duplicated-identifier (let a))
+        (if-match1 (module-error:duplicated-identifier (let b) _ _) e
+          (eq? a b)
+          #f)]
+      [(:unresolved (let kind) (let name))
+        (if-match1 (module-error:unresolved _ (let k) (let n)) e
+          (and (eq? kind k) (eq? name n))
+          #f)]
+      [:cannot-declare-sealed-class-instance-in-another-module
+        (is? (module-error:cannot-declare-sealed-class-instance-in-another-module _) e)]
+      [:cannot-use-macro-defined-in-the-same-module
+        (is? (module-error:cannot-declare-sealed-class-instance-in-another-module _) e)]
+      [:class-method-type-scheme-unspecified
+        (is? (module-error:class-method-type-scheme-unspecified _) e)]
+      [:cannot-generalize
+        (is? (module-error:cannot-generalize _) e)]
+      [(:unify-kind (let a))
+        (if-match1 (module-error:cannot-unify-kind _ _ (let b)) e
+          (eq? a b)
+          #f)]
+      [:unsupported-kind
+        (is? (module-error:unsupported-kind _) e)]
+      [(:cyclic-classes (let names))
+        (if-match1 (module-error:cyclic-classes (let classes)) e
+          (eq? names (|> classes (it/map [^1 (string (contextual: %1 ctx))]) hash-set/collect))
+          #f)]
+      [(:overlapping-instances (let names))
+        (if-match1 (module-error:overlapping-instances (let insts)) e
+          (eq? names (|> insts (it/map [^1 (string (contextual: %1 ctx))]) hash-set/collect))
+          #f)]
+      [:no-matching-instances
+        (is? (module-error:no-matching-instances _ _) e)]
+      [:recursion-limit-exceeded
+        (is? (module-error:recursion-limit-exceeded _) e)]
+      [:cannot-use-return-in-this-context
+        (is? module-error:cannot-use-return-in-this-context e)]
+      [(:unify-type (let a))
+        (if-match1 (module-error:cannot-unify-type _ _ (let b)) e
+          (eq? a b)
+          #f)]
+      [:cannot-resolve-ambiguity
+        (is? (module-error:cannot-resolve-ambiguity _ _) e)]
+      [:arity-mismatch
+        (is? (module-error:arity-mismatch _ _) e)]
+      [:method-type-scheme-mismatch
+        (is? (module-error:method-type-scheme-mismatch _ _) e)]
+      [(:useless-pattern (let pat))
+        (if-match1 (module-error:useless-pattern (let p)) e
+          (eq? pat (string (contextual: p ctx)))
+          #f)]
+      [(:non-exhaustive-pattern (let pats))
+        (if-match1 (module-error:non-exhaustive-pattern (let ps)) e
+          (eq? pats (|> ps (it/map [^1 (string (contextual: %1 ctx))]) hash-set/collect))
+          #f)])))
+
+(function (syntax/error-expectation s)
+  (match s
+    [(s*symbol "syntax")
+      (ok :syntax)]
+    [(s*list (s*symbol "macro-expansion") (s*string (let error)))
+      (ok (:macro-expansion error))]
+    [(s*symbol "unify-kind")
+      (ok (:unify-kind unification-error:mismatch))]
+    [(s*list (s*symbol "unify-kind") (s*symbol "occurs-check-failed"))
+      (ok (:unify-kind unification-error:occurs-check-failed))]
+    [(s*symbol "unsupported-kind")
+      (ok :unsupported-kind)]
+    [(s*list (s*symbol "multiple-declarations") (s*symbol (let name)))
+      (ok (:multiple-declarations name))]
+    [(s*list (s*symbol "conflicting-exports") (s*symbol (let name)))
+      (ok (:conflicting-exports name))]
+    [(s*list (s*symbol "duplicated-identifier") (s*symbol (let name)))
+      (ok (:duplicated-identifier name))]
+    [(s*symbol "cannot-use-macro-defined-in-the-same-module")
+      (ok :cannot-use-macro-defined-in-the-same-module)]
+    [(s*symbol "class-method-type-scheme-unspecified")
+      (ok :class-method-type-scheme-unspecified)]
+    [(s*symbol "cannot-generalize")
+      (ok :cannot-generalize)]
+    [(s*list (s*symbol "unresolved") (s*symbol (let kind)) (s*symbol (let name)))
+      (ok (:unresolved kind name))]
+    [(s*symbol "cannot-declare-sealed-class-instance-in-another-module")
+      (ok :cannot-declare-sealed-class-instance-in-another-module)]
+    [(s*cons (s*symbol "cyclic-classes") (let names))
+      (ok (:cyclic-classes (hash-set/collect (syntax/list-of syntax/symbol names)!)))]
+    [(s*cons (s*symbol "overlapping-instances") (let names))
+      (ok (:overlapping-instances (hash-set/collect (syntax/list-of syntax/symbol names)!)))]
+    [(s*symbol "no-matching-instances")
+      (ok :no-matching-instances)]
+    [(s*symbol "recursion-limit-exceeded")
+      (ok :recursion-limit-exceeded)]
+    [(s*symbol "cannot-use-return-in-this-context")
+      (ok :cannot-use-return-in-this-context)]
+    [(s*symbol "unify-type")
+      (ok (:unify-type unification-error:mismatch))]
+    [(s*list (s*symbol "unify-type") (s*symbol "occurs-check-failed"))
+      (ok (:unify-type unification-error:occurs-check-failed))]
+    [(s*symbol "cannot-resolve-ambiguity")
+      (ok :cannot-resolve-ambiguity)]
+    [(s*symbol "arity-mismatch")
+      (ok :arity-mismatch)]
+    [(s*symbol "method-type-scheme-mismatch")
+      (ok :method-type-scheme-mismatch)]
+    [(s*list (s*symbol "useless") (let s))
+      (ok (:useless-pattern (string s)))]
+    [(s*cons (s*symbol "non-exhaustive") (let ss))
+      (ok (:non-exhaustive-pattern (hash-set/collect (syntax/list-of [^1 (ok (string %1))] ss)!)))]
+    [_
+      (err (syntax-error: (s/location s) "<error-expectation>"))]))

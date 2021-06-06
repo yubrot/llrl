@@ -1,0 +1,43 @@
+(import "~" _)
+(println! "llrl1/tests/testcases")
+
+(import "std/ord-map" _)
+(import "std/io" [io/_ _])
+(import "~/tests/testcases/test-case" _)
+
+(function (load-testcases!) {(-> (Result (OrdMap Path String) io/IoError))}
+  (let ([dh (io/directory/open! "../testcases")!]
+        [testcases ord-map/empty])
+    (for (let entry) (io/directory/entries! dh)
+      (when (eq? (io/path/extension? entry) (some "llrl"))
+        (let1 fh (io/file/open! (io/path "../testcases" entry) "r")!
+          (ord-map/insert!
+            (result/force (path/from-string (io/path/with-extension none entry)))
+            (read-string-to-end! fh)!
+            testcases)
+          (io/file/close! fh)!)))
+    (io/directory/close! dh)!
+    (ok testcases)))
+
+(let ([report (report/new)]
+      [testcases
+        (match (load-testcases!)
+          [(ok (let testcases)) testcases]
+          [(err (let e)) (assert #f (string "Failed to load testcases: " e))])])
+  (for (: (let name) (let source-text)) (ord-map/elems testcases)
+    (let* ([slt (source-location-table/new)]
+           [locator (source-location-table/get-locator! name slt)]
+           [ss
+             (match (parser/parse-ss! (parser/new locator (lex source-text)))
+               [(ok (let ss)) ss]
+               [(err (let e)) (assert #f (string "Failed to parse testcase " name ": " e))])])
+      (for (let s) (ss/elems ss)
+        (println! (contextual: (s/location s) slt))
+        (match (syntax/test-case s)
+          [(ok (let test-case))
+            (when-match1 (err (let e)) (test-case/run! slt report test-case)
+              (assert #f (string (contextual: (s/location s) slt) ": " e)))]
+          [(err (let e))
+            (assert #f (string (contextual: e slt)))]))))
+  (println! "### report")
+  (println! report))

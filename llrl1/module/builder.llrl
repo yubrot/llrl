@@ -34,7 +34,7 @@
   ; Every other module must depend on builtin
   (assert (it/all? [^1 (hash-map/has? (string path/builtin) (code/dependencies %1))] (it/skip 1 codes)))
     ; Every implicit-std? enabled module must depend on std
-  (assert (it/all? [^1 (or (code/implicit-std? %1)
+  (assert (it/all? [^1 (or (not (code/implicit-std? %1))
                            (hash-map/has? (string path/std) (code/dependencies %1)))] codes))
 
   (let* ([modules ord-map/empty]

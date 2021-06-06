@@ -1,0 +1,143 @@
+(import "std/hash-set" _)
+(import "std/hash-map" _)
+(import "std/ord-map" _)
+(import "~" _)
+(import "~/util" _)
+(import "~/sexp" s*_)
+(import "~/syntax" [syntax-error: error:] syntax/list-of)
+(import "~/module/builder" Backend.unit)
+(import "~/tests/testcases/module-validation" _)
+(import "~/tests/testcases/error-expectation" _)
+(export TestCase _.TestCase test-case/_ syntax/test-case)
+
+(derive (DebugDisplay) value-data TestCase
+  (test-case: (HashMap String (Ss ast/Construct)) TestTarget TestCondition))
+
+(function (test-case/run! slt report test-case)
+  {(-> SourceLocationTable Report TestCase (Result unit String))}
+  (with1 (test-case: (let sources) (let target) (let condition)) test-case
+    (let1 code-set (code-set/build! (array path/current) (test-target/prepare-loader sources target) slt report)
+      (for (: (let path) (let error)) (code-set/errors code-set)
+        (err (string "Failed to create a code " path ": " error))!)
+      (match (code-set/resolve-dependencies-order code-set)
+        [(ok (let codes))
+          (test-target/run! slt report (vector/buffer codes) condition target)]
+        [(err (let cyclic-paths))
+          (err (string "Circular dependencies: " (it/format ", " cyclic-paths)))]))))
+
+(function (syntax/test-case s)
+  (match s
+    [(s*list-like (s*symbol "test-module") (let cond) (let ss))
+      (ok (test-case: (syntax/source ss)! test-target:module (syntax/test-condition cond)!))]
+    [(s*list-like (s*symbol "test-modules") (let cond) (let ss))
+      (ok (test-case: (syntax/sources ss)! test-target:module (syntax/test-condition cond)!))]
+    [(s*list-like (s*symbol "test-backend") (let cond) (let ss))
+      (ok (test-case: (syntax/source ss)! test-target:backend (syntax/test-condition cond)!))]
+    [(s*list-like (s*symbol "test-backends") (let cond) (let ss))
+      (ok (test-case: (syntax/sources ss)! test-target:backend (syntax/test-condition cond)!))]
+    [(s*list-like (s*symbol "test-std") (let ss))
+      (ok (test-case: (syntax/source ss)! test-target:std (test-condition:pass array/empty)))]
+    [(s*list-like (s*symbol "test-stds") (let ss))
+      (ok (test-case: (syntax/sources ss)! test-target:std (test-condition:pass array/empty)))]
+    [_
+      (err (syntax-error: (s/location s) "<test-case>"))]))
+
+(function (syntax/source ss)
+  (ok (hash-map (: "~" (ss: (s/location ss) (syntax/list-of ok ss)!)))))
+
+(function (syntax/sources ss)
+  (ok
+    (hash-map/collect
+      (syntax/list-of
+        (case
+          [(s*list-like (s*string (let name)) (let ss))
+            (ok (: name (ss: (s/location ss) (syntax/list-of ok ss)!)))]
+          [(let s)
+            (err (syntax-error: (s/location s) "(\"<path>\" s ...)"))])
+        ss)!)))
+
+(derive (DebugDisplay) value-data TestTarget
+  test-target:module
+  test-target:backend
+  test-target:std)
+
+(function (test-target/prepare-loader sources target)
+  {(-> (HashMap String (Ss ast/Construct)) TestTarget (CodeLoader ast/Construct))}
+  (let1 loader (code-loader/new)
+    (code-loader/add-embedded-builtin! loader)
+    (for (: (let path) (let source)) (hash-map/elems sources)
+      (assert (code-loader/add-source!
+        (match (path/from-string path)
+          [(ok (let path)) path]
+          [(err (let e)) (assert #f (string "Invalid path: \"" path "\": " e))])
+        source
+        loader)))
+    (match target
+      [test-target:module
+        (assert (code-loader/add-source!
+          path/std
+          (embed-text-file-as-string! "../llrl0/src/tests/test-std/prelude-for-module-test.llrl")
+          loader))]
+      [test-target:backend
+        (assert (code-loader/add-source!
+          path/std
+          (embed-text-file-as-string! "../llrl0/src/tests/test-std/prelude-for-backend-test.llrl")
+          loader))]
+      [test-target:std
+        (assert (code-loader/add-embedded-std! loader))])
+    loader))
+
+(function (test-target/run! slt report codes condition target)
+  {(-> SourceLocationTable Report (Array (Code ast/Construct)) TestCondition TestTarget (Result unit String))}
+  (match target
+    [test-target:module
+      (test-condition/run! slt (module/build! codes default unit report) condition)]
+    [_
+      (let* ([backend unit] ; TODO: LLVM Backend
+             [emitter unit] ; TODO: (emitter/new backend)
+             [entry-points (hash-set path/current)])
+        (test-condition/run! slt (module/build! codes entry-points emitter report) condition)!
+        (when-match1 (test-condition:pass _) condition
+          ; TODO: execute-main
+          )
+        (ok unit))]))
+
+(derive (DebugDisplay) value-data TestCondition
+  (test-condition:pass (Array ModuleValidation))
+  (test-condition:fail (Option ErrorExpectation)))
+
+(function (syntax/test-condition s)
+  (match s
+    [(s*symbol "pass")
+      (ok (test-condition:pass array/empty))]
+    [(s*list-like (s*symbol "pass") (let vs))
+      (ok (test-condition:pass (syntax/list-of syntax/module-validation vs)!))]
+    [(s*symbol "fail")
+      (ok (test-condition:fail none))]
+    [(s*list (s*symbol "fail") (let ex))
+      (ok (test-condition:fail (some (syntax/error-expectation ex)!)))]
+    [_
+      (err (syntax-error: (s/location s) "<test-condition>"))]))
+
+(function (test-condition/run! slt result condition)
+  {(-> SourceLocationTable (: (OrdMap ModuleId Module) (Option ModuleError)) TestCondition (Result unit String))}
+  (with1 (: (let module-set) (let error)) result
+    (let1 ctx (module-display-context module-set slt)
+      (match (: condition error)
+        [(: (test-condition:pass (let vs)) none)
+          (let1 entry-module (option/force (it/find? [^1 (eq? (module/path %1) path/current)] (ord-map/values module-set)))
+            (for (let v) vs
+              (module-validation/validate ctx module-set entry-module v)!))
+          (ok unit)]
+        [(: (test-condition:pass _) (some (let error)))
+          (err (string "Expected success but got an error:\n" (contextual: error ctx)))]
+        [(: (test-condition:fail none) none)
+          (err "Expected failure but succeed")]
+        [(: (test-condition:fail (some (let ex))) none)
+          (err (string "Expected " (debug ex) " but succeed"))]
+        [(: (test-condition:fail none) (some _))
+          (ok unit)]
+        [(: (test-condition:fail (some (let ex))) (some (let error)))
+          (if (error-expectation/matches? error ctx ex)
+            (ok unit)
+            (err (string "Expected " (debug ex) " but got an error:\n" (contextual: error ctx))))]))))
