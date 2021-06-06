@@ -48,6 +48,7 @@
 (function (next! p) {(-> Parser (Option Token))}
   (let1 token (peek p)?
     (set! (peeking-token p) none)
+    (set! (latest-token-end p) (|> token token/range location-range/end))
     (some token)))
 
 (function (next-token-start p) {(-> Parser Location)}
