@@ -1,6 +1,7 @@
 (import "std/hash-map" _)
 (import "std/hash-set" _)
 (import "~/util" _)
+(import "~/report" Report report/_ phase:_)
 (import "~/source-location" SourceLocationTable source-location-table/_)
 (import "~/path" Path PackageName ModuleName [path/_ _] path/_)
 (import "~/code/error" _)
@@ -16,29 +17,29 @@
 (function (code-set/new) {(forall A) (-> (CodeSet A))}
   (code-set: hash-map/empty))
 
-(function (code-set/insert! code map) {(forall A) (-> (Code A) (CodeSet A) unit)}
+(function (code-set/insert! code set) {(forall A) (-> (Code A) (CodeSet A) unit)}
   (let ([p (|> code code/path path/package)]
         [m (|> code code/path path/module)]
-        [packages (code-set/packages map)])
+        [packages (code-set/packages set)])
     (match (hash-map/get? p packages)
       [(some (let modules))
         (ignore (hash-map/insert! m code modules))]
       [none
         (ignore (hash-map/insert! p (hash-map (: m code)) packages))])))
 
-(function (code-set/codes map) {(forall A) (-> (CodeSet A) (Iterator (Code A)))}
-  (|> map
+(function (code-set/codes set) {(forall A) (-> (CodeSet A) (Iterator (Code A)))}
+  (|> set
       code-set/packages
       hash-map/values
       (it/flat-map hash-map/values)))
 
-(function (code-set/errors map) {(forall A) (-> (CodeSet A) (Iterator (: Path Error)))}
-  (|> map
+(function (code-set/errors set) {(forall A) (-> (CodeSet A) (Iterator (: Path Error)))}
+  (|> set
       code-set/codes
       (it/flat-map (lambda (code) (it/map [^1 (: (code/path code) %1)] (code/errors code))))))
 
-(function (code-set/resolve-dependencies-order map) {(forall A) (-> (CodeSet A) (Result (Vector (Code A)) (Array Path)))}
-  (|> map
+(function (code-set/resolve-dependencies-order set) {(forall A) (-> (CodeSet A) (Result (Vector (Code A)) (Array Path)))}
+  (|> set
       code-set/codes
       (it/map [^1 (: (code/path %1) %1)])
       (topological-sort (lambda (f code)
@@ -49,8 +50,8 @@
           (ok (get codes[0]))
           (err (|> codes (it/map code/path) collect)))))))
 
-(function (code-set/build! inputs loader slt)
-  {(forall T A) (-> (T Path) (Loader A) SourceLocationTable (CodeSet A)) (where (Iterate T))}
+(function (code-set/build! inputs loader slt report)
+  {(forall T A) (-> (T Path) (Loader A) SourceLocationTable Report (CodeSet A)) (where (Iterate T))}
   (let* ([result (code-set/new)]
          [visit-log hash-set/empty]
          [(collect path)
@@ -62,5 +63,7 @@
                (loader/load! path (source-location-table/get-locator! path slt) loader))
              (for (let dep) (|> code code/dependencies hash-map/values) (collect dep))
              (code-set/insert! code result))])
-    (for (let input) inputs (collect input))
+    (report/on report phase:collect-code
+      (for (let input) inputs
+        (collect input)))
     result))

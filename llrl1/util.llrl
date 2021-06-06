@@ -2,6 +2,7 @@
 ; but the API is not well thought out enough to be adopted as std.
 
 (import "std/s" s/_)
+(import "std/io" IoError file/_)
 (import "std/ord-map" _)
 
 ;    (getter con: con/a con/b)
@@ -24,6 +25,25 @@
       (let1 self (gensym)
         (ok `(function (,field ,self)
           (,\with1 (,con-name ,@(s/map [^1 `(let ,%1)] fields)!) ,self ,field))))]))
+
+(export embed-text-file-as-string!)
+(macro (embed-text-file-as-string! s)
+  (s/match s
+    [(_ ,(s:string (let path)))
+      ; FIXME: The file path should be relative to the caller of the macro
+      (match (load-text-file-as-string! path)
+        [(ok (let str))
+          (ok (s:string str))]
+        [(err (let e))
+          (err (string e))])]
+    [_
+      (err "Expected (embed-text! \"path\")")]))
+
+(function (load-text-file-as-string! path) {(-> String (Result String IoError))}
+  (let1 fh (file/open! path "r")!
+    (let1 str (read-string-to-end! fh)!
+      (file/close! fh)!
+      (ok str))))
 
 ;    (string (it/format ", " (array 1 2 3)))
 ; => "1, 2, 3"

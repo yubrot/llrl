@@ -4,6 +4,7 @@
 (import "std/hash-map" _)
 (import "std/hash-set" _)
 (import "~/path" [path/_ _] path/_)
+(import "~/report" report/_)
 (import "~/source-location" source-location-table/_ source-locator/_)
 
 (let1
@@ -70,7 +71,7 @@
   (for (: (let path) (let text)) test-sources
     (loader/add-source! path text loader))
 
-  (let1 result (code-set/build! test-inputs loader source-location-table)
+  (let1 result (code-set/build! test-inputs loader source-location-table (report/new))
     (assert-eq? (hash-set "~" "std" "builtin")
                 (|> result code-set/packages hash-map/keys (it/map [^1 (string %1)]) hash-set/collect))
     (assert-eq? (hash-set "~" "~/foo" "~/bar" "~/baz" "std" "std/a" "std/b" "std/c" "std" "builtin")

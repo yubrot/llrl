@@ -1,0 +1,31 @@
+(import "std/io" [io/_ _])
+(import "std/hash-map" _)
+(import "~/util" embed-text-file-as-string!)
+(export resources/_)
+
+(function (resources/builtin-source-code) {(-> String)}
+  (embed-text-file-as-string! "../llrl0/src/ast/builtin.llrl"))
+
+(macro (resources/std-source-codes s)
+  (let1 paths vector/empty
+    (match (list-std-source-paths! paths "../std")
+      [(ok unit)
+        (ok `(,\hash-map ,@(it/fold [^2 (s:cons (source-entry %2) %1)] '() paths)))]
+      [(err (let e))
+      (err (string e))])))
+
+(function (source-entry path) {(-> String (Syntax Sexp))}
+  (let1 p (string/substring (string/length "../std/") (- (string/length path) (string/length ".llrl")) path)
+    `(: ,(s:string p) (,\embed-text-file-as-string! ,(s:string path)))))
+
+(function (list-std-source-paths! paths dir) {(-> (Vector String) String (Result unit io/IoError))}
+  (let1 dh (io/directory/open! dir)!
+    (for (let entry) (io/directory/entries! dh)
+      (cond
+        [(string/ends-with? ".llrl" entry)
+          (vector/push! (io/path dir entry) paths)]
+        [(eq? entry "tests")]
+        [when-match1 (ok (let dh)) (io/directory/open! (io/path dir entry))
+          (io/directory/close! dh)!
+          (list-std-source-paths! paths (io/path dir entry))!]))
+    (io/directory/close! dh)))

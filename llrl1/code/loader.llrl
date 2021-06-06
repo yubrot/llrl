@@ -1,6 +1,7 @@
 (import "std/hash-map" _)
 (import "std/io" [io/_ _])
 (import "~/util" _)
+(import "~/resources" resources/_)
 (import "~/path" Path PackageName ModuleName [path/_ _] path/_)
 (import "~/source-location" SourceLocator)
 (import "~/sexp" Ss _.Ss)
@@ -38,6 +39,12 @@
       [none
         (hash-map/insert! p (conv (hash-map (: m source))) (packages loader))
         #t])))
+
+(function (loader/add-embedded-builtin! loader) {(forall A) (-> (Loader A) Bool)}
+  (loader/add-source! path/builtin (resources/builtin-source-code) loader))
+
+(function (loader/add-embedded-std! loader) {(forall A) (-> (Loader A) Bool)}
+  (loader/add-package! path/package-name/std (resources/std-source-codes) loader))
 
 (function (loader/load! path locator loader) {(forall A) (-> Path SourceLocator (Loader A) (Result (Code A) Error))}
   (match (hash-map/get? (path/package path) (packages loader))
