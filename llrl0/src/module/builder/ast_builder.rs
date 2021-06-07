@@ -271,7 +271,6 @@ impl Build<syntax::Data<'_>> for (DataTypeCon, Vec<DataValueCon>) {
             .value_cons
             .into_iter()
             .map(|source| {
-                let source = ctx.expand_macro(source)?;
                 let source = ctx.matches::<syntax::DataValueConstructor>(&source)?;
                 let fields = ctx.build(source.fields)?;
                 let value_con = DataValueCon {
@@ -304,7 +303,6 @@ impl Build<syntax::BuiltinType<'_>> for (BuiltinTypeCon, Vec<BuiltinValueCon>) {
             .value_cons
             .into_iter()
             .map(|source| {
-                let source = ctx.expand_macro(source)?;
                 let source = ctx.matches::<syntax::BuiltinValueConstructor>(&source)?;
                 let fields = ctx.build(source.fields)?;
                 let value_con = BuiltinValueCon {
@@ -352,7 +350,6 @@ impl Build<syntax::Class<'_>> for (ClassCon, Vec<ClassMethod>) {
             .methods
             .into_iter()
             .map(|source| {
-                let source = ctx.expand_macro(source)?;
                 let source = ctx.matches::<syntax::Function>(&source)?;
                 let scheme = match source.scheme {
                     Some(ann) => ctx.build(ann)?,
@@ -399,7 +396,6 @@ impl Build<syntax::Instance<'_>> for (InstanceCon, Vec<InstanceMethod>) {
             .method_impls
             .into_iter()
             .map(|source| {
-                let source = ctx.expand_macro(source)?;
                 let source = ctx.matches::<syntax::Function>(&source)?;
                 let params = ctx.build(source.params)?;
                 let scheme = ctx.build(source.scheme)?;
@@ -457,8 +453,8 @@ impl Build<&'_ [Sexp]> for ExprRep {
 
 impl Build<&'_ Sexp> for Expr {
     fn build(ctx: &mut impl Context, source: &'_ Sexp) -> Result<Self> {
-        let source = ctx.expand_macro(source)?;
         let loc = source.loc;
+        let source = ctx.expand_macro(source)?;
         let source = ctx.matches::<syntax::Expr>(&source)?;
         let rep = ctx.build(source)?;
         Ok(ctx.new_expr(loc, rep))
@@ -607,8 +603,8 @@ impl Build<&'_ Sexp> for Const {
 
 impl Build<&'_ Sexp> for Pattern {
     fn build(ctx: &mut impl Context, source: &'_ Sexp) -> Result<Self> {
-        let source = ctx.expand_macro(source)?;
         let loc = source.loc;
+        let source = ctx.expand_macro(source)?;
         let source = ctx.matches::<syntax::Pattern>(&source)?;
         let rep = ctx.build(source)?;
         Ok(ctx.new_pattern(loc, rep))
@@ -661,7 +657,6 @@ impl Build<syntax::Pattern<'_>> for PatternRep {
 
 impl Build<&'_ Sexp> for (Pattern, Expr) {
     fn build(ctx: &mut impl Context, source: &'_ Sexp) -> Result<Self> {
-        let source = ctx.expand_macro(source)?;
         let source = ctx.matches::<syntax::MatchClause>(&source)?;
         let pat = ctx.build(source.pat)?;
         let body = ctx.build((source.loc, source.body))?;
