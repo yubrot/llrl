@@ -89,7 +89,7 @@
 (export Type _.Type type:_ type/_)
 (export TypeUse _.TypeUse)
 (export TypeCon _.TypeCon type-con:_ type-con/_)
-(export Constraint _.Constraint constraint:_ constraint/_)
+(export Constraint _.Constraint constraint: constraint/_)
 (export ConstraintRep _.ConstraintRep constraint-rep:_ constraint-rep/_)
 (export ConstraintUse _.ConstraintUse)
 (export TypeParameter _.TypeParameter type-parameter: type-parameter/_)
@@ -228,6 +228,9 @@
 
 (getter scheme: scheme/ty-params scheme/s-params scheme/body)
 
+(function (scheme/monomorphic-type? scheme) {(-> Scheme (Option Type))}
+  (when? (generic/monomorphic? scheme) (scheme/body scheme)))
+
 (derive (DebugDisplay) value-data Satisfaction
   (satisfaction:by-premise (NodeId Constraint) (Array (NodeId Constraint))) ; id path
   (satisfaction:by-instance (NodeId InstanceCon) Instantiation) ; id inst
@@ -281,7 +284,7 @@
       [(expr-rep:app (let callee) (let args))
         (dfs f callee)!
         (for (let arg) args (dfs f arg)!)]
-      [(expr-rep:capture _)]
+      [(expr-rep:unresolved-capture _)]
       [(expr-rep:annotate (let e) _)
         (dfs f e)!]
       [(expr-rep:let (let defs) (let body))
@@ -328,7 +331,7 @@
       [(expr-rep:app (let callee) (let args))
         (dfs f (expr-focus-same-level: callee))!
         (for (let arg) args (dfs f (expr-focus-same-level: arg))!)]
-      [(expr-rep:capture _)]
+      [(expr-rep:unresolved-capture _)]
       [(expr-rep:annotate (let e) _)
         (dfs f (expr-focus-same-level: e))!]
       [(expr-rep:let (let defs) (let body))
@@ -361,7 +364,7 @@
   (expr-rep:con ValueCon)
   (expr-rep:const Const)
   (expr-rep:app Expr (Array Expr))
-  (expr-rep:capture Construct)
+  (expr-rep:unresolved-capture (NodeId Construct))
   (expr-rep:annotate Expr (Annotation Type))
   (expr-rep:let (Array (Either LocalVar LocalFun)) Expr)
   (expr-rep:seq (Array Expr) Expr)
@@ -904,7 +907,7 @@
 ; ---------------------------
 ; Construct
 
-(export Construct _.Construct construct/_ _.To.Construct Cast.From.Construct._)
+(export Construct _.Construct construct/_ _.To.Construct Conv.From.Construct._)
 
 ; A type-erased NodeId.
 (derive (Eq Ord DebugDisplay Hash) value-data Construct
@@ -993,38 +996,38 @@
 
 (export builtin/_)
 
-(function LIMIT_VARIADIC_SIZE 16)
+(function builtin/limit-variadic-size 16)
 
 ; 0..99 is reserved for function types
 (function (builtin/fun arity) {(-> U64 (NodeId BuiltinTypeCon))}
-  (assert (<= arity LIMIT_VARIADIC_SIZE) (string "Unsupported fun arity: " arity))
+  (assert (<= arity builtin/limit-variadic-size) (string "Unsupported fun arity: " arity))
   (node-id/new-unchecked module-id/builtin (conv arity)))
 
 (function (builtin/fun? id) {( -> (NodeId BuiltinTypeCon) (Option U64))}
   (with1 (: (let mid) (let index)) (node-id/components id)
-    (if (and (module-id/builtin? mid) (<= index LIMIT_VARIADIC_SIZE))
+    (if (and (module-id/builtin? mid) (<= index builtin/limit-variadic-size))
       (some (conv index))
       none)))
 
 ; 100..199 is reserved for tuple types
 (function (builtin/tuple-type size) {(-> U64 (NodeId DataTypeCon))}
-  (assert (<= size LIMIT_VARIADIC_SIZE) (string "Unsupported tuple size: " size))
+  (assert (<= size builtin/limit-variadic-size) (string "Unsupported tuple size: " size))
   (node-id/new-unchecked module-id/builtin (+ 100 (conv size))))
 
 (function (builtin/tuple-type? id) {( -> (NodeId DataTypeCon) (Option U64))}
   (with1 (: (let mid) (let index)) (node-id/components id)
-    (if (and (module-id/builtin? mid) (<= 100 index (+ 100 LIMIT_VARIADIC_SIZE)))
+    (if (and (module-id/builtin? mid) (<= 100 index (+ 100 builtin/limit-variadic-size)))
       (some (conv (- index 100)))
       none)))
 
 ; 200..299 is reserved for tuple values
 (function (builtin/tuple size) {(-> U64 (NodeId DataValueCon))}
-  (assert (<= size LIMIT_VARIADIC_SIZE) (string "Unsupported tuple size: " size))
+  (assert (<= size builtin/limit-variadic-size) (string "Unsupported tuple size: " size))
   (node-id/new-unchecked module-id/builtin (+ 200 (conv size))))
 
 (function (builtin/tuple? id) {( -> (NodeId DataValueCon) (Option U64))}
   (with1 (: (let mid) (let index)) (node-id/components id)
-    (if (and (module-id/builtin? mid) (<= 200 index (+ 200 LIMIT_VARIADIC_SIZE)))
+    (if (and (module-id/builtin? mid) (<= 200 index (+ 200 builtin/limit-variadic-size)))
       (some (conv (- index 200)))
       none)))
 

@@ -72,14 +72,16 @@
      [builtin-value-con BuiltinValueCon]
      [class-con ClassCon]
      [class-method ClassMethod]
-     [instance-con InstanceCon]
-     [instance-method InstanceMethod])
+     [instance-con InstanceCon])
     (function (($symbol-concat module/define- $name ($symbol "!")) x module)
       {(-> ($symbol-concat ast/ $type) Module (Result unit Error))}
       (with1 (symbol: (let loc) (let name)) (|> module module/symbol-map (symbol-map/get? (($symbol-concat ast/ $name /id) x)) option/force)
         (scope/define! name (located-construct loc (($symbol-concat ast/ $name /id) x)) (module/top-level module))!
         (($symbol-concat ast/root/add- $name ($symbol "!")) x (module/ast-root module))
         (ok unit)))))
+
+(function (module/add-instance-method! method module) {(-> ast/InstanceMethod Module unit)}
+  (ignore (ast/root/add-instance-method! method (module/ast-root module))))
 
 (function (module/add-init-expr! expr module) {(-> ast/InitExpr Module unit)}
   (vector/push! expr (|> module module/ast-root ast/root/init-expressions)))

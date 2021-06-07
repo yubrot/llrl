@@ -8,10 +8,10 @@
 (import "~/report" Report report/_ phase:_)
 (import "~/code" Code _.Code code/_ code-rep:_)
 (import "~/module/error" _)
-(import "~/module/meaning" _)
+(import "~/module/meaning" imports/add!)
 (import "~/module/unit" _)
-(import "~/module/set" _)
-(import "~/module/builder/external" _)
+(import "~/module/builder/external" External external/_)
+(import "~/module/builder/ast-builder" [ast-builder/run! run!])
 (export Backend Backend.unit backend/_ module/build!)
 
 (class (Backend B)
@@ -45,7 +45,7 @@
         (let* ([path (code/path code)]
                [mid (module-id/from-index (conv index))]
                [module (module/new-uninitialized mid path)]
-               [result (semantic-analysis! module code external)])
+               [result (semantic-analysis! module code external report)])
           (report/merge! (module/report module) report)
           (ord-map/insert! mid module modules)
           (when-match1 (err (let e)) result (return (: modules (some e))))
@@ -69,8 +69,8 @@
     (with1 (module-build-context: _ _ (let backend)) e
       (backend/execute-macro! id s backend))))
 
-(function (semantic-analysis! module code external)
-  {(forall E) (-> Module (Code Construct) E (Result unit Error)) (where (External E))}
+(function (semantic-analysis! module code external report)
+  {(forall E) (-> Module (Code Construct) E Report (Result unit Error)) (where (External E))}
 
   ; code/dependencies (Path) -> module/imports (ModuleId)
   (for (let path) (|> code code/dependencies hash-map/values)
@@ -84,7 +84,7 @@
     [code-rep:empty]
     [(code-rep:source (let source))
       ; TODO: report/on builder/importer
-      ; TODO: report/on builder/ast-builder
+      (report/on report phase:build-ast (ast-builder/run! module source external))!
       ; TODO: report/on builder/resolver
       ; TODO: report/on builder/kind-inference
       ; TODO: report/on builder/type-inference

@@ -1,0 +1,527 @@
+(import "std/hash-map" _)
+(import "~/util" _)
+(import "~/source-location" SourceLocation)
+(import "~/sexp" S _.S s/_ Ss _.Ss ss/_ s-rep:_)
+(import "~/syntax" Syntax_ syntax/_ syntax:_ [SyntaxError Error])
+(import "~/ast" _)
+(import "~/report" Report report/_ phase:_)
+(import "~/module/error" _)
+(import "~/module/unit" _)
+(import "~/module/meaning" _)
+(import "~/module/scope" _)
+(import "~/module/builder/external" External external/_)
+(export run!)
+
+(function (run! module source external)
+  {(forall E) (-> Module (Ss Construct) E (Result unit Error)) (where (External E))}
+  (for (let s) (ss/elems source) (define-top-level! s (context module external))!)
+  (root/verify-relations (module/ast-root module))
+  (ok unit))
+
+(value-data Context
+  (context:
+    Module
+    (-> (NodeId Macro) (S Construct) (Result (S Construct) String))
+    (HashMap String Construct)))
+
+(function (context module external) {(forall E) (-> Module E Context) (where (External E))}
+  (context:
+    module
+    [^2 (external/execute-macro! %1 %2 external)]
+    builtin-mapping))
+
+(function (next-id! loc name ctx)
+  {(forall A)
+   (-> SourceLocation String Context (NodeId A))
+   (where (Conv (NodeId A) Construct)
+          (Conv Construct (Option (NodeId A))))}
+  (with1 (context: (let module) _ (let builtin-map)) ctx
+    (let1
+      id
+      (|> (when? (|> module module/id module-id/builtin?) name)
+          (option/then [^1 (conv (hash-map/get? %1 builtin-map)?)])
+          (option/unwrap* [^0 (module/issue-node-id! module)]))
+      (symbol-map/set! id loc name (module/symbol-map module))
+      id)))
+
+(function (reinterpret-id! id ctx)
+  {(forall A B)
+   (-> (NodeId A) Context (NodeId B))
+   (where (Conv (NodeId A) Construct)
+          (Conv (NodeId B) Construct)
+          (Conv Construct (Option (NodeId A)))
+          (Conv Construct (Option (NodeId B))))}
+  (with1 (context: (let module) _ _) ctx
+    (let ([new-id (node-id/reinterpret-unchecked id)]
+          [symbol (|> (module/symbol-map module) (symbol-map/get? id) option/force)])
+      (symbol-map/set! new-id (symbol/loc symbol) (symbol/name symbol) (module/symbol-map module))
+      new-id)))
+
+(function (expand-macro! s ctx)
+  {(-> (S Construct) Context (Result (S Construct) Error))}
+  (with1 (context: (let module) (let expand!) _) ctx
+    (if-match ([(ok (syntax:macro-apply (syntax:use (let loc) (let callee)) _)) (syntax/macro-apply s)]
+               [(some (let macro-id))
+                 (match callee
+                   [(left (let name))
+                     (|> module module/top-level (scope/get? name) (option/then [^1 (conv (conv-to Construct %1))]))]
+                   [(right (let construct))
+                     (conv construct)])])
+      (if (ne? (module/id module) (node-id/module macro-id))
+        (match (report/off (module/report module) phase:build-ast (expand! macro-id s))
+          [(ok (let s))
+            (expand-macro! s ctx)]
+          [(err (let e))
+            (err (error:macro-expansion-failed loc e))])
+        (err (error:cannot-use-macro-defined-in-the-same-module loc)))
+      (ok s))))
+
+(function (define-top-level! s ctx) {(-> (S Construct) Context (Result unit Error))}
+  (with1 (context: (let module) _ _) ctx
+    (let* ([loc (s/location s)]
+           [s (expand-macro! s ctx)!]
+           [s (expand-syntax syntax/decl s)!])
+      (match s
+        [syntax:decl:no-implicit-std]
+        [(syntax:decl:import _)]
+        [(syntax:decl:export _)]
+        [(syntax:decl:function (let f))
+          (module/define-function! (build! f ctx)! module)!]
+        [(syntax:decl:c-function (let f))
+          (module/define-c-function! (build! f ctx)! module)!]
+        [(syntax:decl:builtin-op (let f))
+          (module/define-builtin-op! (build! f ctx)! module)!]
+        [(syntax:decl:macro (let m))
+          (module/define-macro! (build! m ctx)! module)!]
+        [(syntax:decl:data (let d))
+          (with1 (data-type: (let tycon) (let vcons)) (build! d ctx)!
+            (module/define-data-type-con! tycon module)!
+            (for (let vcon) (vcons) (module/define-data-value-con! vcon module)!))]
+        [(syntax:decl:builtin-type (let b))
+          (with1 (builtin-type: (let tycon) (let vcons)) (build! b ctx)!
+            (module/define-builtin-type-con! tycon module)!
+            (for (let vcon) (vcons) (module/define-builtin-value-con! vcon module)!))]
+        [(syntax:decl:class (let c))
+          (with1 (class: (let class-con) (let methods)) (build! c ctx)!
+            (module/define-class-con! class-con module)!
+            (for (let method) (methods) (module/define-class-method! method module)!))]
+        [(syntax:decl:instance (let i))
+          (with1 (instance: (let inst-con) (let methods)) (build! i ctx)!
+            (module/define-instance-con! inst-con module)!
+            (for (let method) (methods) (module/add-instance-method! method module)))]
+        [(syntax:decl:begin (let decls))
+          (for (let decl) decls
+            (define-top-level! decl ctx)!)]
+        [(syntax:decl:top-level-expr (let e))
+          (module/add-init-expr! (init-expr:eval (build! e ctx)!) module)])))
+  (ok unit))
+
+(function (expand-syntax syn s)
+  {(forall A) (-> (-> (S Construct) (Result A SyntaxError)) (S Construct) (Result A Error))}
+  (result/map-err error:syntax (syn s)))
+
+(class (Build A B)
+  (function (build! a ctx) {(-> A Context (Result B Error))}))
+
+(instance Build.Option (forall A B) (Build (Option A) (Option B)) (where (Build A B))
+  (function (build! a ctx)
+    (match a
+      [(some (let a)) (ok (some (build! a ctx)!))]
+      [none (ok none)])))
+
+(instance Build.Array (forall A B) (Build (Array A) (Array B)) (where (Build A B))
+  (function (build! a ctx)
+    (ok (vector/buffer (it/traverse-result [^1 (build! %1 ctx)] a)!))))
+
+(instance Build.Annotation (forall B) (Build (S Construct) (Annotation B))
+  (where (Build (S Construct) B)
+         (Conv (NodeId (Annotation B)) Construct)
+         (Conv Construct (Option (NodeId (Annotation B)))))
+  (function (build! s ctx)
+    (let1 a (build! s ctx)!
+      (ok (annotation: (next-id! (s/location s) "" ctx) a)))))
+
+(instance Build.Name (forall A) (Build SyntaxName (NodeId A))
+  (where (Conv (NodeId A) Construct)
+        (Conv Construct (Option (NodeId A))))
+  (function (build! a ctx)
+    (with1 (syntax:name (let loc) (let name)) a
+      (ok (next-id! loc name ctx)))))
+
+(instance Build.Function (Build (SyntaxFunction Construct) Function)
+  (function (build! a ctx)
+    (with1 (syntax:function (let loc) (let transparent?) (let name) (let params) (let scheme) (let body)) a
+      (let ([params (build! params ctx)!]
+            [scheme (build! scheme ctx)!]
+            [body (build! (: loc body) ctx)!])
+        (ok (function: (build! name ctx)! transparent? params scheme body))))))
+
+(instance Build.CFunction (Build (SyntaxCFunction Construct) CFunction)
+  (function (build! a ctx)
+    (with1 (syntax:c-function (let loc) (let name) (let scheme) (let c-name)) a
+      (with1 (annotation: (let ann-id) (let scheme)) (build! scheme ctx)!
+        (if-match1 (some (let ty)) (scheme/monomorphic-type? scheme)
+          (ok (c-function: (build! name ctx)! (annotation: (reinterpret-id! ann-id ctx) ty) c-name))
+          (err (error:cannot-generalize loc)))))))
+
+(instance Build.BuiltinOp (Build (SyntaxBuiltinOp Construct) BuiltinOp)
+  (function (build! a ctx)
+    (with1 (syntax:builtin-op (let loc) (let name) (let scheme) (let builtin-name)) a
+      (ok (builtin-op: (build! name ctx)! (build! scheme ctx)! builtin-name)))))
+
+(instance Build.Macro (Build (SyntaxMacro Construct) Macro)
+  (function (build! a ctx)
+    (with1 (syntax:macro (let loc) (let name) (let param) (let body)) a
+      (ok (macro: (build! name ctx)! (build! param ctx)! (build! (: loc body) ctx)!)))))
+
+(instance Build.Data (Build (SyntaxData Construct) DataType)
+  (function (build! a ctx)
+    (with1 (syntax:data _ (let repr) (let name) (let ty-params) (let value-cons)) a
+      (let* ([tycon-id (build! name ctx)!]
+             [repr
+               (match repr
+                 [syntax:data-repr:default data-repr:default]
+                 [syntax:data-repr:value data-repr:value]
+                 [syntax:data-repr:c data-repr:c])]
+             [ty-params (build! (option/unwrap array/empty ty-params) ctx)!]
+             [value-cons
+               (it/traverse-result
+                 (lambda (a)
+                   (with1 (syntax:data-value-con _ (let name) (let fields)) a
+                     (ok (data-value-con: (build! name ctx)! (build! fields ctx)! tycon-id))))
+                 value-cons)!]
+             [value-con-ids (collect (it/map data-value-con/id value-cons))])
+        (ok (data-type:
+          (data-type-con: tycon-id repr ty-params value-con-ids)
+          [^0 (iterate value-cons)]))))))
+
+(instance Build.BuiltinType (Build (SyntaxBuiltinType Construct) BuiltinType)
+  (function (build! a ctx)
+    (with1 (syntax:builtin-type _ (let name) (let ty-params) (let builtin-name) (let value-cons)) a
+      (let* ([tycon-id (build! name ctx)!]
+             [ty-params (build! (option/unwrap array/empty ty-params) ctx)!]
+             [value-cons
+               (it/traverse-result
+                 (lambda (a)
+                   (with1 (syntax:builtin-value-con _ (let name) (let fields) (let builtin-name)) a
+                     (ok (builtin-value-con: (build! name ctx)! builtin-name (build! fields ctx)! tycon-id))))
+                 value-cons)!]
+             [value-con-ids (collect (it/map builtin-value-con/id value-cons))])
+        (ok (builtin-type:
+          (builtin-type-con: tycon-id ty-params builtin-name value-con-ids)
+          [^0 (iterate value-cons)]))))))
+
+(instance Build.ValueConField (Build (S Construct) ValueConField)
+  (function (build! s ctx)
+    (let1 ty (build! s ctx)!
+      (ok (value-con-field: (next-id! (s/location s) "" ctx) ty)))))
+
+(instance Build.Class (Build (SyntaxClass Construct) Class)
+  (function (build! a ctx)
+    (with1 (syntax:class _ (let sealed?) (let name) (let ty-params) (let superclasses) (let methods)) a
+      (let* ([class-id (build! name ctx)!]
+             [constraint-id (build! name ctx)!]
+             [ty-params (build! (option/unwrap array/empty ty-params) ctx)!]
+             [superclasses (build! superclasses ctx)!]
+             [methods
+               (it/traverse-result
+                 (lambda (a)
+                   (with1 (syntax:function (let loc) _ (let name) (let params) (let scheme) (let body)) a
+                     (let ([scheme
+                             (match scheme
+                               [(some (let scheme)) (build! scheme ctx)!]
+                               [none (err (error:class-method-type-scheme-unspecified loc))!])]
+                           [params (build! params ctx)!]
+                           [default-body (when? (not (array/empty? body)) (build! (: loc body) ctx)!)])
+                       (ok (class-method: (build! name ctx)! scheme params default-body class-id)))))
+                 methods)!]
+             [method-ids (collect (it/map class-method/id methods))])
+        (ok (class:
+          (class-con: class-id sealed? constraint-id ty-params superclasses method-ids)
+          [^0 (iterate methods)]))))))
+
+(instance Build.Instance (Build (SyntaxInstance Construct) Instance)
+  (function (build! a ctx)
+    (with1 (syntax:instance _ (let name) (let ty-params) (let s-params) (let target) (let methods)) a
+      (let* ([inst-id (build! name ctx)!]
+             [ty-params (build! ty-params ctx)!]
+             [s-params (build! s-params ctx)!]
+             [target (build! target ctx)!]
+             [methods
+               (it/traverse-result
+                 (lambda (a)
+                   (with1 (syntax:function (let loc) (let transparent?) (let name) (let params) (let scheme) (let body)) a
+                     (let ([params (build! params ctx)!]
+                           [scheme (build! scheme ctx)!]
+                           [body (build! (: loc body) ctx)!])
+                       (ok (instance-method: (build! name ctx)! transparent? scheme params body none inst-id)))))
+                 methods)!]
+             [method-ids (collect (it/map instance-method/id methods))])
+        (ok (instance:
+          (instance-con: inst-id ty-params s-params target method-ids)
+          [^0 (iterate methods)]))))))
+
+(instance Build.Parameter (Build SyntaxName Parameter)
+  (function (build! a ctx)
+    (ok (parameter: (build! a ctx)!))))
+
+(instance Build.ExprSeq (Build (: SourceLocation (Array (S Construct))) Expr)
+  (function (build! a ctx)
+    (with1 (: (let loc) (let seq)) a
+      (ok (expr: (next-id! loc "" ctx) (build! seq ctx)!)))))
+
+(instance Build.ExprSeqRep (Build (Array (S Construct)) ExprRep)
+  (function (build! a ctx)
+    (ok (cond
+      [(array/empty? a)
+        expr-rep/unit]
+      [(eq? (array/length a) 1)
+        (expr/rep (build! (get a[0]) ctx)!)]
+      [else
+        (with1 (: (let ret) (let stmts)) (array/split-last a)
+          (expr-rep:seq (build! stmts ctx)! (build! ret ctx)!))]))))
+
+(instance Build.Expr (Build (S Construct) Expr)
+  (function (build! s ctx)
+    (let* ([loc (s/location s)]
+           [s (expand-macro! s ctx)!]
+           [s (expand-syntax syntax/expr s)!]
+           [rep
+              (match s
+                [(syntax:expr:begin (let ss))
+                  (build! ss ctx)!]
+                [(syntax:expr:let (let defs) (let body))
+                  (expr-rep:let (build! defs ctx)! (build! (: loc body) ctx)!)]
+                [(syntax:expr:if (let cond) (let then) (let else))
+                  (expr-rep:if (build! cond ctx)! (build! then ctx)! (build! else ctx)!)]
+                [(syntax:expr:while (let cond) (let body))
+                  (expr-rep:while (build! cond ctx)! (build! (: loc body) ctx)!)]
+                [(syntax:expr:match (let target) (let clauses))
+                  (expr-rep:match (build! target ctx)! (build! clauses ctx)!)]
+                [(syntax:expr:return (let e))
+                  (expr-rep:return (build! e ctx)!)]
+                [(syntax:expr:tuple (let elems))
+                  (if (array/empty? elems)
+                    expr-rep/unit
+                    (let ([callee (expr: (next-id! loc "" ctx) (expr-rep/tuple (array/length elems)))]
+                          [args (build! elems ctx)!])
+                      (expr-rep:app callee args)))]
+                [syntax:expr:unit
+                  expr-rep/unit]
+                [(syntax:expr:use (syntax:use (let loc) (left (let name))))
+                  (expr-rep:unresolved (next-id! loc name ctx))]
+                [(syntax:expr:use (syntax:use (let loc) (right (let construct))))
+                  (cond
+                    [when-match ([(some (let value)) (conv construct)]
+                                 [#t (value/static? value)])
+                      (expr-rep:value value)]
+                    [when-match1 (some (let value-con)) (conv construct)
+                      (expr-rep:con value-con)]
+                    [else
+                      (err (error:unresolved loc "value" "<captured use>"))!])]
+                [(syntax:expr:app (let callee) (let args))
+                  (expr-rep:app (build! callee ctx)! (build! args ctx)!)]
+                [(syntax:expr:quote (let s))
+                  (expr-rep:const (const:sexp s))]
+                [(syntax:expr:capture (let name))
+                  (expr-rep:unresolved-capture (build! name ctx)!)]
+                [(syntax:expr:annotate (let body) (let scheme))
+                  (with ([(let body) (build! body ctx)!]
+                         [(annotation: (let ann-id) (let scheme)) (build! scheme ctx)!])
+                    (if-match1 (some (let ty)) (scheme/monomorphic-type? scheme)
+                      (expr-rep:annotate body (annotation: (reinterpret-id! ann-id ctx) ty))
+                      (err (error:cannot-generalize loc))!))]
+                [(syntax:expr:literal (let s))
+                  (if-match1 (s-rep:bool (let value)) (s/rep s)
+                    (expr-rep/bool value)
+                    (expr-rep:const (build! s ctx)!))])])
+      (ok (expr: (next-id! loc "" ctx) rep)))))
+
+(instance Build.Def (Build (SyntaxLocalDef Construct) (Either LocalVar LocalFun))
+  (function (build! a ctx)
+    (with1 (syntax:local-def (let loc) (let name) (let params) (let ann) (let body)) a
+      (let ([params (build! params ctx)!]
+            [ann (build! ann ctx)!]
+            [body (build! (: loc body) ctx)!])
+        (ok (match params
+          [(some (let params))
+            (right (local-fun: (build! name ctx)! params ann body))]
+          [none
+            (let1 ann (with1? (some (annotation: (let ann-id) (let scheme))) ann
+                        (if-match1 (some (let ty)) (scheme/monomorphic-type? scheme)
+                          (annotation: (reinterpret-id! ann-id ctx) ty)
+                          (err (error:cannot-generalize loc))!))
+              (left (local-var: (build! name ctx)! ann body)))]))))))
+
+(instance Build.Const (Build (S Construct) Const)
+  (function (build! s ctx)
+    (match (s/rep s)
+      [(s-rep:integer (let signed) (let value))
+        (ok (const:integer signed value))]
+      [(s-rep:fp-number (let value))
+        (ok (const:fp-number value))]
+      [(s-rep:string (let value))
+        (ok (const:string value))]
+      [(s-rep:char (let value))
+        (ok (const:char value))]
+      [_
+        (err (error:internal (s/location s) (string "Cannot treat this expression as a constant: " s)))])))
+
+(instance Build.Pattern (Build (S Construct) Pattern)
+  (function (build! s ctx)
+    (let* ([loc (s/location s)]
+           [s (expand-macro! s ctx)!]
+           [s (expand-syntax syntax/pattern s)!]
+           [rep
+              (match s
+                [(syntax:pattern:const (let s))
+                  (if-match1 (s-rep:bool (let value)) (s/rep s)
+                    (pattern-rep:decon (value-con/bool value) none)
+                    (pattern-rep:const (build! s ctx)!))]
+                [(syntax:pattern:var (let name) (let as-pat))
+                  (pattern-rep:var (pattern-var: (build! name ctx)! (build! as-pat ctx)!))]
+                [(syntax:pattern:tuple (let elems))
+                  (pattern-rep/tuple (build! elems ctx)!)]
+                [syntax:pattern:unit
+                  pattern-rep/unit]
+                [(syntax:pattern:decon (syntax:use (let loc) (left (let name))) (let fields))
+                  (pattern-rep:unresolved (next-id! loc name ctx) (build! fields ctx)!)]
+                [(syntax:pattern:decon (syntax:use (let loc) (right (let construct))) (let fields))
+                  (if-match1 (some (let value-con)) (conv construct)
+                    (pattern-rep:decon value-con (build! fields ctx)!)
+                    (err (error:unresolved loc "constructor" "<captured use>"))!)]
+                [syntax:pattern:wildcard
+                  pattern-rep:wildcard])])
+      (ok (pattern: (next-id! loc "" ctx) rep)))))
+
+(instance Build.MatchClause (Build (SyntaxMatchClause Construct) (: Pattern Expr))
+  (function (build! a ctx)
+    (with1 (syntax:match-clause (let loc) (let pat) (let body)) a
+      (ok (: (build! pat ctx)! (build! (: loc body) ctx)!)))))
+
+(instance Build.Type (Build (S Construct) Type)
+  (function (build! s ctx)
+    (let* ([s (expand-macro! s ctx)!]
+           [s (expand-syntax syntax/type s)!])
+      (ok (match s
+        [(syntax:type:fun (let args) (let ret))
+          (build-type unit (-> ,@(build! args ctx)! ,(build! ret ctx)!))]
+        [(syntax:type:tuple (let elems))
+          (build-type unit (: ,@(build! elems ctx)!))]
+        [syntax:type:unit
+          (build-type unit unit)]
+        [(syntax:type:use (syntax:use (let loc) (left (let name))))
+          (build-type unit (unresolved ,(next-id! loc name ctx)))]
+        [(syntax:type:use (syntax:use (let loc) (right (let construct))))
+          (if-match1 (some (let type-con)) (conv construct)
+            (build-type unit (con ,type-con))
+            (err (error:unresolved loc "type" "<captured use>"))!)]
+        [(syntax:type:app (let callee) (let args))
+          (build-type unit (,(build! callee ctx)! ,@(build! args ctx)!))])))))
+
+(instance Build.Constraint (Build (SyntaxConstraint Construct) Constraint)
+  (function (build! a ctx)
+    (with1 (syntax:constraint (let loc) (syntax:use (let target-loc) (let target)) (let args)) a
+      (let1
+        rep
+        (match target
+          [(left (let name))
+            (constraint-rep:unresolved
+              (next-id! target-loc name ctx)
+              (build! (option/unwrap array/empty args) ctx)!)]
+          [(right (let construct))
+            (if-match1 (some (let class-id)) (conv construct)
+              (constraint-rep:class
+                class-id
+                (build! (option/unwrap array/empty args) ctx)!)
+              (err (error:unresolved target-loc "class" "<captured use>"))!)])
+        (ok (constraint: (next-id! loc "" ctx) rep))))))
+
+(instance Build.TypeParameter (Build (SyntaxTypeParameter Construct) TypeParameter)
+  (function (build! a ctx)
+    (with1 (syntax:type-parameter _ (let name) (let kind-ann)) a
+      (let1 kind-ann (build! kind-ann ctx)!
+        (ok (type-parameter: (build! name ctx)! kind-ann))))))
+
+(instance Build.Scheme (Build (SyntaxScheme Construct) (Annotation Scheme))
+  (function (build! a ctx)
+    (with1 (syntax:scheme (let loc) (let ty-params) (let s-params) (let body)) a
+      (let ([ty-params (build! ty-params ctx)!]
+            [s-params (build! s-params ctx)!]
+            [body (build! body ctx)!])
+        (ok (annotation: (next-id! loc "" ctx) (scheme: ty-params s-params body)))))))
+
+(instance Build.Kind (Build (S Construct) Kind)
+  (function (build! s ctx)
+    (let* ([s (expand-macro! s ctx)!]
+           [s (expand-syntax syntax/kind s)!])
+      (ok (match s
+        [(syntax:kind:fun (let args) (let ret))
+          (build-kind unit (-> ,@(build! args ctx)! ,(build! ret ctx)!))]
+        [syntax:kind:type (build-kind unit *)]
+        [syntax:kind:constraint (build-kind unit Constraint)]
+        [syntax:kind:satisfaction (build-kind unit Satisfaction)]
+        [syntax:kind:value (build-kind unit Value)]
+        [syntax:kind:macro (build-kind unit Macro)])))))
+
+(function builtin-mapping {(HashMap String Construct)}
+  (let* ([map hash-map/empty]
+         [(put! name id) (hash-map/insert! name (conv id) map)])
+    (for (let i) (iterator/range 0 (+ builtin/limit-variadic-size 1) 1)
+      (put! (string "Fun." i) (builtin/fun i))
+      (put! (string "Tuple." i) (builtin/tuple-type i))
+      (put! (string i ":") (builtin/tuple i)))
+
+    (put! "Bool" builtin/bool)
+    (put! "false" builtin/false)
+    (put! "true" builtin/true)
+
+    (put! "i8" builtin/i8)
+    (put! "i16" builtin/i16)
+    (put! "i32" builtin/i32)
+    (put! "i64" builtin/i64)
+    (put! "u8" builtin/u8)
+    (put! "u16" builtin/u16)
+    (put! "u32" builtin/u32)
+    (put! "u64" builtin/u64)
+    (put! "f32" builtin/f32)
+    (put! "f64" builtin/f64)
+
+    (put! "String" builtin/string)
+
+    (put! "Char" builtin/char)
+
+    (put! "CapturedUse" builtin/captured-use)
+
+    (put! "Option" builtin/option)
+    (put! "none" builtin/none)
+    (put! "some" builtin/some)
+
+    (put! "Result" builtin/result)
+    (put! "err" builtin/err)
+    (put! "ok" builtin/ok)
+
+    (put! "Number" builtin/number)
+    (put! "#Number" builtin/number-constraint)
+    (put! "Number.I8" builtin/number-i8)
+    (put! "Number.I16" builtin/number-i16)
+    (put! "Number.I32" builtin/number-i32)
+    (put! "Number.I64" builtin/number-i64)
+    (put! "Number.U8" builtin/number-u8)
+    (put! "Number.U16" builtin/number-u16)
+    (put! "Number.U32" builtin/number-u32)
+    (put! "Number.U64" builtin/number-u64)
+    (put! "Number.F32" builtin/number-f32)
+    (put! "Number.F64" builtin/number-f64)
+
+    (put! "FPNumber" builtin/fp-number)
+    (put! "#FPNumber" builtin/fp-number-constraint)
+    (put! "FPNumber.F32" builtin/fp-number-f32)
+    (put! "FPNumber.F64" builtin/fp-number-f64)
+
+    (put! "Syntax" builtin/syntax-type)
+    (put! "syntax" builtin/syntax-value)
+
+    (put! "Sexp" builtin/sexp)
+
+    map))

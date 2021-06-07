@@ -8,6 +8,7 @@
 
 ; Error during module building.
 (derive (DebugDisplay) data Error
+  (error:internal SourceLocation String)
   (error:cannot-find-module Path)
   (error:syntax SyntaxError)
   (error:multiple-declarations String SourceLocation SourceLocation)
@@ -44,6 +45,8 @@
          (AstDisplayContext C))
   (function (contextual-display! w a ctx)
     (match a
+      [(error:internal (let loc) (let msg))
+        (display-all! w (contextual: loc ctx) ": " msg)]
       [(error:cannot-find-module (let path))
         (display-all! w "Cannot find module \"" path "\"")]
       [(error:syntax (let e))

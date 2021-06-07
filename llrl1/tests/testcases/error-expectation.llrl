@@ -58,7 +58,7 @@
       [:cannot-declare-sealed-class-instance-in-another-module
         (is? (module-error:cannot-declare-sealed-class-instance-in-another-module _) e)]
       [:cannot-use-macro-defined-in-the-same-module
-        (is? (module-error:cannot-declare-sealed-class-instance-in-another-module _) e)]
+        (is? (module-error:cannot-use-macro-defined-in-the-same-module _) e)]
       [:class-method-type-scheme-unspecified
         (is? (module-error:class-method-type-scheme-unspecified _) e)]
       [:cannot-generalize
