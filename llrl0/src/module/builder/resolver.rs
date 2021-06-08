@@ -19,7 +19,7 @@ pub fn run(module: &mut Module, external: &impl External) -> Result<()> {
     }
 
     for inst in module.ast_root.instance_cons.values() {
-        let inst_unit = module.symbol_map.get(inst.id).unwrap();
+        let inst_symbol = module.symbol_map.get(inst.id).unwrap();
         let module_set = (&*module, external);
         let (class, mut method_table) = {
             let ConstraintRep::Class(ref class, _) = inst.target.rep;
@@ -39,7 +39,7 @@ pub fn run(module: &mut Module, external: &impl External) -> Result<()> {
 
         if class.con.is_sealed && class.con.id.module() != inst.id.module() {
             Err(Error::CannotDeclareSealedClassInstanceInAnotherModule(
-                inst_unit.loc,
+                inst_symbol.loc,
             ))?;
         }
 
@@ -49,7 +49,7 @@ pub fn run(module: &mut Module, external: &impl External) -> Result<()> {
                 let symbol = module.symbol_map.get(id).unwrap();
                 if let Some((id, arity, _)) = method_table.remove(&symbol.name) {
                     if arity != method.arity() {
-                        Err(Error::ArityMismatch(arity, method.arity()))?;
+                        Err(Error::ArityMismatch(arity, method.arity()).on(method.id))?;
                     }
                     method.class_method.set_resolved(id);
                 } else {
@@ -60,7 +60,7 @@ pub fn run(module: &mut Module, external: &impl External) -> Result<()> {
 
         for (name, (_, _, is_required)) in method_table.iter() {
             if *is_required {
-                Err(Error::unresolved(inst_unit.loc, "class-method", name))?;
+                Err(Error::unresolved(inst_symbol.loc, "class-method", name))?;
             }
         }
     }
@@ -251,8 +251,8 @@ impl Resolve for DataValueCon {
 }
 
 impl Resolve for BuiltinTypeCon {
-    fn resolve(_: &mut impl Context, _target: &mut Self) -> Result<()> {
-        Ok(())
+    fn resolve(ctx: &mut impl Context, target: &mut Self) -> Result<()> {
+        ctx.resolve(&mut target.ty_params)
     }
 }
 

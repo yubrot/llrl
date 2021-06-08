@@ -285,6 +285,7 @@
         (dfs f callee)!
         (for (let arg) args (dfs f arg)!)]
       [(expr-rep:unresolved-capture _)]
+      [(expr-rep:capture _)]
       [(expr-rep:annotate (let e) _)
         (dfs f e)!]
       [(expr-rep:let (let defs) (let body))
@@ -318,6 +319,10 @@
   {(forall Error) (-> (-> Expr (Result unit Error)) Expr (Result unit Error))}
   (dfs [^1 (f (expr-focus-same-level/unfocus %1))] (expr-focus-same-level: a)))
 
+(function (expr/let-binding-context defs)
+  {(-> (Array (Either LocalVar LocalFun)) (Iterator LocalFun))}
+  (it/filter-map either/right? defs))
+
 (derive (DebugDisplay) value-data ExprFocusSameLevel
   (expr-focus-same-level: Expr))
 
@@ -332,6 +337,7 @@
         (dfs f (expr-focus-same-level: callee))!
         (for (let arg) args (dfs f (expr-focus-same-level: arg))!)]
       [(expr-rep:unresolved-capture _)]
+      [(expr-rep:capture _)]
       [(expr-rep:annotate (let e) _)
         (dfs f (expr-focus-same-level: e))!]
       [(expr-rep:let (let defs) (let body))
@@ -365,6 +371,7 @@
   (expr-rep:const Const)
   (expr-rep:app Expr (Array Expr))
   (expr-rep:unresolved-capture (NodeId Construct))
+  (expr-rep:capture Construct)
   (expr-rep:annotate Expr (Annotation Type))
   (expr-rep:let (Array (Either LocalVar LocalFun)) Expr)
   (expr-rep:seq (Array Expr) Expr)
@@ -467,14 +474,14 @@
     (match (pattern/rep a)
       [(pattern-rep:unresolved _ (let fields))
         (for (let p) (it/flat-map id fields)
-          (dfs f a)!)]
+          (dfs f p)!)]
       [(pattern-rep:var (let var))
         (for (let p) (pattern-var/as-pat var)
-          (dfs f a)!)]
+          (dfs f p)!)]
       [pattern-rep:wildcard]
       [(pattern-rep:decon _ (let fields))
         (for (let p) (it/flat-map id fields)
-          (dfs f a)!)]
+          (dfs f p)!)]
       [(pattern-rep:const _)])
     (f a)))
 
@@ -990,6 +997,10 @@
             ($for-each $con-name $con-names
               [when-match1 (some (let id)) (conv a)
                 (($symbol-concat $con-prefix $con-name) id)])))))))
+
+(instance Conv.From.Construct.To.Kind (Conv Construct (Option Kind))
+  (function (conv a)
+    none))
 
 ; ---------------------------
 ; Builtins
