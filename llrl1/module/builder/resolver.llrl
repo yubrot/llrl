@@ -1,0 +1,440 @@
+(import "std/ord-map" _)
+(import "std/hash-map" _)
+(import "~/util" _)
+(import "~/ast" _)
+(import "~/module/error" _)
+(import "~/module/unit" _)
+(import "~/module/meaning" _)
+(import "~/module/scope" _)
+(import "~/module/set" _)
+(import "~/module/builder/external" _)
+(export run!)
+
+(function (run! module external)
+  {(forall E) (-> Module E (Result unit Error)) (where (External E))}
+  (resolve!
+    (module/ast-root module)
+    (context: (module/symbol-map module) (module/top-level module)))!
+
+  (for (instance: (let con) (let methods)) (|> module module/ast-root root/instances)
+    (available-instances/add! con (module/available-instances module))
+
+    ; Get the class of the instance target
+    (let* ([inst-symbol (option/force (module-set/symbol? (instance-con/id con) module))]
+           [module-set (: module external)]
+           [class-id
+             (match (|> con instance-con/target constraint/rep)
+               [(constraint-rep:unresolved _ _) (assert #f "unresolved constraint")]
+               [(constraint-rep:class (let class-id) _) class-id])]
+           [class (option/force (module-set/ast? root/class? class-id module-set))]
+           [method-table
+             (|> (class/methods class)
+                 (it/map (lambda (method)
+                   (let* ([method-id (class-method/id method)]
+                          [method-arity (class-method/arity method)]
+                          [method-no-default? (is? none (class-method/default-body method))]
+                          [method-symbol (option/force (module-set/symbol? method-id module-set))])
+                     (: (symbol/name method-symbol) (: method-id method-arity method-no-default?)))))
+                 hash-map/collect)])
+
+      (when (and (|> class class/con class-con/sealed?)
+                 (ne? (|> class class/con class-con/id node-id/module)
+                      (|> con instance-con/id node-id/module)))
+        (err (error:cannot-declare-sealed-class-instance-in-another-module (symbol/loc inst-symbol)))!)
+
+      ; Check instance-method <-> class-method relations
+      (for (let method) (collect (methods)) {(Array InstanceMethod)}
+        (with1 (instance-method: (let id) (let transparent?) (let ann) (let params) (let body) _ (let instance-con)) method
+          (let ([symbol (option/force (module-set/symbol? id module))]
+                [arity (instance-method/arity method)])
+            (if-match1 (some (: (let cm-id) (let cm-arity) _)) (hash-map/remove! (symbol/name symbol) method-table)
+              (if (eq? cm-arity arity)
+                ; Associate class-method-id to the instance method
+                (root/add-instance-method!
+                  (instance-method: id transparent? ann params body (some cm-id) instance-con)
+                  (module/ast-root module))
+                (err (error:on (conv id) (error:arity-mismatch cm-arity arity)))!)
+              (err (error:unresolved (symbol/loc symbol) "class-method" (symbol/name symbol)))!))))
+
+      (for (: (let name) (: _ _ (let no-default?))) (hash-map/elems method-table)
+        (when no-default?
+          (err (error:unresolved (symbol/loc inst-symbol) "class-method" name))!))))
+
+  (ok unit))
+
+(value-data (Context S)
+  (context: SymbolMap S))
+
+(function (resolve-symbol! kind id ctx)
+  {(forall S A B)
+   (-> String (NodeId A) (Context S) (Result B Error))
+   (where (Scope S)
+          (Conv (NodeId A) Construct)
+          (Conv Construct (Option B)))}
+  (with1 (context: (let symbol-map) (let s)) ctx
+    (let1 symbol (option/force (symbol-map/get? id symbol-map))
+      (if-match ([(some (let c)) (scope/get? (symbol/name symbol) s)]
+                 [(some (let r)) (conv (conv-to Construct c))])
+        (ok r)
+        (err (error:unresolved (symbol/loc symbol) kind (symbol/name symbol)))))))
+
+(function (local bind ctx f)
+  {(forall S A B)
+   (-> A (Context S) (-> (Context LocalScope) (Result B Error)) (Result B Error))
+   (where (Scope S) (Bind A))}
+  (with1 (context: (let symbol-map) (let s)) ctx
+    (scope/local
+      (lambda (s)
+        (bind/traverse-defs
+          (lambda (def)
+            (let1 symbol (option/force (symbol-map/get? def symbol-map))
+              (scope/define!
+                (symbol/name symbol)
+                (located-construct (symbol/loc symbol) def)
+                s)))
+          bind)!
+        (f (context: symbol-map s)))
+      s)))
+
+(class (Resolve A)
+  (function (resolve! a ctx) {(forall S) (-> A (Context S) (Result A Error)) (where (Scope S))}))
+
+(instance Resolve.Option (forall A) (Resolve (Option A)) (where (Resolve A))
+  (function (resolve! a ctx)
+    (match a
+      [(some (let a)) (ok (some (resolve! a ctx)!))]
+      [none (ok none)])))
+
+(instance Resolve.Either (forall L R) (Resolve (Either L R)) (where (Resolve L) (Resolve R))
+  (function (resolve! a ctx)
+    (match a
+      [(left (let a)) (ok (left (resolve! a ctx)!))]
+      [(right (let a)) (ok (right (resolve! a ctx)!))])))
+
+(instance Resolve.Array (forall A) (Resolve (Array A)) (where (Resolve A))
+  (function (resolve! a ctx)
+    (ok (vector/buffer (it/traverse-result [^1 (resolve! %1 ctx)] a)!))))
+
+(instance Resolve.Annotation (forall A) (Resolve (Annotation A)) (where (Resolve A))
+  (function (resolve! a ctx)
+    (with1 (annotation: (let id) (let a)) a
+      (ok (annotation: id (resolve! a ctx)!)))))
+
+(instance Resolve.Root (Resolve Root)
+  (function (resolve! root ctx)
+    (for (let f) (|> root root/functions ord-map/values collect) {(Array Function)}
+      (root/add-function! (resolve! f ctx)! root))
+
+    (for (let f) (|> root root/c-functions ord-map/values collect) {(Array CFunction)}
+      (root/add-c-function! (resolve! f ctx)! root))
+
+    (for (let op) (|> root root/builtin-ops ord-map/values collect) {(Array BuiltinOp)}
+      (root/add-builtin-op! (resolve! op ctx)! root))
+
+    (for (let m) (|> root root/macros ord-map/values collect) {(Array Macro)}
+      (root/add-macro! (resolve! m ctx)! root))
+
+    (for (data-type: (let type-con) (let value-cons)) (|> root root/data-types collect) {(Array DataType)}
+      (let1 type-con (resolve! type-con ctx)!
+        (root/add-data-type-con! type-con root)
+        (local (data-type-con/ty-params type-con) ctx (lambda (ctx)
+          (for (let value-con) (collect (value-cons)) {(Array DataValueCon)}
+            (root/add-data-value-con! (resolve! value-con ctx)! root))
+          (ok unit)))!))
+
+    (for (builtin-type: (let type-con) (let value-cons)) (|> root root/builtin-types collect) {(Array BuiltinType)}
+      (let1 type-con (resolve! type-con ctx)!
+        (root/add-builtin-type-con! type-con root)
+        (local (builtin-type-con/ty-params type-con) ctx (lambda (ctx)
+          (for (let value-con) (collect (value-cons)) {(Array BuiltinValueCon)}
+            (root/add-builtin-value-con! (resolve! value-con ctx)! root))
+          (ok unit)))!))
+
+    (for (class: (let class-con) (let methods)) (|> root root/classes collect) {(Array Class)}
+      (let1 class-con (resolve! class-con ctx)!
+        (root/add-class-con! class-con root)
+        (local (class-con/ty-params class-con) ctx (lambda (ctx)
+          (for (let method) (collect (methods)) {(Array ClassMethod)}
+            (root/add-class-method! (resolve! method ctx)! root))
+          (ok unit)))!))
+
+    (for (instance: (let inst-con) (let methods)) (|> root root/instances collect) {(Array Instance)}
+      (let1 inst-con (resolve! inst-con ctx)!
+        (root/add-instance-con! inst-con root)
+        (local (instance-con/ty-params inst-con) ctx (lambda (ctx)
+          (for (let method) (collect (methods)) {(Array InstanceMethod)}
+            (root/add-instance-method! (resolve! method ctx)! root))
+          (ok unit)))!))
+
+    (for (: (let i) (let e)) (|> root root/init-expressions it/with-index)
+      (set! (root/init-expressions root)[i] (resolve! e ctx)!))
+
+    (ok root)))
+
+(instance Resolve.Function (Resolve Function)
+  (function (resolve! a ctx)
+    (with1 (function: (let id) (let transparent?) (let params) (let ann) (let body)) a
+      (let1 ann (resolve! ann ctx)!
+        (local ann ctx (lambda (ctx)
+          (let1 params (resolve! params ctx)!
+            (local params ctx (lambda (ctx)
+              (ok (function: id transparent? params ann (resolve! body ctx)!)))))))))))
+
+(instance Resolve.CFunction (Resolve CFunction)
+  (function (resolve! a ctx)
+    (with1 (c-function: (let id) (let ann) (let c-name)) a
+      (ok (c-function: id (resolve! ann ctx)! c-name)))))
+
+(instance Resolve.BuiltinOp (Resolve BuiltinOp)
+  (function (resolve! a ctx)
+    (with1 (builtin-op: (let id) (let ann) (let builtin-name)) a
+      (ok (builtin-op: id (resolve! ann ctx)! builtin-name)))))
+
+(instance Resolve.Macro (Resolve Macro)
+  (function (resolve! a ctx)
+    (with1 (macro: (let id) (let param) (let body)) a
+      (let1 param (resolve! param ctx)!
+        (local param ctx (lambda (ctx)
+          (ok (macro: id param (resolve! body ctx)!))))))))
+
+(instance Resolve.DataTypeCon (Resolve DataTypeCon)
+  (function (resolve! a ctx)
+    (with1 (data-type-con: (let id) (let repr) (let ty-params) (let value-cons)) a
+      (ok (data-type-con: id repr (resolve! ty-params ctx)! value-cons)))))
+
+(instance Resolve.DataValueCon (Resolve DataValueCon)
+  (function (resolve! a ctx)
+    (with1 (data-value-con: (let id) (let fields) (let type-con)) a
+      (ok (data-value-con: id (resolve! fields ctx)! type-con)))))
+
+(instance Resolve.BuiltinTypeCon (Resolve BuiltinTypeCon)
+  (function (resolve! a ctx)
+    (with1 (builtin-type-con: (let id) (let ty-params) (let builtin-name) (let value-cons)) a
+      (ok (builtin-type-con: id (resolve! ty-params ctx)! builtin-name value-cons)))))
+
+(instance Resolve.BuiltinValueCon (Resolve BuiltinValueCon)
+  (function (resolve! a ctx)
+    (with1 (builtin-value-con: (let id) (let builtin-name) (let fields) (let type-con)) a
+      (ok (builtin-value-con: id builtin-name (resolve! fields ctx)! type-con)))))
+
+(instance Resolve.ValueConField (Resolve ValueConField)
+  (function (resolve! a ctx)
+    (with1 (value-con-field: (let id) (let ty)) a
+      (ok (value-con-field: id (resolve! ty ctx)!)))))
+
+(instance Resolve.ClassCon (Resolve ClassCon)
+  (function (resolve! a ctx)
+    (with1 (class-con: (let id) (let sealed?) (let constraint-id) (let ty-params) (let superclasses) (let methods)) a
+      (let1 ty-params (resolve! ty-params ctx)!
+        (local ty-params ctx (lambda (ctx)
+          (ok (class-con: id sealed? constraint-id ty-params (resolve! superclasses ctx)! methods))))))))
+
+(instance Resolve.ClassMethod (Resolve ClassMethod)
+  (function (resolve! a ctx)
+    (with1 (class-method: (let id) (let ann) (let params) (let default-body) (let class-con)) a
+      (let1 ann (resolve! ann ctx)!
+        (local ann ctx (lambda (ctx)
+          (let1 params (resolve! params ctx)!
+            (local params ctx (lambda (ctx)
+              (ok (class-method: id ann params (resolve! default-body ctx)! class-con)))))))))))
+
+(instance Resolve.InstanceCon (Resolve InstanceCon)
+  (function (resolve! a ctx)
+    (with1 (instance-con: (let id) (let ty-params) (let s-params) (let target) (let methods)) a
+      (let1 ty-params (resolve! ty-params ctx)!
+        (local ty-params ctx (lambda (ctx)
+          (ok (instance-con: id ty-params (resolve! s-params ctx)! (resolve! target ctx)! methods))))))))
+
+(instance Resolve.InstanceMethod (Resolve InstanceMethod)
+  (function (resolve! a ctx)
+    (with1 (instance-method: (let id) (let transparent?) (let ann) (let params) (let body) (let class-method) (let instance-con)) a
+      (let1 ann (resolve! ann ctx)!
+        (local ann ctx (lambda (ctx)
+          (let1 params (resolve! params ctx)!
+            (local params ctx (lambda (ctx)
+              (ok (instance-method: id transparent? ann params (resolve! body ctx)! class-method instance-con)))))))))))
+
+(instance Resolve.Parameter (Resolve Parameter)
+  (function (resolve! a ctx)
+    (ok a)))
+
+(instance Resolve.TypeParameter (Resolve TypeParameter)
+  (function (resolve! a ctx)
+    (with1 (type-parameter: (let id) (let ann)) a
+      (ok (type-parameter: id (resolve! ann ctx)!)))))
+
+(instance Resolve.Scheme (Resolve Scheme)
+  (function (resolve! a ctx)
+    (with1 (scheme: (let ty-params) (let s-params) (let body)) a
+      (let1 ty-params (resolve! ty-params ctx)!
+        (local ty-params ctx (lambda (ctx)
+          (ok (scheme: ty-params (resolve! s-params ctx)! (resolve! body ctx)!))))))))
+
+(instance Resolve.Constraint (Resolve Constraint)
+  (function (resolve! a ctx)
+    (with1 (constraint: (let id) (let rep)) a
+      (ok (constraint: id (match rep
+        [(constraint-rep:unresolved (let id) (let args))
+          (constraint-rep:class (resolve-symbol! "class" id ctx)! (resolve! args ctx)!)]
+        [(constraint-rep:class (let id) (let args))
+          (constraint-rep:class id (resolve! args ctx)!)]))))))
+
+(instance Resolve.Expr (Resolve Expr)
+  (function (resolve! e ctx)
+    (with1 (expr: (let id) (let rep)) e
+      (ok (expr: id (match rep
+        [(expr-rep:unresolved (let id))
+          (if-match1 (ok (let value)) (resolve-symbol! "value" id ctx)
+            (expr-rep:value value)
+            (expr-rep:con (resolve-symbol! "value" id ctx)!))]
+        [(expr-rep:value _)
+          rep]
+        [(expr-rep:con _)
+          rep]
+        [(expr-rep:const _)
+          rep]
+        [(expr-rep:app (let callee) (let args))
+          (expr-rep:app (resolve! callee ctx)! (resolve! args ctx)!)]
+        [(expr-rep:unresolved-capture (let id))
+          (expr-rep:capture (resolve-symbol! "construct" id ctx)!)]
+        [(expr-rep:capture _)
+          rep]
+        [(expr-rep:annotate (let body) (let ann))
+          (expr-rep:annotate (resolve! body ctx)! (resolve! ann ctx)!)]
+        [(expr-rep:let (let defs) (let body))
+          (let* ([defs (local (expr/let-binding-context defs) ctx (lambda (ctx) (resolve! defs ctx)))!]
+                 [body (local defs ctx (lambda (ctx) (resolve! body ctx)))!])
+            (expr-rep:let defs body))]
+        [(expr-rep:seq (let stmts) (let ret))
+          (expr-rep:seq (resolve! stmts ctx)! (resolve! ret ctx)!)]
+        [(expr-rep:if (let cond) (let then) (let else))
+          (expr-rep:if (resolve! cond ctx)! (resolve! then ctx)! (resolve! else ctx)!)]
+        [(expr-rep:while (let cond) (let body))
+          (expr-rep:while (resolve! cond ctx)! (resolve! body ctx)!)]
+        [(expr-rep:match (let target) (let clauses))
+          (let ([target (resolve! target ctx)!]
+                [clauses
+                  (it/traverse-result
+                    (case1 (: (let pat) (let body))
+                      (let* ([pat (resolve! pat ctx)!]
+                             [body (local pat ctx (lambda (ctx) (resolve! body ctx)))!])
+                        (ok (: pat body))))
+                    clauses)!])
+            (expr-rep:match target (vector/buffer clauses)))]
+        [(expr-rep:return (let e))
+          (expr-rep:return (resolve! e ctx)!)]))))))
+
+(instance Resolve.LocalVar (Resolve LocalVar)
+  (function (resolve! a ctx)
+    (with1 (local-var: (let id) (let ann) (let init)) a
+      (ok (local-var: id (resolve! ann ctx)! (resolve! init ctx)!)))))
+
+(instance Resolve.LocalFun (Resolve LocalFun)
+  (function (resolve! a ctx)
+    (with1 (local-fun: (let id) (let params) (let ann) (let body)) a
+      (let1 ann (resolve! ann ctx)!
+        (local ann ctx (lambda (ctx)
+          (let1 params (resolve! params ctx)!
+            (local params ctx (lambda (ctx)
+              (ok (local-fun: id params ann (resolve! body ctx)!)))))))))))
+
+(instance Resolve.InitExpr (Resolve InitExpr)
+  (function (resolve! e ctx)
+    (ok (match e
+      [(init-expr:eval (let e)) (init-expr:eval (resolve! e ctx)!)]
+      [(init-expr:ensure-initialized _) e]))))
+
+(instance Resolve.Pattern (Resolve Pattern)
+  (function (resolve! p ctx)
+    (with1 (pattern: (let id) (let rep)) p
+      (ok (pattern: id (match rep
+        [(pattern-rep:unresolved (let id) (let fields))
+          (pattern-rep:decon (resolve-symbol! "constructor" id ctx)! (resolve! fields ctx)!)]
+        [(pattern-rep:var (pattern-var: (let id) (let as-pat)))
+          (pattern-rep:var (pattern-var: id (resolve! as-pat ctx)!))]
+        [pattern-rep:wildcard
+          pattern-rep:wildcard]
+        [(pattern-rep:decon (let con) (let fields))
+          (pattern-rep:decon con (resolve! fields ctx)!)]
+        [(pattern-rep:const _)
+          rep]))))))
+
+(instance Resolve.Type (Resolve Type)
+  (function (resolve! t ctx)
+    (ok (match t
+      [(type:unresolved (let id))
+        (if-match1 (ok (let con)) (resolve-symbol! "type" id ctx)
+          (type:con con)
+          (type:gen (resolve-symbol! "type" id ctx)!))]
+      [(type:con _) t]
+      [(type:app (let callee) (let args)) (type:app (resolve! callee ctx)! (resolve! args ctx)!)]
+      [(type:gen _) t]
+      [(type:error (let e)) (assert #f (string "Found type:error at resolver: " e))]))))
+
+(instance Resolve.Kind (Resolve Kind)
+  (function (resolve! k ctx)
+    (ok (match k
+      [(kind:unresolved (let id)) (resolve-symbol! "kind" id ctx)!]
+      [kind:type kind:type]
+      [kind:constraint kind:constraint]
+      [kind:satisfaction kind:satisfaction]
+      [kind:value kind:value]
+      [kind:macro kind:macro]
+      [(kind:fun (let args) (let ret)) (kind:fun (resolve! args ctx)! (resolve! ret ctx)!)]
+      [(kind:error (let e)) (assert #f (string "Found kind:error at resolver: " e))]))))
+
+(class (Bind A)
+  (function (bind/traverse-defs f a) {(-> (-> Construct (Result unit Error)) A (Result unit Error))}))
+
+(instance Bind.Option (forall A) (Bind (Option A)) (where (Bind A))
+  (function (bind/traverse-defs f a)
+    (match a
+      [(some (let a)) (bind/traverse-defs f a)]
+      [none (ok unit)])))
+
+(instance Bind.Either (forall L R) (Bind (Either L R)) (where (Bind L) (Bind R))
+  (function (bind/traverse-defs f a)
+    (match a
+      [(left (let a)) (bind/traverse-defs f a)]
+      [(right (let a)) (bind/traverse-defs f a)])))
+
+(instance Bind.Array (forall A) (Bind (Array A)) (where (Bind A))
+  (function (bind/traverse-defs f a)
+    (for (let a) a (bind/traverse-defs f a)!)
+    (ok unit)))
+
+(instance Bind.Iterator (forall A) (Bind (Iterator A)) (where (Bind A))
+  (function (bind/traverse-defs f a)
+    (for (let a) a (bind/traverse-defs f a)!)
+    (ok unit)))
+
+(instance Bind.Annotation (forall A) (Bind (Annotation A)) (where (Bind A))
+  (function (bind/traverse-defs f a)
+    (bind/traverse-defs f (annotation/body a))))
+
+($$ begin
+  ($for-each
+    [$name $type]
+    ([parameter Parameter]
+     [type-parameter TypeParameter]
+     [local-var LocalVar]
+     [local-fun LocalFun]
+     [pattern-var PatternVar])
+    (instance ($symbol-concat Bind. $type) (Bind $type)
+      (function (bind/traverse-defs f a)
+        (f (conv (($symbol-concat $name /id) a)))))))
+
+(instance Bind.Scheme (Bind Scheme)
+  (function (bind/traverse-defs f a)
+    (for (let tp) (scheme/ty-params a) (bind/traverse-defs f tp)!)
+    (ok unit)))
+
+(instance Bind.Pattern (Bind Pattern)
+  (function (bind/traverse-defs f a)
+    (dfs
+      (case
+        [(pattern: _ (pattern-rep:var (let var)))
+          (bind/traverse-defs f var)]
+        [_
+          (ok unit)])
+      a)))

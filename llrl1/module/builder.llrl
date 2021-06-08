@@ -11,7 +11,10 @@
 (import "~/module/meaning" imports/add!)
 (import "~/module/unit" _)
 (import "~/module/builder/external" External external/_)
+; (import "~/module/builder/importer" [importer/run! run!])
 (import "~/module/builder/ast-builder" [ast-builder/run! run!])
+(import "~/module/builder/resolver" [resolver/run! run!])
+; (import "~/module/builder/exporter" [exporter/run! run!])
 (export Backend Backend.unit backend/_ module/build!)
 
 (class (Backend B)
@@ -83,12 +86,13 @@
   (match (code/rep code)
     [code-rep:empty]
     [(code-rep:source (let source))
-      ; TODO: report/on builder/importer
+      ; (report/on report phase:import (importer/run! module source code external))!
       (report/on report phase:build-ast (ast-builder/run! module source external))!
+      (report/on report phase:resolve (resolver/run! module external))!
       ; TODO: report/on builder/resolver
       ; TODO: report/on builder/kind-inference
       ; TODO: report/on builder/type-inference
       ; TODO: report/on builder/validator
-      ; TODO: report/on builder/exporter
+      ; (report/on report phase:export (exporter/run! module source))!
       ])
   (ok unit))
