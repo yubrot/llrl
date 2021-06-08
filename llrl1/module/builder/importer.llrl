@@ -1,0 +1,105 @@
+(import "std/hash-map" _)
+(import "~/util" _)
+(import "~/path" Path _.Path path/_)
+(import "~/sexp" S s/_ Ss ss/_)
+(import "~/syntax" Syntax_ syntax/_ syntax:_)
+(import "~/code" Code code/_)
+(import "~/ast" _)
+(import "~/module/error" _)
+(import "~/module/unit" _)
+(import "~/module/set" _)
+(import "~/module/meaning" _)
+(import "~/module/scope" _)
+(import "~/module/builder/external" _)
+(export WildcardPortTarget _.WildcardPortTarget wildcard-port-target/_)
+(export run!)
+
+(derive (DebugDisplay) value-data WildcardPortTarget
+  wildcard-port-target:everything
+  (wildcard-port-target:starts-with String)
+  (wildcard-port-target:ends-with String))
+
+(function (wildcard-port-target/from-pattern? input) {(-> String (Option WildcardPortTarget))}
+  (cond?
+    [(eq? input "_")
+      wildcard-port-target:everything]
+    [(string/starts-with? "_" input)
+      (wildcard-port-target:ends-with (string/skip 1 input))]
+    [(string/ends-with? "_" input)
+      (wildcard-port-target:starts-with (string/take (- (string/length input) 1) input))]))
+
+(function (wildcard-port-target/deconstruct? input target) {(-> String WildcardPortTarget (Option String))}
+  (match target
+    [wildcard-port-target:everything
+      (some input)]
+    [(wildcard-port-target:starts-with (let prefix))
+      (when? (and (string/starts-with? prefix input) (ne? (string/length input) (string/length prefix)))
+        (string/skip (string/length prefix) input))]
+    [(wildcard-port-target:ends-with (let suffix))
+      (when? (and (string/ends-with? suffix input) (ne? (string/length input) (string/length suffix)))
+        (string/take (- (string/length input) (string/length suffix)) input))]))
+
+(function (wildcard-port-target/construct input target) {(-> String WildcardPortTarget String)}
+  (match target
+    [wildcard-port-target:everything
+      input]
+    [(wildcard-port-target:starts-with (let prefix))
+      (string prefix input)]
+    [(wildcard-port-target:ends-with (let suffix))
+      (string input suffix)]))
+
+(function (run! module source code external)
+  {(forall E) (-> Module (Ss Construct) (Code Construct) E (Result unit Error)) (where (External E))}
+
+  (when (ne? (code/path code) path/builtin)
+    (module/add-init-expr! (init-expr:ensure-initialized module-id/builtin) module))
+
+  (for (let s) (ss/elems source)
+    (when-match1 (ok (syntax:import _ (let path) (let targets))) (syntax/import s)
+      (let* ([import-path (option/force (hash-map/get? path (code/dependencies code)))]
+             [import-module (option/force (external/module-by-path? import-path external))])
+
+        (for (syntax:port-target (let loc) (let name) (syntax:name _ (let target))) targets
+          (if-match1 (some (let src)) (wildcard-port-target/from-pattern? target)
+            ; Wildcard import
+            (let1
+              dest
+              (if-match1 (some (syntax:name _ (let name))) name
+                (match (wildcard-port-target/from-pattern? name)
+                  [(some (let dest)) dest]
+                  [none (err (error:wildcard-port-name-must-be-wildcard loc))!])
+                src)
+              (for (: (let name) (let c)) (|> import-module module/exports exports/elems)
+                (when-match1 (some (let name)) (wildcard-port-target/deconstruct? name src)
+                  (scope/define!
+                    (wildcard-port-target/construct name dest)
+                    (located-construct loc c)
+                    (module/top-level module))!)))
+            ; Single import
+            (if-match1 (some (let c)) (|> import-module module/exports (exports/get? target))
+              (scope/define!
+                (if-match1 (some (syntax:name _ (let name))) name
+                  name
+                  target)
+                (located-construct loc c)
+                (module/top-level module))!
+              (err (error:unresolved loc "import-target" target))!)))
+        (module/add-init-expr! (init-expr:ensure-initialized (module/id import-module)) module))))
+
+    (when (code/implicit-std? code)
+      (let1 std-module (option/force (external/module-by-path? path/std external))
+        (module/add-init-expr! (init-expr:ensure-initialized (module/id std-module)) module)
+
+        (for (: (let name) (let c)) (|> std-module module/exports exports/elems)
+          (when (is? none (|> module module/top-level (scope/get? name)))
+            (scope/define!
+              name
+              (located-construct (ss/location source) c)
+              (module/top-level module))!))))
+
+    (for (: _ (let c)) (|> module module/top-level top-level/elems)
+      (when-match1 (some (let inst-id)) (conv (conv-to Construct c))
+        (available-instances/add!
+          (option/force (module-set/ast? root/instance-con? inst-id (: module external)))
+          (module/available-instances module))))
+  (ok unit))

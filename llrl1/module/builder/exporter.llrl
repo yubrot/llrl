@@ -1,0 +1,43 @@
+(import "~/util" _)
+(import "~/sexp" Ss ss/_)
+(import "~/syntax" Syntax_ syntax/_ syntax:_)
+(import "~/ast" _)
+(import "~/module/error" _)
+(import "~/module/unit" _)
+(import "~/module/meaning" _)
+(import "~/module/scope" _)
+(import "~/module/builder/importer" wildcard-port-target/_)
+(export run!)
+
+(function (run! module source) {(-> Module (Ss Construct) (Result unit Error))}
+  (for (let s) (ss/elems source)
+    (when-match1 (ok (syntax:export _ (let targets))) (syntax/export s)
+      (for (syntax:port-target (let loc) (let name) (syntax:name _ (let target))) targets
+        (if-match1 (some (let src)) (wildcard-port-target/from-pattern? target)
+          ; Wildcard export
+          (let1
+            dest
+            (if-match1 (some (syntax:name _ (let name))) name
+              (match (wildcard-port-target/from-pattern? name)
+                [(some (let dest)) dest]
+                [none (err (error:wildcard-port-name-must-be-wildcard loc))!])
+              src)
+            (for (: (let name) (let c)) (|> module module/top-level top-level/elems)
+              (when-match1 (some (let name)) (wildcard-port-target/deconstruct? name src)
+                (when-match1
+                  (some (let old-c))
+                  (|> module module/exports (exports/add! (wildcard-port-target/construct name dest) c))
+                  (err (error:conflicting-exports name (conv old-c) (conv c)))!))))
+          ; Single export
+          (if-match1 (some (let c)) (|> module module/top-level (scope/get? target))
+            (let1
+              name
+              (if-match1 (some (syntax:name _ (let name))) name
+                name
+                target)
+              (when-match1
+                (some (let old-c))
+                (|> module module/exports (exports/add! name c))
+                (err (error:conflicting-exports name (conv old-c) (conv c)))!))
+            (err (error:unresolved loc "export-target" target))!)))))
+  (ok unit))
