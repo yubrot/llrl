@@ -1,0 +1,363 @@
+(import "std/ord-map" _)
+(import "~/util" _)
+(import "~/ast" _)
+(import "~/unification/kind" [u/_ _] [u/_ context/_])
+(import "~/module/error" _)
+(import "~/module/unit" _)
+(import "~/module/meaning" _)
+(import "~/module/set" _)
+(import "~/module/builder/external" _)
+(export run!)
+
+(function (run! module external)
+  {(forall E) (-> Module E (Result unit Error)) (where (External E))}
+  (infer! (module/ast-root module) (context module external))!
+  (ok unit))
+
+(data Context
+  (context:
+    ModuleId
+    InferredKinds
+    (-> Construct Kind)
+    u/Context
+    (OrdMap Construct u/Kind)))
+
+(getter context:
+  module-id
+  inferred-kinds
+  external-kind
+  u-ctx
+  u-map)
+
+(function (context module external)
+  (context:
+    (module/id module)
+    (module/inferred-kinds module)
+    [^1 (option/force (module-set/kind? %1 (: module external)))]
+    (u/new)
+    ord-map/empty))
+
+(function (unify! a b ctx)
+  {(forall A B) (-> A B Context (Result unit Error)) (where (u/Resolve A) (u/Resolve B))}
+  (match (u/unify! a b (u-ctx ctx))
+    [(ok unit)
+      (ok unit)]
+    [(err (let e))
+      (let ([a (u/export! a unit (u-ctx ctx))]
+            [b (u/export! b unit (u-ctx ctx))])
+        (err (error:cannot-unify-kind a b e)))]))
+
+(function (unify-on! c a b ctx)
+  {(forall C A B) (-> C A B Context (Result unit Error)) (where (u/Resolve A) (u/Resolve B) (Conv C Construct))}
+  (result/map-err [^1 (error:on (conv c) %1)] (unify! a b ctx)))
+
+(function (kind-of! c ctx)
+  {(forall C) (-> C Context u/Kind) (where (Conv C Construct))}
+  (let1 construct (conv-to Construct c)
+    (if-match1 (some (let k)) (ord-map/get? construct (u-map ctx))
+      k
+      (let1
+        k
+        (if (eq? (construct/module construct) (module-id ctx))
+          ; inferring kind
+          (u/new-var! (u-ctx ctx))
+          ; import the external construct's kind
+          (u/import! ((external-kind ctx) construct) (u-ctx ctx)))
+        (ord-map/insert! construct k (u-map ctx))
+        k))))
+
+(function (fix-kind-of! c ensure-first-class? ctx)
+  {(forall C) (-> C Bool Context (Result unit Error)) (where (Conv C Construct))}
+  (let* ([construct (conv-to Construct c)]
+         [kind (kind-of! construct ctx)]
+         [kind (u/export! kind unit (u-ctx ctx))])
+    (assert (not (kind/contains-error? kind)) (string "Undetermined kind: " (debug kind)))
+    (when (and ensure-first-class? (not (kind/first-class? kind)))
+      (err (error:on construct (error:unsupported-kind kind)))!)
+    (inferred-kinds/set! construct kind (inferred-kinds ctx))
+    (ok unit)))
+
+(function (setup-generic! c g ret ctx)
+  {(forall C G) (-> C G u/Kind Context (Result u/Kind Error)) (where (Conv C Construct) (Generic G))}
+  (let* ([construct (conv-to Construct c)]
+         [a (kind-of! construct ctx)]
+         [b (generic-kind! g ret ctx)!])
+    (unify-on! construct a b ctx)!
+    (ok a)))
+
+(function (fix-generic! c g ctx)
+  {(forall C G) (-> C G Context (Result unit Error)) (where (Conv C Construct) (Generic G))}
+  (for (let tp) (generic/types g)
+    (let1 kind (kind-of! (type-parameter/id tp) ctx)
+      (result/force (u/default-vars! kind u/kind:type (u-ctx ctx)))
+      (fix-kind-of! (type-parameter/id tp) #t ctx)!))
+  (fix-kind-of! c #f ctx))
+
+(function (generic-kind! g ret ctx)
+  {(forall G) (-> G u/Kind Context (Result u/Kind Error)) (where (Generic G))}
+  (ok (if (generic/monomorphic? g)
+    ret
+    (let1
+      params
+      (it/traverse-result
+        (lambda (tp)
+          (let1 kind (kind-of! (type-parameter/id tp) ctx)
+            (when-match1 (some (annotation: (let ann-id) (let ann-kind))) (type-parameter/ann tp)
+              (unify-on! ann-id kind (u/import! ann-kind (u-ctx ctx)) ctx)!)
+            (ok kind)))
+        (generic/types g))!
+      (for _ (generic/constraints g)
+        (vector/push! u/kind:satisfaction params))
+      (build-kind (u-ctx ctx) (-> ,@(vector/buffer params) ,ret))))))
+
+(class (Infer A B)
+  (function (infer! a ctx) {(-> A Context (Result B Error))})
+
+  (function (infer-on! c a ctx) {(forall C) (-> C A Context (Result B Error)) (where (Conv C Construct))}
+    (result/map-err [^1 (error:on (conv c) %1)] (infer! a ctx))))
+
+(instance Infer.Root (Infer Root unit)
+  (function (infer! root ctx)
+    (for (builtin-type: (let con) _) (root/builtin-types root)
+      (infer! con ctx)!)
+
+    (for
+      (let tys)
+      (|> (root/data-types root)
+          (it/map [^1 (: (|> %1 data-type/con data-type-con/id) %1)])
+          (topological-sort (lambda (f ty)
+            (for (let field) (data-type/fields-on-every-value-cons ty)
+              (dfs
+                (lambda (ty)
+                  (when-match1 (type:con (type-con:data (let id))) ty (f id))
+                  (ok unit))
+                (value-con-field/ty field))))))
+      (infer! tys ctx)!)
+
+    (for (builtin-type: _ (let value-cons)) (root/builtin-types root)
+      (for (let value-con) (value-cons)
+        (infer! value-con ctx)!))
+
+    (for
+      (let classes)
+      (|> (root/classes root)
+          (it/map [^1 (: (|> %1 class/con class-con/id) %1)])
+          (topological-sort (lambda (f cls)
+            (for (constraint: _ (let rep)) (class/constraints-on-interface cls)
+              (when-match1 (constraint-rep:class (let id) _) rep (f id))))))
+      (infer! classes ctx)!)
+
+    (for (let f) (|> root root/functions ord-map/values)
+      (infer! f ctx)!)
+
+    (for (let f) (|> root root/c-functions ord-map/values)
+      (infer! f ctx)!)
+
+    (for (let op) (|> root root/builtin-ops ord-map/values)
+      (infer! op ctx)!)
+
+    (for (let m) (|> root root/macros ord-map/values)
+      (infer! m ctx)!)
+
+    (for (let inst) (root/instances root)
+      (infer! inst ctx)!)
+
+    (for (let e) (root/init-expressions root)
+      (infer! e ctx)!)
+
+    (ok unit)))
+
+(instance Infer.Option.unit (forall A) (Infer (Option A) unit) (where (Infer A unit))
+  (function (infer! target ctx)
+    (when-match1 (some (let a)) target
+      (infer! a ctx)!)
+    (ok unit)))
+
+(instance Infer.Option (forall A B) (Infer (Option A) (Option B)) (where (Infer A B))
+  (function (infer! target ctx)
+    (ok (match target
+      [(some (let a)) (some (infer! a ctx)!)]
+      [none none]))))
+
+(instance Infer.Array.unit (forall A) (Infer (Array A) unit) (where (Infer A unit))
+  (function (infer! target ctx)
+    (for (let a) target
+      (infer! a ctx)!)
+    (ok unit)))
+
+(instance Infer.Array (forall A B) (Infer (Array A) (Array B)) (where (Infer A B))
+  (function (infer! target ctx)
+    (ok (vector/buffer (it/traverse-result [^1 (infer! %1 ctx)] target)!))))
+
+(instance Infer.DataTypes (Infer (Vector DataType) unit)
+  (function (infer! tys ctx)
+    (for (data-type: (let con) _) tys
+      (setup-generic! (data-type-con/id con) con u/kind:type ctx)!)
+
+    (for (value-con-field: (let id) (let ty)) (it/flat-map data-type/fields-on-every-value-cons tys)
+      (unify-on! id (infer-on! id ty ctx)! {u/Kind} u/kind:type ctx)!)
+
+    (for (data-type: (let con) _) tys
+      (fix-generic! (data-type-con/id con) con ctx)!)
+    (ok unit)))
+
+(instance Infer.BuiltinTypeCon (Infer BuiltinTypeCon unit)
+  (function (infer! ty ctx)
+    ; If the builtin-type type parameter's kind is not *, it must always be explicit.
+    (setup-generic! (builtin-type-con/id ty) ty u/kind:type ctx)!
+    (fix-generic! (builtin-type-con/id ty) ty ctx)))
+
+(instance Infer.BuiltinValueCon (Infer BuiltinValueCon unit)
+  (function (infer! ty ctx)
+    (for (value-con-field: (let id) (let ty)) (|> ty builtin-value-con/fields (it/flat-map id))
+      (unify-on! id (infer-on! id ty ctx)! {u/Kind} u/kind:type ctx)!)
+    (ok unit)))
+
+(instance Infer.Class (Infer (Vector Class) unit)
+  (function (infer! classes ctx)
+    (for (class: (let con) (let methods)) classes
+      (setup-generic! (class-con/id con) con u/kind:constraint ctx)!
+      (for (class-method: (let id) (let ann) _ _ _) (methods)
+        (setup-generic! id (annotation/body ann) u/kind:value ctx)!))
+
+    (for (class: (let con) (let methods)) classes
+      (infer! (class-con/superclasses con) ctx)!
+      (for (let method) (methods)
+        (infer! (class-method/ann method) ctx)!))
+
+    (for (class: (let con) (let methods)) classes
+      (fix-generic! (class-con/id con) con ctx)!
+      (for (class-method: (let id) (let ann) _ _ _) (methods)
+        (fix-generic! id (annotation/body ann) ctx)!))
+
+    (for (let method) (|> classes (it/flat-map class/methods))
+      (infer! (class-method/default-body method) ctx)!)
+    (ok unit)))
+
+(instance Infer.Instance (Infer Instance unit)
+  (function (infer! instance ctx)
+    (with1 (instance: (let con) (let methods)) instance
+      (setup-generic! (instance-con/id con) con u/kind:satisfaction ctx)!
+      (for (instance-method: (let id) _ (let ann) _ _ _ _) (methods)
+        (when-match1 (some (let ann)) ann
+          (setup-generic! id (annotation/body ann) u/kind:value ctx)!))
+
+      (infer! (instance-con/s-params con) ctx)!
+      (infer! (instance-con/target con) ctx)!
+
+      (for (instance-method: _  _ (let ann) _ _ _ _) (methods)
+        (when-match1 (some (let ann)) ann
+          (infer! ann ctx)!))
+
+      (fix-generic! (instance-con/id con) con ctx)!
+      (for (instance-method: (let id) _ (let ann) _ _ _ _) (methods)
+        (when-match1 (some (let ann)) ann
+          (fix-generic! id (annotation/body ann) ctx)!))
+
+      (for (let method) (methods)
+        (infer! (instance-method/body method) ctx)!)
+      (ok unit))))
+
+(instance Infer.Function (Infer Function unit)
+  (function (infer! target ctx)
+    (with1 (function: (let id) _ _ (let ann) (let body)) target
+      (when-match1 (some (let ann)) ann
+        (setup-generic! id (annotation/body ann) u/kind:value ctx)!
+        (infer! ann ctx)!
+        (fix-generic! id (annotation/body ann) ctx)!)
+      (infer! body ctx))))
+
+(instance Infer.CFunction (Infer CFunction unit)
+  (function (infer! target ctx)
+    (with1 (c-function: _ (let ann) _) target
+      (infer! ann ctx))))
+
+(instance Infer.BuiltinOp (Infer BuiltinOp unit)
+  (function (infer! target ctx)
+    (with1 (builtin-op: (let id) (let ann) _) target
+      (setup-generic! id (annotation/body ann) u/kind:value ctx)!
+      (infer! ann ctx)!
+      (fix-generic! id (annotation/body ann) ctx))))
+
+(instance Infer.Macro (Infer Macro unit)
+  (function (infer! target ctx)
+    (infer! (macro/body target) ctx)))
+
+(instance Infer.Expr (Infer Expr unit)
+  (function (infer! target ctx)
+    (expr/dfs-same-level
+      (lambda (expr)
+        (match (expr/rep expr)
+          [(expr-rep:let (let defs) _)
+            (for (let def) defs
+              (match def
+                [(left (local-var: _ (let ann) _))
+                  (infer! ann ctx)!]
+                [(right (let f))
+                  (infer! f ctx)!]))
+            (ok unit)]
+          [(expr-rep:annotate _ (let ann))
+            (infer! ann ctx)]
+          [_
+            (ok unit)]))
+      target)))
+
+(instance Infer.LocalFun (Infer LocalFun unit)
+  (function (infer! target ctx)
+    (with1 (local-fun: (let id) _ (let ann) (let body)) target
+      (when-match1 (some (let ann)) ann
+        (setup-generic! id (annotation/body ann) u/kind:value ctx)!
+        (infer! ann ctx)!
+        (fix-generic! id (annotation/body ann) ctx)!)
+      (infer! body ctx))))
+
+(instance Infer.InitExpr (Infer InitExpr unit)
+  (function (infer! target ctx)
+    (match target
+      [(init-expr:eval (let e)) (infer! e ctx)]
+      [(init-expr:ensure-initialized _) (ok unit)])))
+
+(instance Infer.TypeAnn (Infer (Annotation Type) unit)
+  (function (infer! target ctx)
+    (with1 (annotation: (let id) (let ty)) target
+      (unify-on! id (infer-on! id ty ctx)! {u/Kind} u/kind:type ctx))))
+
+(instance Infer.Type (Infer Type u/Kind)
+  (function (infer! target ctx)
+    (match target
+      [(type:unresolved _)
+        (assert #f "Found type:unresolved at kind-inference")]
+      [(type:con (let con))
+        (ok (kind-of! con ctx))]
+      [(type:app (let callee) (let args))
+        (let ([callee (infer! callee ctx)! {u/Kind}]
+              [args (infer! args ctx)!]
+              [ret (u/new-var! (u-ctx ctx))])
+          (unify! callee (build-kind (u-ctx ctx) (-> ,@args ,ret)) ctx)!
+          (ok ret))]
+      [(type:gen (let id))
+        (ok (kind-of! id ctx))]
+      [(type:error (let e))
+        (assert #f (string "Found type:error at kind-inference: " e))])))
+
+(instance Infer.Constraint (Infer Constraint unit)
+  (function (infer! target ctx)
+    (match (constraint/rep target)
+      [(constraint-rep:unresolved _ _)
+        (assert #f "Found constraint-rep:unresolved at kind-inference")]
+      [(constraint-rep:class (let id) (let args))
+        (unify-on!
+          (constraint/id target)
+          (build-kind (u-ctx ctx) (-> ,@(infer-on! (constraint/id target) args ctx)! Constraint)) {u/Kind}
+          (kind-of! id ctx)
+          ctx)])))
+
+(instance Infer.SchemeAnn (Infer (Annotation Scheme) unit)
+  (function (infer! target ctx)
+    (with1 (annotation: (let id) (let scheme)) target
+      (result/map-err [^1 (error:on (conv id) %1)] (infer! scheme ctx)))))
+
+(instance Infer.Scheme (Infer Scheme unit)
+  (function (infer! target ctx)
+    (infer! (scheme/s-params target) ctx)!
+    (unify! (infer! (scheme/body target) ctx)! {u/Kind} u/kind:type ctx)))

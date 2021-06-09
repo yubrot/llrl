@@ -184,6 +184,10 @@ impl<'a, E: External> Infer<ast::Root> for Context<'a, E> {
             self.infer(builtin_op)?;
         }
 
+        for m in target.macros.values() {
+            self.infer(m)?;
+        }
+
         for instance in target.instances() {
             self.infer(&instance)?;
         }
@@ -361,6 +365,14 @@ impl<'a, E: External> Infer<ast::BuiltinOp> for Context<'a, E> {
         self.setup_generic(target.id, &target.ann.body, u::Kind::Value)?;
         self.infer(&target.ann)?;
         self.fix_generic(target.id, &target.ann.body)
+    }
+}
+
+impl<'a, E: External> Infer<ast::Macro> for Context<'a, E> {
+    type Result = ();
+
+    fn infer(&mut self, target: &ast::Macro) -> Result<Self::Result> {
+        self.infer(&target.body)
     }
 }
 
