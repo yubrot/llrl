@@ -1,0 +1,108 @@
+(import "~/util" _)
+(import "~/ast" _)
+(import "~/module/unit" _)
+(import "~/module/meaning" _)
+(import "~/module/set" _)
+(import "~/module/builder/external" _)
+(export TypeEnv type-env/_)
+
+(data (TypeEnv E)
+  (type-env: Module E))
+
+(function (module-set type-env)
+  (with1 (type-env: (let module) (let external)) type-env
+    (: module external)))
+
+(function (type-env/available-instances type-env) {(forall E) (-> (TypeEnv E) AvailableInstances)}
+  (with1 (type-env: (let module) _) type-env
+    (module/available-instances module)))
+
+(function (type-env/function-scheme id type-env)
+  {(forall E) (-> (NodeId Function) (TypeEnv E) Scheme) (where (External E))}
+  (with1 (type-env: (let module) _) type-env
+    (if (eq? (module/id module) (node-id/module id))
+      (let1 f (|> module module/ast-root (root/function? id) option/force)
+        (if-match1 (some (let ann)) (function/ann f)
+          (annotation/body ann)
+          (assert #f (string "The scheme of the function " id " is not pre-inserted"))))
+      (if-match1 (some (let scheme)) (module-set/scheme? id (module-set type-env))
+        scheme
+        (assert #f (string "Uninferred function: " id))))))
+
+(function (type-env/c-function-type id type-env)
+  {(forall E) (-> (NodeId CFunction) (TypeEnv E) Type) (where (External E))}
+  (with1 (type-env: (let module) _) type-env
+    (if (eq? (module/id module) (node-id/module id))
+      (let1 f (|> module module/ast-root (root/c-function? id) option/force)
+        (annotation/body (c-function/ann f)))
+      (if-match1 (some (let ty)) (module-set/type? id (module-set type-env))
+        ty
+        (assert #f (string "Uninferred c-function: " id))))))
+
+(function (type-env/builtin-op-scheme id type-env)
+  {(forall E) (-> (NodeId BuiltinOp) (TypeEnv E) Scheme) (where (External E))}
+  (with1 (type-env: (let module) _) type-env
+    (if (eq? (module/id module) (node-id/module id))
+      (let1 f (|> module module/ast-root (root/builtin-op? id) option/force)
+        (annotation/body (builtin-op/ann f)))
+      (if-match1 (some (let scheme)) (module-set/scheme? id (module-set type-env))
+        scheme
+        (assert #f (string "Uninferred builtin-op: " id))))))
+
+(function (type-env/data-value-con-scheme id type-env)
+  {(forall E) (-> (NodeId DataValueCon) (TypeEnv E) Scheme) (where (External E))}
+  (with1 (type-env: (let module) _) type-env
+    (if (eq? (module/id module) (node-id/module id))
+      (let1 con (|> module module/ast-root (root/data-value-con? id) option/force)
+        (data-value-con/scheme
+          (|> module module/ast-root (root/data-type-con? (data-value-con/type-con con)) option/force)
+          con))
+      (if-match1 (some (let scheme)) (module-set/scheme? id (module-set type-env))
+        scheme
+        (assert #f (string "Uninferred data value constructor: " id))))))
+
+(function (type-env/builtin-value-con-scheme id type-env)
+  {(forall E) (-> (NodeId BuiltinValueCon) (TypeEnv E) Scheme) (where (External E))}
+  (with1 (type-env: (let module) _) type-env
+    (if (eq? (module/id module) (node-id/module id))
+      (let1 con (|> module module/ast-root (root/builtin-value-con? id) option/force)
+        (builtin-value-con/scheme
+          (|> module module/ast-root (root/builtin-type-con? (builtin-value-con/type-con con)) option/force)
+          con))
+      (if-match1 (some (let scheme)) (module-set/scheme? id (module-set type-env))
+        scheme
+        (assert #f (string "Uninferred builtin value constructor: " id))))))
+
+(function (type-env/class-con id type-env)
+  {(forall E) (-> (NodeId ClassCon) (TypeEnv E) ClassCon) (where (External E))}
+  (option/force (module-set/ast? root/class-con? id (module-set type-env))))
+
+(function (type-env/class-method id type-env)
+  {(forall E) (-> (NodeId ClassMethod) (TypeEnv E) ClassMethod) (where (External E))}
+  (option/force (module-set/ast? root/class-method? id (module-set type-env))))
+
+(function (type-env/class-method-external-scheme id type-env)
+  {(forall E) (-> (NodeId ClassMethod) (TypeEnv E) Scheme) (where (External E))}
+  (with1 (type-env: (let module) _) type-env
+    (if (eq? (module/id module) (node-id/module id))
+      (let1 method (|> module module/ast-root (root/class-method? id) option/force)
+        (class-method/external-scheme
+          (|> module module/ast-root (root/class-con? (class-method/class-con method)) option/force)
+          method))
+      (if-match1 (some (let scheme)) (module-set/scheme? id (module-set type-env))
+        scheme
+        (assert #f (string "Uninferred class method: " id))))))
+
+(function (type-env/instance-con id type-env)
+  {(forall E) (-> (NodeId InstanceCon) (TypeEnv E) InstanceCon) (where (External E))}
+  (option/force (module-set/ast? root/instance-con? id (module-set type-env))))
+
+(function (type-env/value-con-arity value-con type-env)
+  {(forall E) (-> ValueCon (TypeEnv E) (Option U64)) (where (External E))}
+  (let1 fields
+    (match value-con
+      [(value-con:data (let id))
+        (|> (module-set/ast? root/data-value-con? id (module-set type-env)) option/force data-value-con/fields)]
+      [(value-con:builtin (let id))
+        (|> (module-set/ast? root/builtin-value-con? id (module-set type-env)) option/force builtin-value-con/fields)])
+    (option/map array/length fields)))

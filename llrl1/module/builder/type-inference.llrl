@@ -1,0 +1,13 @@
+(import "~/util" _)
+(import "~/ast" _)
+(import "~/module/error" _)
+(import "~/module/unit" _)
+(import "~/module/meaning" _)
+(import "~/module/builder/external" _)
+(import "~/module/builder/type-inference/kind-env" _)
+(import "~/module/builder/type-inference/type-env" _)
+(export run!)
+
+(function (run! module external)
+  {(forall E) (-> Module E (Result unit Error)) (where (External E))}
+  (ok unit))
