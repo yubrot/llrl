@@ -8,20 +8,8 @@ use std::rc::Rc;
 pub use crate::unification::types::*;
 pub use crate::unification::{Error, Level};
 
-pub fn gen_type_mapping(gens: &[Gen], tys: &[Type]) -> HashMap<Gen, Type> {
-    gens.iter()
-        .zip(tys)
-        .map(|(gen, ty)| (*gen, *ty))
-        .collect::<HashMap<_, _>>()
-}
-
-pub trait GenericTypes {
-    fn generic_types(&self) -> &[Gen];
-
-    fn apply_types<E: KindEnvironment>(&mut self, tys: &[Type], ctx: &mut Context<E>) {
-        let map = gen_type_mapping(self.generic_types(), tys);
-        self.subst_types(&map, ctx);
-    }
+pub trait Generic {
+    fn params(&self) -> &[Gen];
 
     fn instantiate_types<E: KindEnvironment>(
         &mut self,
@@ -29,12 +17,22 @@ pub trait GenericTypes {
         ctx: &mut Context<E>,
     ) -> Vec<Type> {
         let tys = self
-            .generic_types()
+            .params()
             .iter()
             .map(|gen| ctx.instantiate_gen(*gen, level))
             .collect::<Vec<_>>();
         self.apply_types(tys.as_slice(), ctx);
         tys
+    }
+
+    fn apply_types<E: KindEnvironment>(&mut self, tys: &[Type], ctx: &mut Context<E>) {
+        let map = self
+            .params()
+            .iter()
+            .zip(tys)
+            .map(|(gen, ty)| (*gen, *ty))
+            .collect::<HashMap<_, _>>();
+        self.subst_types(&map, ctx);
     }
 
     fn subst_types<E: KindEnvironment>(&mut self, map: &HashMap<Gen, Type>, ctx: &mut Context<E>);
@@ -159,7 +157,7 @@ impl Constraint {
             .fold(Level::top(), std::cmp::max)
     }
 
-    pub fn enumerate_vars<E: KindEnvironment>(
+    pub fn get_vars<E: KindEnvironment>(
         &self,
         min_level: Level,
         ctx: &mut Context<E>,
@@ -255,8 +253,8 @@ impl From<Type> for Scheme {
     }
 }
 
-impl GenericTypes for Scheme {
-    fn generic_types(&self) -> &[Gen] {
+impl Generic for Scheme {
+    fn params(&self) -> &[Gen] {
         self.ty_params.as_slice()
     }
 
@@ -395,8 +393,8 @@ impl ClassCon {
     }
 }
 
-impl GenericTypes for ClassCon {
-    fn generic_types(&self) -> &[Gen] {
+impl Generic for ClassCon {
+    fn params(&self) -> &[Gen] {
         self.ty_params.as_slice()
     }
 
@@ -437,8 +435,8 @@ impl InstanceCon {
     }
 }
 
-impl GenericTypes for InstanceCon {
-    fn generic_types(&self) -> &[Gen] {
+impl Generic for InstanceCon {
+    fn params(&self) -> &[Gen] {
         self.ty_params.as_slice()
     }
 
@@ -553,7 +551,7 @@ impl ContextConstraint {
         *self.var.borrow_mut() = Some(satisfaction);
     }
 
-    pub fn into_premise(self, constraint_id: ConstraintId) -> Constraint {
+    pub fn resolve_by_param(self, constraint_id: ConstraintId) -> Constraint {
         let constraint = Constraint::new(constraint_id, self.constraint.rep);
         *self.var.borrow_mut() = Some(Satisfaction::by_premise(constraint.id, Vec::new()));
         constraint
@@ -562,35 +560,38 @@ impl ContextConstraint {
 
 #[derive(Debug, Clone)]
 pub struct Premise {
-    class_premises: HashMap<ast::NodeId<ast::ClassCon>, Vec<ClassPremise>>,
+    class_constraints: HashMap<ast::NodeId<ast::ClassCon>, Vec<PremiseClassConstraint>>,
 }
 
 impl Premise {
     pub fn new() -> Self {
         Self {
-            class_premises: HashMap::new(),
+            class_constraints: HashMap::new(),
         }
     }
 
-    pub fn add_class_premise(
+    pub fn add_class_constraint(
         &mut self,
         id: ConstraintId,
         path: Vec<ConstraintId>,
         class: ast::NodeId<ast::ClassCon>,
         class_args: Vec<Type>,
     ) {
-        self.class_premises
+        self.class_constraints
             .entry(class)
             .or_default()
-            .push(ClassPremise {
+            .push(PremiseClassConstraint {
                 id,
                 path,
                 class_args,
             });
     }
 
-    pub fn class_premises(&self, class: ast::NodeId<ast::ClassCon>) -> &[ClassPremise] {
-        self.class_premises
+    pub fn class_constraints(
+        &self,
+        class: ast::NodeId<ast::ClassCon>,
+    ) -> &[PremiseClassConstraint] {
+        self.class_constraints
             .get(&class)
             .map_or(&[], |cs| cs.as_slice())
     }
@@ -601,13 +602,13 @@ impl<E: KindEnvironment> Export<Premise> for Context<E> {
 
     fn export(&mut self, src: &Premise) -> Self::Dest {
         let mut result = Vec::new();
-        for (class, premises) in src.class_premises.iter() {
-            for premise in premises {
-                if premise.path.is_empty() {
+        for (class, class_constraints) in src.class_constraints.iter() {
+            for class_constraint in class_constraints {
+                if class_constraint.path.is_empty() {
                     result.push(ast::Constraint::class(
-                        premise.id,
+                        class_constraint.id,
                         *class,
-                        self.export(&premise.class_args),
+                        self.export(&class_constraint.class_args),
                     ));
                 }
             }
@@ -617,13 +618,13 @@ impl<E: KindEnvironment> Export<Premise> for Context<E> {
 }
 
 #[derive(Debug, Clone)]
-pub struct ClassPremise {
+pub struct PremiseClassConstraint {
     id: ConstraintId,
     path: Vec<ConstraintId>,
     class_args: Vec<Type>,
 }
 
-impl ClassPremise {
+impl PremiseClassConstraint {
     pub fn class_args(&self) -> &[Type] {
         self.class_args.as_slice()
     }

@@ -6,6 +6,7 @@
 (import "~/module/builder/external" _)
 (import "~/module/builder/type-inference/kind-env" _)
 (import "~/module/builder/type-inference/type-env" _)
+(import "~/module/builder/type-inference/unification" [u/_ _])
 (export run!)
 
 (function (run! module external)

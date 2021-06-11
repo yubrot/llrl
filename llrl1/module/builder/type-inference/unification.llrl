@@ -1,0 +1,423 @@
+(import "std/ord-set" _)
+(import "std/ord-map" _)
+(import "~/util" _)
+(import "~/ast" NodeId Kind kind:_ TypeCon TypeParameter Construct [ast/_ _] builtin/_)
+(import "~/unification/type" _ [u/_ _])
+(export [_ u/_])
+(export Imports Imports._ Exports Exports._ context/_)
+(export Generic Generic._ generic/_)
+(export Constraint _.Constraint constraint: constraint/_)
+(export ConstraintRep _.ConstraintRep constraint-rep:_)
+(export Scheme _.Scheme scheme:)
+(export Satisfaction _.Satisfaction satisfaction:_)
+(export Instantiation _.Instantiation instantiation:_ instantiation/_)
+(export ClassCon _.ClassCon class-con: class-con/_)
+(export InstanceCon _.InstanceCon instance-con: instance-con/_)
+(export Scope _.Scope scope/_)
+(export ContextConstraint _.ContextConstraint context-constraint/_)
+(export Premise _.Premise premise/_)
+(export PremiseClassConstraint _.PremiseClassConstraint premise-class-constraint/_)
+
+(class (Imports A B)
+  (function (context/imports! a ctx) {(forall E) (-> A (Context E) B) (where (KindEnvironment E))}))
+
+(class (Exports A B)
+  (function (context/exports! a ctx) {(forall E) (-> B (Context E) A) (where (KindEnvironment E))}))
+
+(instance Imports.Type (Imports ast/Type Type)
+  (function (context/imports! a ctx)
+    (context/import! a ctx)))
+
+(instance Exports.Type (Exports ast/Type Type)
+  (function (context/exports! a ctx)
+    (context/export! a unit ctx)))
+
+(instance Imports.TypeParameter (Imports ast/TypeParameter (NodeId TypeParameter))
+  (function (context/imports! a ctx)
+    ; Ensure that the kind of this type parameter is available
+    ; (context/get-kind (type:gen (ast/type-parameter/id a) level/top) ctx)
+    (ast/type-parameter/id a)))
+
+(instance Exports.TypeParameter (Exports ast/TypeParameter (NodeId TypeParameter))
+  (function (context/exports! a ctx)
+    (ast/type-parameter: a none)))
+
+(instance Imports.Option (forall A B) (Imports (Option A) (Option B)) (where (Imports A B))
+  (function (context/imports! a ctx)
+    (some (context/imports! a ? ctx))))
+
+(instance Exports.Option (forall A B) (Exports (Option A) (Option B)) (where (Exports A B))
+  (function (context/exports! a ctx)
+    (some (context/exports! a ? ctx))))
+
+(instance Imports.Array (forall A B) (Imports (Array A) (Array B)) (where (Imports A B))
+  (function (context/imports! a ctx)
+    (|> a (it/map [^1 (context/imports! %1 ctx)]) collect)))
+
+(instance Exports.Array (forall A B) (Exports (Array A) (Array B)) (where (Exports A B))
+  (function (context/exports! a ctx)
+    (|> a (it/map [^1 (context/exports! %1 ctx)]) collect)))
+
+(class (Generic A)
+  (function (generic/params a) {(-> A (Array (NodeId TypeParameter)))})
+
+  (function (generic/instantiate-types level ctx a) {(forall E) (-> Level (Context E) A A) (where (KindEnvironment E))}
+    (let1 tys (|> a generic/params (it/map [^1 (context/instantiate-gen! %1 level ctx)]) collect)
+      (generic/apply-types tys ctx a)))
+
+  (function (generic/apply-types tys ctx a) {(forall E) (-> (Array Type) (Context E) A A) (where (KindEnvironment E))}
+    (let1 map (ord-map/collect (it/zip (generic/params a) tys))
+      (generic/subst-types map ctx a)))
+
+  (function (generic/subst-types map ctx a) {(forall E) (-> (OrdMap (NodeId TypeParameter) Type) (Context E) A A) (where (KindEnvironment E))}))
+
+(derive (DebugDisplay) value-data Constraint
+  (constraint: (NodeId ast/Constraint) ConstraintRep))
+
+(getter constraint: constraint/id constraint/rep)
+
+(function (constraint/class id cls cls-args) {(-> (NodeId ast/Constraint) (NodeId ast/ClassCon) (Array Type) Constraint)}
+  (constraint: id (constraint-rep:class cls cls-args)))
+
+(function (constraint/number ty) {(-> Type Constraint)}
+  (constraint/class builtin/number-constraint builtin/number (array ty)))
+
+(function (constraint/fp-number ty) {(-> Type Constraint)}
+  (constraint/class builtin/fp-number-constraint builtin/fp-number (array ty)))
+
+(function (constraint/number? c) {(-> Constraint (Option Type))}
+  (match (constraint/rep c)
+    [(constraint-rep:class (let id) (let args))
+      (when? (and (eq? id builtin/number) (eq? (array/length args) 1))
+        (get args[0]))]))
+
+(function (constraint/fp-number? c) {(-> Constraint (Option Type))}
+  (match (constraint/rep c)
+    [(constraint-rep:class (let id) (let args))
+      (when? (and (eq? id builtin/fp-number) (eq? (array/length args) 1))
+        (get args[0]))]))
+
+(function (constraint/types c) {(-> Constraint (Iterator Type))}
+  (match (constraint/rep c)
+    [(constraint-rep:class _ (let args))
+      (iterate args)]))
+
+(function (constraint/map-types f c) {(-> (-> Type Type) Constraint Constraint)}
+  (with1 (constraint: (let id) (let rep)) c
+    (constraint: id (match rep
+      [(constraint-rep:class (let id) (let args))
+        (constraint-rep:class id (|> args (it/map f) collect))]))))
+
+(function (constraint/unify-types! c1 c2 ctx) {(forall E) (-> Constraint Constraint (Context E) (Result unit Error)) (where (KindEnvironment E))}
+  (match (: (constraint/rep c1) (constraint/rep c2))
+    [(: (constraint-rep:class (let id1) (let args1)) (constraint-rep:class (let id2) (let args2)))
+      (assert-eq? id1 id2)
+      (for (: (let a) (let b)) (it/zip args1 args2)
+        (context/unify! a b ctx)!)
+      (ok unit)]))
+
+(function (constraint/match-types-to-right! c1 c2 ctx) {(forall E) (-> Constraint Constraint (Context E) (Result unit Error)) (where (KindEnvironment E))}
+  (match (: (constraint/rep c1) (constraint/rep c2))
+    [(: (constraint-rep:class (let id1) (let args1)) (constraint-rep:class (let id2) (let args2)))
+      (assert-eq? id1 id2)
+      (for (: (let a) (let b)) (it/zip args1 args2)
+        (context/match-to-right! a b ctx)!)
+      (ok unit)]))
+
+(function (constraint/equal? c1 c2 ctx) {(forall E) (-> Constraint Constraint (Context E) Bool) (where (KindEnvironment E))}
+  (match (: (constraint/rep c1) (constraint/rep c2))
+    [(: (constraint-rep:class (let id1) (let args1)) (constraint-rep:class (let id2) (let args2)))
+      (and (eq? id1 id2)
+           (it/all? id (it/zip* [^2 (context/equal? %1 %2 ctx)] args1 args2)))]))
+
+(function (constraint/equal-on-subst? map c1 c2 ctx) {(forall E) (-> (OrdMap (NodeId TypeParameter) Type) Constraint Constraint (Context E) Bool) (where (KindEnvironment E))}
+  (match (: (constraint/rep c1) (constraint/rep c2))
+    [(: (constraint-rep:class (let id1) (let args1)) (constraint-rep:class (let id2) (let args2)))
+      (and (eq? id1 id2)
+           (it/all? id (it/zip* [^2 (context/equal-on-subst? map %1 %2 ctx)] args1 args2)))]))
+
+(function (constraint/compute-deepest-level c ctx) {(forall E) (-> Constraint (Context E) Level) (where (KindEnvironment E))}
+  (|> (constraint/types c)
+      (it/map [^1 (context/compute-deepest-level %1 ctx)])
+      (it/fold [^2 (max %1 %2)] level/top)))
+
+(function (constraint/get-vars! c min-level ctx) {(forall E) (-> Constraint Level (Context E) (OrdSet (Var Type))) (where (KindEnvironment E))}
+  (let1 result ord-set/empty
+    (for (let ty) (constraint/types c)
+      (context/collect-vars! ty min-level result ctx))
+    result))
+
+(instance Imports.Constraint (Imports ast/Constraint Constraint)
+  (function (context/imports! a ctx)
+    (with1 (ast/constraint: (let id) (let rep)) a
+      (constraint: id (context/imports! rep ctx)))))
+
+(instance Exports.Constraint (Exports ast/Constraint Constraint)
+  (function (context/exports! a ctx)
+    (with1 (constraint: (let id) (let rep)) a
+      (ast/constraint: id (context/exports! rep ctx)))))
+
+(derive (DebugDisplay) value-data ConstraintRep
+  (constraint-rep:class (NodeId ast/ClassCon) (Array Type)))
+
+(instance Imports.ConstraintRep (Imports ast/ConstraintRep ConstraintRep)
+  (function (context/imports! a ctx)
+    (match a
+      [(ast/constraint-rep:unresolved _ _)
+        (assert #f "Foudn constraint-rep:unresolved at type-inference")]
+      [(ast/constraint-rep:class (let id) (let args))
+        (constraint-rep:class id (context/imports! args ctx))])))
+
+(instance Exports.ConstraintRep (Exports ast/ConstraintRep ConstraintRep)
+  (function (context/exports! a ctx)
+    (match a
+      [(constraint-rep:class (let id) (let args))
+        (ast/constraint-rep:class id (context/exports! args ctx))])))
+
+(derive (DebugDisplay) value-data Scheme
+  (scheme: (Array (NodeId TypeParameter)) (Array Constraint) Type))
+
+(instance Conv.From.Type.To.Scheme (Conv Type Scheme)
+  (function (conv a)
+    (scheme: array/empty array/empty a)))
+
+(instance Generic.Scheme (Generic Scheme)
+  (function (generic/params a)
+    (scheme/ty-params a))
+
+  (function (generic/subst-types map ctx a)
+    (if (ord-map/empty? map)
+      a
+      (scheme/map-types [^1 (context/subst! map %1 ctx)] a))))
+
+(instance Imports.Scheme (Imports ast/Scheme Scheme)
+  (function (context/imports! a ctx)
+    (with1 (ast/scheme: (let ty-params) (let s-params) (let body)) a
+      (scheme: (context/imports! ty-params ctx) (context/imports! s-params ctx) (context/imports! body ctx)))))
+
+(instance Exports.Scheme (Exports ast/Scheme Scheme)
+  (function (context/exports! a ctx)
+    (with1 (scheme: (let ty-params) (let s-params) (let body)) a
+      (ast/scheme: (context/exports! ty-params ctx) (context/exports! s-params ctx) (context/exports! body ctx)))))
+
+(getter scheme: scheme/ty-params scheme/s-params scheme/body)
+
+(function (scheme/types scheme) {(-> Scheme (Iterator Type))}
+  (with1 (scheme: _ (let s-params) (let body)) scheme
+    (it/chain (some body) (it/flat-map constraint/types s-params))))
+
+(function (scheme/map-types f scheme) {(-> (-> Type Type) Scheme Scheme)}
+  (with1 (scheme: (let ty-params) (let s-params) (let body)) scheme
+    (scheme: ty-params (|> s-params (it/map [^1 (constraint/map-types f %1)]) collect) (f body))))
+
+(function (scheme/alpha-equal? s1 s2 ctx) {(forall E) (-> Scheme Scheme (Context E) Bool) (where (KindEnvironment E))}
+  (with ([(scheme: (let ty-params1) (let s-params1) (let body1)) s1]
+         [(scheme: (let ty-params2) (let s-params2) (let body2)) s2])
+    (and
+      (eq? (array/length ty-params1) (array/length ty-params2))
+      (eq? (array/length s-params1) (array/length s-params2))
+      (let1 map (ord-map/collect (it/zip ty-params1 (it/map [^1 (type:gen %1 level/top)] ty-params2)))
+        (and (context/equal-on-subst? map body1 body2 ctx)
+             (it/all? id (it/zip* [^2 (constraint/equal-on-subst? map %1 %2 ctx)] s-params1 s-params2)))))))
+
+(derive (DebugDisplay) value-data Satisfaction
+  (satisfaction:var (Ref (Option Satisfaction)))
+  (satisfaction:by-premise (NodeId ast/Constraint) (Array (NodeId ast/Constraint))) ; id path
+  (satisfaction:by-instance (NodeId ast/InstanceCon) Instantiation)) ; id inst
+
+(instance Exports.Satisfaction (Exports ast/Satisfaction Satisfaction)
+  (function (context/exports! a ctx)
+    (match a
+      [(satisfaction:var (ref none))
+        (ast/satisfaction:error "???")]
+      [(satisfaction:var (ref (some (let s))))
+        (context/exports! s ctx)]
+      [(satisfaction:by-premise (let id) (let path))
+        (ast/satisfaction:by-premise id path)]
+      [(satisfaction:by-instance (let id) (let inst))
+        (ast/satisfaction:by-instance id (context/exports! inst ctx))])))
+
+(derive (DebugDisplay) value-data Instantiation
+  (instantiation: (Array Type) (Array Satisfaction)))
+
+(instance Exports.Instantiation (Exports ast/Instantiation Instantiation)
+  (function (context/exports! a ctx)
+    (with1 (instantiation: (let ty-args) (let s-args)) a
+      (ast/instantiation: (context/exports! ty-args ctx) (context/exports! s-args ctx)))))
+
+(getter instantiation: instantiation/ty-args instantiation/s-args)
+
+(derive (DebugDisplay) value-data ClassCon
+  (class-con: (Array (NodeId TypeParameter)) (Array Constraint)))
+
+(instance Generic.ClassCon (Generic ClassCon)
+  (function (generic/params c)
+    (class-con/ty-params c))
+
+  (function (generic/subst-types map ctx c)
+    (if (ord-map/empty? map)
+      c
+      (class-con/map-types [^1 (context/subst! map %1 ctx)] c))))
+
+(instance Imports.ClassCon (Imports ast/ClassCon ClassCon)
+  (function (context/imports! a ctx)
+    (class-con:
+      (context/imports! (ast/class-con/ty-params a) ctx)
+      (context/imports! (ast/class-con/superclasses a) ctx))))
+
+(getter class-con: class-con/ty-params class-con/superclasses)
+
+(function (class-con/types c) {(-> ClassCon (Iterator Type))}
+  (with1 (class-con: _ (let cs)) c
+    (it/flat-map constraint/types cs)))
+
+(function (class-con/map-types f c) {(-> (-> Type Type) ClassCon ClassCon)}
+  (with1 (class-con: (let id) (let cs)) c
+    (class-con: id (|> cs (it/map [^1 (constraint/map-types f %1)]) collect))))
+
+(derive (DebugDisplay) value-data InstanceCon
+  (instance-con: (Array (NodeId TypeParameter)) (Array Constraint) Constraint))
+
+(instance Generic.InstanceCon (Generic InstanceCon)
+  (function (generic/params a)
+    (instance-con/ty-params a))
+
+  (function (generic/subst-types map ctx a)
+    (if (ord-map/empty? map)
+      a
+      (instance-con/map-types [^1 (context/subst! map %1 ctx)] a))))
+
+(instance Imports.InstanceCon (Imports ast/InstanceCon InstanceCon)
+  (function (context/imports! a ctx)
+    (instance-con:
+      (context/imports! (ast/instance-con/ty-params a) ctx)
+      (context/imports! (ast/instance-con/s-params a) ctx)
+      (context/imports! (ast/instance-con/target a) ctx))))
+
+(getter instance-con: instance-con/ty-params instance-con/s-params instance-con/target)
+
+(function (instance-con/types c) {(-> InstanceCon (Iterator Type))}
+  (with1 (instance-con: _ (let s-params) (let target)) c
+    (it/chain (constraint/types target)
+              (it/flat-map constraint/types s-params))))
+
+(function (instance-con/map-types f c) {(-> (-> Type Type) InstanceCon InstanceCon)}
+  (with1 (instance-con: (let ty-params) (let s-params) (let target)) c
+    (instance-con:
+      ty-params
+      (|> s-params (it/map [^1 (constraint/map-types f %1)]) collect)
+      (constraint/map-types f target))))
+
+(derive (DebugDisplay) data Scope
+  (scope:
+    Level
+    (Vector ContextConstraint)
+    Premise
+    (OrdMap (NodeId TypeParameter) Type)))
+
+(getter scope:
+  scope/level
+  scope/context-constraints
+  scope/context-premise
+  scope/scoped-gen-types)
+
+(function (scope/new) {(-> Scope)}
+  (scope:
+    level/top
+    vector/empty
+    (premise/new)
+    ord-map/empty))
+
+(function (scope/new-inner scope) {(-> Scope Scope)}
+  (scope:
+    (level/down (scope/level scope))
+    vector/empty
+    (shallow-copy (scope/context-premise scope))
+    (shallow-copy (scope/scoped-gen-types scope))))
+
+(function (scope/put-context-constraint! c scope) {(-> Constraint Scope Satisfaction)}
+  (let1 s (ref none)
+    (vector/push! (context-constraint: c s) (scope/context-constraints scope))
+    (satisfaction:var s)))
+
+(function (scope/inherit-deferred-context-constraint! c scope) {(-> ContextConstraint Scope unit)}
+  (vector/push! c (scope/context-constraints scope)))
+
+(function (scope/consume-context-constraints! scope) {(-> Scope (Array ContextConstraint))}
+  (vector/consume-all! (scope/context-constraints scope)))
+
+(function (scope/register-scoped-gen-types! gens scope) {(-> (Array (NodeId TypeParameter)) Scope unit)}
+  (for (let id) gens
+    (ord-map/insert! id (type:gen id (scope/level scope)) (scope/scoped-gen-types scope))))
+
+(derive (DebugDisplay) value-data ContextConstraint
+  (context-constraint: Constraint (Ref (Option Satisfaction))))
+
+(function (context-constraint/body cc) {(-> ContextConstraint Constraint)}
+  (with1 (context-constraint: (let body) _) cc
+    body))
+
+(function (context-constraint/resolve-by! s cc) {(-> Satisfaction ContextConstraint unit)}
+  (with1 (context-constraint: _ (let var)) cc
+    (set! var (some s))))
+
+(function (context-constraint/resolve-by-param! constraint-id cc) {(-> (NodeId ast/Constraint) ContextConstraint Constraint)}
+  (with1 (context-constraint: (constraint: _ (let rep)) (let var)) cc
+    (set! var (some (satisfaction:by-premise constraint-id array/empty)))
+    (constraint: constraint-id rep)))
+
+(derive (DebugDisplay) value-data Premise
+  (premise: (OrdMap (NodeId ast/ClassCon) (Vector PremiseClassConstraint))))
+
+(instance ShallowCopy.Premise (ShallowCopy Premise)
+  (function (shallow-copy premise)
+    (with1 (premise: (let class-constraints)) premise
+      (premise: (shallow-copy class-constraints)))))
+
+(instance Exports.Premise (Exports (Array ast/Constraint) Premise)
+  (function (context/exports! premise ctx)
+    (with1 (premise: (let class-constraints)) premise
+      (let1 result vector/empty
+        (for (: (let class) (let cs)) (ord-map/elems class-constraints)
+          (for (premise-class-constraint: (let id) (let path) (let class-args)) cs
+            (when (array/empty? path)
+              (vector/push!
+                (ast/constraint/class id class (context/exports! class-args ctx))
+                result))))
+        (vector/buffer result)))))
+
+(function (premise/new) {(-> Premise)}
+  (premise: ord-map/empty))
+
+(function (premise/add-class-constraint! id path class class-args premise)
+  {(-> (NodeId ast/Constraint) (Array (NodeId ast/Constraint)) (NodeId ast/ClassCon) (Array Type) Premise unit)}
+  (with1 (premise: (let class-constraints)) premise
+    (match (ord-map/get? class class-constraints)
+      [(some (let premises))
+        (vector/push! (premise-class-constraint: id path class-args) premises)]
+      [none
+        (ord-map/insert! class (vector (premise-class-constraint: id path class-args)) class-constraints)
+        unit])))
+
+(function (premise/class-constraints class premise) {(-> (NodeId ast/ClassCon) Premise (Iterator PremiseClassConstraint))}
+  (with1 (premise: (let class-constraints)) premise
+    (match (ord-map/get? class class-constraints)
+      [(some (let premises))
+        (iterate premises)]
+      [none
+        iterator/empty])))
+
+(derive (DebugDisplay) value-data PremiseClassConstraint
+  (premise-class-constraint: (NodeId ast/Constraint) (Array (NodeId ast/Constraint)) (Array Type)))
+
+(function (premise-class-constraint/class-args c) {(-> PremiseClassConstraint (Iterator Type))}
+  (with1 (premise-class-constraint: _ _ (let class-args)) c
+    (iterate class-args)))
+
+(function (premise-class-constraint/satisfaction c) {(-> PremiseClassConstraint Satisfaction)}
+  (with1 (premise-class-constraint: (let id) (let path) _) c
+    (satisfaction:by-premise id path)))
+
+(function (premise-class-constraint/has-equivalent-class-args? c class-args ctx) {(forall E) (-> PremiseClassConstraint (Array Type) (Context E) Bool)}
+  (with1 (premise-class-constraint: _ _ (let args)) c
+    (it/all? id (it/zip* [^2 (context/equal? %1 %2 ctx)] class-args args))))

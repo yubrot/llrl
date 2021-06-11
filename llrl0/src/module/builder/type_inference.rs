@@ -16,7 +16,7 @@ mod unification;
 
 use kind_env::KindEnv;
 use type_env::TypeEnv;
-use unification::{self as u, Export as _, GenericTypes as _, Import as _, Resolve as _};
+use unification::{self as u, Export as _, Generic as _, Import as _, Resolve as _};
 
 const SATISFACTION_RECURSION_LIMIT: i32 = 20;
 
@@ -160,7 +160,7 @@ impl<'a, E: External> Context<'a, E> {
             path.push(constraint.id);
             self.install_premise_constraint(premise, id, path, constraint.rep);
         }
-        premise.add_class_premise(id, path, class, class_args);
+        premise.add_class_constraint(id, path, class, class_args);
     }
 
     fn build_satisfaction<Error: BuildSatisfactionError>(
@@ -175,7 +175,7 @@ impl<'a, E: External> Context<'a, E> {
 
         let u::ConstraintRep::Class(class, ref class_args) = constraint.rep;
 
-        for cp in premise.class_premises(class) {
+        for cp in premise.class_constraints(class) {
             if cp.has_equivalent_class_args(class_args.as_ref(), &mut self.u_ctx) {
                 return Ok(cp.to_satisfaction());
             }
@@ -283,9 +283,7 @@ impl<'a, E: External> Context<'a, E> {
                 continue;
             }
 
-            let current_level_vars = constraint
-                .body()
-                .enumerate_vars(current_level, &mut self.u_ctx);
+            let current_level_vars = constraint.body().get_vars(current_level, &mut self.u_ctx);
             let defaulting_required_vars = current_level_vars
                 .difference(&quantify_vars)
                 .copied()
@@ -293,7 +291,7 @@ impl<'a, E: External> Context<'a, E> {
 
             if !current_level_vars.is_empty() && defaulting_required_vars.is_empty() {
                 // Constraints like (From <a> <b>) where every type variable is in `quantify_vars`
-                let constraint = constraint.into_premise(self.type_env.new_constraint_id());
+                let constraint = constraint.resolve_by_param(self.type_env.new_constraint_id());
                 s_params.push(constraint);
             } else {
                 // Constraints like (Number <a>) where some type variable is not in `quantify_vars`
@@ -666,7 +664,7 @@ impl<'a, E: External> Context<'a, E> {
         let mut scope = u::Scope::new_inner(outer_scope);
 
         let mut scheme = self.u_ctx.import(&method.ann);
-        scope.register_scoped_gen_types(scheme.generic_types());
+        scope.register_scoped_gen_types(scheme.params());
         scheme.subst_types(scope.scoped_gen_types(), &mut self.u_ctx);
         self.install_premise_constraints(scope.context_premise_mut(), scheme.s_params);
 
@@ -691,7 +689,11 @@ impl<'a, E: External> Context<'a, E> {
 
         let u::ConstraintRep::Class(class, class_args) = inst_con.target.rep;
         let class_params = self.type_of(class).ty_params.clone();
-        let class_inst_map = u::gen_type_mapping(class_params.as_ref(), class_args.as_ref());
+        let class_inst_map = class_params
+            .iter()
+            .zip(class_args.iter())
+            .map(|(gen, ty)| (*gen, *ty))
+            .collect::<HashMap<_, _>>();
 
         for method in inst.methods() {
             self.infer_instance_method(&mut scope, &class_inst_map, method)?;
@@ -729,7 +731,7 @@ impl<'a, E: External> Context<'a, E> {
             }
             None => orig_scheme,
         };
-        scope.register_scoped_gen_types(scheme.generic_types());
+        scope.register_scoped_gen_types(scheme.params());
         scheme.subst_types(scope.scoped_gen_types(), &mut self.u_ctx);
         self.install_premise_constraints(scope.context_premise_mut(), scheme.s_params.clone());
 
@@ -952,7 +954,7 @@ impl<'a, E: External> Context<'a, E> {
         let mut scope = u::Scope::new_inner(outer_scope);
 
         let mut scheme = self.u_ctx.import(f.ann.as_ref().unwrap());
-        scope.register_scoped_gen_types(scheme.generic_types());
+        scope.register_scoped_gen_types(scheme.params());
         scheme.subst_types(scope.scoped_gen_types(), &mut self.u_ctx);
         self.install_premise_constraints(scope.context_premise_mut(), scheme.s_params);
 
