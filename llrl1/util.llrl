@@ -103,6 +103,32 @@
             (array/reverse! array)
             (return #f)])))))
 
+(export it/zip-ordered)
+(function (it/zip-ordered a b) {(forall T S A) (-> (T A) (S A) (Iterator (ZipEither A A))) (where (Iterate T) (Iterate S) (Ord A))}
+  (let ([a (iterate a)]
+        [b (iterate b)]
+        [buf (ref none)])
+    (iterator/new (lambda ()
+      (match? (: (if-match1 (some (left (let l))) ~buf (some l) (iterator/next! a))
+                 (if-match1 (some (right (let r))) ~buf (some r) (iterator/next! b)))
+        [(: (some (let l)) (some (let r)))
+          (match (compare l r)
+            [ordering:less
+              (set! buf (some (right r)))
+              (zip-either:left l)]
+            [ordering:greater
+              (set! buf (some (left l)))
+              (zip-either:right r)]
+            [ordering:equal
+              (set! buf none)
+              (zip-either:both l r)])]
+        [(: none (some (let r)))
+          (set! buf none)
+          (zip-either:right r)]
+        [(: (some (let l)) none)
+          (set! buf none)
+          (zip-either:left l)])))))
+
 ; Perform a topological sort.
 (export topological-sort)
 (function (topological-sort traverse src)
