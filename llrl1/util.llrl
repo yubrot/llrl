@@ -103,6 +103,12 @@
             (array/reverse! array)
             (return #f)])))))
 
+(export it/fold1)
+(function (it/fold1 f it) {(forall T A) (-> (-> A A A) (T A) (Option A)) (where (Iterate T))}
+  (let1 it (iterate it)
+    (with1? (some (let init)) (iterator/next! it)
+      (it/fold f init it))))
+
 (export it/zip-ordered)
 (function (it/zip-ordered a b) {(forall T S A) (-> (T A) (S A) (Iterator (ZipEither A A))) (where (Iterate T) (Iterate S) (Ord A))}
   (let ([a (iterate a)]

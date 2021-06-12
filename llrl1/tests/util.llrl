@@ -9,6 +9,11 @@
 
 (assert-eq? "1, 2, 3" (|> (array 1 2 3) (it/format ", ") string))
 
+(assert-eq? none (it/fold1 [^2 (+ %1 %2) {I32}] (array)))
+(assert-eq? (some 1) (it/fold1 [^2 (+ %1 %2)] (array 1)))
+(assert-eq? (some 3) (it/fold1 [^2 (+ %1 %2)] (array 1 2)))
+(assert-eq? (some 6) (it/fold1 [^2 (+ %1 %2)] (array 1 2 3)))
+
 (import "std/it" [z:_ zip-either:_])
 (assert-eq? (array (z:left 1) (z:left 2) (z:left 3))
             (collect (it/zip-ordered (array 1 2 3) (array))))
