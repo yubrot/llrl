@@ -1,0 +1,2 @@
+(no-implicit-std)
+(import "~/emitter/ir")

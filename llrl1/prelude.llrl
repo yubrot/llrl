@@ -23,4 +23,5 @@
 (import "~/module" ModuleId _.ModuleId Module _.Module module/_)
 (import "~/module" ModuleSet ModuleSet._ module-set/_)
 (import "~/module" [_.ModuleDisplayContext _.DisplayContext] [module-display-context display-context])
+(import "~/emitter")
 (export _)
