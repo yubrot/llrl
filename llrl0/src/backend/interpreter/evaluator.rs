@@ -28,14 +28,14 @@ impl<'a> Evaluator<'a> {
             Rt::LocalFun(_, _) => Err(Error::Internal(
                 "Found Rt::LocalFun at Evaluator, this should be erased by emitter".to_string(),
             )),
-            Rt::Capture(Ct::Id(id), env) => {
+            Rt::StaticFun(Ct::Id(id), env) => {
                 let env = match env {
                     Some(env) => Some(self.eval(env)?),
                     None => None,
                 };
                 Ok(Value::Clos(*id, env.map(Box::new)))
             }
-            Rt::Capture(ct, _) => Err(Error::Internal(format!(
+            Rt::StaticFun(ct, _) => Err(Error::Internal(format!(
                 "Unresolved Ct: {}, this should be resolved by emitter",
                 ct
             ))),

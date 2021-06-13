@@ -198,7 +198,7 @@ impl Traverse for Rt {
                     traverser.after_rt_use(*id)?;
                     traverser.traverse(args)?;
                 }
-                Self::Capture(ct, env) => {
+                Self::StaticFun(ct, env) => {
                     traverser.traverse(ct)?;
                     traverser.traverse(env)?;
                 }

@@ -258,7 +258,7 @@ impl RtIdGen {
 pub enum Rt {
     Local(RtId),
     LocalFun(RtId, Vec<Ct>), // erased by normalizer
-    Capture(Ct, Option<Box<Rt>>),
+    StaticFun(Ct, Option<Box<Rt>>),
     Const(Const),
 
     Call(Box<(Rt, Vec<Rt>)>),
@@ -292,7 +292,7 @@ pub enum Rt {
 
 impl Rt {
     pub fn capture(ct: Ct, env: Option<Self>) -> Self {
-        Self::Capture(ct, env.map(Box::new))
+        Self::StaticFun(ct, env.map(Box::new))
     }
 
     pub fn call(callee: Self, args: Vec<Self>) -> Self {
@@ -534,7 +534,6 @@ pub enum Ternary {
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy, Hash)]
-
 pub enum Location {
     Heap,
     Stack,

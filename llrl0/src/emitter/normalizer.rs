@@ -103,7 +103,7 @@ impl<'e, E: Env> rewriter::Rewriter for Normalizer<'e, E> {
     fn after_rt(&mut self, rt: &mut Rt) -> Result<(), ()> {
         if_chain! {
             if let Rt::Call(call) = rt;
-            if let Rt::Capture(Ct::Id(id), None) = call.0;
+            if let Rt::StaticFun(Ct::Id(id), None) = call.0;
             if let Some(GetCt { is_normalized, def }) = self.env.get_ct(id);
             if let CtDef::Function(f) = def.as_ref();
             if f.kind == FunctionKind::Transparent;

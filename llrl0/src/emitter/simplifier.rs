@@ -497,18 +497,18 @@ impl Simplify for ast::Expr {
                     let f = Ct::Id(env.issue_ct(id));
                     let ct_args = env.simplify(set.instantiation_of(self.id).unwrap());
                     let autocall = set.ast(id).unwrap().params.is_none();
-                    Rt::autocall(Rt::Capture(Ct::generic_inst(f, ct_args), None), autocall)
+                    Rt::autocall(Rt::StaticFun(Ct::generic_inst(f, ct_args), None), autocall)
                 }
                 ast::Value::CFunction(id) => {
                     let f = Ct::Id(env.issue_ct(id));
                     let autocall = !set.ast(id).unwrap().ann.body.is_fun();
-                    Rt::autocall(Rt::Capture(f, None), autocall)
+                    Rt::autocall(Rt::StaticFun(f, None), autocall)
                 }
                 ast::Value::BuiltinOp(id) => {
                     let f = Ct::Id(env.issue_ct(id));
                     let ct_args = env.simplify(set.instantiation_of(self.id).unwrap());
                     let autocall = !set.ast(id).unwrap().ann.body.body.is_fun();
-                    Rt::autocall(Rt::Capture(Ct::generic_inst(f, ct_args), None), autocall)
+                    Rt::autocall(Rt::StaticFun(Ct::generic_inst(f, ct_args), None), autocall)
                 }
                 ast::Value::ClassMethod(id) => {
                     let method = set.ast(id).unwrap();
@@ -521,7 +521,7 @@ impl Simplify for ast::Expr {
                     let f = Ct::table_get(instance, env.issue_ct(id));
                     let args = env.simplify(&method_inst);
                     let autocall = method.params.is_none();
-                    Rt::autocall(Rt::Capture(Ct::generic_inst(f, args), None), autocall)
+                    Rt::autocall(Rt::StaticFun(Ct::generic_inst(f, args), None), autocall)
                 }
                 ast::Value::Parameter(id) => Rt::Local(env.issue_rt(id)),
                 ast::Value::LocalVar(id) => Rt::Local(env.issue_rt(id)),
@@ -544,7 +544,7 @@ impl Simplify for ast::Expr {
                     ),
                 };
                 let ct_args = env.simplify(set.instantiation_of(self.id).unwrap());
-                Rt::autocall(Rt::Capture(Ct::generic_inst(f, ct_args), None), autocall)
+                Rt::autocall(Rt::StaticFun(Ct::generic_inst(f, ct_args), None), autocall)
             }
             ast::ExprRep::Const(ref lit) => {
                 let ty = env.simplify(set.type_of(self.id).unwrap());

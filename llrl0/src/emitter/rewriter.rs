@@ -197,7 +197,7 @@ impl Rewrite for Rt {
                     rewriter.after_rt_use(*id)?;
                     rewriter.rewrite(args)?;
                 }
-                Self::Capture(ct, env) => {
+                Self::StaticFun(ct, env) => {
                     rewriter.rewrite(ct)?;
                     rewriter.rewrite(env)?;
                 }

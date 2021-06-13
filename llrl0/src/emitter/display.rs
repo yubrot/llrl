@@ -166,8 +166,8 @@ impl fmt::Display for Rt {
         match self {
             Self::Local(id) => write!(f, "{}", id),
             Self::LocalFun(id, args) => write!(f, "{}[{}]", id, args.iter().format(", ")),
-            Self::Capture(id, None) => write!(f, "{}", id),
-            Self::Capture(id, Some(env)) => write!(f, "{}{{{}}}", id, env),
+            Self::StaticFun(id, None) => write!(f, "{}", id),
+            Self::StaticFun(id, Some(env)) => write!(f, "{}{{{}}}", id, env),
             Self::Const(c) => write!(f, "{}", c),
             Self::Call(call) => write!(f, "{}({})", call.0, call.1.iter().format(", ")),
             Self::CCall(c_call) => write!(f, "@{}({})", c_call.0, c_call.2.iter().format(", ")),

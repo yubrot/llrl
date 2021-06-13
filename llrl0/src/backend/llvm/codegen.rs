@@ -87,7 +87,7 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
             Rt::LocalFun(_, _) => {
                 panic!("Found Rt::LocalFun at Codegen, this should be erased by emitter")
             }
-            Rt::Capture(Ct::Id(id), env) => {
+            Rt::StaticFun(Ct::Id(id), env) => {
                 let fp = self.module.capture_function(*id, self.ctx).value;
                 let env = match env {
                     Some(env) => self.eval(env)?,
@@ -101,7 +101,7 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
                 let value = self.builder.build_insert_value(value, env, 1);
                 Some(value)
             }
-            Rt::Capture(ct, _) => {
+            Rt::StaticFun(ct, _) => {
                 panic!("Unresolved Ct: {}, this should be resolved by emitter", ct)
             }
             Rt::Const(c) => Some(self.llvm_constant(c).as_value()),
