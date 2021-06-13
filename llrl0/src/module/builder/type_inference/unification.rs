@@ -307,6 +307,17 @@ impl Satisfaction {
             instantiation,
         })
     }
+
+    pub fn types(&self) -> Vec<Type> {
+        match self {
+            Self::Var(ref var) => match *var.borrow() {
+                Some(ref s) => s.types(),
+                None => Vec::new(),
+            },
+            Self::ByPremise(_) => Vec::new(),
+            Self::ByInstance(ref inst) => inst.types().collect(),
+        }
+    }
 }
 
 impl<E: KindEnvironment> Export<Satisfaction> for Context<E> {
@@ -347,6 +358,12 @@ pub struct SatisfactionByInstance {
     pub instantiation: Instantiation,
 }
 
+impl SatisfactionByInstance {
+    pub fn types<'a>(&'a self) -> impl Iterator<Item = Type> + 'a {
+        self.instantiation.types()
+    }
+}
+
 impl<E: KindEnvironment> Export<SatisfactionByInstance> for Context<E> {
     type Dest = ast::SatisfactionByInstance;
 
@@ -367,7 +384,10 @@ pub struct Instantiation {
 
 impl Instantiation {
     pub fn types<'a>(&'a self) -> impl Iterator<Item = Type> + 'a {
-        self.ty_args.iter().copied()
+        self.ty_args
+            .iter()
+            .copied()
+            .chain(self.s_args.iter().flat_map(|s| s.types()))
     }
 }
 

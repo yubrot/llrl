@@ -175,9 +175,9 @@ impl<'a, E: External> Context<'a, E> {
 
         let u::ConstraintRep::Class(class, ref class_args) = constraint.rep;
 
-        for cp in premise.class_constraints(class) {
-            if cp.has_equivalent_class_args(class_args.as_ref(), &mut self.u_ctx) {
-                return Ok(cp.to_satisfaction());
+        for cc in premise.class_constraints(class) {
+            if cc.has_equivalent_class_args(class_args.as_ref(), &mut self.u_ctx) {
+                return Ok(cc.to_satisfaction());
             }
         }
 
@@ -267,8 +267,8 @@ impl<'a, E: External> Context<'a, E> {
         });
 
         let current_level = scope.level();
-        let current_constraints = Arena::new();
-        let mut outer_constraints = Vec::new();
+        let current_ccs = Arena::new();
+        let mut outer_ccs = Vec::new();
         let mut s_params = Vec::new();
         let mut defaulting_vars = HashMap::<u::Var, Vec<_>>::new();
 
@@ -279,7 +279,7 @@ impl<'a, E: External> Context<'a, E> {
             if outer.is_some()
                 && constraint.body().compute_deepest_level(&mut self.u_ctx) < current_level
             {
-                outer_constraints.push(constraint);
+                outer_ccs.push(constraint);
                 continue;
             }
 
@@ -296,7 +296,7 @@ impl<'a, E: External> Context<'a, E> {
             } else {
                 // Constraints like (Number <a>) where some type variable is not in `quantify_vars`
                 // or constant constraints like (Number I32)
-                let constraint = current_constraints.alloc(constraint);
+                let constraint = current_ccs.alloc(constraint);
                 for var in defaulting_required_vars {
                     defaulting_vars
                         .entry(var)
@@ -327,7 +327,7 @@ impl<'a, E: External> Context<'a, E> {
             self.resolve_ambiguity(var, &related_constraints)?;
         }
 
-        for constraint in outer_constraints {
+        for constraint in outer_ccs {
             match self.build_satisfaction::<()>(scope.context_premise(), constraint.body(), 0) {
                 Ok(satisfaction) => constraint.resolve_by(satisfaction),
                 Err(Error::BuildSatisfactionFailedAtThisScope) => {
@@ -340,7 +340,7 @@ impl<'a, E: External> Context<'a, E> {
             }
         }
 
-        for constraint in current_constraints.into_vec() {
+        for constraint in current_ccs.into_vec() {
             let satisfaction =
                 self.build_satisfaction::<Error>(scope.context_premise(), constraint.body(), 0)?;
             constraint.resolve_by(satisfaction);
@@ -716,20 +716,20 @@ impl<'a, E: External> Context<'a, E> {
             .class_method(*method.class_method.get_resolved())
             .ann;
 
-        let mut orig_scheme = self.u_ctx.import(&class_method_ann.body);
-        orig_scheme.subst_types(class_inst_map, &mut self.u_ctx);
+        let mut required_scheme = self.u_ctx.import(&class_method_ann.body);
+        required_scheme.subst_types(class_inst_map, &mut self.u_ctx);
         let mut scheme = match method.ann {
             Some(ref inst_method_ann) => {
-                let inst_scheme = self.u_ctx.import(inst_method_ann);
-                if !inst_scheme.alpha_equal(&orig_scheme, &mut self.u_ctx) {
+                let actual_scheme = self.u_ctx.import(inst_method_ann);
+                if !actual_scheme.alpha_equal(&required_scheme, &mut self.u_ctx) {
                     Err(Error::MethodTypeSchemeMismatch(
                         class_method_ann.body.clone(),
                         inst_method_ann.body.clone(),
                     ))?;
                 }
-                inst_scheme
+                actual_scheme
             }
-            None => orig_scheme,
+            None => required_scheme,
         };
         scope.register_scoped_gen_types(scheme.params());
         scheme.subst_types(scope.scoped_gen_types(), &mut self.u_ctx);
@@ -778,7 +778,7 @@ impl<'a, E: External> Context<'a, E> {
                 let scheme = self.type_of(con).clone();
                 self.infer_use(es.scope, expr.id, scheme)
             }
-            ast::ExprRep::Const(ref lit) => self.infer_const(es.scope, expr.id, lit),
+            ast::ExprRep::Const(ref c) => self.infer_const(es.scope, expr.id, c),
             ast::ExprRep::App(ref apply) => self.infer_expr_apply(es, expr.id, apply),
             ast::ExprRep::Capture(_) => {
                 Ok(build_type!(self.u_ctx, ((con {u::Con::SYNTAX}) (con {u::Con::SEXP}))))
@@ -953,7 +953,7 @@ impl<'a, E: External> Context<'a, E> {
         debug_assert!(f.ann.is_some());
         let mut scope = u::Scope::new_inner(outer_scope);
 
-        let mut scheme = self.u_ctx.import(f.ann.as_ref().unwrap());
+        let mut scheme = self.type_of(f.id).clone();
         scope.register_scoped_gen_types(scheme.params());
         scheme.subst_types(scope.scoped_gen_types(), &mut self.u_ctx);
         self.install_premise_constraints(scope.context_premise_mut(), scheme.s_params);
@@ -1279,7 +1279,6 @@ struct UnifyingTypes {
     class_cons: HashMap<ast::NodeId<ast::ClassCon>, u::ClassCon>,
     instance_cons: HashMap<ast::NodeId<ast::InstanceCon>, u::InstanceCon>,
     instantiations: HashMap<ast::Construct, u::Instantiation>,
-    tuple_con_schemes: HashMap<u32, u::Scheme>,
 }
 
 impl UnifyingTypes {
@@ -1290,7 +1289,6 @@ impl UnifyingTypes {
             class_cons: HashMap::new(),
             instance_cons: HashMap::new(),
             instantiations: HashMap::new(),
-            tuple_con_schemes: HashMap::new(),
         }
     }
 }
