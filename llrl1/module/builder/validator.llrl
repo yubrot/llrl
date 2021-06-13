@@ -1,0 +1,170 @@
+(import "std/ord-map" _)
+(import "~/util" _)
+(import "~/pattern-checker" [p/_ _])
+(import "~/ast" _)
+(import "~/module/error" _)
+(import "~/module/meaning" _)
+(import "~/module/unit" _)
+(import "~/module/set" _)
+(import "~/module/builder/external" _)
+(export run!)
+
+(function (run! module external)
+  {(forall E) (-> Module E (Result unit Error)) (where (External E))}
+  (let1 ctx (context: (: module external) ord-map/empty ord-map/empty)
+    (for (let expr) (|> module module/ast-root root/expressions)
+      (dfs
+        (lambda (expr)
+          (if-match1 (expr: (let id) (expr-rep:match _ (let clauses))) expr
+            (result/map-err [^1 (error:on (conv id) %1)] (validate-match! clauses ctx))
+            (ok unit)))
+        expr)!))
+
+  ; TODO: Here we should validate that all value types can be sized, but this validation is
+  ; complicated by the inclusion of higher-order type parameters, so we are delaying it
+  ; until code generation. Here is an example of a program which is difficult to validate:
+  ; (value-data (Foo F)
+  ;   (foo (Bar F)))
+  ; (value-data (Bar F)
+  ;   (bar (F (Foo F))))
+  (ok unit))
+
+(value-data (Context S)
+  (context: S (OrdMap TypeCon (Array (: ValueCon U64))) (OrdMap ValueCon (: U64 (Array (: ValueCon U64))))))
+
+(function (validate-match! clauses ctx)
+  {(forall S) (-> (Array (: Pattern Expr)) (Context S) (Result unit Error)) (where (ModuleSet S))}
+  (let1 rows (|> clauses (it/map (case1 (: (let p) _) (|> (simplify-pattern! p ctx) array p/row/new))) collect)
+    (if (array/empty? rows)
+      ; FIXME: In bottom types, it should be considered exhaustive
+      (err (error:non-exhaustive-pattern (array "_")))
+      (match (p/check rows)
+        [(ok unit)
+          (ok unit)]
+        [(err (p/error:useless (let row)))
+          (err (error:useless-pattern (show-row row ctx)))]
+        [(err (p/error:non-exhaustive (let mat)))
+          (err (error:non-exhaustive-pattern (|> mat p/matrix/rows (it/map [^1 (show-row %1 ctx)]) collect)))]))))
+
+(function (show-row row ctx) {(forall S) (-> (p/Row Tag) (Context S) String) (where (ModuleSet S))}
+  (with1 (context: (let module-set) _ _) ctx
+    (string (contextual: (get (p/row/patterns row)[0]) module-set))))
+
+(function (simplify-pattern! p ctx)
+  {(forall S) (-> Pattern (Context S) (p/Pattern Tag)) (where (ModuleSet S))}
+  (match (pattern/rep p)
+    [(pattern-rep:unresolved _ _)
+      (assert #f "Found pattern-rep:unresolved at validator")]
+    [(pattern-rep:var (pattern-var: _ none))
+      p/pattern:wildcard]
+    [(pattern-rep:var (pattern-var: _ (some (let p))))
+      (simplify-pattern! p ctx)]
+    [pattern-rep:wildcard
+      p/pattern:wildcard]
+    [(pattern-rep:decon (let con) (let fields))
+      (p/pattern:constructor
+        (tag-of! con ctx)
+        (|> fields (it/flat-map id) (it/map [^1 (simplify-pattern! %1 ctx)]) collect))]
+    [(pattern-rep:const (let c))
+      (assert (not (is? (const:sexp _) c)) "Found const:sexp in pattern")
+      (p/pattern:constructor (tag:const c) array/empty)]))
+
+(value-data Tag
+  (tag:con U64 (Array (: ValueCon U64)))
+  (tag:const Const))
+
+(instance Eq.Tag (Eq Tag)
+  (function (eq? a b)
+    (match (: a b)
+      [(: (tag:con (let a) _) (tag:con (let b) _)) (eq? a b)]
+      [(: (tag:const (let a)) (tag:const (let b))) (eq? a b)]
+      [_ #f])))
+
+(instance Ord.Tag (Ord Tag)
+  (function (compare a b)
+    (match (: a b)
+      [(: (tag:con (let a) _) (tag:con (let b) _)) (compare a b)]
+      [(: (tag:con _ _) _) ordering:less]
+      [(: _ (tag:con _ _)) ordering:greater]
+      [(: (tag:const (let a)) (tag:const (let b))) (compare a b)])))
+
+(instance Tag.Tag (p/Tag Tag)
+  (function (tag/arity a)
+    (match a
+      [(tag:con (let i) (let cons))
+        (with1 (: _ (let arity)) (get cons[i])
+          arity)]
+      [(tag:const _)
+        0]))
+
+  (function (tag/finite-siblings? a)
+    (match? a
+      [(tag:con _ (let cons))
+         (|> (iterator/range 0 (array/length cons) 1)
+             (it/map [^1 (tag:con %1 cons)])
+             collect)]))
+
+  (function (tag/tuple? t)
+    (with? ([(tag:con (let i) (let cons)) t]
+            [(: (value-con:data (let id)) _) (get cons[i])]
+            [(some (let arity)) (builtin/tuple? id)])
+      arity)))
+
+; FIXME: This implementation is duplicated in display-context, it should be generalized.
+(instance ContextualDisplay.Tag (forall S) (ContextualDisplay Tag S) (where (ModuleSet S))
+  (function (contextual-display! w a ctx)
+    (match a
+      [(tag:con (let i) (let cons))
+        (with1 (: (let con) _) (get cons[i])
+          (cond
+            [when-match1 (some (let value)) (value-con/bool? con)
+              (display! w value)]
+            [when-match1 (some (let symbol)) (module-set/symbol? con ctx)
+              (display! w (symbol/name symbol))]
+            [else
+              (display! w (conv-to Construct con))]))]
+      [(tag:const (let c))
+        (display! w c)])))
+
+(function (tag-of! value-con ctx)
+  {(forall S) (-> ValueCon (Context S) Tag) (where (ModuleSet S))}
+  (with1 (context: _ _ (let value-cons-cache)) ctx
+    (if-match1 (some (: (let index) (let value-cons))) (ord-map/get? value-con value-cons-cache)
+      (tag:con index value-cons)
+      (let* ([value-cons (value-cons-of! value-con ctx)]
+             [index (option/force (it/find-index? (case1 (: (let c) _) (eq? c value-con)) value-cons))])
+        (ord-map/insert! value-con (: index value-cons) value-cons-cache)
+        (tag:con index value-cons)))))
+
+(function (value-cons-of! value-con ctx)
+  {(forall S) (-> ValueCon (Context S) (Array (: ValueCon U64))) (where (ModuleSet S))}
+  (with1 (context: (let module-set) (let type-cons-cache) _) ctx
+    (match value-con
+      [(value-con:data (let id))
+        (let1 id (data-value-con/type-con (option/force (module-set/ast? root/data-value-con? id module-set)))
+          (if-match1 (some (let value-cons)) (ord-map/get? (type-con:data id) type-cons-cache)
+            value-cons
+            (let1
+              value-cons
+              (|> (module-set/ast? root/data-type? id module-set)
+                  option/force
+                  data-type/value-cons
+                  (it/map (case1 (data-value-con: (let id) (let fields) _)
+                    (: (value-con:data id) (option/unwrap 0 (option/map array/length fields)))))
+                  collect)
+              (ord-map/insert! (type-con:data id) value-cons type-cons-cache)
+              value-cons)))]
+      [(value-con:builtin (let id))
+        (let1 id (builtin-value-con/type-con (option/force (module-set/ast? root/builtin-value-con? id module-set)))
+          (if-match1 (some (let value-cons)) (ord-map/get? (type-con:builtin id) type-cons-cache)
+            value-cons
+            (let1
+              value-cons
+              (|> (module-set/ast? root/builtin-type? id module-set)
+                  option/force
+                  builtin-type/value-cons
+                  (it/map (case1 (builtin-value-con: (let id) _ (let fields) _)
+                    (: (value-con:builtin id) (option/unwrap 0 (option/map array/length fields)))))
+                  collect)
+              (ord-map/insert! (type-con:builtin id) value-cons type-cons-cache)
+              value-cons)))])))

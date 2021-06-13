@@ -30,11 +30,9 @@
       [(error-focus:name-of (let c))
         (display-symbol-name! w c ctx)]
       [(error-focus:loc-of (let c))
-        (match (module-set/symbol? c (module-set ctx))
-          [(some (let symbol))
-            (contextual-display! w (symbol/loc symbol) (source-location-table ctx))]
-          [none
-            (display! w "<unknown location>")])])))
+        (if-match1 (some (let symbol)) (module-set/symbol? c (module-set ctx))
+          (contextual-display! w (symbol/loc symbol) (source-location-table ctx))
+          (display! w "<unknown location>"))])))
 
 ($$ begin
   ($for-each $ty [KindUse TypeUse TypeParameter ConstraintUse PatternUse PatternVar DataTypeCon BuiltinTypeCon BuiltinValueCon ClassCon InstanceCon]
@@ -51,8 +49,6 @@
       (display-symbol-name! w (conv a) ctx))))
 
 (function (display-symbol-name! w c ctx)
-  (match (module-set/symbol? c (module-set ctx))
-    [(some (let symbol))
-      (display! w (symbol/name symbol))]
-    [none
-      (display! w c {Construct})]))
+  (if-match1 (some (let symbol)) (module-set/symbol? c (module-set ctx))
+    (display! w (symbol/name symbol))
+    (display! w c {Construct})))

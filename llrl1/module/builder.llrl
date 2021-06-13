@@ -16,6 +16,7 @@
 (import "~/module/builder/resolver" [resolver/run! run!])
 (import "~/module/builder/kind-inference" [kind-inference/run! run!])
 (import "~/module/builder/type-inference" [type-inference/run! run!])
+(import "~/module/builder/validator" [validator/run! run!])
 (import "~/module/builder/exporter" [exporter/run! run!])
 (export Backend Backend.unit backend/_ module/build!)
 
@@ -93,7 +94,7 @@
       (report/on report phase:resolve (resolver/run! module external))!
       (report/on report phase:kind-inference (kind-inference/run! module external))!
       (report/on report phase:type-inference (type-inference/run! module external))!
-      ; TODO: report/on builder/validator
+      (report/on report phase:validate (validator/run! module external))!
       (report/on report phase:export (exporter/run! module source))!
       ])
   (ok unit))

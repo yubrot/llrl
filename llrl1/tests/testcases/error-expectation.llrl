@@ -95,11 +95,11 @@
         (is? (module-error:method-type-scheme-mismatch _ _) e)]
       [(:useless-pattern (let pat))
         (if-match1 (module-error:useless-pattern (let p)) e
-          (eq? pat (string (contextual: p ctx)))
+          (eq? pat p)
           #f)]
       [(:non-exhaustive-pattern (let pats))
         (if-match1 (module-error:non-exhaustive-pattern (let ps)) e
-          (eq? pats (|> ps (it/map [^1 (string (contextual: %1 ctx))]) hash-set/collect))
+          (eq? pats (hash-set/collect ps))
           #f)])))
 
 (function (syntax/error-expectation s)
