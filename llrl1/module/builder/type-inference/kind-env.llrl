@@ -5,10 +5,13 @@
 (import "~/module/set" _)
 (import "~/module/builder/external" _)
 (import "~/unification/type" KindEnvironment)
-(export KindEnv kind-env/_)
+(export KindEnv _.KindEnv kind-env/_)
 
 (data (KindEnv E)
   (kind-env: Module E))
+
+(function (kind-env/new module external)
+  (kind-env: module external))
 
 (function (kind-env/get? c env)
   {(forall C E) (-> C (KindEnv E) (Option Kind)) (where (Conv C Construct) (External E))}
@@ -22,7 +25,7 @@
       (assert-eq? (construct/module construct) (module/id module))
       (inferred-kinds/set! construct kind (module/inferred-kinds module)))))
 
-(instance KindEnv.KindEnvironment (forall E) (KindEnvironment (KindEnv E)) (where (External E))
+(instance KindEnvironment.KindEnv (forall E) (KindEnvironment (KindEnv E)) (where (External E))
   (function (kind-env/resolve-kind c env)
     (match (kind-env/get? c env)
       [(some (let k)) k]

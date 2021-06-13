@@ -1,14 +1,857 @@
+(import "std/ord-map" _)
+(import "std/ord-set" _)
 (import "~/util" _)
 (import "~/ast" _)
 (import "~/module/error" _)
-(import "~/module/unit" _)
 (import "~/module/meaning" _)
+(import "~/module/unit" _)
+(import "~/module/set" _)
 (import "~/module/builder/external" _)
 (import "~/module/builder/type-inference/kind-env" _)
 (import "~/module/builder/type-inference/type-env" _)
-(import "~/module/builder/type-inference/unification" [u/_ _])
+(import "~/module/builder/type-inference/unification" [u/_ _] [u/_ context/_])
 (export run!)
+
+(function satisfaction-recursion-limit 20)
 
 (function (run! module external)
   {(forall E) (-> Module E (Result unit Error)) (where (External E))}
+  (let* ([kind-env (kind-env/new module external)]
+         [type-env (type-env/new module external)]
+         [u-ctx (u/new kind-env)]
+         [ctx (context: module kind-env type-env u-ctx (unifying-types/new) ord-set/empty)]
+         [root (module/ast-root module)])
+
+    (verify-classes-hierarchy! (|> root root/class-cons) ctx)!
+
+    (for (let inst) (|> root root/instance-cons ord-map/values)
+      (match (|> inst instance-con/target constraint/rep)
+        [(constraint-rep:unresolved _ _)
+          (assert #f "Found constraint-rep:unresolved at type-inference")]
+        [(constraint-rep:class (let class) _)
+          (ensure-overlap-checked! class ctx)!]))
+
+    (for (let inst) (|> root root/instance-cons ord-map/values)
+      (infer-instance-satisfaction! inst ctx)!)
+
+    ; Infer primary declarations
+    (infer-functions! (|> root root/functions) ctx)!
+    (for (let class) (|> root root/classes) (infer-class! class ctx)!)
+    (for (let inst) (|> root root/instances) (infer-instance! inst ctx)!)
+    (for (let m) (|> root root/macros ord-map/values) (infer-macro! m ctx)!)
+
+    (for (let e) (|> root root/init-expressions)
+      (when-match1 (init-expr:eval (let e)) e
+        (let* ([scope (u/scope/new)]
+               [ty (infer-expr! (expr-scope: scope none) e ctx)!])
+          (finalize-scope-on! (expr/id e) scope ord-set/empty none ctx)!
+          (put-type-of! unifying-types (expr/id e) ty ctx))))
+
+    ; Ensure that the Scheme is stored in (u-types ctx)
+    (for (let id) (|> root root/builtin-ops ord-map/keys) (type-of! id ctx) {u/Scheme})
+    (for (let id) (|> root root/c-functions ord-map/keys) (type-of! id ctx) {u/Type})
+    (for (let id) (|> root root/class-methods ord-map/keys) (type-of! id ctx) {u/Scheme})
+    (for (let id) (|> root root/data-value-cons ord-map/keys) (type-of! id ctx) {u/Scheme})
+    (for (let id) (|> root root/builtin-value-cons ord-map/keys) (type-of! id ctx) {u/Scheme})
+
+    (let1
+      (each-types elem)
+      (with1 (: (let c) (let g)) elem
+        (it/map [^1 (: c %1)] (u/types g)))
+      (for
+        (: (let construct) (let ty))
+        (|> (|> ctx u-types unifying-types ord-map/elems)
+            (it/chain (|> ctx u-types unifying-schemes ord-map/elems (it/flat-map each-types)))
+            (it/chain (|> ctx u-types unifying-instantiations ord-map/elems (it/flat-map each-types))))
+        (when-match1 (err _) (u/default-vars! ty (u/type:con type-con/unit) u-ctx)
+          (err (error:on construct (error:cannot-resolve-ambiguity (u/exports! ty u-ctx) array/empty)))!)))
+
+    (for (: (let c) (let scheme)) (|> ctx u-types unifying-schemes ord-map/elems)
+      (when (eq? (construct/module c) (module/id module))
+        (inferred-types/set-scheme! c (u/exports! scheme u-ctx) (module/inferred-types module))))
+
+    (for (: (let c) (let ty)) (|> ctx u-types unifying-types ord-map/elems)
+      (when (eq? (construct/module c) (module/id module))
+        (inferred-types/set-type! c (u/exports! ty u-ctx) (module/inferred-types module))))
+
+    (for (: (let c) (let instantiation)) (|> ctx u-types unifying-instantiations ord-map/elems)
+      (when (eq? (construct/module c) (module/id module))
+        (inferred-types/set-instantiation! c (u/exports! instantiation u-ctx) (module/inferred-types module))))
+
+    (ok unit)))
+
+(data (Context E)
+  (context:
+    Module
+    (KindEnv E)
+    (TypeEnv E)
+    (u/Context (KindEnv E))
+    UnifyingTypes
+    (OrdSet (NodeId ClassCon))))
+
+(getter context:
+  module
+  kind-env
+  type-env
+  u-ctx
+  u-types
+  overlap-checked-available-instances)
+
+(function (new-type-var! scope ctx)
+  {(forall E) (-> u/Scope (Context E) u/Type)}
+  (|> ctx u-ctx (u/new-type-var! (u/scope/level scope))))
+
+(function (import-on-scope! a scope ctx)
+  {(forall E A B) (-> A u/Scope (Context E) B) (where (External E) (u/Imports A B) (u/HasType B))}
+  (u/subst-types (u/scope/scoped-gen-types scope) (u-ctx ctx) (u/imports! a (u-ctx ctx))))
+
+(function (import-and-enter-on-scope! a scope ctx)
+  {(forall E A B) (-> A u/Scope (Context E) B) (where (External E) (u/Imports A B) (u/Generic B))}
+  (enter-on-scope! (u/imports! a (u-ctx ctx)) scope ctx))
+
+(function (enter-on-scope! a scope ctx)
+  {(forall E A) (-> A u/Scope (Context E) A) (where (External E) (u/Generic A))}
+  (if (eq? (u/scope/level scope) u/level/top)
+    a
+    (begin
+      (u/scope/register-scoped-gen-types! (u/generic/params a) scope)
+      (u/subst-types (u/scope/scoped-gen-types scope) (u-ctx ctx) a))))
+
+(function (unify! a b ctx)
+  {(forall A B E) (-> A B (Context E) (Result unit Error)) (where (u/Resolve A) (u/Resolve B) (External E))}
+  (match (u/unify! a b (u-ctx ctx))
+    [(ok unit)
+      (ok unit)]
+    [(err (let e))
+      (let ([a (u/export! a unit (u-ctx ctx))]
+            [b (u/export! b unit (u-ctx ctx))])
+        (err (error:cannot-unify-type a b e)))]))
+
+(function (unify-on! c a b ctx)
+  {(forall C A B E) (-> C A B (Context E) (Result unit Error)) (where (u/Resolve A) (u/Resolve B) (Conv C Construct) (External E))}
+  (result/map-err [^1 (error:on (conv c) %1)] (unify! a b ctx)))
+
+(function (unify-with-params! c params fun-ty ctx)
+  {(forall C A B E) (-> C (Option (Array Parameter)) u/Type (Context E) (Result u/Type Error)) (where (Conv C Construct) (External E))}
+  (if-match1 (some (let params)) params
+    (let* ([param-tys
+             (|> params
+                 (it/map (lambda (param)
+                   (let1 ty (u/new-type-var! u/level/bottom (u-ctx ctx))
+                     (put-type-of! unifying-types (parameter/id param) ty ctx)
+                     ty)))
+                 collect)]
+           [ret-ty (u/new-type-var! u/level/bottom (u-ctx ctx))]
+           [ty (build-type (u-ctx ctx) (-> ,@param-tys ,ret-ty))])
+      (unify-on! c ty fun-ty ctx)!
+      (ok ret-ty))
+    (ok fun-ty)))
+
+(function (install-premise-constraints! premise constraints ctx)
+  {(forall E T) (-> u/Premise (T u/Constraint) (Context E) unit) (where (Iterate T) (External E))}
+  (for (u/constraint: (let id) (let rep)) constraints
+    (install-premise-constraint! premise id array/empty rep ctx)))
+
+(function (install-premise-constraint! premise id path rep ctx)
+  {(forall E) (-> u/Premise (NodeId Constraint) (Array (NodeId Constraint)) u/ConstraintRep (Context E) unit) (where (External E))}
+  (match rep
+    [(u/constraint-rep:class (let class) (let class-args))
+      (let1 class-con (u/generic/apply-types class-args (u-ctx ctx) (type-of! class ctx))
+        (for (u/constraint: (let superclass-id) (let rep)) (u/class-con/superclasses class-con)
+          (install-premise-constraint! premise id (array/push superclass-id path) rep ctx)))
+      (u/premise/add-class-constraint! id path class class-args premise)]))
+
+(function (build-satisfaction! premise constraint complete-error? recursion-count ctx)
+  {(forall E) (-> u/Premise u/Constraint Bool I32 (Context E) (Result u/Satisfaction Error)) (where (External E))}
+  (when (> recursion-count satisfaction-recursion-limit)
+    (err (error/recursion-limit-exceeded complete-error? constraint (u-ctx ctx)))!)
+
+  (match (u/constraint/rep constraint)
+    [(u/constraint-rep:class (let class) (let class-args))
+      ; satisfy by premise
+      (for (let cc) (u/premise/class-constraints class premise)
+        (when (u/premise-class-constraint/has-equivalent-class-args? cc class-args (u-ctx ctx))
+          (return (ok (u/premise-class-constraint/satisfaction cc)))))
+
+      (ensure-overlap-checked! class ctx)!
+
+      ; satisfy by instance
+      ; NOTE: There is room for optimization in instance search
+      (for (let inst-id) (|> ctx type-env type-env/available-instances (available-instances/get class))
+        (with1
+          (: (let ty-args) (u/instance-con: _ (let s-params) (let target)))
+          (u/generic/instantiate-types u/level/bottom (u-ctx ctx) (type-of! inst-id ctx))
+          (when-match1 (ok _) (u/constraint/match-types-to-right! target constraint (u-ctx ctx))
+            (let1
+              s-args
+              (|> s-params
+                  (it/traverse-result [^1 (build-satisfaction! premise %1 complete-error? (+ recursion-count 1) ctx)])
+                  (result/map-err [^1 (error/required-for complete-error? %1 target (u-ctx ctx))]))!
+              (return (ok (u/satisfaction:by-instance inst-id (u/instantiation: ty-args (vector/buffer s-args)))))))))
+
+      (err (error/no-matching-instances complete-error? constraint premise (u-ctx ctx)))]))
+
+(function (ensure-overlap-checked! id ctx)
+  {(forall E) (-> (NodeId ClassCon) (Context E) (Result unit Error)) (where (External E))}
+  (when (|> ctx overlap-checked-available-instances (ord-set/insert! id) not)
+    (return (ok unit)))
+
+  (let1 insts (|> ctx type-env type-env/available-instances (available-instances/get id))
+    (for
+      (: (let a-id) (let b-id))
+      (|> insts
+          it/with-index
+          (it/flat-map (case1 (: (let i) (let a))
+            (|> insts (it/skip (+ i 1)) (it/map [^1 (: a %1)])))))
+
+      (if (and (eq? (node-id/module a-id) (node-id/module b-id))
+               (ne? (node-id/module a-id) (module/id (module ctx))))
+        ; These instances are defined together in another module.
+        unit
+        ; TODO: Reduce more repeated check
+        (with ([(: _ (u/instance-con: _ _ (let a)))
+                 (|> (type-of! a-id ctx)
+                     u/instance-con/drop-s-params ; unused; optimization
+                     (u/generic/instantiate-types u/level/top (u-ctx ctx)))]
+               [(: _ (u/instance-con: _ _ (let b)))
+                 (|> (type-of! b-id ctx)
+                     u/instance-con/drop-s-params ; unused; optimization
+                     (u/generic/instantiate-types u/level/top (u-ctx ctx)))])
+          (when-match1 (ok _) (u/constraint/unify-types! a b (u-ctx ctx))
+            (err (error:overlapping-instances (array a-id b-id)))!)))))
   (ok unit))
+
+(function (finalize-scope! construct scope quantify-vars outer ctx)
+  {(forall E)
+   (-> Construct u/Scope (OrdSet (u/Var u/Type)) (Option u/Scope) (Context E) (Result (: (Array (NodeId TypeParameter)) (Array u/Constraint)) Error))
+   (where (External E))}
+  ; (assert (match outer
+  ;   [(some (let outer-scope)) (< (u/scope/level outer-scope) (u/scope/level scope))]
+  ;   [none (eq? (u/scope/level scope) u/level/top)]))
+  (let ([current-level (u/scope/level scope)]
+        [current-ccs vector/empty]
+        [outer-ccs vector/empty]
+        [s-params vector/empty]
+        [defaulting-vars ord-map/empty])
+
+    (for (let cc) (u/scope/consume-context-constraints! scope)
+      (if (and (is? (some _) outer)
+               (< (u/types-deepest-level (conv-to u/Constraint cc) (u-ctx ctx)) current-level))
+        ; If the current level is not a top-level and the constraint does not contain
+        ; the types on the current level, it can be deferred to the outer scope.
+        (vector/push! cc outer-ccs)
+        ; We need to proceed the constraint in this scope.
+        (let* ([current-level-vars (u/types-vars (conv-to u/Constraint cc) current-level (u-ctx ctx))]
+               [defaulting-required-vars (shallow-copy current-level-vars)])
+          (for (let var) quantify-vars (ord-set/remove! var defaulting-required-vars))
+
+          (if (and (not (ord-set/empty? current-level-vars)) (ord-set/empty? defaulting-required-vars))
+            ; Constraints like (From <a> <b>) where every type variable is in `quantify-vars`
+            (vector/push!
+              (u/context-constraint/resolve-by-param! (module/issue-node-id! (module ctx)) cc)
+              s-params)
+            ; Constraints like (Number <a>) where some type variable is not in `quantify-vars`
+            ; or constant constraints like (Number I32)
+            (begin
+              (vector/push! cc current-ccs)
+              ; Track the constraint for later type variables defaulting
+              (for (let var) defaulting-required-vars
+                (if-match1 (some (let related-constraints)) (ord-map/get? var defaulting-vars)
+                  (vector/push! (conv cc) related-constraints)
+                  (ignore (ord-map/insert! var (vector (conv cc)) defaulting-vars)))))))))
+    (let1
+      ty-params
+      (|> quantify-vars
+          it/with-index
+          (it/traverse-result (case1 (: (let i) (let var))
+            (let* ([kind (u/get-kind var (u-ctx ctx))]
+                   [gen (module/issue-node-id! (module ctx))]
+                   [symbol-map (|> ctx module module/symbol-map)]
+                   [gen-loc (|> (symbol-map/get? construct symbol-map) option/force symbol/loc)]
+                   [gen-name
+                     (if (eq? current-level u/level/top)
+                       (string "_" i)
+                       (string "_" (u/level/depth current-level) "." i))])
+              (symbol-map/set! gen gen-loc gen-name symbol-map)
+              (kind-env/put! gen kind (kind-env ctx))
+              (unify! var (u/type:gen gen u/level/top) ctx)!
+              (ok gen)))))!
+
+      (for (: (let var) (let related-constraints)) (ord-map/elems defaulting-vars)
+        (resolve-ambiguity! var (vector/buffer related-constraints) ctx)!)
+
+      ; Try to resolve context constraints that can be deferred
+      (for (let cc) outer-ccs
+        (match (build-satisfaction! (u/scope/context-premise scope) (conv cc) #f 0 ctx)
+          [(ok (let satisfaction))
+            (u/context-constraint/resolve-by! satisfaction cc)]
+          [(err error:build-satisfaction-failed-at-this-scope)
+            (u/scope/inherit-deferred-context-constraint! cc (option/force outer))]
+          [(err (let e))
+            (err e)!]))
+
+      ; Resolve context constraints
+      (for (let cc) current-ccs
+        (let1 satisfaction (build-satisfaction! (u/scope/context-premise scope) (conv cc) #t 0 ctx)!
+          (u/context-constraint/resolve-by! satisfaction cc)))
+
+      (ok (: (vector/buffer ty-params) (vector/buffer s-params))))))
+
+(function (finalize-scope-on! c scope quantify-vars outer ctx)
+  {(forall E C)
+   (-> C u/Scope (OrdSet (u/Var u/Type)) (Option u/Scope) (Context E) (Result (: (Array (NodeId TypeParameter)) (Array u/Constraint)) Error))
+   (where (Conv C Construct) (External E))}
+  (let1 construct (conv c)
+    (result/map-err [^1 (error:on construct %1)] (finalize-scope! construct scope quantify-vars outer ctx))))
+
+(function (finalized-scope-instantiation ty-params s-params) {(-> (Array (NodeId TypeParameter)) (Array u/Constraint) u/Instantiation)}
+  (u/instantiation:
+    (|> ty-params
+        (it/map [^1 (u/type:gen %1 u/level/top)])
+        collect)
+    (|> s-params
+        (it/map [^1 (u/satisfaction:by-premise (u/constraint/id %1) array/empty)])
+        collect)))
+
+(function (resolve-ambiguity! var related-constraints ctx)
+  {(forall E) (-> (u/Var u/Type) (Array u/Constraint) (Context E) (Result unit Error)) (where (External E))}
+  (cond
+    [(array/empty? related-constraints)
+      (unify! var (u/type:con type-con/unit) ctx)]
+    [(it/any?
+      (lambda (c)
+        (if-match1 (some (let ty)) (u/constraint/fp-number? c)
+          (u/equal? var ty (u-ctx ctx))
+          #f))
+      related-constraints)
+      (unify! var (u/type:con type-con/f64) ctx)]
+    [(it/any?
+      (lambda (c)
+        (if-match1 (some (let ty)) (u/constraint/number? c)
+          (u/equal? var ty (u-ctx ctx))
+          #f))
+      related-constraints)
+      (unify! var (u/type:con type-con/i32) ctx)]
+    [else
+      ; Defaults to unit: is it safe? we can produce error:cannot-resolve-ambiguity instead
+      (unify! var (u/type:con type-con/unit) ctx)]))
+
+(function (verify-classes-hierarchy! classes ctx)
+  {(forall E) (-> (OrdMap (NodeId ClassCon) ClassCon) (Context E) (Result unit Error)) (where (External E))}
+  (for
+    (let group)
+    (topological-sort
+      (lambda (f class)
+        (for (constraint: _ (let rep)) (class-con/superclasses class)
+          (when-match1 (constraint-rep:class (let id) _) rep (f id))))
+      (ord-map/elems classes))
+    (when (<= 2 (vector/length group))
+      (err (error:cyclic-classes (collect (it/map class-con/id group))))!))
+  (ok unit))
+
+(function (infer-instance-satisfaction! inst ctx)
+  {(forall E) (-> InstanceCon (Context E) (Result unit Error)) (where (External E))}
+  (let* ([inst-id (instance-con/id inst)]
+         [inst (type-of! inst-id ctx)]
+         [premise (u/premise/new)])
+    (install-premise-constraints! premise (u/instance-con/s-params inst) ctx)
+
+    (match (|> inst u/instance-con/target u/constraint/rep)
+      [(u/constraint-rep:class (let class) (let class-args))
+        (let* ([class-con (u/generic/apply-types class-args (u-ctx ctx) (type-of! class ctx))]
+               [superclass-satisfactions
+                 (|> class-con
+                     u/class-con/superclasses
+                     (it/traverse-result [^1 (build-satisfaction! premise %1 #t 0 ctx)])
+                     (result/map-err [^1 (error:on (conv inst-id) %1)]))!])
+          (put-type-of! unifying-instantiations inst-id
+            (u/instantiation: array/empty (vector/buffer superclass-satisfactions)) ctx))
+        (ok unit)])))
+
+(function (infer-functions! fs ctx)
+  {(forall E) (-> (OrdMap (NodeId Function) Function) (Context E) (Result unit Error)) (where (External E))}
+  (for
+    (let group)
+    (topological-sort
+      (lambda (f fun)
+        (result/unwrap* never (dfs
+          (lambda (expr)
+            (when-match1 (expr: _ (expr-rep:value (value:function (let id)))) expr (f id))
+            (ok unit))
+          (function/body fun))))
+      (it/filter (case1 (: _ (let f)) (is? none (function/ann f))) (ord-map/elems fs)))
+      (infer-impl-functions! group ctx)!)
+
+  (for (let f) (it/filter [^1 (is? (some _) (function/ann %1))] (ord-map/values fs))
+    (infer-expl-function! f ctx)!)
+
+  (ok unit))
+
+(function (infer-impl-functions! fs ctx)
+  {(forall E) (-> (Vector Function) (Context E) (Result unit Error)) (where (External E))}
+  (when (vector/empty? fs) (return (ok unit)))
+
+  (let* ([scope (u/scope/new)]
+         [ret-tys
+           ; Since functions can be cross-referenced, we need to prepare tentative type schemes
+           (|> fs
+               (it/map (case1 (function: (let id) _ (let params) _ _)
+                 (prepare-tentative-scheme-with-params! scope id params ctx)))
+               collect)])
+    (for (: (function: (let id) _ _ _ (let body)) (let a)) (it/zip fs ret-tys {(Array u/Type)})
+      (let1 b (infer-expr! (expr-scope: scope (some a)) body ctx)!
+        (unify-on! id a b ctx)!))
+
+    ; We only quantify type variables that appear in every function type.
+    (let ([quantify-vars (compute-common-type-vars scope (it/map [^1 (u/scheme/body (type-of! (function/id %1) ctx))] fs) ctx)]
+          [first-fun-id (function/id (get fs[0]))])
+      (with1 (: (let ty-params) (let s-params)) (finalize-scope-on! first-fun-id scope quantify-vars none ctx)!
+        (let1 instantiation (finalized-scope-instantiation ty-params s-params)
+          (for (function: (let id) _ _ _ (let body)) fs
+            ; Replace the tentative type scheme with a type scheme with inferred type and constraint parameters.
+            (put-type-of! unifying-schemes
+              id
+              (u/scheme: ty-params s-params (u/scheme/body (type-of! id ctx)))
+              ctx)
+            (dfs
+              (lambda (expr)
+                (when-match ([(expr-rep:value (value:function (let id))) (expr/rep expr)]
+                             [#t (it/any? [^1 (eq? id (function/id %1))] fs)])
+                  ; Replace the Instantiations of each local functions in the same way.
+                  (put-type-of! unifying-instantiations (expr/id expr) instantiation ctx))
+                (ok unit))
+              body))))))
+  (ok unit))
+
+(function (prepare-tentative-scheme-with-params! scope c params ctx)
+  {(forall C E) (-> u/Scope C (Option (Array Parameter)) (Context E) u/Type) (where (External E) (Conv C Construct))}
+  (let1 fun-ty (new-type-var! scope ctx)
+    (put-type-of! unifying-schemes c (conv fun-ty) ctx)
+    (result/force (unify-with-params! c params fun-ty ctx))))
+
+(function (compute-common-type-vars scope cs ctx)
+  {(forall T A E) (-> u/Scope (T A) (Context E) (OrdSet (u/Var u/Type))) (where (External E) (Iterate T) (u/HasType A))}
+  (option/unwrap ord-set/empty (it/fold1
+    (lambda (a b)
+      (|> (it/zip-ordered a b)
+          (it/filter-map (case1? (zip-either:both (let var) _) var))
+          ord-set/collect))
+    (it/map [^1 (u/types-vars %1 (u/scope/level scope) (u-ctx ctx))] cs))))
+
+(function (infer-expl-function! f ctx)
+  {(forall E) (-> Function (Context E) (Result unit Error)) (where (External E))}
+  (with1 (function: (let id) _ (let params) _ (let body)) f
+
+    (let* ([scope (u/scope/new)]
+           [scheme (enter-on-scope! (type-of! id ctx) scope ctx)])
+      (install-premise-constraints! (u/scope/context-premise scope) (u/scheme/s-params scheme) ctx)
+
+      (let* ([a (unify-with-params! id params (u/scheme/body scheme) ctx)!]
+             [b (infer-expr! (expr-scope: scope (some a)) body ctx)!])
+        (unify-on! id a b ctx)!)
+
+      (finalize-scope-on! id scope ord-set/empty none ctx)!))
+  (ok unit))
+
+(function (infer-class! class ctx)
+  {(forall E) (-> Class (Context E) (Result unit Error)) (where (External E))}
+
+  (let* ([scope (u/scope/new)]
+         ; Since classes are on top-level, we don't need to register and subst u/class-con/ty-params.
+         [class-constraint (u/imports! (|> class class/con class-con/constraint) (u-ctx ctx))])
+    (install-premise-constraints! (u/scope/context-premise scope) (some class-constraint) ctx)
+
+    (for (let method) (class/methods class)
+      (infer-class-method! scope method ctx)!)
+
+    ; NOTE: Should we reject definitions where the type parameters of the class does not
+    ; appear in the type scheme of the methods?
+    (finalize-scope-on! (|> class class/con class-con/id) scope ord-set/empty none ctx)!)
+  (ok unit))
+
+(function (infer-class-method! outer-scope method ctx)
+  {(forall E) (-> u/Scope ClassMethod (Context E) (Result unit Error)) (where (External E))}
+  (with1 (class-method: (let id) (let ann) (let params) (let default-body) _) method
+
+    (let* ([scope (u/scope/new-inner outer-scope)]
+           [scheme (import-and-enter-on-scope! (annotation/body ann) scope ctx)])
+      (install-premise-constraints! (u/scope/context-premise scope) (u/scheme/s-params scheme) ctx)
+
+      (let1 a (unify-with-params! id params (u/scheme/body scheme) ctx)!
+        (when-match1 (some (let body)) default-body
+          (let1 b (infer-expr! (expr-scope: scope (some a)) body ctx)!
+            (unify-on! id a b ctx)!)))
+
+      (finalize-scope-on! id scope ord-set/empty (some outer-scope) ctx)!))
+  (ok unit))
+
+(function (infer-instance! inst ctx)
+  {(forall E) (-> Instance (Context E) (Result unit Error)) (where (External E))}
+
+  (let* ([scope (u/scope/new)]
+         [inst-id (|> inst instance/con instance-con/id)]
+         [inst-con (enter-on-scope! (type-of! inst-id ctx) scope ctx)])
+    (install-premise-constraints! (u/scope/context-premise scope) (u/instance-con/s-params inst-con) ctx)
+
+    (match (|> inst-con u/instance-con/target u/constraint/rep)
+      [(u/constraint-rep:class (let class) (let class-args))
+        (let* ([class-params (u/class-con/ty-params (type-of! class ctx))]
+               [class-inst-map (ord-map/collect (it/zip class-params class-args))])
+          (for (let method) (instance/methods inst)
+            (infer-instance-method! scope class-inst-map method ctx)!))])
+
+    (finalize-scope-on! inst-id scope ord-set/empty none ctx)!)
+  (ok unit))
+
+(function (infer-instance-method! outer-scope class-inst-map method ctx)
+  {(forall E)
+   (-> u/Scope (OrdMap (NodeId TypeParameter) u/Type) InstanceMethod (Context E) (Result unit Error))
+   (where (External E))}
+  (with1 (instance-method: (let id) _ (let ann) (let params) (let body) (let class-method) _) method
+
+    (let* ([scope (u/scope/new-inner outer-scope)]
+           [class-method (type-env/class-method (option/force class-method) (type-env ctx))]
+           [class-method-scheme (|> class-method class-method/ann annotation/body)]
+           [required-scheme (u/subst-types class-inst-map (u-ctx ctx) (u/imports! class-method-scheme (u-ctx ctx)))]
+           [scheme
+             (if-match1 (some (annotation: _ (let inst-method-scheme))) ann
+               (let1 actual-scheme (u/imports! inst-method-scheme (u-ctx ctx))
+                 (if (u/scheme/alpha-equal? actual-scheme required-scheme (u-ctx ctx))
+                   actual-scheme
+                   (err (error:method-type-scheme-mismatch class-method-scheme inst-method-scheme))!))
+               required-scheme)]
+           [scheme (enter-on-scope! scheme scope ctx)])
+      (install-premise-constraints! (u/scope/context-premise scope) (u/scheme/s-params scheme) ctx)
+
+      (let* ([a (unify-with-params! id params (u/scheme/body scheme) ctx)!]
+             [b (infer-expr! (expr-scope: scope (some a)) body ctx)!])
+        (unify-on! id a b ctx)!)
+
+      (finalize-scope-on! id scope ord-set/empty (some outer-scope) ctx)!
+
+      ; Since instance methods are instance-local, the Scheme to be stored does not include
+      ; instance type parameters and instance constraints.
+      (put-type-of! unifying-schemes id scheme ctx)))
+  (ok unit))
+
+(function (infer-macro! m ctx)
+  {(forall E) (-> Macro (Context E) (Result unit Error)) (where (External E))}
+  (with1 (macro: (let id) (let param) (let body)) m
+    (let1 scope (u/scope/new)
+      (put-type-of! unifying-types (parameter/id param) (u/imports! macro/src-ty (u-ctx ctx)) ctx)
+
+      (let* ([a (u/imports! macro/dest-ty (u-ctx ctx))]
+             [b (infer-expr! (expr-scope: scope (some a)) body ctx)!])
+        (unify-on! id a b ctx)!)
+
+      (finalize-scope-on! id scope ord-set/empty none ctx)!))
+  (ok unit))
+
+(function (infer-expr! es expr ctx)
+  {(forall E) (-> ExprScope Expr (Context E) (Result u/Type Error)) (where (External E))}
+  (match (expr/rep expr)
+    [(expr-rep:unresolved _)
+      (assert #f "Found expr-rep:unresolved at type-inference")]
+    [(expr-rep:value (let value))
+      (infer-use! (expr-scope/scope es) (expr/id expr) (either/unwrap-left* [^1 (conv-from u/Type %1)] (type-of! value ctx)) ctx)]
+    [(expr-rep:con (let con))
+      (infer-use! (expr-scope/scope es) (expr/id expr) (type-of! con ctx) ctx)]
+    [(expr-rep:const (let c))
+      (infer-const! (expr-scope/scope es) (expr/id expr) c ctx)]
+    [(expr-rep:app (let callee) (let args))
+      (let* ([callee-ty (infer-expr! es callee ctx)!]
+             [args-ty (it/traverse-result [^1 (infer-expr! es %1 ctx)] args)!]
+             [ret-ty (new-type-var! (expr-scope/scope es) ctx)]
+             [ty (build-type (u-ctx ctx) (-> ,@(vector/buffer args-ty) ,ret-ty))])
+        (unify-on! (expr/id expr) ty callee-ty ctx)!
+        (ok ret-ty))]
+    [(expr-rep:unresolved-capture _)
+      (assert #f "Found expr-rep:unresolved-capture at type-inference")]
+    [(expr-rep:capture _)
+      (ok (build-type (u-ctx ctx) ((con ,type-con/syntax) (con ,type-con/sexp))))]
+    [(expr-rep:annotate (let e) (annotation: (let ann-id) (let ann-ty)))
+      (let ([a (infer-expr! es e ctx)!]
+            [b (import-on-scope! ann-ty (expr-scope/scope es) ctx) {u/Type}])
+        (unify-on! ann-id a b ctx)!
+        (ok a))]
+    [(expr-rep:let (let defs) (let body))
+      ; 0. insert explicit function schemes
+      (for
+        (: (let id) (let ann))
+        (it/filter-map (case1? (right (local-fun: (let id) _ (some (let ann)) _)) (: id ann)) defs)
+        (put-type-of! unifying-schemes id (import-on-scope! (annotation/body ann) (expr-scope/scope es) ctx) ctx))
+
+      ; 1. infer implicit local functions
+      (for
+        (let fs)
+        (topological-sort
+          (lambda (f fun)
+            (result/unwrap* never (dfs
+              (lambda (e)
+                (when-match1 (expr: _ (expr-rep:value (value:local-fun (let id)))) e (f id))
+                (ok unit))
+              (local-fun/body fun))))
+          (it/filter-map (case1? (right (let f (local-fun: (let id) _ none _))) (: id f)) defs))
+        (infer-impl-local-functions! (expr-scope/scope es) fs ctx)!)
+
+      ; 2. infer explicit local functions
+      (for (let f) (it/filter-map (case1? (right (let f (local-fun: _ _ (some _) _))) f) defs)
+        (infer-expl-local-function! (expr-scope/scope es) f ctx)!)
+
+      ; 3. infer local variables
+      (for (local-var: (let id) (let ann) (let init)) (it/filter-map (case1? (left (let v)) v) defs)
+        (let1 ty (infer-expr! es init ctx)!
+          (when-match1 (some (let ann)) ann
+            (unify-on! id ty (import-on-scope! (annotation/body ann) (expr-scope/scope es) ctx) {u/Type} ctx)!)
+          (put-type-of! unifying-types id ty ctx)))
+
+      (infer-expr! es body ctx)]
+    [(expr-rep:seq (let stmts) (let ret))
+      (for (let stmt) stmts (infer-expr! es stmt ctx)!)
+      (infer-expr! es ret ctx)]
+    [(expr-rep:if (let cond) (let then) (let else))
+      (let ([a (infer-expr! es cond ctx)!]
+            [b (u/type:con type-con/bool)])
+        (unify-on! (expr/id cond) a b ctx)!)
+      (let ([then-ty (infer-expr! es then ctx)!]
+            [else-ty (infer-expr! es else ctx)!])
+        (unify-on! (expr/id else) then-ty else-ty ctx)!
+        (ok then-ty))]
+    [(expr-rep:while (let cond) (let body))
+      (let ([a (infer-expr! es cond ctx)!]
+            [b (u/type:con type-con/bool)])
+        (unify-on! (expr/id cond) a b ctx)!)
+      (infer-expr! es body ctx)!
+      (ok (u/type:con type-con/unit))]
+    [(expr-rep:match (let target) (let clauses))
+      (let ([target (infer-expr! es target ctx)!]
+            [ret (new-type-var! (expr-scope/scope es) ctx)])
+        (for (: (let pat) (let body)) clauses
+          (unify-on! (pattern/id pat) target (infer-pattern! (expr-scope/scope es) pat ctx)! ctx)!
+          (unify-on! (expr/id body) ret (infer-expr! es body ctx)! ctx)!)
+        (ok ret))]
+    [(expr-rep:return (let e))
+      (if-match1 (some (let ret-ty)) (expr-scope/return-ty es)
+        (if-match1 (some (let e)) e
+          (unify-on! (expr/id expr) ret-ty (infer-expr! es e ctx)! ctx)!
+          (unify-on! (expr/id expr) ret-ty (u/type:con type-con/unit) ctx)!)
+        (err (error:on (conv (expr/id expr)) error:cannot-use-return-in-this-context))!)
+      (ok (new-type-var! (expr-scope/scope es) ctx))]))
+
+(function (infer-impl-local-functions! outer-scope fs ctx)
+  {(forall E) (-> u/Scope (Vector LocalFun) (Context E) (Result unit Error)) (where (External E))}
+  (when (vector/empty? fs) (return (ok unit)))
+
+  (let* ([scope (u/scope/new-inner outer-scope)]
+         [ret-tys
+           ; Since local functions can be cross-referenced, we need to prepare tentative type schemes
+           (|> fs
+               (it/map (case1 (local-fun: (let id) (let params) _ _)
+                 (prepare-tentative-scheme-with-params! scope id (some params) ctx)))
+               collect)])
+    (for (: (local-fun: (let id) _ _ (let body)) (let a)) (it/zip fs ret-tys {(Array u/Type)})
+      (let1 b (infer-expr! (expr-scope: scope (some a)) body ctx)!
+        (unify-on! id a b ctx)!))
+
+    ; We only quantify type variables that appear in every function type.
+    (let ([quantify-vars (compute-common-type-vars scope (it/map [^1 (u/scheme/body (type-of! (local-fun/id %1) ctx))] fs) ctx)]
+          [first-fun-id (local-fun/id (get fs[0]))])
+      (with1 (: (let ty-params) (let s-params)) (finalize-scope-on! first-fun-id scope quantify-vars (some outer-scope) ctx)!
+        (let1 instantiation (finalized-scope-instantiation ty-params s-params)
+          (for (local-fun: (let id) _ _ (let body)) fs
+            ; Replace the tentative type scheme with a type scheme with inferred type and constraint parameters.
+            (put-type-of! unifying-schemes
+              id
+              (u/scheme: ty-params s-params (u/scheme/body (type-of! id ctx)))
+              ctx)
+            (dfs
+              (lambda (expr)
+                (when-match ([(expr-rep:value (value:local-fun (let id))) (expr/rep expr)]
+                             [#t (it/any? [^1 (eq? id (local-fun/id %1))] fs)])
+                  ; Replace the Instantiations of each local functions in the same way.
+                  (put-type-of! unifying-instantiations (expr/id expr) instantiation ctx))
+                (ok unit))
+              body))))))
+  (ok unit))
+
+(function (infer-expl-local-function! outer-scope f ctx)
+  {(forall E) (-> u/Scope LocalFun (Context E) (Result unit Error)) (where (External E))}
+  (with1 (local-fun: (let id) (let params) _ (let body)) f
+
+    (let* ([scope (u/scope/new-inner outer-scope)]
+           [scheme (enter-on-scope! (type-of! id ctx) scope ctx)])
+      (install-premise-constraints! (u/scope/context-premise scope) (u/scheme/s-params scheme) ctx)
+
+      (let* ([a (unify-with-params! id (some params) (u/scheme/body scheme) ctx)!]
+             [b (infer-expr! (expr-scope: scope (some a)) body ctx)!])
+        (unify-on! id a b ctx)!)
+
+      (finalize-scope-on! id scope ord-set/empty (some outer-scope) ctx)!))
+  (ok unit))
+
+(function (infer-pattern! scope pattern ctx)
+  {(forall E C) (-> u/Scope Pattern (Context E) (Result u/Type Error)) (where (External E))}
+  (match (pattern/rep pattern)
+    [(pattern-rep:unresolved _ _)
+      (assert #f (string "Found pattern-rep:unresolved at type-inference"))]
+    [(pattern-rep:var (pattern-var: (let id) (let as-pat)))
+      (let1 ty (new-type-var! scope ctx)
+        (put-type-of! unifying-types id ty ctx)
+        (when-match1 (some (let p)) as-pat
+          (unify-on! id ty (infer-pattern! scope p ctx)! ctx)!)
+        (ok ty))]
+    [pattern-rep:wildcard
+      (ok (new-type-var! scope ctx))]
+    [(pattern-rep:decon (let con) (let fields))
+      (let ([a (option/map array/length fields)]
+            [b (type-env/value-con-arity con (type-env ctx))])
+        (when (ne? a b) (err (error:on (conv (pattern/id pattern)) (error:arity-mismatch a b)))!))
+      (let1 ty (infer-use! scope (pattern/id pattern) (type-of! con ctx) ctx)!
+        (if-match1 (some (let fields)) fields
+          (let* ([arg-tys (it/traverse-result [^1 (infer-pattern! scope %1 ctx)] fields)!]
+                 [ret-ty (new-type-var! scope ctx)]
+                 [con-ty (build-type (u-ctx ctx) (-> ,@(vector/buffer arg-tys) ,ret-ty))])
+            (unify-on! (pattern/id pattern) ty con-ty ctx)!
+            (ok ret-ty))
+          (ok ty)))]
+    [(pattern-rep:const (let c))
+      (infer-const! scope (pattern/id pattern) c ctx)]))
+
+(function (infer-const! scope c const ctx)
+  {(forall E C) (-> u/Scope C Const (Context E) (Result u/Type Error)) (where (External E) (Conv C Construct))}
+  (let1
+    ty
+    (match const
+      [(const:integer _ _)
+        (let* ([ty (new-type-var! scope ctx)]
+               [s (u/scope/put-context-constraint! (u/constraint/number ty) scope)])
+          (put-type-of! unifying-instantiations c (u/instantiation: array/empty (array s)) ctx)
+          ty)]
+      [(const:fp-number _)
+        (let* ([ty (new-type-var! scope ctx)]
+               [s (u/scope/put-context-constraint! (u/constraint/fp-number ty) scope)])
+          (put-type-of! unifying-instantiations c (u/instantiation: array/empty (array s)) ctx)
+          ty)]
+      [(const:string _)
+        (u/type:con type-con/string)]
+      [(const:char _)
+        (u/type:con type-con/char)]
+      [(const:sexp _)
+        (build-type (u-ctx ctx) ((con ,type-con/syntax) (con ,type-con/sexp)))])
+    (put-type-of! unifying-types c ty ctx)
+    (ok ty)))
+
+(function (infer-use! scope c scheme ctx)
+  {(forall E C) (-> u/Scope C u/Scheme (Context E) (Result u/Type Error)) (where (External E) (Conv C Construct))}
+  (with1 (: (let ty-args) (let scheme)) (u/generic/instantiate-types (u/scope/level scope) (u-ctx ctx) scheme)
+    (let1 s-args (|> (u/scheme/s-params scheme)
+                     (it/map [^1 (u/scope/put-context-constraint! %1 scope)])
+                     collect)
+      (put-type-of! unifying-instantiations c (u/instantiation: ty-args s-args) ctx)
+      (ok (u/scheme/body scheme)))))
+
+(function (put-type-of! choice c ty ctx)
+  {(forall E C A) (-> (-> UnifyingTypes (OrdMap Construct A)) C A (Context E) unit) (where (External E) (Conv C Construct))}
+  (ord-map/insert! (conv c) ty (|> ctx u-types choice))
+  unit)
+
+(class (TypeOf A T)
+  (function (type-of! src ctx) {(forall E) (-> A (Context E) T) (where (External E))}))
+
+($$ begin
+  ($for-each
+    [$type $u-type $u-cache $u-obtain]
+    ([Function u/Scheme unifying-schemes type-env/function-scheme]
+     [CFunction u/Type unifying-types type-env/c-function-type]
+     [BuiltinOp u/Scheme unifying-schemes type-env/builtin-op-scheme]
+     [DataValueCon u/Scheme unifying-schemes type-env/data-value-con-scheme]
+     [BuiltinValueCon u/Scheme unifying-schemes type-env/builtin-value-con-scheme]
+     [ClassCon u/ClassCon unifying-class-cons type-env/class-con]
+     [ClassMethod u/Scheme unifying-schemes type-env/class-method-external-scheme]
+     [InstanceCon u/InstanceCon unifying-instance-cons type-env/instance-con])
+
+    (instance ($symbol-concat TypeOf. $type) (TypeOf (NodeId $type) $u-type)
+      (function (type-of! id ctx)
+        (let1 cache ($u-cache (u-types ctx))
+          (match (ord-map/get? (conv id) cache)
+            [(some (let ty))
+              ty]
+            [none
+              (let1 value (u/imports! ($u-obtain id (type-env ctx)) (u-ctx ctx))
+                (ord-map/insert! (conv id) value cache)
+                value)])))))
+
+  ($for-each
+    [$type $name $u-type $u-cache]
+    ([LocalFun "LocalFun" u/Scheme unifying-schemes]
+     [Parameter "Parameter" u/Type unifying-types]
+     [PatternVar "PatternVar" u/Type unifying-types]
+     [LocalVar "LocalVar" u/Type unifying-types])
+
+    (instance ($symbol-concat TypeOf. $type) (TypeOf (NodeId $type) $u-type)
+      (function (type-of! id ctx)
+        (match (ord-map/get? (conv id) ($u-cache (u-types ctx)))
+          [(some (let ty))
+            ty]
+          [none
+            (assert #f (string "The type of " $name " must be pre-inserted: " id))])))))
+
+(instance TypeOf.Value (TypeOf Value (Either u/Scheme u/Type))
+  (function (type-of! value ctx)
+    (match value
+      [(value:function (let id)) (left (type-of! id ctx))]
+      [(value:c-function (let id)) (right (type-of! id ctx))]
+      [(value:builtin-op (let id)) (left (type-of! id ctx))]
+      [(value:class-method (let id)) (left (type-of! id ctx))]
+      [(value:parameter (let id)) (right (type-of! id ctx))]
+      [(value:local-var (let id)) (right (type-of! id ctx))]
+      [(value:local-fun (let id)) (left (type-of! id ctx))]
+      [(value:pattern-var (let id)) (right (type-of! id ctx))])))
+
+(instance TypeOf.ValueCon (TypeOf ValueCon u/Scheme)
+  (function (type-of! value ctx)
+    (match value
+      [(value-con:data (let id))  (type-of! id ctx)]
+      [(value-con:builtin (let id))  (type-of! id ctx)])))
+
+(data UnifyingTypes
+  (unifying-types:
+    (OrdMap Construct u/Scheme)
+    (OrdMap Construct u/Type)
+    (OrdMap (NodeId ClassCon) u/ClassCon)
+    (OrdMap (NodeId InstanceCon) u/InstanceCon)
+    (OrdMap Construct u/Instantiation)))
+
+(getter unifying-types:
+  unifying-schemes
+  unifying-types
+  unifying-class-cons
+  unifying-instance-cons
+  unifying-instantiations)
+
+(function (unifying-types/new) {(-> UnifyingTypes)}
+  (unifying-types: ord-map/empty ord-map/empty ord-map/empty ord-map/empty ord-map/empty))
+
+(value-data ExprScope
+  (expr-scope: u/Scope (Option u/Type)))
+
+(getter expr-scope: expr-scope/scope expr-scope/return-ty)
+
+(instance Conv.From.ExprScope.To.Scope (Conv ExprScope u/Scope)
+  (function (conv a)
+    (expr-scope/scope a)))
+
+(function (error/recursion-limit-exceeded complete? constraint u-ctx)
+  (if complete?
+    (error:recursion-limit-exceeded (u/exports! constraint u-ctx))
+    error:build-satisfaction-failed-at-this-scope))
+
+(function (error/no-matching-instances complete? constraint premise u-ctx)
+  (if complete?
+    (error:no-matching-instances (u/exports! constraint u-ctx) (u/exports! premise u-ctx))
+    error:build-satisfaction-failed-at-this-scope))
+
+(function (error/required-for complete? error constraint u-ctx)
+  (if complete?
+    (error:required-for (u/exports! constraint u-ctx) error)
+    error))

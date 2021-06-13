@@ -13,6 +13,9 @@
   (with1 (type-env: (let module) (let external)) type-env
     (: module external)))
 
+(function (type-env/new module external)
+  (type-env: module external))
+
 (function (type-env/available-instances type-env) {(forall E) (-> (TypeEnv E) AvailableInstances)}
   (with1 (type-env: (let module) _) type-env
     (module/available-instances module)))

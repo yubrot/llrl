@@ -5,12 +5,13 @@
 (import "~/unification/type" _ [u/_ _])
 (export [_ u/_])
 (export Imports Imports._ Exports Exports._ context/_)
+(export HasType HasType._ types map-types subst-types types-deepest-level types-vars)
 (export Generic Generic._ generic/_)
 (export Constraint _.Constraint constraint: constraint/_)
 (export ConstraintRep _.ConstraintRep constraint-rep:_)
-(export Scheme _.Scheme scheme:)
+(export Scheme _.Scheme scheme: scheme/_)
 (export Satisfaction _.Satisfaction satisfaction:_)
-(export Instantiation _.Instantiation instantiation:_ instantiation/_)
+(export Instantiation _.Instantiation instantiation: instantiation/_)
 (export ClassCon _.ClassCon class-con: class-con/_)
 (export InstanceCon _.InstanceCon instance-con: instance-con/_)
 (export Scope _.Scope scope/_)
@@ -58,21 +59,68 @@
   (function (context/exports! a ctx)
     (|> a (it/map [^1 (context/exports! %1 ctx)]) collect)))
 
-(class (Generic A)
+(class (HasType A)
+  (function (types a) {(-> A (Iterator Type))})
+
+  (function (map-types f a) {(-> (-> Type Type) A A)})
+
+  (function (subst-types map ctx a) {(forall E) (-> (OrdMap (NodeId TypeParameter) Type) (Context E) A A) (where (KindEnvironment E))}
+    (if (ord-map/empty? map)
+      a
+      (map-types [^1 (context/subst! map %1 ctx)] a)))
+
+  (function (types-deepest-level a ctx) {(forall E) (-> A (Context E) Level) (where (KindEnvironment E))}
+    (|> (types a)
+        (it/map [^1 (context/compute-deepest-level %1 ctx)])
+        (it/fold [^2 (max %1 %2)] level/top)))
+
+  (function (types-vars a min-level ctx) {(forall E) (-> A Level (Context E) (OrdSet (Var Type))) (where (KindEnvironment E))}
+    (let1 result ord-set/empty
+      (for (let ty) (types a) (context/collect-vars! ty min-level result ctx))
+      result)))
+
+(instance HasType.Type (HasType Type)
+  (function (types a) (iterator/only a))
+
+  (function (map-types f a) (f a)))
+
+(instance HasType.Array (forall A) (HasType (Array A)) (where (HasType A))
+  (function (types a) (it/flat-map types a))
+
+  (function (map-types f a) (|> a (it/map [^1 (map-types f %1)]) collect)))
+
+(class (Generic A) (where (HasType A))
   (function (generic/params a) {(-> A (Array (NodeId TypeParameter)))})
 
-  (function (generic/instantiate-types level ctx a) {(forall E) (-> Level (Context E) A A) (where (KindEnvironment E))}
+  (function (generic/instantiate-types level ctx a) {(forall E) (-> Level (Context E) A (: (Array Type) A)) (where (KindEnvironment E))}
     (let1 tys (|> a generic/params (it/map [^1 (context/instantiate-gen! %1 level ctx)]) collect)
-      (generic/apply-types tys ctx a)))
+      (: tys (generic/apply-types tys ctx a))))
 
   (function (generic/apply-types tys ctx a) {(forall E) (-> (Array Type) (Context E) A A) (where (KindEnvironment E))}
     (let1 map (ord-map/collect (it/zip (generic/params a) tys))
-      (generic/subst-types map ctx a)))
-
-  (function (generic/subst-types map ctx a) {(forall E) (-> (OrdMap (NodeId TypeParameter) Type) (Context E) A A) (where (KindEnvironment E))}))
+      (subst-types map ctx a))))
 
 (derive (DebugDisplay) value-data Constraint
   (constraint: (NodeId ast/Constraint) ConstraintRep))
+
+(instance Imports.Constraint (Imports ast/Constraint Constraint)
+  (function (context/imports! a ctx)
+    (with1 (ast/constraint: (let id) (let rep)) a
+      (constraint: id (context/imports! rep ctx)))))
+
+(instance Exports.Constraint (Exports ast/Constraint Constraint)
+  (function (context/exports! a ctx)
+    (with1 (constraint: (let id) (let rep)) a
+      (ast/constraint: id (context/exports! rep ctx)))))
+
+(instance HasType.Constraint (HasType Constraint)
+  (function (types c)
+    (with1 (constraint: _ (let rep)) c
+      (types rep)))
+
+  (function (map-types f c)
+    (with1 (constraint: (let id) (let rep)) c
+      (constraint: id (map-types f rep)))))
 
 (getter constraint: constraint/id constraint/rep)
 
@@ -96,17 +144,6 @@
     [(constraint-rep:class (let id) (let args))
       (when? (and (eq? id builtin/fp-number) (eq? (array/length args) 1))
         (get args[0]))]))
-
-(function (constraint/types c) {(-> Constraint (Iterator Type))}
-  (match (constraint/rep c)
-    [(constraint-rep:class _ (let args))
-      (iterate args)]))
-
-(function (constraint/map-types f c) {(-> (-> Type Type) Constraint Constraint)}
-  (with1 (constraint: (let id) (let rep)) c
-    (constraint: id (match rep
-      [(constraint-rep:class (let id) (let args))
-        (constraint-rep:class id (|> args (it/map f) collect))]))))
 
 (function (constraint/unify-types! c1 c2 ctx) {(forall E) (-> Constraint Constraint (Context E) (Result unit Error)) (where (KindEnvironment E))}
   (match (: (constraint/rep c1) (constraint/rep c2))
@@ -136,27 +173,6 @@
       (and (eq? id1 id2)
            (it/all? id (it/zip* [^2 (context/equal-on-subst? map %1 %2 ctx)] args1 args2)))]))
 
-(function (constraint/compute-deepest-level c ctx) {(forall E) (-> Constraint (Context E) Level) (where (KindEnvironment E))}
-  (|> (constraint/types c)
-      (it/map [^1 (context/compute-deepest-level %1 ctx)])
-      (it/fold [^2 (max %1 %2)] level/top)))
-
-(function (constraint/get-vars! c min-level ctx) {(forall E) (-> Constraint Level (Context E) (OrdSet (Var Type))) (where (KindEnvironment E))}
-  (let1 result ord-set/empty
-    (for (let ty) (constraint/types c)
-      (context/collect-vars! ty min-level result ctx))
-    result))
-
-(instance Imports.Constraint (Imports ast/Constraint Constraint)
-  (function (context/imports! a ctx)
-    (with1 (ast/constraint: (let id) (let rep)) a
-      (constraint: id (context/imports! rep ctx)))))
-
-(instance Exports.Constraint (Exports ast/Constraint Constraint)
-  (function (context/exports! a ctx)
-    (with1 (constraint: (let id) (let rep)) a
-      (ast/constraint: id (context/exports! rep ctx)))))
-
 (derive (DebugDisplay) value-data ConstraintRep
   (constraint-rep:class (NodeId ast/ClassCon) (Array Type)))
 
@@ -174,6 +190,17 @@
       [(constraint-rep:class (let id) (let args))
         (ast/constraint-rep:class id (context/exports! args ctx))])))
 
+(instance HasType.ConstraintRep (HasType ConstraintRep)
+  (function (types rep)
+    (match rep
+      [(constraint-rep:class _ (let args))
+        (iterate args)]))
+
+  (function (map-types f rep)
+    (match rep
+      [(constraint-rep:class (let id) (let args))
+        (constraint-rep:class id (map-types f args))])))
+
 (derive (DebugDisplay) value-data Scheme
   (scheme: (Array (NodeId TypeParameter)) (Array Constraint) Type))
 
@@ -181,14 +208,18 @@
   (function (conv a)
     (scheme: array/empty array/empty a)))
 
+(instance HasType.Scheme (HasType Scheme)
+  (function (types scheme)
+    (with1 (scheme: _ (let s-params) (let body)) scheme
+      (it/chain (some body) (types s-params))))
+
+  (function (map-types f scheme)
+    (with1 (scheme: (let ty-params) (let s-params) (let body)) scheme
+      (scheme: ty-params (map-types f s-params) (f body)))))
+
 (instance Generic.Scheme (Generic Scheme)
   (function (generic/params a)
-    (scheme/ty-params a))
-
-  (function (generic/subst-types map ctx a)
-    (if (ord-map/empty? map)
-      a
-      (scheme/map-types [^1 (context/subst! map %1 ctx)] a))))
+    (scheme/ty-params a)))
 
 (instance Imports.Scheme (Imports ast/Scheme Scheme)
   (function (context/imports! a ctx)
@@ -201,14 +232,6 @@
       (ast/scheme: (context/exports! ty-params ctx) (context/exports! s-params ctx) (context/exports! body ctx)))))
 
 (getter scheme: scheme/ty-params scheme/s-params scheme/body)
-
-(function (scheme/types scheme) {(-> Scheme (Iterator Type))}
-  (with1 (scheme: _ (let s-params) (let body)) scheme
-    (it/chain (some body) (it/flat-map constraint/types s-params))))
-
-(function (scheme/map-types f scheme) {(-> (-> Type Type) Scheme Scheme)}
-  (with1 (scheme: (let ty-params) (let s-params) (let body)) scheme
-    (scheme: ty-params (|> s-params (it/map [^1 (constraint/map-types f %1)]) collect) (f body))))
 
 (function (scheme/alpha-equal? s1 s2 ctx) {(forall E) (-> Scheme Scheme (Context E) Bool) (where (KindEnvironment E))}
   (with ([(scheme: (let ty-params1) (let s-params1) (let body1)) s1]
@@ -237,6 +260,17 @@
       [(satisfaction:by-instance (let id) (let inst))
         (ast/satisfaction:by-instance id (context/exports! inst ctx))])))
 
+(instance HasType.Satisfaction (HasType Satisfaction)
+  (function (types a)
+    (match a
+      [(satisfaction:var (ref none)) iterator/empty]
+      [(satisfaction:var (ref (some (let s)))) (types s)]
+      [(satisfaction:by-premise _ _) iterator/empty]
+      [(satisfaction:by-instance _ (let inst)) (types inst)]))
+
+  (function (map-types f a)
+    (assert #f "map-types for Satisfaction is unsupported")))
+
 (derive (DebugDisplay) value-data Instantiation
   (instantiation: (Array Type) (Array Satisfaction)))
 
@@ -245,19 +279,32 @@
     (with1 (instantiation: (let ty-args) (let s-args)) a
       (ast/instantiation: (context/exports! ty-args ctx) (context/exports! s-args ctx)))))
 
+(instance HasType.Instantiation (HasType Instantiation)
+  (function (types a)
+    (with1 (instantiation: (let ty-args) (let s-args)) a
+      (it/chain (types ty-args) (types s-args))))
+
+  (function (map-types f a)
+    (with1 (instantiation: (let ty-args) (let s-args)) a
+      (instantiation: (map-types f ty-args) (map-types f s-args)))))
+
 (getter instantiation: instantiation/ty-args instantiation/s-args)
 
 (derive (DebugDisplay) value-data ClassCon
   (class-con: (Array (NodeId TypeParameter)) (Array Constraint)))
 
+(instance HasType.ClassCon (HasType ClassCon)
+  (function (types c)
+    (with1 (class-con: _ (let cs)) c
+      (types cs)))
+
+  (function (map-types f c)
+    (with1 (class-con: (let id) (let cs)) c
+      (class-con: id (map-types f cs)))))
+
 (instance Generic.ClassCon (Generic ClassCon)
   (function (generic/params c)
-    (class-con/ty-params c))
-
-  (function (generic/subst-types map ctx c)
-    (if (ord-map/empty? map)
-      c
-      (class-con/map-types [^1 (context/subst! map %1 ctx)] c))))
+    (class-con/ty-params c)))
 
 (instance Imports.ClassCon (Imports ast/ClassCon ClassCon)
   (function (context/imports! a ctx)
@@ -267,25 +314,21 @@
 
 (getter class-con: class-con/ty-params class-con/superclasses)
 
-(function (class-con/types c) {(-> ClassCon (Iterator Type))}
-  (with1 (class-con: _ (let cs)) c
-    (it/flat-map constraint/types cs)))
-
-(function (class-con/map-types f c) {(-> (-> Type Type) ClassCon ClassCon)}
-  (with1 (class-con: (let id) (let cs)) c
-    (class-con: id (|> cs (it/map [^1 (constraint/map-types f %1)]) collect))))
-
 (derive (DebugDisplay) value-data InstanceCon
   (instance-con: (Array (NodeId TypeParameter)) (Array Constraint) Constraint))
 
+(instance HasType.InstanceCon (HasType InstanceCon)
+  (function (types c)
+    (with1 (instance-con: _ (let s-params) (let target)) c
+      (it/chain (types target) (types s-params))))
+
+  (function (map-types f c)
+    (with1 (instance-con: (let ty-params) (let s-params) (let target)) c
+      (instance-con: ty-params (map-types f s-params) (map-types f target)))))
+
 (instance Generic.InstanceCon (Generic InstanceCon)
   (function (generic/params a)
-    (instance-con/ty-params a))
-
-  (function (generic/subst-types map ctx a)
-    (if (ord-map/empty? map)
-      a
-      (instance-con/map-types [^1 (context/subst! map %1 ctx)] a))))
+    (instance-con/ty-params a)))
 
 (instance Imports.InstanceCon (Imports ast/InstanceCon InstanceCon)
   (function (context/imports! a ctx)
@@ -296,17 +339,9 @@
 
 (getter instance-con: instance-con/ty-params instance-con/s-params instance-con/target)
 
-(function (instance-con/types c) {(-> InstanceCon (Iterator Type))}
-  (with1 (instance-con: _ (let s-params) (let target)) c
-    (it/chain (constraint/types target)
-              (it/flat-map constraint/types s-params))))
-
-(function (instance-con/map-types f c) {(-> (-> Type Type) InstanceCon InstanceCon)}
-  (with1 (instance-con: (let ty-params) (let s-params) (let target)) c
-    (instance-con:
-      ty-params
-      (|> s-params (it/map [^1 (constraint/map-types f %1)]) collect)
-      (constraint/map-types f target))))
+(function (instance-con/drop-s-params c) {(-> InstanceCon InstanceCon)}
+  (with1 (instance-con: (let ty-params) _ (let target)) c
+    (instance-con: ty-params array/empty target)))
 
 (derive (DebugDisplay) data Scope
   (scope:
@@ -352,6 +387,10 @@
 
 (derive (DebugDisplay) value-data ContextConstraint
   (context-constraint: Constraint (Ref (Option Satisfaction))))
+
+(instance Conv.From.ContextConstraint.To.Constraint (Conv ContextConstraint Constraint)
+  (function (conv a)
+    (context-constraint/body a)))
 
 (function (context-constraint/body cc) {(-> ContextConstraint Constraint)}
   (with1 (context-constraint: (let body) _) cc
