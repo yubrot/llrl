@@ -1,0 +1,435 @@
+(import "std/ord-map" _)
+(import "std/ord-set" _)
+(import "~/util" _)
+(import "~/emitter/ir" _)
+(export Rewrite _.Rewrite rewrite: rewrite/_)
+(export Transformer transformer/_ Transform Transform._ transform)
+(export captured-vars visit-ct-uses replace-ct replace-rt)
+
+(derive (Eq Ord DebugDisplay Hash) value-data (Rewrite A)
+  (rewrite: A Bool))
+
+(getter rewrite: rewrite/value rewrite/changed?)
+
+(function (rewrite/changed a) (rewrite: a #t))
+(function (rewrite/unchanged a) (rewrite: a #f))
+
+($$ begin
+  ($for-each
+    [$name $args]
+    ([rewrite/1 ([a A])]
+     [rewrite/2 ([a A] [b B])]
+     [rewrite/3 ([a A] [b B] [c C])]
+     [rewrite/4 ([a A] [b B] [c C] [d D])]
+     [rewrite/5 ([a A] [b B] [c C] [d D] [e E])])
+    (function ($name alt handler ($for-each [$x _] $args $x))
+      {(forall ($for-each [_ $X] $args $X) R)
+       (-> R (-> ($for-each [_ $X] $args $X) R) ($for-each [_ $X] $args (Rewrite $X)) (Rewrite R))}
+      (with (($for-each [$x _] $args [(rewrite: (let $x) (let ($symbol-concat $x -changed?))) $x]))
+        (if (or ($for-each [$x _] $args ($symbol-concat $x -changed?)))
+          (rewrite/changed (handler ($for-each [$x _] $args $x)))
+          (rewrite/unchanged alt))))))
+
+(transparent-function (rewrite/make-mutable! rewrite-ref) {(forall A) (-> (Ref (Rewrite A)) unit) (where (ShallowCopy A))}
+  (if (rewrite/changed? ~rewrite-ref)
+    unit
+    (set! rewrite-ref (rewrite/changed (shallow-copy (rewrite/value ~rewrite-ref))))))
+
+(class (Transformer T Error)
+  (function (transformer/before-ct ct t) {(-> Ct T (Result (: Bool (Rewrite Ct)) Error))}
+    (ok (: #t (rewrite/unchanged ct))))
+
+  (function (transformer/after-ct ct t) {(-> Ct T (Result (Rewrite Ct) Error))}
+    (ok (rewrite/unchanged ct)))
+
+  (function (transformer/before-rt rt t) {(-> Rt T (Result (: Bool (Rewrite Rt)) Error))}
+    (ok (: #t (rewrite/unchanged rt))))
+
+  (function (transformer/after-rt rt t) {(-> Rt T (Result (Rewrite Rt) Error))}
+    (ok (rewrite/unchanged rt)))
+
+  (function (transformer/before-rt-pat pat t) {(-> RtPat T (Result (: Bool (Rewrite RtPat)) Error))}
+    (ok (: #t (rewrite/unchanged pat))))
+
+  (function (transformer/after-rt-pat pat t) {(-> RtPat T (Result (Rewrite RtPat) Error))}
+    (ok (rewrite/unchanged pat)))
+
+  (function (transformer/after-rt-use id t) {(-> RtId T (Result unit Error))}
+    (ok unit))
+
+  (function (transformer/after-rt-def id ty t) {(-> RtId Ct T (Result unit Error))}
+    (ok unit)))
+
+(class (Transform A)
+  (function (transform t x)
+    {(forall T Error) (-> T A (Result (Rewrite A) Error)) (where (Transformer T Error))}))
+
+(instance Transform.Option (forall A) (Transform (Option A)) (where (Transform A))
+  (function (transform t x)
+    (ok (match x
+      [(some (let a))
+        (rewrite/1 x some (transform t a)!)]
+      [none
+        (rewrite/unchanged x)]))))
+
+(instance Transform.Array (forall A) (Transform (Array A)) (where (Transform A))
+  (function (transform t x)
+    (let ([x (ref (rewrite/unchanged x))]
+          [index (ref 0)])
+      (while (< ~index (array/length (rewrite/value ~x)))
+        (when-match1 (rewrite: (let v) #t) (transform t (get (rewrite/value ~x)[~index]))!
+          (rewrite/make-mutable! x)
+          (set! (rewrite/value ~x)[~index] v))
+        (set! index (+ ~index 1)))
+      (ok ~x))))
+
+(instance Transform.Ct (Transform Ct)
+  (function (transform t x)
+    (with ([(rewrite: (let x) (let c1?))
+             (with1 (: (let cut?) (let r)) (transformer/before-ct x t)!
+                (if cut? (return (ok r)) r))]
+           [(rewrite: (let x) (let c2?))
+             (match x
+               [(ct:generic-inst (let ct) (let args))
+                 (rewrite/2 x ct:generic-inst (transform t ct)! (transform t args)!)]
+               [(ct:table-get (let ct) (let id))
+                 (rewrite/2 x ct:table-get (transform t ct)! (rewrite/unchanged id))]
+               [(ct:ptr (let ct))
+                 (rewrite/1 x ct:ptr (transform t ct)!)]
+               [(ct:clos (let args) (let ret))
+                 (rewrite/2 x ct:clos (transform t args)! (transform t ret)!)]
+               [(ct:array (let ct))
+                 (rewrite/1 x ct:array (transform t ct)!)]
+               [(ct:syntax (let ct))
+                 (rewrite/1 x ct:syntax (transform t ct)!)]
+               [_
+                 (rewrite/unchanged x)])]
+           [(rewrite: (let x) (let c3?))
+             (transformer/after-ct x t)!])
+      (ok (rewrite: x (or c1? c2? c3?))))))
+
+(instance Transform.CtDef (Transform CtDef)
+  (function (transform t x)
+    (ok (match x
+      [(ct-def:alias (let ct))
+        (rewrite/1 x ct-def:alias (transform t ct)!)]
+      [(ct-def:alias-table (let table))
+        (rewrite/1 x ct-def:alias-table (transform t table)!)]
+      [(ct-def:generic (let params) (let def))
+        (rewrite/2 x ct-def:generic (rewrite/unchanged params) (transform t def)!)]
+      [(ct-def:data (let d))
+        (rewrite/1 x ct-def:data (transform t d)!)]
+      [(ct-def:struct (let d))
+        (rewrite/1 x ct-def:struct (transform t d)!)]
+      [(ct-def:union (let d))
+        (rewrite/1 x ct-def:union (transform t d)!)]
+      [(ct-def:function (let f))
+        (rewrite/1 x ct-def:function (transform t f)!)]))))
+
+(instance Transform.AliasTable (Transform AliasTable)
+  (function (transform t x)
+    (let1 x (ref (rewrite/unchanged x))
+      (for (: (let id) (let ct)) (alias-table/entries (rewrite/value ~x))
+        (when-match1 (rewrite: (let ct) #t) (transform t ct)!
+          (rewrite/make-mutable! x)
+          (alias-table/put! id ct (rewrite/value ~x))))
+      (ok ~x))))
+
+(instance Transform.Data (Transform Data)
+  (function (transform t x)
+    (with1 (data: (let repr) (let cons)) x
+      (ok (rewrite/2 x data: (rewrite/unchanged repr) (transform t cons)!)))))
+
+(instance Transform.Struct (Transform Struct)
+  (function (transform t x)
+    (with1 (struct: (let repr) (let fields)) x
+      (ok (rewrite/2 x struct: (rewrite/unchanged repr) (transform t fields)!)))))
+
+(instance Transform.Union (Transform Union)
+  (function (transform t x)
+    (with1 (union: (let tys)) x
+      (ok (rewrite/1 x union: (transform t tys)!)))))
+
+(instance Transform.Function (Transform Function)
+  (function (transform t x)
+    (with1 (function: (let kind) (let env) (let params) (let ret) (let body)) x
+      (ok (rewrite/5 x function: (rewrite/unchanged kind) (transform t env)! (transform t params)! (transform t ret)! (transform t body)!)))))
+
+(instance Transform.FunctionEnv (Transform FunctionEnv)
+  (function (transform t x)
+    (with1 (function-env: (let id) (let elems)) x
+      (let1 id (rewrite/unchanged id)
+        (transformer/after-rt-def (rewrite/value id) ct:env t)!
+        (ok (rewrite/2 x function-env: id (transform t elems)!))))))
+
+(instance Transform.FunctionParam (Transform FunctionParam)
+  (function (transform t x)
+    (with1 (function-param: (let id) (let ty)) x
+      (let ([id (rewrite/unchanged id)]
+            [ty (transform t ty)!])
+        (transformer/after-rt-def (rewrite/value id) (rewrite/value ty) t)!
+        (ok (rewrite/2 x function-param: id ty))))))
+
+(instance Transform.Init (Transform Init)
+  (function (transform t x)
+    (with1 (init: (let ty) (let expr)) x
+      (ok (rewrite/2 x init: (transform t ty)! (transform t expr)!)))))
+
+(instance Transform.Rt (Transform Rt)
+  (function (transform t x)
+    (with ([(rewrite: (let x) (let c1?))
+             (with1 (: (let cut?) (let r)) (transformer/before-rt x t)!
+                (if cut? (return (ok r)) r))]
+           [(rewrite: (let x) (let c2?))
+             (match x
+               [(rt:local (let id))
+                  (transformer/after-rt-use id t)!
+                 (rewrite/unchanged x)]
+               [(rt:local-fun (let id) (let args))
+                  (transformer/after-rt-use id t)!
+                 (rewrite/2 x rt:local-fun (rewrite/unchanged id) (transform t args)!)]
+               [(rt:static-fun (let ct) (let env))
+                 (rewrite/2 x rt:static-fun (transform t ct)! (transform t env)!)]
+               [(rt:const (let c))
+                 (rewrite/1 x rt:const (transform t c)!)]
+               [(rt:call (let callee) (let args))
+                 (rewrite/2 x rt:call (transform t callee)! (transform t args)!)]
+               [(rt:c-call (let name) (let ty) (let args))
+                 (rewrite/3 x rt:c-call (rewrite/unchanged name) (transform t ty)! (transform t args)!)]
+               [(rt:nullary (let op))
+                 (rewrite/1 x rt:nullary (transform t op)!)]
+               [(rt:unary (let op) (let a))
+                 (rewrite/2 x rt:unary (transform t op)! (transform t a)!)]
+               [(rt:binary (let op) (let a) (let b))
+                 (rewrite/3 x rt:binary (transform t op)! (transform t a)! (transform t b)!)]
+               [(rt:ternary (let op) (let a) (let b) (let c))
+                 (rewrite/4 x rt:ternary (transform t op)! (transform t a)! (transform t b)! (transform t c)!)]
+               [(rt:alloc (let loc) (let rt))
+                 (rewrite/2 x rt:alloc (rewrite/unchanged loc) (transform t rt)!)]
+               [(rt:alloc-array (let loc) (let ty) (let rt))
+                 (rewrite/3 x rt:alloc-array (rewrite/unchanged loc) (transform t ty)! (transform t rt)!)]
+               [(rt:construct-env (let loc) (let rt))
+                 (rewrite/2 x rt:construct-env (rewrite/unchanged loc) (transform t rt)!)]
+               [(rt:construct-data (let ty) (let idx) (let fields))
+                 (rewrite/3 x rt:construct-data (transform t ty)! (rewrite/unchanged idx) (transform t fields)!)]
+               [(rt:construct-struct (let ty) (let fields))
+                 (rewrite/2 x rt:construct-struct (transform t ty)! (transform t fields)!)]
+               [(rt:construct-syntax (let meta) (let ty) (let rt))
+                 (rewrite/3 x rt:construct-syntax (rewrite/unchanged meta) (transform t ty)! (transform t rt)!)]
+               [(rt:seq (let stmts) (let ret))
+                 (rewrite/2 x rt:seq (transform t stmts)! (transform t ret)!)]
+               [(rt:if (let cond) (let then) (let else))
+                 (rewrite/3 x rt:if (transform t cond)! (transform t then)! (transform t else)!)]
+               [(rt:while (let cond) (let body))
+                 (rewrite/2 x rt:while (transform t cond)! (transform t body)!)]
+               [(rt:and (let a) (let b))
+                 (rewrite/2 x rt:and (transform t a)! (transform t b)!)]
+               [(rt:or (let a) (let b))
+                 (rewrite/2 x rt:or (transform t a)! (transform t b)!)]
+               [(rt:match (let target) (let clauses))
+                 (rewrite/2 x rt:match (transform t target)! (transform t clauses)!)]
+               [(rt:return (let rt))
+                 (rewrite/1 x rt:return (transform t rt)!)]
+               [(rt:cont (let id) (let args))
+                 (rewrite/2 x rt:cont (rewrite/unchanged id) (transform t args)!)]
+               [(rt:let-function (let funs) (let body))
+                 (rewrite/2 x rt:let-function (transform t funs)! (transform t body)!)]
+               [(rt:let-var (let vars) (let body))
+                 (rewrite/2 x rt:let-var (transform t vars)! (transform t body)!)]
+               [(rt:let-cont (let conts) (let body))
+                 (rewrite/2 x rt:let-cont (transform t conts)! (transform t body)!)]
+               [_
+                 (rewrite/unchanged x)])]
+           [(rewrite: (let x) (let c3?))
+             (transformer/after-rt x t)!])
+      (ok (rewrite: x (or c1? c2? c3?))))))
+
+(instance Transform.Nullary (Transform Nullary)
+  (function (transform t x)
+    (ok (match x
+      [(nullary:uninitialized (let ty))
+        (rewrite/1 x nullary:uninitialized (transform t ty)!)]
+      [(nullary:null (let ty))
+        (rewrite/1 x nullary:null (transform t ty)!)]
+      [(nullary:size-of (let ty))
+        (rewrite/1 x nullary:size-of (transform t ty)!)]
+      [(nullary:align-of (let ty))
+        (rewrite/1 x nullary:align-of (transform t ty)!)]
+      [_
+        (rewrite/unchanged x)]))))
+
+(instance Transform.Unary (Transform Unary)
+  (function (transform t x)
+    (ok (match x
+      [(unary:struct-elem (let ty) (let idx))
+        (rewrite/2 x unary:struct-elem (transform t ty)! (rewrite/unchanged idx))]
+      [(unary:reinterpret (let a) (let b))
+        (rewrite/2 x unary:reinterpret (transform t a)! (transform t b)!)]
+      [(unary:syntax-body (let ty))
+        (rewrite/1 x unary:syntax-body (transform t ty)!)]
+      [(unary:bit-cast (let ty))
+        (rewrite/1 x unary:bit-cast (transform t ty)!)]
+      [(unary:i-to-ptr (let ty))
+        (rewrite/1 x unary:i-to-ptr (transform t ty)!)]
+      [(unary:i-trunc (let ty))
+        (rewrite/1 x unary:i-trunc (transform t ty)!)]
+      [(unary:s-ext (let ty))
+        (rewrite/1 x unary:s-ext (transform t ty)!)]
+      [(unary:u-ext (let ty))
+        (rewrite/1 x unary:u-ext (transform t ty)!)]
+      [(unary:s-to-f (let ty))
+        (rewrite/1 x unary:s-to-f (transform t ty)!)]
+      [(unary:u-to-f (let ty))
+        (rewrite/1 x unary:u-to-f (transform t ty)!)]
+      [(unary:f-to-s (let ty))
+        (rewrite/1 x unary:f-to-s (transform t ty)!)]
+      [(unary:f-to-u (let ty))
+        (rewrite/1 x unary:f-to-u (transform t ty)!)]
+      [(unary:f-trunc (let ty))
+        (rewrite/1 x unary:f-trunc (transform t ty)!)]
+      [(unary:f-ext (let ty))
+        (rewrite/1 x unary:f-ext (transform t ty)!)]
+      [_
+        (rewrite/unchanged x)]))))
+
+(instance Transform.Binary (Transform Binary)
+  (function (transform t x)
+    (ok (match x
+      [_
+        (rewrite/unchanged x)]))))
+
+(instance Transform.Ternary (Transform Ternary)
+  (function (transform t x)
+    (ok (match x
+      [_
+        (rewrite/unchanged x)]))))
+
+(instance Transform.RtClause (Transform RtClause)
+  (function (transform t x)
+    (with1 (rt-clause: (let pat) (let body)) x
+      (ok (rewrite/2 x rt-clause: (transform t pat)! (transform t body)!)))))
+
+(instance Transform.RtPat (Transform RtPat)
+  (function (transform t x)
+    (with ([(rewrite: (let x) (let c1?))
+             (with1 (: (let cut?) (let r)) (transformer/before-rt-pat x t)!
+                (if cut? (return (ok r)) r))]
+           [(rewrite: (let x) (let c2?))
+             (match x
+               [(rt-pat:var (let id) (let ty) (let p))
+                  (let1 ty (transform t ty)!
+                   (transformer/after-rt-def id (rewrite/value ty) t)!
+                   (rewrite/3 x rt-pat:var (rewrite/unchanged id) ty (transform t p)!))]
+               [(rt-pat:deref (let p))
+                 (rewrite/1 x rt-pat:deref (transform t p)!)]
+               [(rt-pat:non-null (let ty) (let p))
+                 (rewrite/2 x rt-pat:non-null (transform t ty)! (transform t p)!)]
+               [(rt-pat:null (let ty))
+                 (rewrite/1 x rt-pat:null (transform t ty)!)]
+               [(rt-pat:data (let ty) (let idx) (let fields))
+                 (rewrite/3 x rt-pat:data (transform t ty)! (rewrite/unchanged idx) (transform t fields)!)]
+               [(rt-pat:struct (let ty) (let fields))
+                 (rewrite/2 x rt-pat:struct (transform t ty)! (transform t fields)!)]
+               [(rt-pat:reinterpret (let a) (let b) (let p))
+                 (rewrite/3 x rt-pat:reinterpret (transform t a)! (transform t b)! (transform t p)!)]
+               [(rt-pat:syntax (let ty) (let body))
+                 (rewrite/2 x rt-pat:syntax (transform t ty)! (transform t body)!)]
+               [(rt-pat:const (let c))
+                 (rewrite/1 x rt-pat:const (transform t c)!)]
+               [_
+                 (rewrite/unchanged x)])]
+           [(rewrite: (let x) (let c3?))
+             (transformer/after-rt-pat x t)!])
+      (ok (rewrite: x (or c1? c2? c3?))))))
+
+(instance Transform.RtFunction (Transform RtFunction)
+  (function (transform t x)
+    (with1 (rt-function: (let id) (let ct-params) (let params) (let ret) (let body)) x
+      (let ([id (rewrite/unchanged id)]
+            [ct-params (rewrite/unchanged ct-params)]
+            [params (transform t params)!]
+            [ret (transform t ret)!])
+        (transformer/after-rt-def
+          (rewrite/value id)
+          (ct:clos (|> (rewrite/value params) (it/map function-param/ty) collect) (rewrite/value ret))
+          t)!
+        (ok (rewrite/5 x rt-function: id ct-params params ret (transform t body)!))))))
+
+(instance Transform.RtVar (Transform RtVar)
+  (function (transform t x)
+    (with1 (rt-var: (let id) (let ty) (let init)) x
+      (let ([id (rewrite/unchanged id)]
+            [ty (transform t ty)!])
+        (transformer/after-rt-def (rewrite/value id) (rewrite/value ty) t)!
+        (ok (rewrite/3 x rt-var: id ty (transform t init)!))))))
+
+(instance Transform.RtCont (Transform RtCont)
+  (function (transform t x)
+    (with1 (rt-cont: (let id) (let params) (let body)) x
+      (ok (rewrite/3 x rt-cont: (rewrite/unchanged id) (transform t params)! (transform t body)!)))))
+
+(instance Transform.Const (Transform Const)
+  (function (transform t x)
+    (ok (match x
+      [(const:integer (let ty) (let signed?) (let value))
+        (rewrite/3 x const:integer (transform t ty)! (rewrite/unchanged signed?) (rewrite/unchanged value))]
+      [(const:fp-number (let ty) (let value))
+        (rewrite/2 x const:fp-number (transform t ty)! (rewrite/unchanged value))]
+      [(const:sexp (let ty) (let value))
+        (rewrite/2 x const:sexp (transform t ty)! (rewrite/unchanged value))]
+      [_
+        (rewrite/unchanged x)]))))
+
+(function (captured-vars t) {(forall T) (-> T (OrdSet RtId)) (where (Transform T))}
+  (let ([uses ord-set/empty]
+        [defs ord-set/empty])
+    (result/unwrap* never (transform (captured-vars: uses defs) t))
+    (for (let v) defs (ord-set/remove! v uses))
+    uses))
+
+(value-data CapturedVars
+  (captured-vars: (OrdSet RtId) (OrdSet RtId)))
+
+(instance Transformer.CapturedVars (forall Never) (Transformer CapturedVars Never)
+  (function (transformer/after-rt-use id t)
+    (with1 (captured-vars: (let uses) _) t
+      (ord-set/insert! id uses)
+      (ok unit)))
+
+  (function (transformer/after-rt-def id ty t)
+    (with1 (captured-vars: _ (let defs)) t
+      (ord-set/insert! id defs)
+      (ok unit))))
+
+(function (visit-ct-uses f t) {(forall T) (-> (-> CtId unit) T unit) (where (Transform T))}
+  (ignore (result/unwrap* never (transform (ct-uses-visitor: f) t))))
+
+(value-data CtUsesVisitor
+  (ct-uses-visitor: (-> CtId unit)))
+
+(instance Transformer.CtUsesVisitor (forall Never) (Transformer CtUsesVisitor Never)
+  (function (transformer/after-ct ct t)
+    (when-match1 (ct:id (let id)) ct
+      (with1 (ct-uses-visitor: (let f)) t
+        (f id)))
+    (ok (rewrite/unchanged ct))))
+
+(function (replace-ct map t) {(forall T) (-> (OrdMap CtId Ct) T T) (where (Transform T))}
+  (rewrite/value (result/unwrap* never (transform map t))))
+
+(instance Transformer.CtMap (forall Never) (Transformer (OrdMap CtId Ct) Never)
+  (function (transformer/after-ct ct t)
+    (ok (if-match ([(ct:id (let id)) ct]
+                    [(some (let ct)) (ord-map/get? id t)])
+      (rewrite/changed ct)
+      (rewrite/unchanged ct)))))
+
+(function (replace-rt map t) {(forall T) (-> (OrdMap RtId Rt) T T) (where (Transform T))}
+  (rewrite/value (result/unwrap* never (transform map t))))
+
+(instance Transformer.RtMap (forall Never) (Transformer (OrdMap RtId Rt) Never)
+  (function (transformer/after-rt rt t)
+    (ok (if-match ([(rt:local (let id)) rt]
+                    [(some (let rt)) (ord-map/get? id t)])
+      (rewrite/changed rt)
+      (rewrite/unchanged rt)))))

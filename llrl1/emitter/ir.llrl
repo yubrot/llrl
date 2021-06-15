@@ -96,6 +96,11 @@
 (derive (DebugDisplay) value-data AliasTable
   (alias-table: (OrdMap CtId Ct)))
 
+(instance ShallowCopy.AliasTable (ShallowCopy AliasTable)
+  (function (shallow-copy t)
+    (with1 (alias-table: (let map)) t
+      (alias-table: (shallow-copy map)))))
+
 (function (alias-table/new) {(-> AliasTable)}
   (alias-table: ord-map/empty))
 
@@ -383,11 +388,6 @@
   (rt-function: RtId (Array CtId) (Array FunctionParam) Ct Rt))
 
 (getter rt-function: rt-function/id rt-function/ct-params rt-function/params rt-function/ret rt-function/body)
-
-(function (rt-function/ty f) {(-> RtFunction Ct)}
-  (ct:clos
-    (|> (rt-function/params f) (it/map function-param/ty) collect)
-    (rt-function/ret f)))
 
 (derive (DebugDisplay) value-data RtVar
   (rt-var: RtId Ct Rt))
