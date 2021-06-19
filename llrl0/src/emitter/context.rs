@@ -134,7 +134,7 @@ impl normalizer::Env for Context {
         })
     }
 
-    fn get_ct(&mut self, id: CtId) -> Option<normalizer::GetCt> {
+    fn get_processing_ct_def(&mut self, id: CtId) -> Option<normalizer::ProcessingCtDef> {
         let cdef = self.ct_defs.get(&id)?;
         let mut def = Arc::clone(&cdef.def);
         let is_normalized = match cdef.phase {
@@ -153,14 +153,14 @@ impl normalizer::Env for Context {
             Phase::Normalizing => false,
             Phase::Normalized => true,
         };
-        Some(normalizer::GetCt { is_normalized, def })
+        Some(normalizer::ProcessingCtDef { is_normalized, def })
     }
 
     fn alloc_ct(&mut self) -> CtId {
         self.ct_id_gen.next()
     }
 
-    fn define_ct(&mut self, id: CtId, def: CtDef) -> CtId {
+    fn define_ct(&mut self, id: CtId, def: CtDef) {
         let phase = match def {
             CtDef::Generic(_, _) => Phase::Generalized,
             _ => Phase::Instantiated,
@@ -169,7 +169,6 @@ impl normalizer::Env for Context {
         if self.ct_defs.insert(id, def).is_some() {
             panic!("Duplicate definition of {}", id);
         }
-        id
     }
 
     fn alloc_rt(&mut self) -> RtId {
