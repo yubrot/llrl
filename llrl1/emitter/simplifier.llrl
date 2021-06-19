@@ -1,0 +1,652 @@
+(import "~/util" _)
+(import "~/sexp" S _.S s: s-rep:pure)
+(import "~/ast" [ast/_ _])
+(import "~/module" [m/_ _])
+(import "~/emitter/ir" _)
+(export Env Simplify Simplify._ simplify! simplify-def!)
+
+(class (Env E) (where (m/ModuleSet E))
+  (function (alloc-ct! e) {(-> E CtId)})
+  (function (issue-ct! c e) {(forall C) (-> C E CtId) (where (Conv C ast/Construct))})
+  (function (alloc-rt! e) {(-> E RtId)})
+  (function (issue-rt! c e) {(forall C) (-> C E RtId) (where (Conv C ast/Construct))}))
+
+(function (simplify-def! e c) {(forall E) (-> E ast/Construct (Option CtDef)) (where (Env E))}
+  (cond?
+    [when-match1 (some (let id)) (conv c)
+      (simplify! e (option/force (m/module-set/ast? ast/root/function? id e)))]
+    [when-match1 (some (let id)) (conv c)
+      (simplify! e (option/force (m/module-set/ast? ast/root/c-function? id e)))]
+    [when-match1 (some (let id)) (conv c)
+      (simplify! e (option/force (m/module-set/ast? ast/root/builtin-op? id e)))]
+    [when-match1 (some (let id)) (conv c)
+      (simplify! e (option/force (m/module-set/ast? ast/root/macro? id e)))]
+    [when-match1 (some (let id)) (conv c)
+      (simplify! e (option/force (m/module-set/ast? ast/root/data-type? id e)))]
+    [when-match1 (some (let id)) (conv c)
+      (simplify! e (option/force (m/module-set/ast? ast/root/data-value-con? id e)))]
+    [when-match1 (some (let id)) (conv c)
+      (simplify! e (option/force (m/module-set/ast? ast/root/builtin-type-con? id e)))]
+    [when-match1 (some (let id)) (conv c)
+      (simplify! e (option/force (m/module-set/ast? ast/root/builtin-value-con? id e)))]
+    [when-match ([(some (let id)) (conv c)]
+                 [(some (let def)) (simplify! e (option/force (m/module-set/ast? ast/root/class-method? id e)))])
+      def]
+    [when-match1 (some (let id)) (conv c)
+      (simplify! e (option/force (m/module-set/ast? ast/root/instance-method? id e)))]
+    [when-match1 (some (let id)) (conv c)
+      (simplify! e (option/force (m/module-set/ast? ast/root/instance? id e)))]))
+
+(class (Simplify S D)
+  (function (simplify! e src) {(forall E) (-> E S D) (where (Env E))}))
+
+(instance Simplify.Option (forall S D) (Simplify (Option S) (Option D)) (where (Simplify S D))
+  (function (simplify! e src)
+    (option/map [^1 (simplify! e %1)] src)))
+
+(instance Simplify.Array (forall S D) (Simplify (Array S) (Array D)) (where (Simplify S D))
+  (function (simplify! e src)
+    (simplify! e (iterate src))))
+
+(instance Simplify.Iterator (forall S D) (Simplify (Iterator S) (Array D)) (where (Simplify S D))
+  (function (simplify! e src)
+    (|> src (it/map [^1 (simplify! e %1)]) collect)))
+
+(instance Simplify.FunctionId (Simplify (ast/NodeId ast/Function) Ct)
+  (function (simplify! e src)
+    (ct:id (issue-ct! src e))))
+
+(instance Simplify.Function (Simplify ast/Function CtDef)
+  (function (simplify! e src)
+    (with ([(ast/function: (let id) (let transparent?) (let params) _ (let body)) src]
+           [(: (let ct-params) (let params) (let ret))
+             (simplify! e (: (signature: params) (option/force (m/module-set/scheme? id e))))])
+      (ct-def/generic
+        ct-params
+        (ct-def:function (function:
+          (if transparent? function-kind:transparent function-kind:standard)
+          none
+          params
+          ret
+          (simplify! e body)))))))
+
+(instance Simplify.Parameter (Simplify ast/Parameter RtId)
+  (function (simplify! e src)
+    (issue-rt! (ast/parameter/id src) e)))
+
+(instance Simplify.CFunction (Simplify ast/CFunction CtDef)
+  (function (simplify! e src)
+    (with ([(ast/c-function: (let id) (ast/annotation: _ (let ty)) (let c-name)) src]
+           [(: (let params) (let ret))
+             (if-match1 (some (: (let params) (let ret))) (ast/type/fun? ty)
+               (: (simplify! e params) (simplify! e ret))
+               (: array/empty (simplify! e ty)))])
+      (ct-def:function (function:
+        function-kind:standard
+        none
+        params
+        ret
+        (rt:c-call
+          c-name
+          (ct:clos (|> params (it/map function-param/ty) collect) ret)
+          (|> params (it/map [^1 (rt:local (function-param/id %1))]) collect)))))))
+
+(instance Simplify.BuiltinOp (Simplify ast/BuiltinOp CtDef)
+  (function (simplify! e src)
+    (with ([(ast/builtin-op: (let id) (ast/annotation: _ (let scheme)) (let builtin-name)) src]
+           [(: (let ct-params) (let params) (let ret))
+             (simplify! e (: signature:unspecified scheme))])
+      (ct-def/generic
+        ct-params
+        (ct-def:function (function:
+          function-kind:transparent
+          none
+          params
+          ret
+          (builtin-rt
+            (option/force (m/module-set/symbol? id e))
+            builtin-name
+            (|> ct-params (it/map ct:id) collect)
+            (|> params (it/map [^1 (rt:local (function-param/id %1))]) collect))))))))
+
+(instance Simplify.MacroId (Simplify (ast/NodeId ast/Macro) Ct)
+  (function (simplify! e src)
+    (ct:id (issue-ct! src e))))
+
+(instance Simplify.Macro (Simplify ast/Macro CtDef)
+  (function (simplify! e src)
+    (with1 (ast/macro: (let id) (let param) (let body)) src
+      (ct-def:function (function:
+        function-kind:macro
+        none
+        (array (simplify! e (: param ast/macro/src-ty)))
+        (simplify! e ast/macro/dest-ty)
+        (simplify! e body))))))
+
+(instance Simplify.DataType (Simplify ast/DataType CtDef)
+  (function (simplify! e src)
+    (with1 (ast/data-type: (ast/data-type-con: (let id) (let repr) (let ty-params) _) (let value-cons)) src
+      (ct-def/generic
+        (simplify! e ty-params)
+        (ct-def:data (data:
+          (simplify! e repr)
+          (|> (value-cons)
+              (it/map [^1 (option/unwrap array/empty (simplify! e (ast/data-value-con/fields %1)))])
+              collect)))))))
+
+(instance Simplify.DataRepr (Simplify ast/DataRepr DataRepr)
+  (function (simplify! e src)
+    (match src
+      [ast/data-repr:default data-repr:boxed]
+      [ast/data-repr:value data-repr:value]
+      [ast/data-repr:c data-repr:c])))
+
+(instance Simplify.DataValueCon (Simplify ast/DataValueCon CtDef)
+  (function (simplify! e src)
+    (with ([(ast/data-value-con: (let id) (let fields) (let type-con)) src]
+           [(: (let ct-params) (let params) (let ret))
+             (simplify! e (: signature:unspecified (option/force (m/module-set/scheme? id e))))])
+      (ct-def/generic
+        ct-params
+        (ct-def:function (function:
+          function-kind:transparent
+          none
+          params
+          ret
+          (rt:construct-data
+            ret
+            (let1 type-con (option/force (m/module-set/ast? ast/root/data-type-con? type-con e))
+              (option/force (ast/data-type-con/index-of? id type-con)))
+            (|> params (it/map [^1 (rt:local (function-param/id %1))]) collect))))))))
+
+(instance Simplify.BuiltinTypeCon (Simplify ast/BuiltinTypeCon CtDef)
+  (function (simplify! e src)
+    (with1 (ast/builtin-type-con: (let id) (let ty-params) (let builtin-name) _) src
+      (let1 params (simplify! e ty-params)
+        (ct-def/generic
+          params
+          (ct-def:alias (builtin-ct builtin-name params)))))))
+
+(instance Simplify.BuiltinValueCon (Simplify ast/BuiltinValueCon CtDef)
+  (function (simplify! e src)
+    (with ([(ast/builtin-value-con: (let id) (let builtin-name) (let fields) (let type-con)) src]
+           [(: (let ct-params) (let params) (let ret))
+             (simplify! e (: signature:unspecified (option/force (m/module-set/scheme? id e))))])
+      (ct-def/generic
+        ct-params
+        (ct-def:function (function:
+          function-kind:transparent
+          none
+          params
+          ret
+          (builtin-rt
+            (option/force (m/module-set/symbol? id e))
+            builtin-name
+            (|> ct-params (it/map ct:id) collect)
+            (|> params (it/map [^1 (rt:local (function-param/id %1))]) collect))))))))
+
+(instance Simplify.ValueConField (Simplify ast/ValueConField Ct)
+  (function (simplify! e src)
+    (simplify! e (ast/value-con-field/ty src))))
+
+(instance Simplify.Instance (Simplify ast/Instance CtDef)
+  (function (simplify! e src)
+    (with1 (ast/instance-con: (let id) (let ty-params) (let s-params) (let target) _) (ast/instance/con src)
+      (match (ast/constraint/rep target)
+        [(ast/constraint-rep:unresolved _ _)
+          (assert #f "Found constraint-rep:unresolved at simplifier")]
+        [(ast/constraint-rep:class (let class-id) (let class-args))
+          (let* ([class (option/force (m/module-set/ast? ast/root/class? class-id e))]
+                 [params (array/concat (simplify! e ty-params) (simplify! e s-params))]
+                 [inst-args (|> params (it/map ct:id) collect)]
+                 [default-impl-args
+                   (array/push
+                     (ct/generic-inst (ct:id (issue-ct! id e)) inst-args)
+                     (simplify! e class-args))]
+                 [table (alias-table/new)])
+            (for (ast/class-method: (let id) _ _ _ _) (ast/class/methods class)
+              (alias-table/put!
+                (issue-ct! id e)
+                (if-match1 (some (ast/instance-method: (let id) _ _ _ _ _ _)) (ast/instance/find-method? id src)
+                  (ct/generic-inst (ct:id (issue-ct! id e)) inst-args)
+                  (ct/generic-inst (ct:id (issue-ct! id e)) default-impl-args))
+                table))
+            (for
+              (: (let c) (let s))
+              (it/zip
+                (|> class ast/class/con ast/class-con/superclasses)
+                (|> (m/module-set/instantiation? id e) option/force ast/instantiation/s-args))
+              (alias-table/put! (simplify! e c) (simplify! e s) table))
+            (ct-def/generic params (ct-def:alias-table table)))]))))
+
+(instance Simplify.ClassMethod (Simplify ast/ClassMethod (Option CtDef))
+  (function (simplify! e src)
+    (with1? (ast/class-method: (let id) (ast/annotation: _ (let scheme)) (let params) (some (let body)) (let class-id)) src
+      (with1 (: (let ct-params) (let params) (let ret)) (simplify! e (: (signature: params) scheme))
+        (let1 class-con (option/force (m/module-set/ast? ast/root/class-con? class-id e))
+          (ct-def/generic
+            (array/push
+              (simplify! e (ast/class-con/constraint class-con))
+              (simplify! e (ast/class-con/ty-params class-con)))
+            (ct-def/generic
+              ct-params
+              (ct-def:function (function:
+                function-kind:standard
+                none
+                params
+                ret
+                (simplify! e body))))))))))
+
+(instance Simplify.InstanceMethod (Simplify ast/InstanceMethod CtDef)
+  (function (simplify! e src)
+    (with ([(ast/instance-method: (let id) (let transparent?) _ (let params) (let body) _ (let inst-id)) src]
+           [(: (let ct-params) (let params) (let ret))
+             (simplify! e (: (signature: params) (option/force (m/module-set/scheme? id e))))])
+      (let1 inst-con (option/force (m/module-set/ast? ast/root/instance-con? inst-id e))
+        (ct-def/generic
+          (array/concat
+            (simplify! e (ast/instance-con/ty-params inst-con))
+            (simplify! e (ast/instance-con/s-params inst-con)))
+          (ct-def/generic
+            ct-params
+            (ct-def:function (function:
+              (if transparent? function-kind:transparent function-kind:standard)
+              none
+              params
+              ret
+              (simplify! e body)))))))))
+
+(instance Simplify.Init (Simplify ast/Expr Init)
+  (function (simplify! e src)
+    (let ([ty (simplify! e (option/force (m/module-set/type? (ast/expr/id src) e)))]
+          [expr (simplify! e src)])
+      (init: ty expr))))
+
+(instance Simplify.Expr (Simplify ast/Expr Rt)
+  (function (simplify! e src)
+    (with1 (ast/expr: (let id) (let rep)) src
+      (match rep
+        [(ast/expr-rep:unresolved _)
+          (assert #f "Found expr-rep:unresolved at simplifier")]
+        [(ast/expr-rep:value (ast/value:function (let function-id)))
+          (let1 function (option/force (m/module-set/ast? ast/root/function? function-id e))
+            (rt/autocall
+              (rt:static-fun
+                (ct/generic-inst
+                  (ct:id (issue-ct! function-id e))
+                  (simplify! e (option/force (m/module-set/instantiation? id e))))
+                none)
+              (is? none (ast/function/params function))))]
+        [(ast/expr-rep:value (ast/value:c-function (let c-function-id)))
+          (let1 c-function (option/force (m/module-set/ast? ast/root/c-function? c-function-id e))
+            (rt/autocall
+              (rt:static-fun (ct:id (issue-ct! c-function-id e)) none)
+              (is? none (ast/type/fun? (ast/annotation/body (ast/c-function/ann c-function))))))]
+        [(ast/expr-rep:value (ast/value:builtin-op (let builtin-op-id)))
+          (let1 builtin-op (option/force (m/module-set/ast? ast/root/builtin-op? builtin-op-id e))
+            (rt/autocall
+              (rt:static-fun
+                (ct/generic-inst
+                  (ct:id (issue-ct! builtin-op-id e))
+                  (simplify! e (option/force (m/module-set/instantiation? id e))))
+                none)
+              (is? none (ast/type/fun? (ast/scheme/body (ast/annotation/body (ast/builtin-op/ann builtin-op)))))))]
+        [(ast/expr-rep:value (ast/value:class-method (let class-method-id)))
+          (let1 class-method (option/force (m/module-set/ast? ast/root/class-method? class-method-id e))
+            (with1
+              (: (ast/instantiation: _ (let instance-sas)) (let method-inst))
+              (ast/class-method/expand-external-instantiation (option/force (m/module-set/instantiation? id e)) class-method)
+              (rt/autocall
+                (rt:static-fun
+                  (ct/generic-inst
+                    (ct:table-get (simplify! e (get instance-sas[0])) (issue-ct! class-method-id e))
+                    (simplify! e method-inst))
+                  none)
+                (is? none (ast/class-method/params class-method)))))]
+        [(ast/expr-rep:value (ast/value:parameter (let parameter-id)))
+          (rt:local (issue-rt! parameter-id e))]
+        [(ast/expr-rep:value (ast/value:local-var (let local-var-id)))
+          (rt:local (issue-rt! local-var-id e))]
+        [(ast/expr-rep:value (ast/value:local-fun (let local-fun-id)))
+          (rt:local-fun
+            (issue-rt! local-fun-id e)
+            (simplify! e (option/force (m/module-set/instantiation? id e))))]
+        [(ast/expr-rep:value (ast/value:pattern-var (let pattern-var-id)))
+          (rt:local (issue-rt! pattern-var-id e))]
+        [(ast/expr-rep:con (ast/value-con:data (let data-value-con-id)))
+          (let1 data-value-con (option/force (m/module-set/ast? ast/root/data-value-con? data-value-con-id e))
+            (rt/autocall
+              (rt:static-fun
+                (ct/generic-inst
+                  (ct:id (issue-ct! data-value-con-id e))
+                  (simplify! e (option/force (m/module-set/instantiation? id e))))
+                none)
+              (is? none (ast/data-value-con/fields data-value-con))))]
+        [(ast/expr-rep:con (ast/value-con:builtin (let builtin-value-con-id)))
+          (let1 builtin-value-con (option/force (m/module-set/ast? ast/root/builtin-value-con? builtin-value-con-id e))
+            (rt/autocall
+              (rt:static-fun
+                (ct/generic-inst
+                  (ct:id (issue-ct! builtin-value-con-id e))
+                  (simplify! e (option/force (m/module-set/instantiation? id e))))
+                none)
+              (is? none (ast/builtin-value-con/fields builtin-value-con))))]
+        [(ast/expr-rep:const (let c))
+          (rt:const (simplify! e (: (option/force (m/module-set/type? id e)) c)))]
+        [(ast/expr-rep:app (let callee) (let args))
+          (if-match ([(ast/expr: (let callee-id) (ast/expr-rep:con (let con))) callee]
+                     [#t (and (eq? con ast/value-con/syntax) (eq? (array/length args) 1))])
+            (rt:construct-syntax
+              (m/symbol/loc (option/force (m/module-set/symbol? id e)))
+              (simplify! e (get (|> (m/module-set/instantiation? callee-id e) option/force ast/instantiation/ty-args)[0]))
+              (simplify! e (get args[0])))
+            (rt:call (simplify! e callee) (simplify! e args)))]
+        [(ast/expr-rep:unresolved-capture _)
+          (assert #f "Found expr-rep:unresolved-capture at simplifier")]
+        [(ast/expr-rep:capture (let construct))
+          (let1 sexp (s: (m/symbol/loc (option/force (m/module-set/symbol? id e))) (s-rep:pure construct))
+            (rt:const (simplify! e sexp)))]
+        [(ast/expr-rep:annotate (let body) _)
+          (simplify! e body)]
+        [(ast/expr-rep:let (let defs) (let body))
+          (let ([funs (simplify! e (it/filter-map (case1? (right (let f)) f) defs))]
+                [vars (simplify! e (it/filter-map (case1? (left (let v)) v) defs))])
+            (rt/let-function funs (rt/let-var vars (simplify! e body))))]
+        [(ast/expr-rep:seq (let stmts) (let ret))
+          (rt/seq (simplify! e stmts) (simplify! e ret))]
+        [(ast/expr-rep:if (let cond) (let then) (let else))
+          (rt:if (simplify! e cond) (simplify! e then) (simplify! e else))]
+        [(ast/expr-rep:while (let cond) (let body))
+          (rt:while (simplify! e cond) (simplify! e body))]
+        [(ast/expr-rep:match (let target) (let clauses))
+          (rt:match (simplify! e target) (simplify! e clauses))]
+        [(ast/expr-rep:return (let ret))
+          (rt:return (option/unwrap* [^0 (rt:const const:unit)] (simplify! e ret)))]))))
+
+(instance Simplify.Clause (Simplify (: ast/Pattern ast/Expr) RtClause)
+  (function (simplify! e src)
+    (with1 (: (let pat) (let expr)) src
+      (let ([pat (simplify! e pat)]
+            [expr (simplify! e expr)])
+        (rt-clause: pat expr)))))
+
+(instance Simplify.LocalFun (Simplify ast/LocalFun RtFunction)
+  (function (simplify! e src)
+    (with1 (ast/local-fun: (let id) (let params) _ (let body)) src
+      (with1
+        (: (let ct-params) (let params) (let ret))
+        (simplify! e (: (signature: (some params)) (option/force (m/module-set/scheme? id e))))
+        (rt-function:
+          (issue-rt! id e)
+          ct-params
+          params
+          ret
+          (simplify! e body))))))
+
+(instance Simplify.LocalVar (Simplify ast/LocalVar RtVar)
+  (function (simplify! e src)
+    (with1 (ast/local-var: (let id) _ (let init)) src
+      (rt-var:
+        (issue-rt! id e)
+        (simplify! e (option/force (m/module-set/type? id e)))
+        (simplify! e init)))))
+
+(instance Simplify.Pattern (Simplify ast/Pattern RtPat)
+  (function (simplify! e src)
+    (with1 (ast/pattern: (let id) (let rep)) src
+      (match rep
+        [(ast/pattern-rep:unresolved _ _)
+          (assert #f "Found pattern-rep:unresolved at simplifier")]
+        [(ast/pattern-rep:var (ast/pattern-var: (let id) (let as-pat)))
+          (rt-pat:var
+            (issue-rt! id e)
+            (simplify! e (option/force (m/module-set/type? id e)))
+            (simplify! e as-pat))]
+        [ast/pattern-rep:wildcard
+          rt-pat:wildcard]
+        [(ast/pattern-rep:decon (ast/value-con:data (let con-id)) (let fields))
+          (let* ([con (option/force (m/module-set/ast? ast/root/data-value-con? con-id e))]
+                 [type-con (option/force (m/module-set/ast? ast/root/data-type-con? (ast/data-value-con/type-con con) e))])
+            (rt-pat:data
+              (ct/generic-inst
+                (ct:id (issue-ct! (ast/data-type-con/id type-con) e))
+                (simplify! e (option/force (m/module-set/instantiation? id e))))
+              (option/force (ast/data-type-con/index-of? con-id type-con))
+              (option/unwrap array/empty (simplify! e fields))))]
+        [(ast/pattern-rep:decon (ast/value-con:builtin (let con-id)) (let fields))
+          (let1 con (option/force (m/module-set/ast? ast/root/builtin-value-con? con-id e))
+            (builtin-rt-pat
+              (ast/builtin-value-con/builtin-name con)
+              (simplify! e (option/force (m/module-set/instantiation? id e)))
+              (option/unwrap array/empty (simplify! e fields))))]
+        [(ast/pattern-rep:const (let c))
+          (rt-pat:const (simplify! e (: (option/force (m/module-set/type? id e)) c)))]))))
+
+(instance Simplify.Type (Simplify ast/Type Ct)
+  (function (simplify! e src)
+    (match src
+      [(ast/type:unresolved _)
+        (assert #f "Found type:unresolved at simplifier")]
+      [(ast/type:con (let con))
+        (ct:id (simplify! e con))]
+      [(ast/type:app (let callee) (let args))
+        (ct/generic-inst (simplify! e callee) (simplify! e args))]
+      [(ast/type:gen (let id))
+        (ct:id (issue-ct! id e))]
+      [(ast/type:error (let e))
+        (assert #f (string "Found type:error at simplifier: " e))])))
+
+(instance Simplify.TypeCon (Simplify ast/TypeCon CtId)
+  (function (simplify! e src)
+    (match src
+      [(ast/type-con:data (let id)) (issue-ct! id e)]
+      [(ast/type-con:builtin (let id)) (issue-ct! id e)])))
+
+(instance Simplify.TypeParameter (Simplify ast/TypeParameter CtId)
+  (function (simplify! e src)
+    (issue-ct! (ast/type-parameter/id src) e)))
+
+(instance Simplify.Constraint (Simplify ast/Constraint CtId)
+  (function (simplify! e src)
+    (issue-ct! (ast/constraint/id src) e)))
+
+(value-data Signature
+  (signature: (Option (Array ast/Parameter)))
+  signature:unspecified)
+
+(instance Simplify.Scheme (Simplify (: Signature ast/Scheme) (: (Array CtId) (Array FunctionParam) Ct))
+  (function (simplify! e src)
+    (with1 (: (let sig) (ast/scheme: (let ty-params) (let s-params) (let body))) src
+      (let1 ct-params (array/concat (simplify! e ty-params) (simplify! e s-params))
+        (match (: (ast/type/fun? body) sig)
+          [(: _ (signature: none))
+            (: ct-params array/empty (simplify! e body))]
+          [(: none signature:unspecified)
+            (: ct-params array/empty (simplify! e body))]
+          [(: (some (: (let param-tys) (let ret-ty))) (signature: (some (let params))))
+            (: ct-params (simplify! e (it/zip params param-tys)) (simplify! e ret-ty))]
+          [(: (some (: (let param-tys) (let ret-ty))) signature:unspecified)
+            (: ct-params (simplify! e param-tys) (simplify! e ret-ty))]
+          [(: none (signature: (some _)))
+            (assert #f "The provided scheme does not match the signature")])))))
+
+(instance Simplify.NamedParam (Simplify (: ast/Parameter ast/Type) FunctionParam)
+  (function (simplify! e src)
+    (with1 (: (let param) (let ty)) src
+      (function-param: (simplify! e param) (simplify! e ty)))))
+
+(instance Simplify.AnonParam (Simplify ast/Type FunctionParam)
+  (function (simplify! e src)
+    (function-param: (alloc-rt! e) (simplify! e src))))
+
+(instance Simplify.Satisfaction (Simplify ast/Satisfaction Ct)
+  (function (simplify! e src)
+    (match src
+      [(ast/satisfaction:by-premise (let id) (let path))
+        (it/fold
+          [^2 (ct:table-get %1 (issue-ct! %2 e))]
+          (ct:id (issue-ct! id e))
+          path)]
+      [(ast/satisfaction:by-instance (let id) (let inst))
+        (ct/generic-inst (ct:id (issue-ct! id e)) (simplify! e inst))]
+      [(ast/satisfaction:error (let e))
+        (assert #f (string "Found satisfaction:error at simplifier: " e))])))
+
+(instance Simplify.Instantiation (Simplify ast/Instantiation (Array Ct))
+  (function (simplify! e src)
+    (with1 (ast/instantiation: (let ty-args) (let s-args)) src
+      (array/concat (simplify! e ty-args) (simplify! e s-args)))))
+
+(instance Simplify.Const (Simplify (: ast/Type ast/Const) Const)
+  (function (simplify! e src)
+    (with1 (: (let ty) (let src)) src
+      (match src
+        [(ast/const:integer (let signed?) (let value))
+          (const:integer (simplify! e ty) signed? value)]
+        [(ast/const:fp-number (let value))
+          (const:fp-number (simplify! e ty) value)]
+        [(ast/const:string (let value))
+          (const:string value)]
+        [(ast/const:char (let value))
+          (const:char value)]
+        [(ast/const:sexp (let value))
+          (simplify! e value)]))))
+
+(instance Simplify.Sexp (Simplify (S ast/Construct) Const)
+  (function (simplify! e src)
+    (let1 ty (issue-ct! ast/builtin/sexp e)
+      (const:sexp (ct:id ty) src))))
+
+(function (builtin-ct name args) {(-> String (Array CtId) Ct)}
+  (match (: name (array/length args))
+    [(: "fun" (let n))
+      (if-match1 (some (: (let ret) (let args))) (array/split-last? args)
+        (let ([args (|> args (it/map ct:id) collect)]
+              [ret (ct:id ret)])
+          (ct:clos args ret))
+        (assert #f "Unsupported builtin-ct fun (arity=0)"))]
+    [(: "i8" 0) (ct:s 8)]
+    [(: "i16" 0) (ct:s 16)]
+    [(: "i32" 0) (ct:s 32)]
+    [(: "i64" 0) (ct:s 64)]
+    [(: "u8" 0) (ct:u 8)]
+    [(: "u16" 0) (ct:u 16)]
+    [(: "u32" 0) (ct:u 32)]
+    [(: "u64" 0) (ct:u 64)]
+    [(: "f32" 0) ct:f32]
+    [(: "f64" 0) ct:f64]
+    [(: "ptr" 1) (ct:ptr (ct:id (get args[0])))]
+    [(: "string" 0) ct:string]
+    [(: "char" 0) ct:char]
+    [(: "array" 1) (ct:array (ct:id (get args[0])))]
+    [(: "captured-use" 0) ct:captured-use]
+    [(: "syntax" 1) (ct:syntax (ct:id (get args[0])))]
+    [(: (let name) (let arity)) (assert #f (string "Unsupported builtin-ct " name " (arity=" arity ")"))]))
+
+(function (builtin-rt symbol name ct-args args) {(-> m/Symbol String (Array Ct) (Array Rt) Rt)}
+  (match (: name (array/length ct-args) (array/length args))
+    [(: "no-op" _ 1) (get args[0])]
+    [(: "size-of" 1 _) (rt:nullary (nullary:size-of (get ct-args[0])))]
+    [(: "align-of" 1 _) (rt:nullary (nullary:align-of (get ct-args[0])))]
+    [(: "and" 0 2) (rt:and (get args[0]) (get args[1]))]
+    [(: "or" 0 2) (rt:or (get args[0]) (get args[1]))]
+    [(: "not" 0 1) (rt:unary unary:not (get args[0]))]
+    [(: "bitcast" 2 1) (rt:unary (unary:bit-cast (get ct-args[1])) (get args[0]))]
+    [(: "integer.eq" _ 2) (rt:binary binary:i-eq (get args[0]) (get args[1]))]
+    [(: "integer.shl" _ 2) (rt:binary binary:i-shl (get args[0]) (get args[1]))]
+    [(: "integer.ashr" _ 2) (rt:binary binary:i-ashr (get args[0]) (get args[1]))]
+    [(: "integer.lshr" _ 2) (rt:binary binary:i-lshr (get args[0]) (get args[1]))]
+    [(: "integer.and" _ 2) (rt:binary binary:i-and (get args[0]) (get args[1]))]
+    [(: "integer.or" _ 2) (rt:binary binary:i-or (get args[0]) (get args[1]))]
+    [(: "integer.xor" _ 2) (rt:binary binary:i-xor (get args[0]) (get args[1]))]
+    [(: "integer.complement" _ 1) (rt:unary unary:i-complement (get args[0]))]
+    [(: "integer.popcount" _ 1) (rt:unary unary:i-pop-count (get args[0]))]
+    [(: "integer.trunc" 2 1) (rt:unary (unary:i-trunc (get ct-args[1])) (get args[0]))]
+    [(: "signed.lt" _ 2) (rt:binary binary:s-lt (get args[0]) (get args[1]))]
+    [(: "signed.le" _ 2) (rt:binary binary:s-le (get args[0]) (get args[1]))]
+    [(: "signed.gt" _ 2) (rt:binary binary:s-gt (get args[0]) (get args[1]))]
+    [(: "signed.ge" _ 2) (rt:binary binary:s-ge (get args[0]) (get args[1]))]
+    [(: "signed.add" _ 2) (rt:binary binary:s-add (get args[0]) (get args[1]))]
+    [(: "signed.sub" _ 2) (rt:binary binary:s-sub (get args[0]) (get args[1]))]
+    [(: "signed.mul" _ 2) (rt:binary binary:s-mul (get args[0]) (get args[1]))]
+    [(: "signed.div" _ 2) (rt:binary binary:s-div (get args[0]) (get args[1]))]
+    [(: "signed.rem" _ 2) (rt:binary binary:s-rem (get args[0]) (get args[1]))]
+    [(: "signed.ext" 2 1) (rt:unary (unary:s-ext (get ct-args[1])) (get args[0]))]
+    [(: "signed.to-float" 2 1) (rt:unary (unary:s-to-f (get ct-args[1])) (get args[0]))]
+    [(: "unsigned.lt" _ 2) (rt:binary binary:u-lt (get args[0]) (get args[1]))]
+    [(: "unsigned.le" _ 2) (rt:binary binary:u-le (get args[0]) (get args[1]))]
+    [(: "unsigned.gt" _ 2) (rt:binary binary:u-gt (get args[0]) (get args[1]))]
+    [(: "unsigned.ge" _ 2) (rt:binary binary:u-ge (get args[0]) (get args[1]))]
+    [(: "unsigned.add" _ 2) (rt:binary binary:u-add (get args[0]) (get args[1]))]
+    [(: "unsigned.sub" _ 2) (rt:binary binary:u-sub (get args[0]) (get args[1]))]
+    [(: "unsigned.mul" _ 2) (rt:binary binary:u-mul (get args[0]) (get args[1]))]
+    [(: "unsigned.div" _ 2) (rt:binary binary:u-div (get args[0]) (get args[1]))]
+    [(: "unsigned.rem" _ 2) (rt:binary binary:u-rem (get args[0]) (get args[1]))]
+    [(: "unsigned.ext" 2 1) (rt:unary (unary:u-ext (get ct-args[1])) (get args[0]))]
+    [(: "unsigned.to-float" 2 1) (rt:unary (unary:u-to-f (get ct-args[1])) (get args[0]))]
+    [(: "float.lt" _ 2) (rt:binary binary:f-lt (get args[0]) (get args[1]))]
+    [(: "float.le" _ 2) (rt:binary binary:f-le (get args[0]) (get args[1]))]
+    [(: "float.gt" _ 2) (rt:binary binary:f-gt (get args[0]) (get args[1]))]
+    [(: "float.ge" _ 2) (rt:binary binary:f-ge (get args[0]) (get args[1]))]
+    [(: "float.add" _ 2) (rt:binary binary:f-add (get args[0]) (get args[1]))]
+    [(: "float.sub" _ 2) (rt:binary binary:f-sub (get args[0]) (get args[1]))]
+    [(: "float.mul" _ 2) (rt:binary binary:f-mul (get args[0]) (get args[1]))]
+    [(: "float.div" _ 2) (rt:binary binary:f-div (get args[0]) (get args[1]))]
+    [(: "float.rem" _ 2) (rt:binary binary:f-rem (get args[0]) (get args[1]))]
+    [(: "float.to-signed" 2 1) (rt:unary (unary:f-to-s (get ct-args[1])) (get args[0]))]
+    [(: "float.to-unsigned" 2 1) (rt:unary (unary:f-to-u (get ct-args[1])) (get args[0]))]
+    [(: "float.trunc" 2 1) (rt:unary (unary:f-trunc (get ct-args[1])) (get args[0]))]
+    [(: "float.ext" 2 1) (rt:unary (unary:f-ext (get ct-args[1])) (get args[0]))]
+    [(: "real.ceil" _ 1) (rt:unary unary:real-ceil (get args[0]))]
+    [(: "real.floor" _ 1) (rt:unary unary:real-floor (get args[0]))]
+    [(: "real.trunc" _ 1) (rt:unary unary:real-trunc (get args[0]))]
+    [(: "real.round" _ 1) (rt:unary unary:real-round (get args[0]))]
+    [(: "math.sqrt" _ 1) (rt:unary unary:math-sqrt (get args[0]))]
+    [(: "math.sin" _ 1) (rt:unary unary:math-sin (get args[0]))]
+    [(: "math.cos" _ 1) (rt:unary unary:math-cos (get args[0]))]
+    [(: "math.pow" _ 2) (rt:binary binary:math-pow (get args[0]) (get args[1]))]
+    [(: "math.exp" _ 1) (rt:unary unary:math-exp (get args[0]))]
+    [(: "math.log" _ 1) (rt:unary unary:math-log (get args[0]))]
+    [(: "string.genid" _ 0) (rt:nullary nullary:gen-id)]
+    [(: "string.construct" _ 2) (rt:binary binary:string-construct (get args[0]) (get args[1]))]
+    [(: "string.eq" _ 2) (rt:binary binary:string-eq (get args[0]) (get args[1]))]
+    [(: "string.cmp" _ 2) (rt:binary binary:string-cmp (get args[0]) (get args[1]))]
+    [(: "string.concat" _ 2) (rt:binary binary:string-concat (get args[0]) (get args[1]))]
+    [(: "string.ptr" _ 1) (rt:unary unary:string-ptr (get args[0]))]
+    [(: "string.length" _ 1) (rt:unary unary:string-length (get args[0]))]
+    [(: "ptr" 1 1) (rt:alloc location:heap (get args[0]))]
+    [(: "non-null" 1 1) (rt:alloc location:heap (get args[0]))]
+    [(: "null" 1 0) (rt:nullary (nullary:null (get ct-args[0])))]
+    [(: "ptr.eq" _ 2) (rt:binary binary:ptr-eq (get args[0]) (get args[1]))]
+    [(: "ptr.lt" _ 2) (rt:binary binary:ptr-lt (get args[0]) (get args[1]))]
+    [(: "ptr.le" _ 2) (rt:binary binary:ptr-le (get args[0]) (get args[1]))]
+    [(: "ptr.gt" _ 2) (rt:binary binary:ptr-gt (get args[0]) (get args[1]))]
+    [(: "ptr.ge" _ 2) (rt:binary binary:ptr-ge (get args[0]) (get args[1]))]
+    [(: "ptr.load" 1 1) (rt:unary unary:load (get args[0]))]
+    [(: "ptr.store" 1 2) (rt:binary binary:store (get args[0]) (get args[1]))]
+    [(: "ptr.offset" 1 2) (rt:binary binary:offset (get args[0]) (get args[1]))]
+    [(: "ptr.cast" 2 1) (rt:unary (unary:bit-cast (get ct-args[1])) (get args[0]))]
+    [(: "ptr.copy" _ 3) (rt:ternary ternary:ptr-copy (get args[0]) (get args[1]) (get args[2]))]
+    [(: "ptr.move" _ 3) (rt:ternary ternary:ptr-move (get args[0]) (get args[1]) (get args[2]))]
+    [(: "ptr.to-integer" _ 1) (rt:unary unary:ptr-to-i (get args[0]))]
+    [(: "array.construct" _ 2) (rt:binary binary:array-construct (get args[0]) (get args[1]))]
+    [(: "array.ptr" _ 1) (rt:unary unary:array-ptr (get args[0]))]
+    [(: "array.length" _ 1) (rt:unary unary:array-length (get args[0]))]
+    [(: "array.load" _ 2) (rt:binary binary:array-load (get args[0]) (get args[1]))]
+    [(: "array.store" _ 3) (rt:ternary ternary:array-store (get args[0]) (get args[1]) (get args[2]))]
+    [(: "array.alloc" 1 1) (rt:alloc-array location:heap (get ct-args[0]) (get args[0]))]
+    [(: "array.stackalloc" 1 1) (rt:alloc-array location:stack (get ct-args[0]) (get args[0]))]
+    [(: "integer.to-ptr" 1 1) (rt:unary (unary:i-to-ptr (get ct-args[0])) (get args[0]))]
+    [(: "syntax" 1 1) (rt:construct-syntax (m/symbol/loc symbol) (get ct-args[0]) (get args[0]))]
+    [(: "panic" _ 1) (rt:unary unary:panic (get args[0]))]
+    [(: (let name) (let ct-arity) (let arity))
+      (assert #f (string "Unsupported builtin-rt " name " (ct-arity=" ct-arity ") (arity=" arity ")"))]))
+
+(function (builtin-rt-pat name ct-args args) {(-> String (Array Ct) (Array RtPat) RtPat)}
+  (match (: name (array/length ct-args) (array/length args))
+    [(: "ptr" 1 1) (rt-pat:deref (get args[0]))]
+    [(: "non-null" 1 1) (rt-pat:non-null (get ct-args[0]) (get args[0]))]
+    [(: "null" 1 0) (rt-pat:null (get ct-args[0]))]
+    [(: "syntax" 1 1) (rt-pat:syntax (get ct-args[0]) (get args[0]))]
+    [(: (let name) (let ct-arity) (let arity))
+      (assert #f (string "Unsupported builtin-rt-pat " name " (ct-arity=" ct-arity ") (arity=" arity ")"))]))

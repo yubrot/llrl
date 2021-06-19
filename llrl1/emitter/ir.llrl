@@ -79,7 +79,7 @@
     ct
     (ct:generic-inst ct args)))
 
-(derive (DebugDisplay) value-data CtDef
+(derive (DebugDisplay) data CtDef
   (ct-def:alias Ct)                    ; erased by normalizer
   (ct-def:alias-table AliasTable)      ; erased by normalizer
   (ct-def:generic (Array CtId) CtDef)  ; erased by normalzier

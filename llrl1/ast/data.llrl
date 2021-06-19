@@ -619,7 +619,7 @@
   data-type-con/ty-params
   data-type-con/value-cons)
 
-(function (data-type-con/index-of dvcon-id dtycon) {( -> (NodeId DataValueCon) DataTypeCon (Option U64))}
+(function (data-type-con/index-of? dvcon-id dtycon) {( -> (NodeId DataValueCon) DataTypeCon (Option U64))}
   (|> dtycon
       data-type-con/value-cons
       (it/find-index? [^1 (eq? %1 dvcon-id)])))
