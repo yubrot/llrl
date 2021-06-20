@@ -1,0 +1,268 @@
+; Expands data types and pattern matching to lower level representations.
+(import "std/ord-set" _)
+(import "std/ord-map" _)
+(import "std/math" Math._ log)
+(import "std/real" Real._ ceil)
+(import "~/util" _)
+(import "~/emitter/ir" _)
+(import "~/emitter/transformer" _)
+(export Env DataExpansion _.DataExpansion compute! expand!)
+
+(class (Env E)
+  (function (add-ct-def! def e) {(-> CtDef E CtId)})
+  (function (data-expansions e) {(-> E (OrdMap CtId DataExpansion))}))
+
+(function (compute! env data-types)
+  {(forall E T) (-> E (T (: CtId Data)) (OrdSet CtId)) (where (Env E) (Iterate T))}
+  (let* ([expanded-defs ord-set/empty]
+         [(add! def)
+           (let1 id (add-ct-def! def env)
+             (ord-set/insert! id expanded-defs)
+             id)])
+    (for
+      (let group)
+      (topological-sort
+        (lambda (f d) (visit-ct-uses f (expanding-data/data d)))
+        (it/map (case1 (: (let id) (let data-type)) (: id (expanding-data: id data-type))) data-types))
+      (let1 named? (or (<= 2 (vector/length group)) (expanding-data/has-recursion? (get group[0])))
+        (for (let d) group
+          (ord-map/insert!
+            (expanding-data/id d)
+            (expanding-data/compute-data-expansion! named? add! d)
+            (data-expansions env)))))
+    expanded-defs))
+
+(function (expand! data-expansions t)
+  {(forall T) (-> (OrdMap CtId DataExpansion) T T) (where (Transform T))}
+  (rewrite/value (result/unwrap* never (transform data-expansions t))))
+
+(derive (Eq Ord DebugDisplay Hash) value-data DataExpansion
+  data-expansion:unit
+  (data-expansion:enum U64)
+  (data-expansion:alias Ct)
+  (data-expansion:boxed-struct CtId)
+  (data-expansion:struct CtId)
+  (data-expansion:boxed-tagged CtId U64 TaggedDataBody)
+  (data-expansion:tagged CtId U64 TaggedDataBody))
+
+(function (data-expansion/ct e) {(-> DataExpansion Ct)}
+  (match e
+    [data-expansion:unit ct:unit]
+    [(data-expansion:enum (let size)) (enum-ct size)]
+    [(data-expansion:alias (let ct)) ct]
+    [(data-expansion:boxed-struct (let id)) (ct:ptr (ct:id id))]
+    [(data-expansion:struct (let id)) (ct:id id)]
+    [(data-expansion:boxed-tagged (let id) _ _) (ct:id id)]
+    [(data-expansion:tagged (let id) _ _) (ct:id id)]))
+
+(function (data-expansion/rt e index args) {(-> DataExpansion U64 (Array Rt) Rt)}
+  (match e
+    [data-expansion:unit
+      (rt:const const:unit)]
+    [(data-expansion:enum (let size))
+      (enum-rt size index)]
+    [(data-expansion:alias (let ct))
+      (get args[0])]
+    [(data-expansion:boxed-struct (let id))
+      (rt:alloc location:heap (rt:construct-struct (ct:id id) args))]
+    [(data-expansion:struct (let id))
+      (rt:construct-struct (ct:id id) args)]
+    [(data-expansion:boxed-tagged (let id) (let size) (let t))
+      (rt:construct-struct (ct:id id) (array (enum-rt size index) (tagged-data-body/rt-boxed t index args)))]
+    [(data-expansion:tagged (let id) (let size) (let t))
+      (rt:construct-struct (ct:id id) (array (enum-rt size index) (tagged-data-body/rt t index args)))]))
+
+(function (data-expansion/rt-pat e index args) {(-> DataExpansion U64 (Array RtPat) RtPat)}
+  (match e
+    [data-expansion:unit
+      (rt-pat:const const:unit)]
+    [(data-expansion:enum (let size))
+      (enum-rt-pat size index)]
+    [(data-expansion:alias (let ct))
+      (get args[0])]
+    [(data-expansion:boxed-struct (let id))
+      (rt-pat:deref (rt-pat:struct (ct:id id) args))]
+    [(data-expansion:struct (let id))
+      (rt-pat:struct (ct:id id) args)]
+    [(data-expansion:boxed-tagged (let id) (let size) (let t))
+      (rt-pat:struct (ct:id id) (array (enum-rt-pat size index) (tagged-data-body/rt-pat-boxed t index args)))]
+    [(data-expansion:tagged (let id) (let size) (let t))
+      (rt-pat:struct (ct:id id) (array (enum-rt-pat size index) (tagged-data-body/rt-pat t index args)))]))
+
+(derive (Eq Ord DebugDisplay Hash) value-data TaggedDataBody
+  (tagged-data-body:alias U64 Ct)
+  (tagged-data-body:struct U64 CtId)
+  (tagged-data-body:union CtId (Array CtId)))
+
+(function (tagged-data-body/ct t) {(-> TaggedDataBody Ct)}
+  (match t
+    [(tagged-data-body:alias _ (let ty)) ty]
+    [(tagged-data-body:struct _ (let id)) (ct:id id)]
+    [(tagged-data-body:union (let id) _) (ct:id id)]))
+
+(function (tagged-data-body/rt t index args) {(-> TaggedDataBody U64 (Array Rt) Rt)}
+  (match t
+    [(tagged-data-body:alias (let i) (let ty))
+      (if (eq? i index)
+        (get args[0])
+        (rt:nullary (nullary:uninitialized ty)))]
+    [(tagged-data-body:struct (let i) (let id))
+      (if (eq? i index)
+        (rt:construct-struct (ct:id id) args)
+        (rt:nullary (nullary:uninitialized (ct:id id))))]
+    [(tagged-data-body:union (let id) (let tys))
+      (rt:unary
+        (unary:reinterpret (ct:id (get tys[index])) (ct:id id))
+        (rt:construct-struct (ct:id (get tys[index])) args))]))
+
+(function (tagged-data-body/rt-boxed t index args) {(-> TaggedDataBody U64 (Array Rt) Rt)}
+  (cond
+    [when-match ([(tagged-data-body:alias (let i) (let ty)) t]
+                 [#t (ne? i index)])
+      (rt:nullary (nullary:uninitialized (ct:ptr ty)))]
+    [when-match ([(tagged-data-body:struct (let i) (let id)) t]
+                 [#t (ne? i index)])
+      (rt:nullary (nullary:uninitialized (ct:ptr (ct:id id))))]
+    [else
+      (rt:alloc location:heap (tagged-data-body/rt t index args))]))
+
+(function (tagged-data-body/rt-pat t index args) {(-> TaggedDataBody U64 (Array RtPat) RtPat)}
+  (match t
+    [(tagged-data-body:alias (let i) (let ty))
+      (if (eq? i index)
+        (get args[0])
+        rt-pat:wildcard)]
+    [(tagged-data-body:struct (let i) (let id))
+      (if (eq? i index)
+        (rt-pat:struct (ct:id id) args)
+        rt-pat:wildcard)]
+    [(tagged-data-body:union (let id) (let tys))
+      (rt-pat:reinterpret
+        (ct:id id) (ct:id (get tys[index]))
+        (rt-pat:struct (ct:id (get tys[index])) args))]))
+
+(function (tagged-data-body/rt-pat-boxed t index args) {(-> TaggedDataBody U64 (Array RtPat) RtPat)}
+  (cond
+    [when-match ([(tagged-data-body:alias (let i) (let ty)) t]
+                 [#t (ne? i index)])
+      rt-pat:wildcard]
+    [when-match ([(tagged-data-body:struct (let i) (let id)) t]
+                 [#t (ne? i index)])
+      rt-pat:wildcard]
+    [else
+      (rt-pat:deref (tagged-data-body/rt-pat t index args))]))
+
+(value-data ExpandingData
+  (expanding-data: CtId Data))
+
+(getter expanding-data: expanding-data/id expanding-data/data)
+
+(function (expanding-data/has-recursion? d) {(-> ExpandingData Bool)}
+  (with1 (expanding-data: (let id) (let d)) d
+    (is? (err _) (transform (data-recursion-finder: id) d))))
+
+(derive (Eq) value-data DataRecursionFinder
+  (data-recursion-finder: CtId))
+
+(instance Transformer.DataRecursionFinder (Transformer DataRecursionFinder unit)
+  (function (transformer/after-ct ct t)
+    (if-match ([(ct:id (let id)) ct]
+               [#t (eq? (data-recursion-finder: id) t)])
+      (err unit)
+      (ok (rewrite/unchanged ct)))))
+
+(function (expanding-data/compute-data-expansion! named? add! d)
+  {(-> Bool (-> CtDef CtId) ExpandingData DataExpansion)}
+
+  (let ([(struct repr fields) (add! (ct-def:struct (struct: repr fields)))]
+        [(union tys) (add! (ct-def:union (union: tys)))])
+    (with1 (data: (let repr) (let cons)) (expanding-data/data d)
+      (cond
+        [(array/empty? cons)
+          data-expansion:unit] ; TODO: Should this be an expansion like Never?
+        [(and (eq? (array/length cons) 1)
+              (array/empty? (get cons[0]))
+              (ne? repr data-repr:c)) ; c-data is not expanded to Unit
+          data-expansion:unit]
+        [(and (eq? (array/length cons) 1)
+              (eq? (array/length (get cons[0])) 1)
+              (eq? repr data-repr:value)
+              (not named?))
+          (data-expansion:alias (get cons[0][0]))] ; A single field value-data can be an alias
+        [(eq? (array/length cons) 1)
+          (match repr
+            [data-repr:boxed
+              (data-expansion:boxed-struct (struct struct-repr:standard (get cons[0])))]
+            [data-repr:value
+              (data-expansion:struct (struct struct-repr:standard (get cons[0])))]
+            [data-repr:c
+              (data-expansion:struct (struct struct-repr:c (get cons[0])))])]
+        [(eq? repr data-repr:c)
+          (assert #f "c-data does not match C-compatible structure")]
+        [else
+          (let* ([size (array/length cons)]
+                 [tagged-data-body
+                   (match (it/count (it/filter [^1 (not (array/empty? %1))] cons))
+                     [0
+                       (return (data-expansion:enum size))]
+                     [1
+                       (let1 index (option/force (it/find-index? [^1 (not (array/empty? %1))] cons))
+                         (if (eq? (array/length (get cons[index])) 1)
+                           (tagged-data-body:alias index (get cons[index][0]))
+                           (tagged-data-body:struct index (struct struct-repr:standard (get cons[index])))))]
+                     [_
+                       (let1 tys (collect (it/map [^1 (struct struct-repr:standard %1)] cons))
+                         (tagged-data-body:union (union (collect (it/map ct:id tys))) tys))])])
+            (match repr
+              [data-repr:boxed
+                (data-expansion:boxed-tagged
+                  (struct struct-repr:standard (array (enum-ct size) (ct:ptr (tagged-data-body/ct tagged-data-body))))
+                  size
+                  tagged-data-body)]
+              [_
+                (data-expansion:tagged
+                  (struct struct-repr:standard (array (enum-ct size) (tagged-data-body/ct tagged-data-body)))
+                  size
+                  tagged-data-body)]))]))))
+
+(instance Transformer.DataExpansion (forall Error) (Transformer (OrdMap CtId DataExpansion) Error)
+  (function (transformer/before-ct ct t)
+    (if-match ([(ct:id (let id)) ct]
+               [(some (let e)) (ord-map/get? id t)])
+      (with1 (: _ (let r)) (transformer/before-ct (data-expansion/ct e) t)!
+        (ok (: cut:no (rewrite/as-changed r))))
+      (ok (: cut:no (rewrite/unchanged ct)))))
+
+  (function (transformer/before-rt rt t)
+    (if-match ([(rt:construct-data (ct:id (let id)) (let index) (let args)) rt]
+               [(some (let e)) (ord-map/get? id t)])
+      (with1 (: _ (let r)) (transformer/before-rt (data-expansion/rt e index args) t)!
+        (ok (: cut:no (rewrite/as-changed r))))
+      (ok (: cut:no (rewrite/unchanged rt)))))
+
+  (function (transformer/before-rt-pat pat t)
+    (if-match ([(rt-pat:data (ct:id (let id)) (let index) (let args)) pat]
+               [(some (let e)) (ord-map/get? id t)])
+      (with1 (: _ (let r)) (transformer/before-rt-pat (data-expansion/rt-pat e index args) t)!
+        (ok (: cut:no (rewrite/as-changed r))))
+      (ok (: cut:no (rewrite/unchanged pat))))))
+
+(function (log2 n) (/ (log n) (log 2)))
+
+(function (enum-ct size) {(-> U64 Ct)}
+  (match size
+    [0 ct:unit]
+    [1 ct:unit]
+    [_ (ct:u (|> size (conv-to F64) log2 ceil (conv-to U64)))]))
+
+(function (enum-rt size index) {(-> U64 U64 Rt)}
+  (rt:const (enum-const size index)))
+
+(function (enum-rt-pat size index) {(-> U64 U64 RtPat)}
+  (rt-pat:const (enum-const size index)))
+
+(function (enum-const size index) {(-> U64 U64 Const)}
+  (match size
+    [0 const:unit]
+    [1 const:unit]
+    [_ (const:integer (enum-ct size) #f index)]))

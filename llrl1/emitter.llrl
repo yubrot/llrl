@@ -9,6 +9,7 @@
 (import "~/emitter/transformer" _)
 (import "~/emitter/simplifier" [simplifier/_ _])
 (import "~/emitter/normalizer" [normalizer/_ _])
+(import "~/emitter/data-expander" [data-expander/_ _])
 (export Value _.Value value:_ Backend backend/_ Emitter _.Emitter emitter/_)
 
 ; NOTE: Unlike llrl0 implementation, the values handled by the backend are not abstract values and
@@ -47,7 +48,7 @@
     (OrdMap CtKey CtId)
     (OrdMap RtKey RtId)
     (OrdMap CtId ProcessingCtDef)
-    ; TODO: (OrdMap CtId data-expander/DataExpansion)
+    (OrdMap CtId data-expander/DataExpansion)
     (Ref Generation)))
 
 (instance m/Backend.Emitter (forall B) (m/Backend (Emitter B)) (where (Backend B))
@@ -129,6 +130,15 @@
   (function (alloc-rt! e)
     (rt-id-gen/next! (rt-id-gen e))))
 
+(instance data-expander/Env.Emitter (forall B) (data-expander/Env (Emitter B))
+  (function (add-ct-def! def e)
+    (let1 id (ct-id-gen/next! (ct-id-gen e))
+      (ord-map/insert! id (processing-ct-def: phase:normalized (some ~(current-gen e)) def) (ct-defs e))
+      id))
+
+  (function (data-expansions e)
+    (data-expansions e)))
+
 (getter emitter:
   emitter/backend
   emitter/report
@@ -139,8 +149,8 @@
   ct-mapping
   rt-mapping
   ct-defs
-  ; TODO: data-expansions
-  next-gen)
+  data-expansions
+  current-gen)
 
 (function (emitter/new backend) {(forall B) (-> B (Emitter B)) (where (Backend B))}
   (emitter:
@@ -153,7 +163,7 @@
     ord-map/empty
     ord-map/empty
     ord-map/empty
-    ; TODO: data-expansions
+    ord-map/empty
     (ref (generation: 0))))
 
 (function (emitter/def? id e) {(forall B) (-> CtId (Emitter B) (Option CtDef))}
@@ -190,25 +200,33 @@
 (function (populate! src e)
   {(forall B S D) (-> S (Emitter B) (: D (Iterator (: CtId CtDef)))) (where (Backend B) (simplifier/Simplify S D) (Transform D))}
   (let* ([dest (simplifier/simplify! e src)]
-         [dest (normalizer/normalize! e dest)]
-         [gen ~(next-gen e)])
-    (set! (next-gen e) (generation/next gen))
+         [dest (ref (normalizer/normalize! e dest))]
+         [gen (generation/next ~(current-gen e))])
+    (set! (current-gen e) gen)
 
-    (let1 generation-defs (collect-generation-defs e dest)
+    (let1 generation-defs (collect-generation-defs e ~dest)
       ; Assign generation information to each ProcessingCtDef generated in this populate pass.
       (for (let id) generation-defs
         (let1 d (option/force (ord-map/get? id (ct-defs e)))
           (ord-map/insert! id (processing-ct-def/with-generation gen d) (ct-defs e))))
 
-      ; TODO: Data expansion
-      ; TODO: Branch expansion
-      ; TODO: Heap2stack
+      (let ([(data? id)
+              (with1? (ct-def:data (let d)) (processing-ct-def/def (option/force (ord-map/get? id (ct-defs e))))
+                (: id d))]
+            [expanded-defs (data-expander/compute! e (it/filter-map data? generation-defs))])
+        (for (let id) expanded-defs (ord-set/insert! id generation-defs)))
 
-      ; Possible optimizations that are not implemented:
-      ; * Closure inlining: we can inline closure immediate calls like $<f>{<env>}(..)
-      ; * More escape analysis to promote heap allocations to stack allocations
+      (let1 target (canonicalize-target: dest (ct-defs e) generation-defs)
+        (data-expander/expand! (data-expansions e) target)
+        ; TODO: Branch expansion
+        ; TODO: Heap2stack
 
-      (: dest
+        ; Possible optimizations that are not implemented:
+        ; * Closure inlining: we can inline closure immediate calls like $<f>{<env>}(..)
+        ; * More escape analysis to promote heap allocations to stack allocations
+        )
+
+      (: ~dest
          (it/filter-map
            (lambda (id)
              (let1 d (option/force (ord-map/get? id (ct-defs e)))
@@ -253,8 +271,7 @@
   (with1 (processing-ct-def: (let phase) (let gen) (let def)) d
     (and (eq? phase phase:normalized)
          (is? (some _) gen)
-         ; (not (is? (ct-def:data _) def)) ; TODO: data expansion
-         )))
+         (not (is? (ct-def:data _) def)))))
 
 (function (processing-ct-def/with-generation gen d) {(-> Generation ProcessingCtDef ProcessingCtDef)}
   (assert-is? phase:normalized (processing-ct-def/phase d)
@@ -292,3 +309,18 @@
                    [#t (ord-set/insert! id generation-defs)])
         (transform collector def)!))
     (ok (rewrite/unchanged ct))))
+
+(value-data (CanonicalizeTarget D)
+  (canonicalize-target: (Ref D) (OrdMap CtId ProcessingCtDef) (OrdSet CtId)))
+
+(instance Transform.CanonicalizeTarget (forall D) (Transform (CanonicalizeTarget D)) (where (Transform D))
+  (function (transform t x)
+    (with1 (canonicalize-target: (let dest) (let ct-defs) (let generation-defs)) x
+      (when-match1 (rewrite: (let x) #t) (transform t ~dest)!
+        (set! dest x))
+      (for (let id) generation-defs
+        (with1 (processing-ct-def: (let phase) (let gen) (let def)) (option/force (ord-map/get? id ct-defs))
+          (when-match1 (rewrite: (let x) #t) (transform t def)!
+            (ord-map/insert! id (processing-ct-def: phase gen x) ct-defs)))))
+    ; CanonicalizeTarget is always modified destructively.
+    (ok (rewrite/unchanged x))))
