@@ -3,6 +3,7 @@
 (import "~/ast" [ast/_ _])
 (import "~/module" [m/_ _])
 (import "~/emitter/ir" _)
+(import "~/emitter/transformer" Transform._)
 (export Env Simplify Simplify._ simplify! simplify-def!)
 
 (class (Env E) (where (m/ModuleSet E))

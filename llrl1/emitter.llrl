@@ -6,7 +6,9 @@
 (import "~/ast" [ast/_ _])
 (import "~/module" [m/_ _])
 (import "~/emitter/ir" _)
+(import "~/emitter/transformer" _)
 (import "~/emitter/simplifier" [simplifier/_ _])
+(import "~/emitter/normalizer" [normalizer/_ _])
 (export Value _.Value value:_ Backend backend/_ Emitter _.Emitter emitter/_)
 
 ; NOTE: Unlike llrl0 implementation, the values handled by the backend are not abstract values and
@@ -79,6 +81,54 @@
   (function (issue-rt! c e)
     (bind-rt! (rt-key:construct (conv c)) e)))
 
+(instance normalizer/Env.Emitter (forall B) (normalizer/Env (Emitter B))
+  (function (instantiate! id args e)
+    (bind-ct!
+      (ct-key:inst id args)
+      (lambda ()
+        (match (ord-map/get? id (ct-defs e))
+          [(some (processing-ct-def: _ _ (ct-def:generic (let params) (let ct))))
+            (assert-eq? (array/length params) (array/length args))
+            (some (replace-ct (ord-map/collect (it/zip params args)) ct))]
+          [(some _)
+            (assert #f (string "Attemt to instantiate " (debug id) ": which is not a generic definition"))]
+          [none
+            (assert #f (string "Attemt to instantiate " (debug id) ": which is not a definition"))]))
+      e))
+
+  (function (processing-ct-def? id e)
+    (with1 (processing-ct-def: (let phase) (let gen) (let def)) (ord-map/get? id (ct-defs e))?
+      (some (match phase
+        [phase:generalized
+          (normalizer/processing-ct-def: #f def)]
+        [phase:instantiated
+          (ord-map/insert! id (processing-ct-def: phase:normalizing gen def) (ct-defs e))
+          (let1 def (normalizer/normalize! e def)
+            (ord-map/insert! id (processing-ct-def: phase:normalized gen def) (ct-defs e))
+            (normalizer/processing-ct-def: #t def))]
+        [phase:normalizing
+          (normalizer/processing-ct-def: #f def)]
+        [phase:normalized
+          (normalizer/processing-ct-def: #t def)]))))
+
+  (function (alloc-ct! e)
+    (ct-id-gen/next! (ct-id-gen e)))
+
+  (function (define-ct! id def e)
+    (assert-is? none
+      (ord-map/insert!
+        id
+        (processing-ct-def:
+          (match def
+            [(ct-def:generic _ _) phase:generalized]
+            [_ phase:instantiated])
+          none
+          def)
+        (ct-defs e))))
+
+  (function (alloc-rt! e)
+    (rt-id-gen/next! (rt-id-gen e))))
+
 (getter emitter:
   emitter/backend
   emitter/report
@@ -90,7 +140,7 @@
   rt-mapping
   ct-defs
   ; TODO: data-expansions
-  next-generation)
+  next-gen)
 
 (function (emitter/new backend) {(forall B) (-> B (Emitter B)) (where (Backend B))}
   (emitter:
@@ -129,7 +179,7 @@
       [(ast/init-expr:eval (let expr))
         (backend/put-main! (emitter/populate! expr e) (emitter/backend e))])))
 
-(function (emitter/populate! src e) {(forall B S D) (-> S (Emitter B) D) (where (Backend B) (simplifier/Simplify S D))}
+(function (emitter/populate! src e) {(forall B S D) (-> S (Emitter B) D) (where (Backend B) (simplifier/Simplify S D) (Transform D))}
   (with1 (: (let dest) (let defs)) (report/on (emitter/report e) phase:emit (populate! src e))
     (for (: (let id) (let def)) defs (backend/put-def! id def (emitter/backend e)))
     dest))
@@ -138,9 +188,32 @@
   (report/merge! (emitter/report e) report))
 
 (function (populate! src e)
-  {(forall B S D) (-> S (Emitter B) (: D (Iterator (: CtId CtDef)))) (where (Backend B) (simplifier/Simplify S D))}
-  (: (simplifier/simplify! e src)
-     iterator/empty)) ; TODO
+  {(forall B S D) (-> S (Emitter B) (: D (Iterator (: CtId CtDef)))) (where (Backend B) (simplifier/Simplify S D) (Transform D))}
+  (let* ([dest (simplifier/simplify! e src)]
+         [dest (normalizer/normalize! e dest)]
+         [gen ~(next-gen e)])
+    (set! (next-gen e) (generation/next gen))
+
+    (let1 generation-defs (collect-generation-defs e dest)
+      ; Assign generation information to each ProcessingCtDef generated in this populate pass.
+      (for (let id) generation-defs
+        (let1 d (option/force (ord-map/get? id (ct-defs e)))
+          (ord-map/insert! id (processing-ct-def/with-generation gen d) (ct-defs e))))
+
+      ; TODO: Data expansion
+      ; TODO: Branch expansion
+      ; TODO: Heap2stack
+
+      ; Possible optimizations that are not implemented:
+      ; * Closure inlining: we can inline closure immediate calls like $<f>{<env>}(..)
+      ; * More escape analysis to promote heap allocations to stack allocations
+
+      (: dest
+         (it/filter-map
+           (lambda (id)
+             (let1 d (option/force (ord-map/get? id (ct-defs e)))
+               (when? (processing-ct-def/populated? d) (: id (processing-ct-def/def d)))))
+           generation-defs)))))
 
 (function (bind-ct! key build e) {(forall B) (-> CtKey (-> (Option CtDef)) (Emitter B) CtId)}
   (if-match1 (some (let id)) (ord-map/get? key (ct-mapping e))
@@ -180,7 +253,15 @@
   (with1 (processing-ct-def: (let phase) (let gen) (let def)) d
     (and (eq? phase phase:normalized)
          (is? (some _) gen)
-         (not (is? (ct-def:data _) def)))))
+         ; (not (is? (ct-def:data _) def)) ; TODO: data expansion
+         )))
+
+(function (processing-ct-def/with-generation gen d) {(-> Generation ProcessingCtDef ProcessingCtDef)}
+  (assert-is? phase:normalized (processing-ct-def/phase d)
+    "processing-ct-def/with-generation: generation must be none")
+  (assert-is? none (processing-ct-def/generation d)
+    "processing-ct-def/with-generation: phase must be normalized")
+  (processing-ct-def: phase:normalized (some gen) (processing-ct-def/def d)))
 
 (derive (Eq Ord DebugDisplay Hash) value-data Phase
   phase:generalized
@@ -194,3 +275,20 @@
 (function (generation/next gen) {(-> Generation Generation)}
   (with1 (generation: (let n)) gen
     (generation: (+ n 1))))
+
+(value-data (GenerationCollector B)
+  (generation-collector: (OrdSet CtId) (Emitter B))) ; generation-defs emitter
+
+(function (collect-generation-defs emitter t)
+  (let1 set ord-set/empty
+    (result/unwrap* never (transform (generation-collector: set emitter) t))
+    set))
+
+(instance Transformer.GenerationCollector (forall B Error) (Transformer (GenerationCollector B) Error)
+  (function (transformer/after-ct ct collector)
+    (with1 (generation-collector: (let generation-defs) (let emitter)) collector
+      (when-match ([(ct:id (let id)) ct]
+                   [(some (processing-ct-def: _ none (let def))) (ord-map/get? id (ct-defs emitter))]
+                   [#t (ord-set/insert! id generation-defs)])
+        (transform collector def)!))
+    (ok (rewrite/unchanged ct))))

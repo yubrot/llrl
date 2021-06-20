@@ -2,9 +2,13 @@
 (import "std/ord-set" _)
 (import "~/util" _)
 (import "~/emitter/ir" _)
-(export Rewrite _.Rewrite rewrite: rewrite/_)
+(export Cut cut:_ Rewrite _.Rewrite rewrite: rewrite/_)
 (export Transformer transformer/_ Transform Transform._ transform)
 (export captured-vars visit-ct-uses replace-ct replace-rt)
+
+(value-data Cut
+  cut:yes
+  cut:no)
 
 (derive (Eq Ord DebugDisplay Hash) value-data (Rewrite A)
   (rewrite: A Bool))
@@ -13,6 +17,7 @@
 
 (function (rewrite/changed a) (rewrite: a #t))
 (function (rewrite/unchanged a) (rewrite: a #f))
+(function (rewrite/as-changed a) (rewrite/changed (rewrite/value a)))
 
 ($$ begin
   ($for-each
@@ -36,20 +41,20 @@
     (set! rewrite-ref (rewrite/changed (shallow-copy (rewrite/value ~rewrite-ref))))))
 
 (class (Transformer T Error)
-  (function (transformer/before-ct ct t) {(-> Ct T (Result (: Bool (Rewrite Ct)) Error))}
-    (ok (: #t (rewrite/unchanged ct))))
+  (function (transformer/before-ct ct t) {(-> Ct T (Result (: Cut (Rewrite Ct)) Error))}
+    (ok (: cut:no (rewrite/unchanged ct))))
 
   (function (transformer/after-ct ct t) {(-> Ct T (Result (Rewrite Ct) Error))}
     (ok (rewrite/unchanged ct)))
 
-  (function (transformer/before-rt rt t) {(-> Rt T (Result (: Bool (Rewrite Rt)) Error))}
-    (ok (: #t (rewrite/unchanged rt))))
+  (function (transformer/before-rt rt t) {(-> Rt T (Result (: Cut (Rewrite Rt)) Error))}
+    (ok (: cut:no (rewrite/unchanged rt))))
 
   (function (transformer/after-rt rt t) {(-> Rt T (Result (Rewrite Rt) Error))}
     (ok (rewrite/unchanged rt)))
 
-  (function (transformer/before-rt-pat pat t) {(-> RtPat T (Result (: Bool (Rewrite RtPat)) Error))}
-    (ok (: #t (rewrite/unchanged pat))))
+  (function (transformer/before-rt-pat pat t) {(-> RtPat T (Result (: Cut (Rewrite RtPat)) Error))}
+    (ok (: cut:no (rewrite/unchanged pat))))
 
   (function (transformer/after-rt-pat pat t) {(-> RtPat T (Result (Rewrite RtPat) Error))}
     (ok (rewrite/unchanged pat)))
@@ -86,8 +91,8 @@
 (instance Transform.Ct (Transform Ct)
   (function (transform t x)
     (with ([(rewrite: (let x) (let c1?))
-             (with1 (: (let cut?) (let r)) (transformer/before-ct x t)!
-                (if cut? (return (ok r)) r))]
+             (with1 (: (let cut) (let r)) (transformer/before-ct x t)!
+                (if (is? cut:yes cut) (return (ok r)) r))]
            [(rewrite: (let x) (let c2?))
              (match x
                [(ct:generic-inst (let ct) (let args))
@@ -178,8 +183,8 @@
 (instance Transform.Rt (Transform Rt)
   (function (transform t x)
     (with ([(rewrite: (let x) (let c1?))
-             (with1 (: (let cut?) (let r)) (transformer/before-rt x t)!
-                (if cut? (return (ok r)) r))]
+             (with1 (: (let cut) (let r)) (transformer/before-rt x t)!
+                (if (is? cut:yes cut) (return (ok r)) r))]
            [(rewrite: (let x) (let c2?))
              (match x
                [(rt:local (let id))
@@ -312,8 +317,8 @@
 (instance Transform.RtPat (Transform RtPat)
   (function (transform t x)
     (with ([(rewrite: (let x) (let c1?))
-             (with1 (: (let cut?) (let r)) (transformer/before-rt-pat x t)!
-                (if cut? (return (ok r)) r))]
+             (with1 (: (let cut) (let r)) (transformer/before-rt-pat x t)!
+                (if (is? cut:yes cut) (return (ok r)) r))]
            [(rewrite: (let x) (let c2?))
              (match x
                [(rt-pat:var (let id) (let ty) (let p))

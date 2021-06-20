@@ -1,0 +1,137 @@
+; Normalizes the IR by evaluating Ct.
+; All generic CtDef instantiations and LocalFun definitions are lifted to the top level.
+(import "std/ord-set" _)
+(import "std/ord-map" _)
+(import "~/util" _)
+(import "~/emitter/ir" _)
+(import "~/emitter/transformer" _)
+(export Env ProcessingCtDef processing-ct-def: normalize!)
+
+(function (normalize! env t) {(forall E T) (-> E T T) (where (Env E) (Transform T))}
+  (rewrite/value (result/unwrap* never (transform (normalizer: env ord-map/empty) t))))
+
+(class (Env E)
+  (function (instantiate! id args e) {(-> CtId (Array Ct) E CtId)})
+  (function (processing-ct-def? id e) {(-> CtId E (Option ProcessingCtDef))})
+  (function (alloc-ct! e) {(-> E CtId)})
+  (function (define-ct! id def e) {(-> CtId CtDef E unit)})
+  (function (alloc-rt! e) {(-> E RtId)}))
+
+(value-data ProcessingCtDef
+  (processing-ct-def: Bool CtDef))
+
+(value-data (Normalizer E)
+  (normalizer: E (OrdMap RtId Ct)))
+
+(getter normalizer: env local-var-types)
+
+(instance Transformer.Normalizer (forall E Error) (Transformer (Normalizer E) Error) (where (Env E))
+  (function (transformer/after-ct ct n)
+    (ok (match ct
+      [(ct:id (let id))
+        (if-match ([(some (processing-ct-def: (let normalized?) (let def))) (processing-ct-def? id (env n))]
+                   [(ct-def:alias (let ct)) def])
+          (if normalized?
+            (rewrite/changed ct)
+            (rewrite/as-changed (transform n ct)!))
+          (rewrite/unchanged ct))]
+      [(ct:generic-inst (let callee) (let args))
+        (if-match1 (ct:id (let generic-id)) callee
+          (let1 inst-id (instantiate! generic-id args (env n))
+            (rewrite/as-changed (transform n (ct:id inst-id))!))
+          (assert #f (string "Attempt to generic-inst on " (debug callee))))]
+      [(ct:table-get (let table) (let id))
+        (if-match ([(ct:id (let table-id)) table]
+                   [(some (processing-ct-def: (let normalized?) (let def))) (processing-ct-def? table-id (env n))]
+                   [(ct-def:alias-table (let table)) def])
+          (if-match1 (some (let ct)) (alias-table/get? id table)
+            (if normalized?
+              (rewrite/changed ct)
+              (rewrite/as-changed (transform n ct)!))
+            (assert #f (string "Cannot get " (debug id) " from table " (debug table-id))))
+          (assert #f (string "Attempt to table-get on " (debug table))))]
+      [_
+        (rewrite/unchanged ct)])))
+
+  (function (transformer/before-rt rt n)
+    (ok (if-match1 (rt:let-function (let funs) (let body)) rt
+      (: cut:no (rewrite/changed (run-closure-conversion! funs body n)))
+      (: cut:no (rewrite/unchanged rt)))))
+
+  (function (transformer/after-rt rt n)
+    (ok (if-match ([(rt:call (rt:static-fun (ct:id (let id)) none) (let args)) rt]
+                   [(some (processing-ct-def: (let normalized?) (let def))) (processing-ct-def? id (env n))]
+                   [(ct-def:function (let f (function: function-kind:transparent _ _ _ _))) def])
+      (let1 rt (call-transparent f args)
+        (if normalized?
+          (rewrite/as-changed (transformer/after-rt rt n)!)
+          (rewrite/as-changed (transform n rt)!)))
+      (rewrite/unchanged rt))))
+
+  (function (transformer/after-rt-def id ty n)
+    (ord-map/insert! id ty (local-var-types n))
+    (ok unit)))
+
+(function (run-closure-conversion! funs body n)
+  {(forall E) (-> (Array RtFunction) Rt (Normalizer E) Rt) (where (Env E))}
+  (with1 (normalizer: (let env) (let local-var-types)) n
+    (let* ([lifted-funs
+             (|> funs (it/map [^1 (: (rt-function/id %1) (alloc-ct! env))]) ord-map/collect)]
+           [captured-vars
+             (|> funs captured-vars (it/map [^1 (: %1 (alloc-rt! env))]) ord-map/collect)]
+           [captured-env
+             (when? (not (ord-map/empty? captured-vars)) (alloc-rt! env))]
+           [env-params
+             (|> captured-vars
+                 ord-map/elems
+                 (it/map (case1 (: (let var) (let id))
+                   (function-param: id (|> local-var-types (ord-map/get? var) option/force))))
+                 collect)]
+           [env-args
+             (|> captured-vars ord-map/keys (it/map rt:local) collect)]
+           [function-env
+             (option/map [^1 (function-env: %1 env-params)] captured-env)]
+           [env-var
+             (option/map [^1 (rt-var: %1 ct:env (rt:construct-env location:heap env-args))] captured-env)])
+
+      (for (rt-function: (let id) (let ct-params) (let params) (let ret) (let body)) funs
+        (let1 body (cc lifted-funs captured-vars captured-env body)
+          (define-ct!
+            (option/force (ord-map/get? id lifted-funs))
+            (ct-def/generic
+              ct-params
+              (ct-def:function (function: function-kind:standard function-env params ret body)))
+            env)))
+
+      (let1 body (cc lifted-funs ord-map/empty captured-env body)
+        (if-match1 (some (let var)) env-var
+          (rt/let-var (array var) body)
+          body)))))
+
+(function (cc lifted-funs captured-vars captured-env t)
+  (rewrite/value (result/unwrap* never (transform (cc: lifted-funs captured-vars captured-env) t))))
+
+(value-data ClosureConversion
+  (cc: (OrdMap RtId CtId) (OrdMap RtId RtId) (Option RtId))) ; lifted-funs captured-vars captured-env
+
+(instance Transformer.ClosureConversion (forall Error) (Transformer ClosureConversion Error)
+  (function (transformer/after-rt rt cc)
+    (with1 (cc: (let lifted-funs) (let captured-vars) (let captured-env)) cc
+      (ok (cond
+        [when-match ([(rt:local (let id)) rt]
+                     [(some (let id)) (ord-map/get? id captured-vars)])
+          (rewrite/changed (rt:local id))]
+        [when-match ([(rt:local-fun (let id) (let args)) rt]
+                     [(some (let id)) (ord-map/get? id lifted-funs)])
+          (rewrite/changed (rt:static-fun
+            (ct/generic-inst (ct:id id) args)
+            (option/map rt:local captured-env)))]
+        [else
+          (rewrite/unchanged rt)])))))
+
+(function (call-transparent f args) {(-> Function (Array Rt) Rt)}
+  (assert-is? none (function/env f))
+  (assert-eq? (array/length args) (array/length (function/params f)))
+  (replace-rt
+    (ord-map/collect (it/zip (it/map function-param/id (function/params f)) args))
+    (function/body f)))
