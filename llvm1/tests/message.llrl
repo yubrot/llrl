@@ -1,0 +1,4 @@
+(import "~/message" _)
+(println! "llvm1/tests/message")
+
+(assert-eq? "hello" (message/consume! (message/from-string "hello")))

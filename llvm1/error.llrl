@@ -1,0 +1,14 @@
+(export Error error/_)
+
+(data Error (error: Never))
+
+(c-function error/dispose! {(-> Error unit)} "LLVMConsumeError")
+
+(function (error/consume! e) {(-> Error String)}
+  (let* ([p (<get-error-message> e)]
+         [s (string/unsafe-from-c-ptr p)])
+    (<dispose-error-message> p)
+    s))
+
+(c-function <get-error-message> {(-> Error (Ptr U8))} "LLVMGetErrorMessage")
+(c-function <dispose-error-message> {(-> (Ptr U8) unit)} "LLVMDisposeErrorMessage")

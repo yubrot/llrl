@@ -1,0 +1,5 @@
+(import "~/error" _)
+(println! "llvm1/tests/error")
+
+error/consume!
+error/dispose!
