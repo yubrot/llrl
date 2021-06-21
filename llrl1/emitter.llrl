@@ -10,6 +10,7 @@
 (import "~/emitter/simplifier" [simplifier/_ _])
 (import "~/emitter/normalizer" [normalizer/_ _])
 (import "~/emitter/data-expander" [data-expander/_ _])
+(import "~/emitter/branch-expander" [branch-expander/_ _])
 (export Value _.Value value:_ Backend backend/_ Emitter _.Emitter emitter/_)
 
 ; NOTE: Unlike llrl0 implementation, the values handled by the backend are not abstract values and
@@ -139,6 +140,10 @@
   (function (data-expansions e)
     (data-expansions e)))
 
+(instance branch-expander/Env.Emitter (forall B) (branch-expander/Env (Emitter B))
+  (function (alloc-rt! e)
+    (rt-id-gen/next! (rt-id-gen e))))
+
 (getter emitter:
   emitter/backend
   emitter/report
@@ -218,7 +223,7 @@
 
       (let1 target (canonicalize-target: dest (ct-defs e) generation-defs)
         (data-expander/expand! (data-expansions e) target)
-        ; TODO: Branch expansion
+        (branch-expander/expand! e target)
         ; TODO: Heap2stack
 
         ; Possible optimizations that are not implemented:

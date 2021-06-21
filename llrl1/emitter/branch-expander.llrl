@@ -1,0 +1,245 @@
+(import "std/persistent/ord-map" _)
+(import "~/util" _)
+(import "~/emitter/ir" _)
+(import "~/emitter/transformer" _)
+(export Env expand!)
+
+(class (Env E)
+  (function (alloc-rt! e) {(-> E RtId)}))
+
+(function (expand! env t) {(forall E T) (-> E T T) (where (Env E) (Transform T))}
+  (rewrite/value (result/unwrap* never (transform env t))))
+
+(instance Transformer.BranchExpander (forall E Error) (Transformer E Error) (where (Env E))
+  (function (transformer/after-rt rt t)
+    (ok (match rt
+      [(rt:and (let a) (let b))
+        (rewrite/changed (rt:if a b (rt:const (const/bool #f))))]
+      [(rt:or (let a) (let b))
+        (rewrite/changed (rt:if a (rt:const (const/bool #t)) b))]
+      [(rt:match (let target) (let clauses))
+        (rewrite/changed (expand-clauses! target clauses t))]
+      [_
+        (rewrite/unchanged rt)]))))
+
+(function (expand-clauses! target clauses env) {(forall E) (-> Rt (Array RtClause) E Rt) (where (Env E))}
+  (let ([conts (array/unsafe-alloc-uninitialized (array/length clauses))]
+        [matrix (array/unsafe-alloc-uninitialized (array/length clauses))])
+
+    (for (: (let i) (rt-clause: (let pat) (let body))) (it/with-index clauses)
+      (with1 (: (let row) (let params)) (expand-into-flatten-pats pat)
+        (let1 id (alloc-rt! env)
+          (set! conts[i] (rt-cont: id params body))
+          (set! matrix[i] (: row id)))))
+
+    (let1 root (alloc-rt! env)
+      (rt/let-cont
+        conts
+        (rt/let-var
+          (array (rt-var: root ct:hole target))
+          (expand-matrix! (match-progress/new root) matrix env))))))
+
+(function (expand-matrix! progress matrix env)
+  {(forall E) (-> MatchProgress (Array (: (Array FlattenPat) RtId)) E Rt) (where (Env E))}
+  (if-match1 (some (: (: (let row) (let id)) (let matrix))) (array/split-first? matrix)
+    (let ([(success progress) (rt:cont id (match-progress/args progress))]
+          [(failure progress) (expand-matrix! (match-progress/reset-args progress) matrix env)])
+      (expand-row! progress row (match-cont: success failure) env))
+    rt:never))
+
+(function (expand-row! progress row cont env)
+  {(forall E) (-> MatchProgress (Array FlattenPat) MatchCont E Rt) (where (Env E))}
+  (if-match1 (some (: (let pat) (let row))) (array/split-first? row)
+    (let ([(success progress) (expand-row! progress row cont env)]
+          [failure (match-cont/failure cont)])
+      (expand-pat! progress pat (match-cont: success failure) env))
+    ((match-cont/success cont) progress)))
+
+(function (expand-pat! progress pat cont env)
+  {(forall E) (-> MatchProgress FlattenPat MatchCont E Rt) (where (Env E))}
+  (with1 (flatten-pat: (let path) (let cond)) pat
+    (if-match1 (some (let pp)) (match-progress/progress-for-path? path progress)
+      (match (path-progress/satisfied? cond pp)
+        [(some #t)
+          ((match-cont/success cont) progress)]
+        [(some #f)
+          ((match-cont/failure cont) progress)]
+        [none
+          (if-match1 (some (let test)) (condition/test (path-progress/tmp-var pp) cond)
+            (rt:if
+              test
+              ((match-cont/success cont)
+                (match-progress/put-progress-for-path path (path-progress/determine cond #t pp) progress))
+              ((match-cont/failure cont)
+                (match-progress/put-progress-for-path path (path-progress/determine cond #f pp) progress)))
+            ((match-cont/success cont)
+              (if-match1 (condition:bind _) cond
+                (match-progress/put-arg (rt:local (path-progress/tmp-var pp)) progress)
+                (match-progress/put-progress-for-path path (path-progress/determine cond #t pp) progress))))])
+      (let ([id (alloc-rt! env)]
+            [value
+              (|> (match-progress/progress-for-path? (path/parent path) progress)
+                  option/force
+                  (path-progress/child (path/last-index path)))])
+        (rt/let-var
+          (array (rt-var: id ct:hole value))
+          (expand-pat! (match-progress/put-progress-for-path path (path-progress/new id) progress) pat cont env))))))
+
+(value-data MatchCont
+  (match-cont: (-> MatchProgress Rt) (-> MatchProgress Rt)))
+
+(getter match-cont: match-cont/success match-cont/failure)
+
+(value-data MatchProgress
+  (match-progress: (OrdMap Path PathProgress) (Array Rt))) ; path-progresses args
+
+(function (match-progress/new root-var) {(-> RtId MatchProgress)}
+  (match-progress: (ord-map (: path/root (path-progress/new root-var))) array/empty))
+
+(function (match-progress/args mp) {(-> MatchProgress (Array Rt))}
+  (with1 (match-progress: _ (let args)) mp
+    args))
+
+(function (match-progress/reset-args mp) {(-> MatchProgress MatchProgress)}
+  (with1 (match-progress: (let path-progresses) (let args)) mp
+    (match-progress: path-progresses array/empty)))
+
+(function (match-progress/put-arg arg mp) {(-> Rt MatchProgress MatchProgress)}
+  (with1 (match-progress: (let path-progresses) (let args)) mp
+    (match-progress: path-progresses (array/push arg args))))
+
+(function (match-progress/progress-for-path? path mp) {(-> Path MatchProgress (Option PathProgress))}
+  (with1 (match-progress: (let path-progresses) _) mp
+    (ord-map/get? path path-progresses)))
+
+(function (match-progress/put-progress-for-path path pp mp) {(-> Path PathProgress MatchProgress MatchProgress)}
+  (with1 (match-progress: (let path-progresses) (let args)) mp
+    (match-progress: (ord-map/insert path pp path-progresses) args)))
+
+; TODO: Use exhaustiveness information to reduce Condition test
+(value-data PathProgress
+  (path-progress: RtId (OrdMap Condition Bool))) ; tmp-var determined-conds
+
+(function (path-progress/new var) {(-> RtId PathProgress)}
+  (path-progress: var ord-map/empty))
+
+(function (path-progress/tmp-var pp) {(-> PathProgress RtId)}
+  (with1 (path-progress: (let tmp-var) _) pp
+    tmp-var))
+
+(function (path-progress/determine c satisfied? pp) {(-> Condition Bool PathProgress PathProgress)}
+  (with1 (path-progress: (let tmp-var) (let determined-conds)) pp
+    (path-progress: tmp-var (ord-map/insert c satisfied? determined-conds))))
+
+(function (path-progress/satisfied? cond pp) {(-> Condition PathProgress (Option Bool))}
+  (with1 (path-progress: _ (let determined-conds)) pp
+    (for (: (let c) (let satisfied?)) (ord-map/elems determined-conds)
+      (when (eq? c cond) (return (some satisfied?)))
+      (when (and satisfied? (condition/exclusive? c cond)) (return (some #f)))))
+  none)
+
+(function (path-progress/child index pp) {(-> U64 PathProgress Rt)}
+  (with1 (path-progress: (let tmp-var) (let determined-conds)) pp
+    (for (: (let c) (let satisfied?)) (ord-map/elems determined-conds)
+      (when-match ([#t satisfied?]
+                  [(some (let c)) (condition/child? tmp-var index c)])
+        (return c)))
+    (assert #f "Cannot get child from satisfied conditions")))
+
+(derive (Eq Ord DebugDisplay Hash) value-data FlattenPat
+  (flatten-pat: Path Condition)) ; path condition
+
+(function (expand-into-flatten-pats pat) {(-> RtPat (: (Array FlattenPat) (Array FunctionParam)))}
+  (let* ([pats vector/empty]
+         [params vector/empty]
+         [(visit! pat path)
+           (match pat
+             [(rt-pat:var (let id) (let ty) (let as-pat))
+               (vector/push! (flatten-pat: path (condition:bind id)) pats)
+               (vector/push! (function-param: id ty) params)
+               (when-match1 (some (let pat)) as-pat (visit! pat path))]
+             [rt-pat:wildcard]
+             [(rt-pat:deref (let pat))
+               (vector/push! (flatten-pat: path condition:deref) pats)
+               (visit! pat (path/child path 0))]
+             [(rt-pat:non-null (let ty) (let pat))
+               (vector/push! (flatten-pat: path (condition:non-null ty)) pats)
+               (visit! pat (path/child path 0))]
+             [(rt-pat:null (let ty))
+               (vector/push! (flatten-pat: path (condition:null ty)) pats)]
+             [(rt-pat:data _ _ _)
+               (assert #f "Found rt-pat:data at branch-expander")]
+             [(rt-pat:struct (let ty) (let args))
+               (vector/push! (flatten-pat: path (condition:struct ty)) pats)
+               (for (: (let i) (let arg)) (it/with-index args)
+                 (visit! arg (path/child path i)))]
+             [(rt-pat:reinterpret (let a) (let b) (let pat))
+               (vector/push! (flatten-pat: path (condition:reinterpret a b)) pats)
+               (visit! pat (path/child path 0))]
+             [(rt-pat:syntax (let ty) (let pat))
+               (vector/push! (flatten-pat: path (condition:syntax ty)) pats)
+               (visit! pat (path/child path 0))]
+             [(rt-pat:const (let c))
+               (vector/push! (flatten-pat: path (condition:const c)) pats)])])
+    (visit! pat path/root)
+    (: (vector/buffer pats) (vector/buffer params))))
+
+(derive (Eq Ord DebugDisplay Hash) value-data Condition
+  (condition:bind RtId)
+  condition:deref
+  (condition:non-null Ct)
+  (condition:null Ct)
+  (condition:struct Ct)
+  (condition:reinterpret Ct Ct)
+  (condition:syntax Ct)
+  (condition:const Const))
+
+(function (condition/exclusive? a b) {(-> Condition Condition Bool)}
+  (and (not (is? (condition:bind _) a))
+       (not (is? (condition:bind _) b))
+       (ne? a b)))
+
+(function (condition/test var c) {(-> RtId Condition (Option Rt))}
+  (match? c
+    [(condition:non-null (let ty))
+      (rt:unary unary:not (rt:binary binary:ptr-eq (rt:local var) (rt:nullary (nullary:null ty))))]
+    [(condition:null (let ty))
+      (rt:binary binary:ptr-eq (rt:local var) (rt:nullary (nullary:null ty)))]
+    [(condition:const (let c))
+      (rt:binary
+        (match? c
+          [(const:integer _ _ _) binary:i-eq]
+          [(const:fp-number _ _) binary:f-eq]
+          [(const:string _) binary:string-eq]
+          [(const:char _) binary:char-eq]
+          [(const:sexp _ _) (assert #f "Found const:sexp in pattern")])?
+        (rt:local var)
+        (rt:const c))]))
+
+(function (condition/child? condition-satisfied-var index c) {(-> RtId U64 Condition (Option Rt))}
+  (let1 v (rt:local condition-satisfied-var)
+    (match? c
+      [condition:deref (rt:unary unary:load v)]
+      [(condition:non-null _) (rt:unary unary:load v)]
+      [(condition:struct (let ty)) (rt:unary (unary:struct-elem ty index) v)]
+      [(condition:reinterpret (let a) (let b)) (rt:unary (unary:reinterpret a b) v)]
+      [(condition:syntax (let ty)) (rt:unary (unary:syntax-body ty) v)])))
+
+(derive (Eq Ord DebugDisplay Hash) value-data Path
+  (path: (Array U64)))
+
+(function path/root (path: array/empty))
+
+(function (path/last-index p) {(-> Path U64)}
+  (with ([(path: (let indices)) p]
+         [(: (let index) _) (array/split-last indices)])
+    index))
+
+(function (path/parent p) {(-> Path Path)}
+  (with ([(path: (let indices)) p]
+         [(: _ (let indices)) (array/split-last indices)])
+    (path: indices)))
+
+(function (path/child p index) {(-> Path U64 Path)}
+  (with1 (path: (let indices)) p
+    (path: (array/push index indices))))
