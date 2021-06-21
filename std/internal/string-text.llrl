@@ -226,6 +226,15 @@
       (text/push! s buf))
     (text/unsafe-string buf)))
 
+; Caller must ensure that the specified pointer is valid UTF-8 sequence and NULL terminated.
+(function (string/unsafe-from-c-ptr ptr) {(-> (Ptr U8) String)}
+  (|> (string/unsafe-from-ptr ptr (<strlen> ptr))
+      string/unsafe-array
+      shallow-copy
+      string/unsafe-from-array))
+
+(c-function <strlen> {(-> (Ptr U8) U64)} "strlen")
+
 (function (string/c-compatible-ptr s) {(-> String (Ptr U8))}
   (let1 buf (vector/from-array (string/unsafe-array s))
     (vector/push! 0 buf) ; Make NULL-terminated & Copy
