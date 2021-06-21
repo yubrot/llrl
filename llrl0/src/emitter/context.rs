@@ -306,10 +306,6 @@ impl<'a> branch_expander::Env for MatchExpander<'a> {
     fn alloc_rt(&mut self) -> RtId {
         self.rt_id_gen.next()
     }
-
-    fn data_expansions(&self) -> &HashMap<CtId, data_expander::DataExpansion> {
-        self.data_expansions
-    }
 }
 
 #[derive(Debug, new)]

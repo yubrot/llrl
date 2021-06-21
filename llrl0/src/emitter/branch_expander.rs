@@ -1,4 +1,4 @@
-use super::{data_expander, ir::*, rewriter};
+use super::{ir::*, rewriter};
 use derive_new::new;
 use smallvec::SmallVec;
 use std::collections::{HashMap, VecDeque};
@@ -6,8 +6,6 @@ use std::rc::Rc;
 
 pub trait Env {
     fn alloc_rt(&mut self) -> RtId;
-
-    fn data_expansions(&self) -> &HashMap<CtId, data_expander::DataExpansion>;
 }
 
 pub fn expand(src: &mut impl rewriter::Rewrite, env: &mut impl Env) {
@@ -106,7 +104,7 @@ impl<'e, E: Env> MatchExpander<'e, E> {
         pat: FlattenPat,
         cont: MatchCont<Self>,
     ) -> Rt {
-        if let Some(result) = progress.intermediate_results.get_mut(&pat.path) {
+        if let Some(result) = progress.path_progressess.get_mut(&pat.path) {
             match result.is_satisfied(&pat.cond) {
                 Some(true) => (cont.success)(self, progress),
                 Some(false) => (cont.failure)(self, progress),
@@ -122,7 +120,7 @@ impl<'e, E: Env> MatchExpander<'e, E> {
                         let success = {
                             let mut progress = progress.clone();
                             progress
-                                .intermediate_results
+                                .path_progressess
                                 .get_mut(&pat.path)
                                 .unwrap()
                                 .mark_as_satisfied(pat.cond.clone());
@@ -130,7 +128,7 @@ impl<'e, E: Env> MatchExpander<'e, E> {
                         };
                         let failure = {
                             progress
-                                .intermediate_results
+                                .path_progressess
                                 .get_mut(&pat.path)
                                 .unwrap()
                                 .mark_as_unsatisfied(pat.cond);
@@ -144,11 +142,11 @@ impl<'e, E: Env> MatchExpander<'e, E> {
             let id = self.env.alloc_rt();
             let parent = pat.path.clone().parent();
             let index = pat.path.last_index();
-            let tmp = progress.intermediate_results[&parent].get_child(index);
+            let tmp = progress.path_progressess[&parent].get_child(index);
             Rt::let_var(vec![RtVar::new(id, Ct::Hole, tmp)], {
                 progress
-                    .intermediate_results
-                    .insert(pat.path.clone(), IntermediateResult::new(id));
+                    .path_progressess
+                    .insert(pat.path.clone(), PathProgress::new(id));
                 self.expand_pat(progress, pat, cont)
             })
         }
@@ -185,14 +183,14 @@ impl<'e, E: 'e> MatchCont<'e, E> {
 
 #[derive(Debug, Clone)]
 struct MatchProgress {
-    intermediate_results: HashMap<Path, IntermediateResult>,
+    path_progressess: HashMap<Path, PathProgress>,
     args: Vec<Rt>,
 }
 
 impl MatchProgress {
     fn new(root: RtId) -> Self {
         Self {
-            intermediate_results: vec![(Path::root(), IntermediateResult::new(root))]
+            path_progressess: vec![(Path::root(), PathProgress::new(root))]
                 .into_iter()
                 .collect(),
             args: Vec::new(),
@@ -206,7 +204,7 @@ impl MatchProgress {
 
 // TODO: Use exhaustiveness information to reduce Condition test
 #[derive(Debug, Clone, new)]
-struct IntermediateResult {
+struct PathProgress {
     tmp_var: RtId,
     #[new(default)]
     satisfied: SmallVec<[Condition; 1]>,
@@ -214,7 +212,7 @@ struct IntermediateResult {
     unsatisfied: SmallVec<[Condition; 1]>,
 }
 
-impl IntermediateResult {
+impl PathProgress {
     fn to_cont_arg(&self) -> Rt {
         Rt::Local(self.tmp_var)
     }
