@@ -11,6 +11,7 @@
 (import "~/emitter/normalizer" [normalizer/_ _])
 (import "~/emitter/data-expander" [data-expander/_ _])
 (import "~/emitter/branch-expander" [branch-expander/_ _])
+(import "~/emitter/heap2stack" [heap2stack/_ _])
 (export Value _.Value value:_ Backend backend/_ Emitter _.Emitter emitter/_)
 
 ; NOTE: Unlike llrl0 implementation, the values handled by the backend are not abstract values and
@@ -224,12 +225,11 @@
       (let1 target (canonicalize-target: dest (ct-defs e) generation-defs)
         (data-expander/expand! (data-expansions e) target)
         (branch-expander/expand! e target)
-        ; TODO: Heap2stack
+        (heap2stack/run! target))
 
-        ; Possible optimizations that are not implemented:
-        ; * Closure inlining: we can inline closure immediate calls like $<f>{<env>}(..)
-        ; * More escape analysis to promote heap allocations to stack allocations
-        )
+      ; Possible optimizations that are not implemented:
+      ; * Closure inlining: we can inline closure immediate calls like $<f>{<env>}(..)
+      ; * More escape analysis to promote heap allocations to stack allocations
 
       (: ~dest
          (it/filter-map

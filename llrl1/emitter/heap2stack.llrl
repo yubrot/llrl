@@ -1,0 +1,36 @@
+(import "std/ord-set" _)
+(import "~/util" _)
+(import "~/emitter/ir" _)
+(import "~/emitter/transformer" _)
+(export run!)
+
+(function (run! t) {(forall T) (-> T T) (where (Transform T))}
+  (rewrite/value (result/unwrap* never (transform ord-set/empty {(OrdSet RtId)} t))))
+
+(instance Transformer.Heap2Stack (forall Error) (Transformer (OrdSet RtId) Error)
+  (function (transformer/before-rt rt load-only-vars)
+    (match rt
+      [(rt:local (let id))
+        (ignore (ord-set/remove! id load-only-vars))]
+      [(rt:unary unary:load (rt:local _))
+        (return (ok (: cut:yes (rewrite/unchanged rt))))]
+      [(rt:binary binary:store (let val) (rt:local _))
+        (transform load-only-vars val)!
+        (return (ok (: cut:yes (rewrite/unchanged rt))))]
+      [(rt:let-var (let vars) _)
+        (for (rt-var: (let id) _ (let init)) vars
+          (when-match1 (rt:alloc location:heap _) init
+            (ord-set/insert! id load-only-vars)))]
+      [_])
+    (ok (: cut:no (rewrite/unchanged rt))))
+
+  (function (transformer/after-rt rt load-only-vars)
+    (if-match1 (rt:let-var (let vars) (let body)) rt
+      (let1 vars (ref (rewrite/unchanged vars))
+        (for (: (let i) (rt-var: (let id) (let ty) (let init))) (it/with-index (rewrite/value ~vars))
+          (when-match ([#t (ord-set/has? id load-only-vars)]
+                       [(rt:alloc location:heap (let init)) init])
+            (rewrite/make-mutable! vars)
+            (set! (rewrite/value ~vars)[i] (rt-var: id ty (rt:alloc location:stack init)))))
+        (ok (rewrite/2 rt rt:let-var ~vars (rewrite/unchanged body))))
+      (ok (rewrite/unchanged rt)))))
