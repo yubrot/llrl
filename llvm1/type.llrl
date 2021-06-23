@@ -1,13 +1,17 @@
 (import "std/s" s/_)
 (import "~/context" Context)
 (import "~/message" message/consume!)
-(export Type _.Type type/_)
+(export Type _.Type _.Type type/_)
 
-(data Type (type: Never))
+(derive (Eq) value-data Type (type: (Ptr U8)))
 
 (instance Display.Type (Display Type)
   (function (display! w a)
     (display! w (message/consume! (<print-type-to-string> a)))))
+
+(instance DebugDisplay.Type (DebugDisplay Type)
+  (function (debug-display! w a)
+    (display! w a)))
 
 (c-function <print-type-to-string> {(-> Type (Ptr U8))} "LLVMPrintTypeToString")
 

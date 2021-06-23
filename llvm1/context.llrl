@@ -1,6 +1,6 @@
-(export Context context/_ with-context)
+(export Context _.Context context/_ with-context)
 
-(data Context (context: Never))
+(derive (Eq) value-data Context (context: (Ptr U8)))
 
 (c-function context/new {(-> Context)} "LLVMContextCreate")
 (c-function context/dispose! {(-> Context unit)} "LLVMContextDispose")

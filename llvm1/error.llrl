@@ -1,6 +1,6 @@
 (export Error error/_)
 
-(data Error (error: Never))
+(value-data Error (error: (Ptr U8)))
 
 (c-function error/dispose! {(-> Error unit)} "LLVMConsumeError")
 
