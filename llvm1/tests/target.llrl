@@ -1,0 +1,16 @@
+(import "~/target" _)
+(println! "llvm1/tests/target")
+
+(println! "  target/default-triple = " target/default-triple)
+(match (target/from-triple target/default-triple)
+  [(ok (let target))
+    (println! "  (target/from-triple target/default-triple) = " target)]
+  [(err (let e))
+    (println! "  (target/from-triple target/default-triple) = " e)])
+
+(for (: (let i) (let target)) (it/with-index target/all)
+  (println! "  [" i "] " target)
+  (println! "    description = " (target/description target))
+  (println! "    has-jit? = " (target/has-jit? target))
+  (println! "    has-target-machine? = " (target/has-target-machine? target))
+  (println! "    has-asm-backend? = " (target/has-asm-backend? target)))

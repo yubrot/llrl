@@ -1,0 +1,71 @@
+(import "std/memory" ptr:_)
+(import "std/ref" ref/ptr)
+(import "~/message" message/consume!)
+(export Target _.Target target/_)
+
+(derive (Eq) value-data Target
+  (target: (Ptr U8)))
+
+(instance Display.Target (Display Target)
+  (function (display! w a)
+    (display! w (target/name a))))
+
+(instance DebugDisplay.Target (DebugDisplay Target)
+  (function (debug-display! w a)
+    (display! w a)))
+
+(function target/default-triple {String}
+  (message/consume! (<get-default-target-triple>)))
+
+(c-function <get-default-target-triple> {(-> (Ptr U8))} "LLVMGetDefaultTargetTriple")
+
+(function target/all {(Vector Target)}
+  (let ([targets vector/empty]
+        [target (ref (<get-first-target>))])
+    (while (ne? ptr:null ~target)
+      (vector/push! (target: ~target) targets)
+      (set! target (<get-next-target> ~target)))
+    targets))
+
+(c-function <get-first-target> {(-> (Ptr U8))} "LLVMGetFirstTarget")
+(c-function <get-next-target> {(-> (Ptr U8) (Ptr U8))} "LLVMGetNextTarget")
+
+(function (target/from-name? name) {(-> String (Option Target))}
+  (with1? (let ptr (ptr:non-null _)) (<get-target-from-name> (string/c-compatible-ptr name))
+    (target: ptr)))
+
+(c-function <get-target-from-name> {(-> (Ptr U8) (Ptr U8))} "LLVMGetTargetFromName")
+
+(function (target/from-triple triple) {(-> String (Result Target String))}
+  (let ([target (ref ptr:null)]
+        [error (ref ptr:null)])
+    (match (<get-target-from-triple> (string/c-compatible-ptr triple) (ref/ptr target) (ref/ptr error))
+      [0 (ok (target: ~target))]
+      [_ (err (message/consume! ~error))])))
+
+(c-function <get-target-from-triple> {(-> (Ptr U8) (Ptr (Ptr U8)) (Ptr (Ptr U8)) I32)} "LLVMGetTargetFromTriple")
+
+(function (target/name target) {(-> Target String)}
+  (string/unsafe-from-c-ptr (<get-target-name> target)))
+
+(c-function <get-target-name> {(-> Target (Ptr U8))} "LLVMGetTargetName")
+
+(function (target/description target) {(-> Target String)}
+  (string/unsafe-from-c-ptr (<get-target-description> target)))
+
+(c-function <get-target-description> {(-> Target (Ptr U8))} "LLVMGetTargetDescription")
+
+(function (target/has-jit? target) {(-> Target Bool)}
+  (ne? (<target-has-jit> target) 0))
+
+(c-function <target-has-jit> {(-> Target I32)} "LLVMTargetHasJIT")
+
+(function (target/has-target-machine? target) {(-> Target Bool)}
+  (ne? (<target-has-target-machine> target) 0))
+
+(c-function <target-has-target-machine> {(-> Target I32)} "LLVMTargetHasTargetMachine")
+
+(function (target/has-asm-backend? target) {(-> Target Bool)}
+  (ne? (<target-has-asm-backend> target) 0))
+
+(c-function <target-has-asm-backend> {(-> Target I32)} "LLVMTargetHasAsmBackend")

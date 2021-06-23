@@ -4,4 +4,5 @@
 (import "~/support" _)
 (import "~/type" _ [type type/build])
 (import "~/value" _ [const const/build])
+(import "~/target" _)
 (export _)

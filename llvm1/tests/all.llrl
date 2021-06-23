@@ -5,3 +5,5 @@
 (import "~/tests/type")
 (import "~/tests/value")
 (import "~/tests/data-layout")
+(import "~/tests/target")
+(import "~")
