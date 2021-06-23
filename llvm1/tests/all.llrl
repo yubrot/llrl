@@ -4,3 +4,4 @@
 (import "~/tests/support")
 (import "~/tests/type")
 (import "~/tests/value")
+(import "~/tests/data-layout")
