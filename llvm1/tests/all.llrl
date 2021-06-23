@@ -2,3 +2,4 @@
 (import "~/tests/message")
 (import "~/tests/error")
 (import "~/tests/support")
+(import "~/tests/type")

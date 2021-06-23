@@ -1,0 +1,242 @@
+(import "std/s" s/_)
+(import "~/context" Context)
+(import "~/message" message/consume!)
+(export Type _.Type type/_)
+
+(data Type (type: Never))
+
+(instance Display.Type (Display Type)
+  (function (display! w a)
+    (display! w (message/consume! (<print-type-to-string> a)))))
+
+(c-function <print-type-to-string> {(-> Type (Ptr U8))} "LLVMPrintTypeToString")
+
+; Type
+
+(c-function type/context {(-> Type Context)} "LLVMGetTypeContext")
+
+(function (type/sized? ty) (ne? (<is-sized> ty) 0))
+
+(c-function <is-sized> {(-> Type I32)} "LLVMTypeIsSized")
+
+(c-function type/kind {(-> Type U32)} "LLVMGetTypeKind")
+
+; Void
+
+(function (type/void? ty) (eq? (type/kind ty) 0))
+
+(c-function type/void {(-> Context Type)} "LLVMVoidTypeInContext")
+
+; Integer
+
+(function (type/integer? ty) (eq? (type/kind ty) 8))
+
+(c-function type/integer {(-> Context U32 Type)} "LLVMIntTypeInContext")
+
+(function (type/bit-width ty) {(-> Type U32)}
+  (assert (type/integer? ty) (string "type/bit-width: Not a integer type: " ty))
+  (<get-bit-width> ty))
+
+(c-function <get-bit-width> {(-> Type U32)} "LLVMGetIntTypeWidth")
+
+; FP
+
+(function (type/fp? ty) (<= 1 (type/kind ty) 6))
+(function (type/half? ty) (eq? (type/kind ty) 1))
+(function (type/float? ty) (eq? (type/kind ty) 2))
+(function (type/double? ty) (eq? (type/kind ty) 3))
+(function (type/x86-fp80? ty) (eq? (type/kind ty) 4))
+(function (type/fp128? ty) (eq? (type/kind ty) 5))
+(function (type/ppc-fp128? ty) (eq? (type/kind ty) 6))
+
+(c-function type/half {(-> Context Type)} "LLVMHalfTypeInContext")
+(c-function type/float {(-> Context Type)} "LLVMFloatTypeInContext")
+(c-function type/double {(-> Context Type)} "LLVMDoubleTypeInContext")
+(c-function type/x86-fp80 {(-> Context Type)} "LLVMX86FP80TypeInContext")
+(c-function type/fp128 {(-> Context Type)} "LLVMFP128TypeInContext")
+(c-function type/ppc-fp128 {(-> Context Type)} "LLVMPPCFP128TypeInContext")
+
+; Function
+
+(function (type/function? ty) (eq? (type/kind ty) 9))
+
+(function (type/function ret params var-arg?) {(-> Type (Array Type) Bool Type)}
+  (<function-type>
+    ret
+    (array/ptr params)
+    (conv (array/length params))
+    (if var-arg? 1 0)))
+
+(c-function <function-type> {(-> Type (Ptr Type) U32 I32 Type)} "LLVMFunctionType")
+
+(function (type/param-types ty) {(-> Type (Array Type))}
+  (assert (type/function? ty) (string "type/param-types: Not a function type: " ty))
+  (let1 buf (array/unsafe-alloc-uninitialized (conv (<count-param-types> ty)))
+    (<get-param-types> ty (array/ptr buf))
+    buf))
+
+(function (type/return-type ty) {(-> Type Type)}
+  (assert (type/function? ty) (string "type/return-type: Not a function type: " ty))
+  (<get-return-type> ty))
+
+(function (type/var-arg? ty) {(-> Type Bool)}
+  (assert (type/function? ty) (string "type/var-arg?: Not a function type: " ty))
+  (ne? (<is-var-arg> ty) 0))
+
+(c-function <count-param-types> {(-> Type U32)} "LLVMCountParamTypes")
+(c-function <get-param-types> {(-> Type (Ptr Type) unit)} "LLVMGetParamTypes")
+(c-function <get-return-type> {(-> Type Type)} "LLVMGetReturnType")
+(c-function <is-var-arg> {(-> Type I32)} "LLVMIsFunctionVarArg")
+
+; Struct
+
+(function (type/struct? ty) (eq? (type/kind ty) 10))
+
+(function (type/struct ctx elems packed?) {(-> Context (Array Type) Bool Type)}
+  (<struct-type>
+    ctx
+    (array/ptr elems)
+    (conv (array/length elems))
+    (if packed? 1 0)))
+
+(c-function <struct-type> {(-> Context (Ptr Type) U32 I32 Type)} "LLVMStructTypeInContext")
+
+(function (type/named-struct ctx name) {(-> Context String Type)}
+  (<struct-create-named> ctx (string/c-compatible-ptr name)))
+
+(c-function <struct-create-named> {(-> Context (Ptr U8) Type)} "LLVMStructCreateNamed")
+
+(function (type/literal-struct? ty) (ne? (<is-literal-struct> ty) 0))
+(function (type/opaque-struct? ty) (ne? (<is-opaque-struct> ty) 0))
+(function (type/packed-struct? ty) (ne? (<is-packed-struct> ty) 0))
+
+(c-function <is-literal-struct> {(-> Type I32)} "LLVMIsLiteralStruct")
+(c-function <is-opaque-struct> {(-> Type I32)} "LLVMIsOpaqueStruct")
+(c-function <is-packed-struct> {(-> Type I32)} "LLVMIsPackedStruct")
+
+(function (type/struct-name? ty) {(-> Type (Option String))}
+  (assert (type/struct? ty) (string "type/struct-name?: Not a struct type: " ty))
+  (when? (not (type/literal-struct? ty))
+    (string/unsafe-from-c-ptr (<get-struct-name> ty))))
+
+(c-function <get-struct-name> {(-> Type (Ptr U8))} "LLVMGetStructName")
+
+(function (type/struct-set-body! elems packed? ty) {(-> (Array Type) Bool Type Bool)}
+  (assert (type/struct? ty) (string "type/struct-set-body!: Not a struct type: " ty))
+  (if (type/opaque-struct? ty)
+    (begin
+      (<struct-set-body>
+        ty
+        (array/ptr elems)
+        (conv (array/length elems))
+        (if packed? 1 0))
+      #t)
+    #f))
+
+(c-function <struct-set-body> {(-> Type (Ptr Type) U32 I32 unit)} "LLVMStructSetBody")
+
+(function (type/struct-element-types ty) {(-> Type (Option (Array Type)))}
+  (assert (type/struct? ty) (string "type/struct-element-types: Not a struct type: " ty))
+  (when? (not (type/opaque-struct? ty))
+    (let1 buf (array/unsafe-alloc-uninitialized (conv (<count-struct-element-types> ty)))
+      (<get-struct-element-types> ty (array/ptr buf))
+      buf)))
+
+(c-function <count-struct-element-types> {(-> Type U32)} "LLVMCountStructElementTypes")
+(c-function <get-struct-element-types> {(-> Type (Ptr Type) unit)} "LLVMGetStructElementTypes")
+
+; Sequential
+
+(function (type/sequential? ty) (<= 11 (type/kind ty) 13)) ; array | vector | pointer
+
+(function (type/element-type ty) {(-> Type Type)}
+  (assert (type/sequential? ty) (string "type/element-type: Not a sequential type: " ty))
+  (<get-element-type> ty))
+
+(c-function <get-element-type> {(-> Type Type)} "LLVMGetElementType")
+
+; Array
+
+(function (type/array? ty) (eq? (type/kind ty) 11))
+
+(c-function type/array {(-> Type U32 Type)} "LLVMArrayType")
+
+(function (type/array-length ty) {(-> Type U32)}
+  (assert (type/array? ty) (string "type/array-length: Not an array type: " ty))
+  (<get-array-length> ty))
+
+(c-function <get-array-length> {(-> Type U32)} "LLVMGetArrayLength")
+
+; Pointer
+
+(function (type/pointer? ty) (eq? (type/kind ty) 12))
+
+(c-function type/pointer {(-> Type U32 Type)} "LLVMPointerType")
+
+(function (type/pointer-address-space ty) {(-> Type U32)}
+  (assert (type/pointer? ty) (string "type/pointer-address-space: Not a pointer type: " ty))
+  (<get-pointer-address-space> ty))
+
+(c-function <get-pointer-address-space> {(-> Type U32)} "LLVMGetPointerAddressSpace")
+
+; Vector
+
+(function (type/vector? ty) (eq? (type/kind ty) 13))
+
+(c-function type/vector {(-> Type U32 Type)} "LLVMVectorType")
+
+(function (type/vector-size ty) {(-> Type U32)}
+  (assert (type/vector? ty) (string "type/vector-size: Not a vector type: " ty))
+  (<get-vector-size> ty))
+
+(c-function <get-vector-size> {(-> Type U32)} "LLVMGetVectorSize")
+
+(macro (type/build s)
+  (s/match s
+    [(_ ,ctx void)
+      (ok `(,\type/void ,ctx))]
+    [(_ ,ctx i1)
+      (ok `(,\type/integer ,ctx 1))]
+    [(_ ,ctx i8)
+      (ok `(,\type/integer ,ctx 8))]
+    [(_ ,ctx i16)
+      (ok `(,\type/integer ,ctx 16))]
+    [(_ ,ctx i32)
+      (ok `(,\type/integer ,ctx 32))]
+    [(_ ,ctx i64)
+      (ok `(,\type/integer ,ctx 64))]
+    [(_ ,ctx integer ,(s:list (s:symbol "unquote") (let expr)))
+      (ok `(,\type/integer ,ctx ,expr))]
+    [(_ ,ctx float)
+      (ok `(,\type/float ,ctx))]
+    [(_ ,ctx double)
+      (ok `(,\type/double ,ctx))]
+
+    [(_ ,ctx (-> ,(s:list (s:symbol "unquote-splicing") (let expr)) ,ret))
+      (let ([tmp-args (gensym)]
+            [tmp-ret (gensym)])
+        (ok
+          `(let ([,tmp-args ,expr]
+                 [,tmp-ret (,\type/build ,ctx ,ret)])
+            (,\type/build ,ctx ,tmp-args ,tmp-ret))))]
+    [(_ ,ctx (-> ,@args-ret))
+      (if-match1 (some (: (let args) (let ret))) (s/unsnoc args-ret)!
+        (let ([tmp-args (gensym)]
+              [tmp-ret (gensym)])
+          (ok
+            `(let ([,tmp-args (,\array ,@(s/map [^1 `(,\type/build ,ctx ,%1)] args)!)]
+                   [,tmp-ret (,\type/build ,ctx ,ret)])
+              (,\type/function ,tmp-ret ,tmp-args #f))))
+        (err "Expected (type/build ctx (-> arg ... ret))"))]
+
+    [(_ ,ctx (: ,(s:list (s:symbol "unquote-splicing") (let expr))))
+      (ok `(,\type/struct ,ctx ,expr #f))]
+    [(_ ,ctx (: ,@tys))
+      (ok `(,\type/struct ,ctx (,\array ,@(s/map [^1 `(,\type/build ,ctx ,%1)] tys)!) #f))]
+
+    [(_ ,ctx (array ,ty ,(s:list (s:symbol "unquote") (let size))))
+      (ok `(,\type/array (,\type/build ,ctx ,ty) ,size))]
+    [(_ ,ctx (pointer ,ty))
+      (ok `(,\type/pointer (,\type/build ,ctx ,ty) 0))]
+    [_
+      (err "Expected (type/build ctx type-form)")]))

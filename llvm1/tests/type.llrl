@@ -1,0 +1,91 @@
+(import "~/type" _)
+(import "~/context" with-context)
+(println! "llvm1/tests/type")
+
+(with-context (lambda (ctx)
+  (assert-eq? #t (|> (type/void ctx) type/void?))
+  (assert-eq? #f (|> (type/void ctx) type/integer?))
+  (assert-eq? #t (|> (type/integer ctx 1) type/integer?))
+  (assert-eq? #f (|> (type/integer ctx 1) type/fp?))))
+
+(with-context (lambda (ctx)
+  (assert-eq? #f (|> (type/void ctx) type/sized?))
+  (assert-eq? #f (|> (type/function (type/void ctx) (array) #f) type/sized?))
+  (assert-eq? #t (|> (type/pointer (type/function (type/void ctx) (array) #f) 0) type/sized?))))
+
+(with-context (lambda (ctx)
+  (assert-eq? 4 (|> (type/integer ctx 4) type/bit-width))
+  (assert-eq? 32 (|> (type/integer ctx 32) type/bit-width))))
+
+(with-context (lambda (ctx)
+  (let1 ty (type/function (type/float ctx) (array (type/integer ctx 32) (type/integer ctx 64)) #f)
+    (assert-eq? "float" (string (type/return-type ty)))
+    (assert-eq? "i32" (string (get (type/param-types ty)[0])))
+    (assert-eq? "i64" (string (get (type/param-types ty)[1])))
+    (assert-eq? #f (type/var-arg? ty)))))
+
+(with-context (lambda (ctx)
+  (let* ([n (type/integer ctx 32)]
+         [m (type/integer ctx 64)]
+         [a (type/struct ctx (array n) #f)]
+         [b (type/struct ctx (array n m) #t)]
+         [c (type/named-struct ctx "c")]
+         [d (type/named-struct ctx "d")]
+         [e (type/named-struct ctx "e")])
+    (assert-eq? #t (type/struct-set-body! (array) #f d))
+    (assert-eq? #t (type/struct-set-body! (array n) #t e))
+
+    (assert-eq? #t (type/literal-struct? a))
+    (assert-eq? #t (type/literal-struct? b))
+    (assert-eq? #f (type/literal-struct? c))
+    (assert-eq? #f (type/literal-struct? d))
+    (assert-eq? #f (type/literal-struct? e))
+
+    (assert-eq? #f (type/opaque-struct? a))
+    (assert-eq? #t (type/opaque-struct? c))
+    (assert-eq? #f (type/opaque-struct? e))
+
+    (assert-eq? #f (type/packed-struct? a))
+    (assert-eq? #t (type/packed-struct? b))
+    (assert-eq? #f (type/packed-struct? d))
+    (assert-eq? #t (type/packed-struct? e))
+
+    (assert-is? none (type/struct-element-types c))
+    (if-match1 (some (let elems)) (type/struct-element-types b)
+      (begin
+        (assert-eq? 2 (array/length elems))
+        (assert-eq? "i32" (string (get elems[0])))
+        (assert-eq? "i64" (string (get elems[1]))))
+      (assert #f "(type/struct-element-types b)")))))
+
+(with-context (lambda (ctx)
+  (let1 ty (type/array (type/integer ctx 32) 4)
+    (assert-eq? 4 (type/array-length ty))
+    (assert-eq? "i32" (string (type/element-type ty))))))
+
+(with-context (lambda (ctx)
+  (let1 ty (type/pointer (type/float ctx) 0)
+    (assert-eq? 0 (type/pointer-address-space ty))
+    (assert-eq? "float" (string (type/element-type ty))))))
+
+(with-context (lambda (ctx)
+  (let1 ty (type/vector (type/float ctx) 4)
+    (assert-eq? 4 (type/vector-size ty))
+    (assert-eq? "float" (string (type/element-type ty))))))
+
+(with-context (lambda (ctx)
+  (assert-eq? "i1" (string (type/build ctx i1)))
+  (assert-eq? "i8" (string (type/build ctx i8)))
+  (assert-eq? "i16" (string (type/build ctx i16)))
+  (assert-eq? "i32" (string (type/build ctx i32)))
+  (assert-eq? "i64" (string (type/build ctx i64)))
+  (assert-eq? "float" (string (type/build ctx float)))
+  (assert-eq? "double" (string (type/build ctx double)))
+  (assert-eq? "i1 ()" (string (type/build ctx (-> i1))))
+  (assert-eq? "i32 (i8, i16)" (string (type/build ctx (-> i8 i16 i32))))
+  (assert-eq? "i64 (i32) (i16 (i8))" (string (type/build ctx (-> (-> i8 i16) (-> i32 i64)))))
+  (assert-eq? "{}" (string (type/build ctx (:))))
+  (assert-eq? "i8*" (string (type/build ctx (pointer i8))))
+  (assert-eq? "i16**" (string (type/build ctx (pointer (pointer i16)))))
+  (assert-eq? "[4 x i8]" (string (type/build ctx (array i8 ,4))))
+  (assert-eq? "[4 x [2 x i16]]" (string (type/build ctx (array (array i16 ,2) ,4))))))
