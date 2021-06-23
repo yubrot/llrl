@@ -3,3 +3,4 @@
 (import "~/tests/error")
 (import "~/tests/support")
 (import "~/tests/type")
+(import "~/tests/value")

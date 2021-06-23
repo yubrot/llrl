@@ -1,0 +1,91 @@
+(import "~/value" _)
+(import "~/type" _)
+(import "~/context" with-context)
+(println! "llvm1/tests/value")
+
+(with-context (lambda (ctx)
+  (let* ([ty (type/integer ctx 8)]
+         [a (const/integer ty 100 #f)]
+         [b (const/null ty)]
+         [c (const/integer-all-ones ty)])
+    (assert-eq? ty (value/type a))
+    (assert-eq? #t (value/const-integer? a))
+    (assert-eq? #f (value/const-fp? a))
+    (assert-eq? 100 (const/integer-sext-value a))
+    (assert-eq? 0 (const/integer-sext-value b))
+    (assert-eq? -1 (const/integer-sext-value c))
+    (assert-eq? 100 (const/integer-zext-value a))
+    (assert-eq? 0 (const/integer-zext-value b))
+    (assert-eq? 255 (const/integer-zext-value c))
+    (assert-eq? #f (value/const-null? a))
+    (assert-eq? #t (value/const-null? b))
+    (assert-eq? #f (value/const-undef? a))
+    (assert-eq? #f (value/const-undef? b))
+    (assert-eq? "i8 -1" (string c)))))
+
+(with-context (lambda (ctx)
+  (let* ([ty (type/double ctx)]
+         [a (const/fp ty 10000.0)]
+         [b (const/null ty)])
+    (assert-eq? ty (value/type a))
+    (assert-eq? #f (value/const-integer? a))
+    (assert-eq? #t (value/const-fp? a))
+    (assert-eq? 10000.0 (const/fp-value a))
+    (assert-eq? 0 (const/fp-value b))
+    (assert-eq? #f (value/const-null? a))
+    (assert-eq? #t (value/const-null? b))
+    (assert-eq? #f (value/const-undef? a))
+    (assert-eq? #f (value/const-undef? b)))))
+
+(with-context (lambda (ctx)
+  (let* ([a (const/string ctx "Hello" #f)]
+         [b (const/string ctx "World" #t)]
+         [ty (type/integer ctx 32)]
+         [c (const/array ty (array (const/integer ty 5 #f) (const/integer ty 10 #f) (const/integer ty 15 #f)))]
+         [d (const/null (type/array ty 10))])
+    (assert-eq? (type/build ctx (array i8 ,5)) (value/type a))
+    (assert-eq? (ok "Hello") (const/string-value a))
+    (assert-eq? (array 87 111 114 108 100 0) (const/data-array-value b))
+    (assert-eq? "[5 x i8] c\"Hello\"" (string a))
+    (assert-eq? "[6 x i8] c\"World\\00\"" (string b))
+    (assert-eq? "[3 x i32] [i32 5, i32 10, i32 15]" (string c))
+    (assert-eq? "[10 x i32] zeroinitializer" (string d)))))
+
+(with-context (lambda (ctx)
+  (let* ([ty (type/named-struct ctx "hello")]
+         [_ (type/struct-set-body! (array (type/integer ctx 8) (type/integer ctx 16) (type/integer ctx 32)) #f ty)]
+         [a (const/struct ctx (array) #f)]
+         [b (const/null (type/build ctx (: i32 double)))]
+         [c (const/named-struct ty (array (const/integer (type/integer ctx 8) 10 #f) (const/integer (type/integer ctx 16) 20 #f) (const/integer (type/integer ctx 32) 30 #f)))])
+    (assert-eq? (type/build ctx (:)) (value/type a))
+    (assert-eq? "{} zeroinitializer" (string a))
+    (assert-eq? "{ i32, double } zeroinitializer" (string b))
+    (assert-eq? "%hello { i8 10, i16 20, i32 30 }" (string c)))))
+
+(with-context (lambda (ctx)
+  (let* ([a (const/vector (array
+              (const/integer (type/integer ctx 8) 1 #f)
+              (const/integer (type/integer ctx 8) 2 #f)
+              (const/integer (type/integer ctx 8) 3 #f)
+              (const/integer (type/integer ctx 8) 4 #f)))]
+         [b (const/null (type/vector (type/integer ctx 16) 8))])
+    (assert-eq? "<4 x i8> <i8 1, i8 2, i8 3, i8 4>" (string a))
+    (assert-eq? "<8 x i16> zeroinitializer" (string b)))))
+
+(with-context (lambda (ctx)
+  (assert-eq? "i1 false" (string (const/build ctx #f)))
+  (assert-eq? "i1 true" (string (const/build ctx #t)))
+  (assert-eq? "i8 100" (string (const/build ctx (u8 ,100))))
+  (assert-eq? "i16 -123" (string (const/build ctx (i16 ,-123))))
+  (assert-eq? "i64 102030405060" (string (const/build ctx (u64 ,102030405060))))
+  (assert-eq? "double 3.500000e+00" (string (const/build ctx (double ,3.5))))
+  (assert-eq? "{} zeroinitializer" (string (const/build ctx (:))))
+  (assert-eq? "{ i32, i32, i32 } { i32 1, i32 10, i32 100 }" (string (const/build ctx (: (i32 ,1) (i32 ,10) (i32 ,100)))))
+  (assert-eq? "{ { i8, i16 } } { { i8, i16 } { i8 1, i16 2 } }" (string (const/build ctx (: (: (i8 ,1) (i16 ,2))))))
+  (assert-eq? "[3 x i32] [i32 100, i32 -1000, i32 10000]" (string (const/build ctx (array (i32 ,100) (i32 ,-1000) (i32 ,10000)))))
+  (assert-eq? "[14 x i8] c\"Hello, World!\\00\"" (string (const/build ctx "Hello, World!")))
+  (assert-eq? "[4 x i8] zeroinitializer" (string (const/build ctx (null (array i8 ,4)))))
+  (assert-eq? "i8* null" (string (const/build ctx (null (pointer i8)))))
+  (assert-eq? "i8* undef" (string (const/build ctx (undef (pointer i8)))))
+  (const/build ctx (size-of (pointer i8)))
+  (const/build ctx (bit-cast i16 (undef (: i8 i8))))))

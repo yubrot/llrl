@@ -195,8 +195,13 @@
 
 (c-function <get-vector-size> {(-> Type U32)} "LLVMGetVectorSize")
 
+; Builder
+
 (macro (type/build s)
   (s/match s
+    [(_ ,ctx ,(s:list (s:symbol "unquote") (let expr)))
+      (ok expr)]
+
     [(_ ,ctx void)
       (ok `(,\type/void ,ctx))]
     [(_ ,ctx i1)
@@ -243,4 +248,4 @@
     [(_ ,ctx (pointer ,ty))
       (ok `(,\type/pointer (,\type/build ,ctx ,ty) 0))]
     [_
-      (err "Expected (type/build ctx type-form)")]))
+      (err (string "Expected (type/build ctx type-form) but got " s))]))

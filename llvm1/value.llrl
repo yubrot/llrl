@@ -1,0 +1,437 @@
+(import "std/s" s/_)
+(import "std/memory" ptr:_)
+(import "std/ref" ref/ptr)
+(import "~/context" Context)
+(import "~/message" message/consume!)
+(import "~/type" _)
+(export Value _.Value value/_ const/_ global-value/_ function/_ phi-node/_)
+(export BasicBlock _.BasicBlock basic-block/_)
+
+(value-data Value (value: (Ptr U8)))
+
+(instance Display.Value (Display Value)
+  (function (display! w a)
+    (display! w (message/consume! (<print-value-to-string> a)))))
+
+(c-function <print-value-to-string> {(-> Value (Ptr U8))} "LLVMPrintValueToString")
+
+; Value
+
+(c-function value/type {(-> Value Type)} "LLVMTypeOf")
+
+(function (value/context value) {(-> Value Context)}
+  (|> value value/type type/context))
+
+(function (value/name value) {(-> Value (Option String))}
+  (let* ([length (ref 0)]
+         [ptr (<get-value-name> value (ref/ptr length))])
+    (string/from-bytes? (array/unsafe-from-ptr ptr (conv ~length)))))
+
+(function (value/set-name! name value) {(-> String Value unit)}
+  (<set-value-name> value (string/unsafe-ptr name) (string/length name)))
+
+(c-function <get-value-name> {(-> Value (Ptr U64) (Ptr U8))} "LLVMGetValueName2")
+(c-function <set-value-name> {(-> Value (Ptr U8) U64 unit)} "LLVMSetValueName2")
+
+; Constant
+
+(function (value/const? value) (ne? (<is-constant> value) 0))
+(function (value/const-null? value) (ne? (<is-null> value) 0))
+(function (value/const-undef? value) (ne? (<is-undef> value) 0))
+
+(c-function <is-constant> {(-> Value I32)} "LLVMIsConstant")
+(c-function <is-null> {(-> Value I32)} "LLVMIsNull")
+(c-function <is-undef> {(-> Value I32)} "LLVMIsUndef")
+
+(c-function const/null {(-> Type Value)} "LLVMConstNull")
+(c-function const/undef {(-> Type Value)} "LLVMGetUndef")
+(c-function const/align-of {(-> Type Value)} "LLVMAlignOf")
+(c-function const/size-of {(-> Type Value)} "LLVMSizeOf")
+
+(function (const/bit-cast ty value) {(-> Type Value Value)}
+  (assert (value/const? value) "const/bit-cast: Not a constant")
+  (<const-bit-cast> value ty))
+
+(function (const/trunc-or-bit-cast ty value) {(-> Type Value Value)}
+  (assert (value/const? value) "const/trunc-or-bit-cast: Not a constant")
+  (<const-trunc-or-bit-cast> value ty))
+
+(function (const/int-to-ptr ty value) {(-> Type Value Value)}
+  (assert (value/const? value) "const/int-to-ptr: Not a constant")
+  (<const-int-to-ptr> value ty))
+
+(function (const/ptr-to-int ty value) {(-> Type Value Value)}
+  (assert (value/const? value) "const/ptr-to-int: Not a constant")
+  (<const-ptr-to-int> value ty))
+
+(c-function <const-bit-cast> {(-> Value Type Value)} "LLVMConstBitCast")
+(c-function <const-trunc-or-bit-cast> {(-> Value Type Value)} "LLVMConstTruncOrBitCast")
+(c-function <const-int-to-ptr> {(-> Value Type Value)} "LLVMConstIntToPtr")
+(c-function <const-ptr-to-int> {(-> Value Type Value)} "LLVMConstPtrToInt")
+
+; Constant integer
+
+(function (value/const-integer? value) (ne? (<isa-constant-int> value) ptr:null))
+
+(c-function <isa-constant-int> {(-> Value (Ptr U8))} "LLVMIsAConstantInt")
+
+(function (const/bool ctx value) {(-> Context Bool Value)}
+  (const/integer (type/integer ctx 1) (if value 1 0) #f))
+
+(function (const/integer ty value signed?) {(-> Type U64 Bool Value)}
+  (assert (type/integer? ty) "const/integer: Not an integer type")
+  (<const-int> ty value (if signed? 1 0)))
+
+(c-function <const-int> {(-> Type U64 I32 Value)} "LLVMConstInt")
+
+(function (const/integer-all-ones ty) {(-> Type Value)}
+  (assert (type/integer? ty) "const/integer: Not an integer type")
+  (<const-integer-all-ones> ty))
+
+(c-function <const-integer-all-ones> {(-> Type Value)} "LLVMConstAllOnes")
+
+(function (const/integer-sext-value value) {(-> Value I64)}
+  (assert (value/const-integer? value) "const/integer-sext-value: Not a constant int")
+  (<const-int-get-sext-value> value))
+
+(c-function <const-int-get-sext-value> {(-> Value I64)} "LLVMConstIntGetSExtValue")
+
+(function (const/integer-zext-value value) {(-> Value U64)}
+  (assert (value/const-integer? value) "const/integer-zext-value: Not a constant int")
+  (<const-int-get-zext-value> value))
+
+(c-function <const-int-get-zext-value> {(-> Value U64)} "LLVMConstIntGetZExtValue")
+
+; Constant FP
+
+(function (value/const-fp? value) (ne? (<isa-constant-fp> value) ptr:null))
+
+(c-function <isa-constant-fp> {(-> Value (Ptr U8))} "LLVMIsAConstantFP")
+
+(function (const/fp ty value) {(-> Type F64 Value)}
+  (assert (type/fp? ty) "const/integer: Not a FP type")
+  (<const-real> ty value))
+
+(c-function <const-real> {(-> Type F64 Value)} "LLVMConstReal")
+
+(function (const/fp-value value) {(-> Value F64)}
+  (assert (value/const-fp? value) "const/fp-value: Not a constant FP")
+  (let1 tmp (ref 0)
+    (<const-real-get-double> value (ref/ptr tmp))))
+
+(c-function <const-real-get-double> {(-> Value (Ptr I32) F64)} "LLVMConstRealGetDouble")
+
+; Constant data array
+
+(function (value/const-data-array? value) (ne? (<isa-constant-data-array> value) ptr:null))
+
+(c-function <isa-constant-data-array> {(-> Value (Ptr U8))} "LLVMIsAConstantDataArray")
+
+(function (const/data-array ctx s null-terminate?) {(-> Context (Array U8) Bool Value)}
+  (<const-string>
+    ctx
+    (array/ptr s)
+    (conv (array/length s))
+    (if null-terminate? 0 1)))
+
+(c-function <const-string> {(-> Context (Ptr U8) U32 I32 Value)} "LLVMConstStringInContext")
+
+(function (const/data-array-value value) {(-> Value (Array U8))}
+  (assert (value/const-data-array? value) "const/data-array-value: Not a constant data array")
+  (let* ([length (ref 0)]
+         [ptr (<get-as-string> value (ref/ptr length))])
+    (shallow-copy (array/unsafe-from-ptr ptr (conv ~length)))))
+
+(c-function <get-as-string> {(-> Value (Ptr U64) (Ptr U8))} "LLVMGetAsString")
+
+(function (const/string ctx s null-terminate?) {(-> Context String Bool Value)}
+  (const/data-array ctx (string/unsafe-array s) null-terminate?))
+
+(function (const/string-value value) {(-> Value (Result String (Array U8)))}
+  (let1 buf (const/data-array-value value)
+    (if (string/valid-sequence? buf)
+      (ok (string/unsafe-from-array buf))
+      (err buf))))
+
+; Constant struct
+
+(function (value/const-struct? value) (ne? (<isa-constant-struct> value) ptr:null))
+
+(c-function <isa-constant-struct> {(-> Value (Ptr U8))} "LLVMIsAConstantStruct")
+
+(function (const/struct ctx consts packed?) {(-> Context (Array Value) Bool Value)}
+  (assert (it/all? value/const? consts) "const/struct: Not a constant")
+  (<const-struct>
+    ctx
+    (array/ptr consts)
+    (conv (array/length consts))
+    (if packed? 1 0)))
+
+(c-function <const-struct> {(-> Context (Ptr Value) U32 I32 Value)} "LLVMConstStructInContext")
+
+(function (const/named-struct ty consts) {(-> Type (Array Value) Value)}
+  (assert (not (type/literal-struct? ty)) "const/named-struct: Not a named struct")
+  (assert (it/all? value/const? consts) "const/named-struct: Not a constant")
+  (<const-named-struct>
+    ty
+    (array/ptr consts)
+    (conv (array/length consts))))
+
+(c-function <const-named-struct> {(-> Type (Ptr Value) U32 Value)} "LLVMConstNamedStruct")
+
+; Constant array
+
+(function (value/const-array? value) (ne? (<isa-constant-array> value) ptr:null))
+
+(c-function <isa-constant-array> {(-> Value (Ptr U8))} "LLVMIsAConstantArray")
+
+(function (const/array elem-ty consts) {(-> Type (Array Value) Value)}
+  (assert (it/all? value/const? consts) "const/array: Not a constant")
+  (<const-array>
+    elem-ty
+    (array/ptr consts)
+    (conv (array/length consts))))
+
+(c-function <const-array> {(-> Type (Ptr Value) U32 Value)} "LLVMConstArray")
+
+; Constant vector
+
+(function (value/const-vector? value) (ne? (<isa-constant-vector> value) ptr:null))
+
+(c-function <isa-constant-vector> {(-> Value (Ptr U8))} "LLVMIsAConstantVector")
+
+(function (const/vector consts) {(-> (Array Value) Value)}
+  (assert (it/all? value/const? consts) "const/array: Not a constant")
+  (<const-vector>
+    (array/ptr consts)
+    (conv (array/length consts))))
+
+(c-function <const-vector> {(-> (Ptr Value) U32 Value)} "LLVMConstVector")
+
+; Global value
+
+(function (value/global-value? value) (ne? (<isa-global-value> value) ptr:null))
+
+(c-function <isa-global-value> {(-> Value (Ptr U8))} "LLVMIsAGlobalValue")
+
+(function (global-value/declaration? value) {(-> Value Bool)}
+  (assert (value/global-value? value) "global-value/declaration?: Not a global value")
+  (ne? (<is-declaration> value) 0))
+
+(c-function <is-declaration> {(-> Value I32)} "LLVMIsDeclaration")
+
+(function (global-value/linkage value) {(-> Value Linkage)}
+  (assert (value/global-value? value) "global-value/linkage: Not a global value")
+  (<get-linkage> value))
+
+(function (global-value/set-linkage! linkage value) {(-> Linkage Value unit)}
+  (assert (value/global-value? value) "global-value/set-linkage!: Not a global value")
+  (<set-linkage> value linkage))
+
+(c-function <get-linkage> {(-> Value Linkage)} "LLVMGetLinkage")
+(c-function <set-linkage> {(-> Value Linkage unit)} "LLVMSetLinkage")
+
+; TODO: global-value/{section,value-type,alignment}
+
+(derive (Eq Ord DebugDisplay Hash Default) value-data Linkage (linkage: U32))
+
+(function linkage/external (linkage: 0))
+(function linkage/internal (linkage: 8))
+(function linkage/private (linkage: 9))
+
+(function (global-value/visibility value) {(-> Value Visibility)}
+  (assert (value/global-value? value) "global-value/visibility: Not a global value")
+  (<get-visibility> value))
+
+(function (global-value/set-visibility! visibility value) {(-> Visibility Value unit)}
+  (assert (value/global-value? value) "global-value/set-visibility!: Not a global value")
+  (<set-visibility> value visibility))
+
+(c-function <get-visibility> {(-> Value Visibility)} "LLVMGetVisibility")
+(c-function <set-visibility> {(-> Value Visibility unit)} "LLVMSetVisibility")
+
+(derive (Eq Ord DebugDisplay Hash Default) value-data Visibility (visibility: U32))
+
+(function visibility/default (visibility: 0))
+(function visibility/hidden (visibility: 1))
+(function visibility/protected (visibility: 2))
+
+; Global variable
+
+(function (value/global-variable? value) (ne? (<isa-global-variable> value) ptr:null))
+
+(c-function <isa-global-variable> {(-> Value (Ptr U8))} "LLVMIsAGlobalVariable")
+
+(function (global-variable/initializer gv) {(-> Value (Option Value))}
+  (assert (value/global-variable? gv) "global-variable/initializer: Not a global variable")
+  (let1 ptr (<get-initializer> gv)
+    (when? (ne? ptr ptr:null) (value: ptr))))
+
+(c-function <get-initializer> {(-> Value (Ptr U8))} "LLVMGetInitializer")
+
+(function (global-variable/set-initializer! init gv) {(-> (Option Value) Value unit)}
+  (assert (value/global-variable? gv) "global-variable/set-initializer!: Not a global variable")
+  (if-match1 (some (let init (value: (let ptr)))) init
+    (begin
+      (assert (value/const? init) "global-variable/set-initializer!: Not a constant")
+      (<set-initializer> gv ptr))
+    (<set-initializer> gv ptr:null)))
+
+(c-function <set-initializer> {(-> Value (Ptr U8) unit)} "LLVMSetInitializer")
+
+; TODO: global-variable/{thread-local?,constant?,externally-initialized?}
+
+(function (global-variable/erase-from-parent! gv) {(-> Value unit)}
+  (assert (value/global-variable? gv) "global-variable/erase-from-parent!: Not a global variable")
+  (<delete-global> gv))
+
+(c-function <delete-global> {(-> Value unit)} "LLVMDeleteGlobal")
+
+; TODO: Global Aliases
+
+; Function
+
+(function (value/function? value) (ne? (<isa-function> value) ptr:null))
+
+(c-function <isa-function> {(-> Value (Ptr U8))} "LLVMIsAFunction")
+
+; TODO: function/{personality-fn,call-conv,gc,...}
+
+(function (function/params f) {(-> Value (Array Value))}
+  (assert (value/function? f) "value/params: Not a function")
+  (let1 buf (array/unsafe-alloc-uninitialized (conv (<count-params> f)))
+    (<get-params> f (array/ptr buf))
+    buf))
+
+(c-function <count-params> {(-> Value U32)} "LLVMCountParams")
+(c-function <get-params> {(-> Value (Ptr Value) unit)} "LLVMGetParams")
+
+(function (function/basic-blocks f) {(-> Value (Array BasicBlock))}
+  (assert (value/function? f) "value/basic-blocks: Not a function")
+  (let1 buf (array/unsafe-alloc-uninitialized (conv (<count-basic-blocks> f)))
+    (<get-basic-blocks> f (array/ptr buf))
+    buf))
+
+(function (function/entry-block? f) {(-> Value (Option BasicBlock))}
+  (assert (value/function? f) "value/entry-block?: Not a function")
+  (when? (ne? (<count-basic-blocks> f) 0) (<get-entry-basic-block> f)))
+
+(function (function/append-block! name f) {(-> String Value BasicBlock)}
+  (assert (value/function? f) "value/append-block!: Not a function")
+  (<append-basic-block> (value/context f) f (string/c-compatible-ptr name)))
+
+(c-function <count-basic-blocks> {(-> Value U32)} "LLVMCountBasicBlocks")
+(c-function <get-basic-blocks> {(-> Value (Ptr BasicBlock) unit)} "LLVMGetBasicBlocks")
+(c-function <get-entry-basic-block> {(-> Value BasicBlock)} "LLVMGetEntryBasicBlock")
+(c-function <append-basic-block> {(-> Context Value (Ptr U8) BasicBlock)} "LLVMAppendBasicBlockInContext")
+
+(function (function/erase-from-parent! f) {(-> Value unit)}
+  (assert (value/function? f) "function/erase-from-parent!: Not a function")
+  (<delete-function> f))
+
+(c-function <delete-function> {(-> Value unit)} "LLVMDeleteFunction")
+
+; Phi node
+
+(function (value/phi-node? value) (ne? (<isa-phi-node> value) ptr:null))
+
+(c-function <isa-phi-node> {(-> Value (Ptr U8))} "LLVMIsAPHINode")
+
+(function (phi-node/add-incoming! value bb phi-node) {(-> Value BasicBlock Value unit)}
+  (assert (value/phi-node? phi-node) "phi-node/add-incoming!: Not a PHI node")
+  (<add-incoming> phi-node (ptr:non-null value) (ptr:non-null bb) 1))
+
+(c-function <add-incoming> {(-> Value (Ptr Value) (Ptr BasicBlock) U32 unit)} "LLVMAddIncoming")
+
+; Basic block
+
+(value-data BasicBlock (bb: (Ptr U8)))
+
+(instance Display.BasicBlock (Display BasicBlock)
+  (function (display! w a)
+    (display! w (basic-block/name a))))
+
+(function (basic-block/context bb) {(-> BasicBlock Context)}
+  (|> bb basic-block/parent value/context))
+
+(c-function basic-block/parent {(-> BasicBlock Value)} "LLVMGetBasicBlockParent")
+
+(function (basic-block/name bb) {(-> BasicBlock String)}
+  (string/unsafe-from-c-ptr (<get-basic-block-name> bb)))
+
+(c-function <get-basic-block-name> {(-> BasicBlock (Ptr U8))} "LLVMGetBasicBlockName")
+
+(c-function basic-block/erase-from-parent! {(-> BasicBlock unit)} "LLVMDeleteBasicBlock")
+
+; Builder
+
+(macro (const/build s)
+  (s/match s
+    [(_ ,ctx ,(s:list (s:symbol "unquote") (let expr)))
+      (ok expr)]
+    [(_ ,ctx #t)
+      (ok `(,\const/bool ,ctx #t))]
+    [(_ ,ctx #f)
+      (ok `(,\const/bool ,ctx #f))]
+    [(_ ,ctx ,(let s (s:string _)))
+      (ok `(,\const/string ,ctx ,s #t))]
+
+    [(_ ,ctx (bool ,(s:list (s:symbol "unquote") (let value))))
+      (ok `(,\const/bool ,ctx ,value))]
+    [(_ ,ctx (i8 ,(s:list (s:symbol "unquote") (let value))))
+      (ok `(,\const/integer (,\type/integer ,ctx 8) (,\conv-from ,\I8 ,value) #t))]
+    [(_ ,ctx (i16 ,(s:list (s:symbol "unquote") (let value))))
+      (ok `(,\const/integer (,\type/integer ,ctx 16) (,\conv-from ,\I16 ,value) #t))]
+    [(_ ,ctx (i32 ,(s:list (s:symbol "unquote") (let value))))
+      (ok `(,\const/integer (,\type/integer ,ctx 32) (,\conv-from ,\I32 ,value) #t))]
+    [(_ ,ctx (i64 ,(s:list (s:symbol "unquote") (let value))))
+      (ok `(,\const/integer (,\type/integer ,ctx 64) (,\conv-from ,\I64 ,value) #t))]
+    [(_ ,ctx (u8 ,(s:list (s:symbol "unquote") (let value))))
+      (ok `(,\const/integer (,\type/integer ,ctx 8) (,\conv-from ,\U8 ,value) #f))]
+    [(_ ,ctx (u16 ,(s:list (s:symbol "unquote") (let value))))
+      (ok `(,\const/integer (,\type/integer ,ctx 16) (,\conv-from ,\U16 ,value) #f))]
+    [(_ ,ctx (u32 ,(s:list (s:symbol "unquote") (let value))))
+      (ok `(,\const/integer (,\type/integer ,ctx 32) (,\conv-from ,\U32 ,value) #f))]
+    [(_ ,ctx (u64 ,(s:list (s:symbol "unquote") (let value))))
+      (ok `(,\const/integer (,\type/integer ,ctx 64) (,\conv-from ,\U64 ,value) #f))]
+    [(_ ,ctx (float ,(s:list (s:symbol "unquote") (let value))))
+      (ok `(,\const/fp (,\type/float ,ctx) (,\conv-from ,\F32 ,value)))]
+    [(_ ,ctx (double ,(s:list (s:symbol "unquote") (let value))))
+      (ok `(,\const/fp (,\type/double ,ctx) ,value))]
+
+    [(_ ,ctx (: ,(s:list (s:symbol "unquote-splicing") (let expr))))
+      (ok `(,\const/struct ,ctx ,expr #f))]
+    [(_ ,ctx (: ,@elems))
+      (ok `(,\const/struct ,ctx (,\array ,@(s/map [^1 `(,\const/build ,ctx ,%1)] elems)!) #f))]
+
+    [(_ ,ctx (array))
+      (err "const/build: array requires at least one constant to determine the type")]
+    [(_ ,ctx (array ,elem ,@elems))
+      (ok
+        (let1 tmp-elem (gensym)
+          `(let ([,tmp-elem (,\const/build ,ctx ,elem)])
+            (,\const/array (,\value/type ,tmp-elem) (,\array ,tmp-elem ,@(s/map [^1 `(,\const/build ,ctx ,%1)] elems)!)))))]
+
+    [(_ ,ctx (string ,(s:list (s:symbol "unquote") (let expr))))
+      (ok `(,\const/string ,ctx ,expr #t))]
+
+    [(_ ,ctx (null ,ty))
+      (ok `(,\const/null (,\type/build ,ctx ,ty)))]
+    [(_ ,ctx (undef ,ty))
+      (ok `(,\const/undef (,\type/build ,ctx ,ty)))]
+    [(_ ,ctx (align-of ,ty))
+      (ok `(,\const/align-of (,\type/build ,ctx ,ty)))]
+    [(_ ,ctx (size-of ,ty))
+      (ok `(,\const/size-of (,\type/build ,ctx ,ty)))]
+
+    [(_ ,ctx (bit-cast ,ty ,c))
+      (ok `(,\const/bit-cast (,\type/build ,ctx ,ty) (,\const/build ,ctx ,c)))]
+    [(_ ,ctx (trunc-or-bit-cast ,ty ,c))
+      (ok `(,\const/trunc-or-bit-cast (,\type/build ,ctx ,ty) (,\const/build ,ctx ,c)))]
+    [(_ ,ctx (int-to-ptr ,ty ,c))
+      (ok `(,\const/int-to-ptr (,\type/build ,ctx ,ty) (,\const/build ,ctx ,c)))]
+    [(_ ,ctx (ptr-to-int ,ty ,c))
+      (ok `(,\const/ptr-to-int (,\type/build ,ctx ,ty) (,\const/build ,ctx ,c)))]
+
+    [_
+      (err (string "Expected (const/build ctx const-form) but got " s))]))
