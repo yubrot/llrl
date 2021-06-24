@@ -1,0 +1,100 @@
+(import "std/memory" ptr:_)
+(import "std/ref" ref/ptr)
+(import "~/message" message/consume!)
+(import "~/data-layout" DataLayout)
+(import "~/module" Module)
+(import "~/target" Target)
+(export OptLevel _.OptLevel opt-level/_)
+(export RelocMode _.RelocMode reloc-mode/_)
+(export CodeModel _.CodeModel code-model/_)
+(export CodeGenFileType _.CodeGenFileType code-gen-file-type/_)
+(export TargetMachine _.TargetMachine target-machine/_)
+
+(derive (Eq Ord DebugDisplay Hash) value-data OptLevel (opt-level: U32))
+
+(instance Default.OptLevel (Default OptLevel) (function default opt-level/default))
+
+(function opt-level/none (opt-level: 0))
+(function opt-level/less (opt-level: 1))
+(function opt-level/default (opt-level: 2))
+(function opt-level/aggressive (opt-level: 3))
+
+(function (opt-level/value opt-level)
+  (with1 (opt-level: (let value)) opt-level
+    value))
+
+(derive (Eq Ord DebugDisplay Hash Default) value-data RelocMode (reloc-mode: U32))
+
+(function reloc-mode/default (reloc-mode: 0))
+(function reloc-mode/static (reloc-mode: 1))
+(function reloc-mode/pic (reloc-mode: 2))
+(function reloc-mode/dynamic-no-pic (reloc-mode: 3))
+(function reloc-mode/ropi (reloc-mode: 4))
+(function reloc-mode/rwpi (reloc-mode: 5))
+(function reloc-mode/ropirwpi (reloc-mode: 6))
+
+(derive (Eq Ord DebugDisplay Hash Default) value-data CodeModel (code-model: U32))
+
+(function code-model/default (code-model: 0))
+(function code-model/jit-default (code-model: 1))
+(function code-model/tiny (code-model: 2))
+(function code-model/small (code-model: 3))
+(function code-model/kernel (code-model: 4))
+(function code-model/medium (code-model: 5))
+(function code-model/large (code-model: 6))
+
+(derive (Eq Ord DebugDisplay Hash) value-data CodeGenFileType (code-gen-file-type: U32))
+
+(function code-gen-file-type/assembly-file (code-gen-file-type: 0))
+(function code-gen-file-type/object-file (code-gen-file-type: 1))
+
+(derive (Eq DebugDisplay) value-data TargetMachine
+  (target-machine: (Ptr U8)))
+
+(function (target-machine/new target triple cpu feature opt-level reloc-mode code-model)
+  {(-> Target String (Option String) (Option String) OptLevel RelocMode CodeModel (Option TargetMachine))}
+  (with1?
+    (let ptr (ptr:non-null _))
+    (<create-target-machine>
+      target
+      (string/c-compatible-ptr triple)
+      (if-match1 (some (let cpu)) cpu (string/c-compatible-ptr cpu) (string/unsafe-ptr ""))
+      (if-match1 (some (let feature)) feature (string/c-compatible-ptr feature) (string/unsafe-ptr ""))
+      opt-level
+      reloc-mode
+      code-model)
+    (target-machine: ptr)))
+
+(c-function <create-target-machine> {(-> Target (Ptr U8) (Ptr U8) (Ptr U8) OptLevel RelocMode CodeModel (Ptr U8))} "LLVMCreateTargetMachine")
+
+(c-function target-machine/dispose! {(-> TargetMachine unit)} "LLVMDisposeTargetMachine")
+
+(c-function target-machine/target {(-> TargetMachine Target)} "LLVMGetTargetMachineTarget")
+
+(function (target-machine/triple tm) {(-> TargetMachine String)}
+  (message/consume! (<get-target-machine-triple> tm)))
+
+(c-function <get-target-machine-triple> {(-> TargetMachine (Ptr U8))} "LLVMGetTargetMachineTriple")
+
+(function (target-machine/cpu tm) {(-> TargetMachine String)}
+  (message/consume! (<get-target-machine-cpu> tm)))
+
+(c-function <get-target-machine-cpu> {(-> TargetMachine (Ptr U8))} "LLVMGetTargetMachineCPU")
+
+(function (target-machine/feature tm) {(-> TargetMachine String)}
+  (message/consume! (<get-target-machine-feature-string> tm)))
+
+(c-function <get-target-machine-feature-string> {(-> TargetMachine (Ptr U8))} "LLVMGetTargetMachineFeatureString")
+
+(c-function target-machine/data-layout {(-> TargetMachine DataLayout)} "LLVMCreateTargetDataLayout")
+
+(function (target-machine/emit-to-file! module filename filetype tm)
+  {(-> Module String CodeGenFileType TargetMachine (Result unit String))}
+  (let1 error (ref ptr:null)
+  (match (<target-machine-emit-to-file> tm module (string/c-compatible-ptr filename) filetype (ref/ptr error))
+    [0 (ok unit)]
+    [_ (err (message/consume! ~error))])))
+
+(c-function <target-machine-emit-to-file>
+  {(-> TargetMachine Module (Ptr U8) CodeGenFileType (Ptr (Ptr U8)) I32)}
+  "LLVMTargetMachineEmitToFile")
