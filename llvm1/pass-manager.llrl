@@ -1,0 +1,77 @@
+(import "~/module" Module)
+(import "~/value" Value value/_)
+(export PassManager _.PassManager pass-manager/_ with-pass-manager)
+(export FunctionPassManager _.FunctionPassManager function-pass-manager/_ with-function-pass-manager)
+(export PassManagerBuilder _.PassManagerBuilder pass-manager-builder/_ with-pass-manager-builder)
+
+(derive (DebugDisplay) value-data PassManager
+  (pass-manager: (Ptr U8)))
+
+(c-function pass-manager/new {(-> PassManager)} "LLVMCreatePassManager")
+
+(c-function pass-manager/dispose! {(-> PassManager unit)} "LLVMDisposePassManager")
+
+(function (with-pass-manager f) {(forall A) (-> (-> PassManager A) A)}
+  (let* ([pm (pass-manager/new)]
+         [ret (f pm)])
+    (pass-manager/dispose! pm)
+    ret))
+
+(function (pass-manager/run! module pm) {(-> Module PassManager unit)}
+  (<run-pass-manager> pm module))
+
+(c-function <run-pass-manager> {(-> PassManager Module unit)} "LLVMRunPassManager")
+
+(derive (DebugDisplay) value-data FunctionPassManager
+  (function-pass-manager: (Ptr U8)))
+
+(c-function function-pass-manager/new {(-> Module FunctionPassManager)} "LLVMCreateFunctionPassManagerForModule")
+
+(c-function function-pass-manager/dispose! {(-> FunctionPassManager unit)} "LLVMDisposePassManager")
+
+(function (with-function-pass-manager module f) {(forall A) (-> Module (-> FunctionPassManager A) A)}
+  (let* ([fpm (function-pass-manager/new module)]
+         [ret (f fpm)])
+    (function-pass-manager/dispose! fpm)
+    ret))
+
+(function (function-pass-manager/run! fs fpm) {(forall T) (-> (T Value) FunctionPassManager unit) (where (Iterate T))}
+  (<initialize-function-pass-manager> fpm)
+  (for (let f) fs
+    (assert (value/function? f) "function-pass-manager/run!: Not a function")
+    (<run-function-pass-manager> fpm f))
+  (<finalize-function-pass-manager> fpm))
+
+(c-function <initialize-function-pass-manager> {(-> FunctionPassManager unit)} "LLVMInitializeFunctionPassManager")
+(c-function <run-function-pass-manager> {(-> FunctionPassManager Value unit)} "LLVMRunFunctionPassManager")
+(c-function <finalize-function-pass-manager> {(-> FunctionPassManager unit)} "LLVMFinalizeFunctionPassManager")
+
+(derive (DebugDisplay) value-data PassManagerBuilder
+  (pass-manager-builder: (Ptr U8)))
+
+(c-function pass-manager-builder/new {(-> PassManagerBuilder)} "LLVMPassManagerBuilderCreate")
+
+(c-function pass-manager-builder/dispose! {(-> PassManagerBuilder unit)} "LLVMPassManagerBuilderDispose")
+
+(function (with-pass-manager-builder f) {(forall A) (-> (-> PassManagerBuilder A) A)}
+  (let* ([pmb (pass-manager-builder/new)]
+         [ret (f pmb)])
+    (pass-manager-builder/dispose! pmb)
+    ret))
+
+(function (pass-manager-builder/set-opt-level! opt-level pmb) {(-> U32 PassManagerBuilder unit)}
+  (<pass-manager-builder-set-opt-level> pmb (min opt-level 3)))
+
+(function (pass-manager-builder/set-size-level! size-level pmb) {(-> U32 PassManagerBuilder unit)}
+  (<pass-manager-builder-set-size-level> pmb (min size-level 2)))
+
+(function (pass-manager-builder/populate-module-pass-manager! pm pmb) {(-> PassManager PassManagerBuilder unit)}
+  (<pass-manager-builder-populate-module-pass-manager> pmb pm))
+
+(function (pass-manager-builder/populate-function-pass-manager! fpm pmb) {(-> FunctionPassManager PassManagerBuilder unit)}
+  (<pass-manager-builder-populate-function-pass-manager> pmb fpm))
+
+(c-function <pass-manager-builder-set-opt-level> {(-> PassManagerBuilder U32 unit)} "LLVMPassManagerBuilderSetOptLevel")
+(c-function <pass-manager-builder-set-size-level> {(-> PassManagerBuilder U32 unit)} "LLVMPassManagerBuilderSetSizeLevel")
+(c-function <pass-manager-builder-populate-module-pass-manager> {(-> PassManagerBuilder PassManager unit)} "LLVMPassManagerBuilderPopulateModulePassManager")
+(c-function <pass-manager-builder-populate-function-pass-manager> {(-> PassManagerBuilder FunctionPassManager unit)} "LLVMPassManagerBuilderPopulateFunctionPassManager")

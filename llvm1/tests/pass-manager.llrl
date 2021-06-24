@@ -1,0 +1,24 @@
+(import "~/pass-manager" _)
+(import "~/context" _)
+(import "~/module" _)
+(import "~/value" _)
+(import "~/type" _)
+(println! "llvm1/tests/pass-manager")
+
+(with-context (lambda (ctx)
+  (with-module "test" ctx (lambda (module)
+    (let1 f (module/add-function! "f" (type/build ctx (-> i32)) module)
+      (with-pass-manager-builder (lambda (pmb)
+        (pass-manager-builder/set-opt-level! 3 pmb)
+        (pass-manager-builder/set-size-level! 2 pmb)
+
+          (with-function-pass-manager module (lambda (fpm)
+            (pass-manager-builder/populate-function-pass-manager! fpm pmb)
+            (function-pass-manager/run! (array f) fpm)))
+
+          (with-pass-manager (lambda (pm)
+            (pass-manager-builder/populate-module-pass-manager! pm pmb)
+            (pass-manager/run! module pm))))))
+
+    ; (println! module)
+    ))))

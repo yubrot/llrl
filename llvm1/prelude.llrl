@@ -7,4 +7,5 @@
 (import "~/module" _)
 (import "~/target" _)
 (import "~/target-machine" _)
+(import "~/pass-manager" _)
 (export _)

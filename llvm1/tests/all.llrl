@@ -8,4 +8,5 @@
 (import "~/tests/module")
 (import "~/tests/target")
 (import "~/tests/target-machine")
+(import "~/tests/pass-manager")
 (import "~")
