@@ -11,7 +11,7 @@
 
 (instance DebugDisplay.DataLayout (DebugDisplay DataLayout)
   (function (debug-display! w a)
-    (display! w a)))
+    (display-all! w "<" a ">")))
 
 (function (data-layout/new string-rep) {(-> String DataLayout)}
   (<create-target-data> (string/c-compatible-ptr string-rep)))

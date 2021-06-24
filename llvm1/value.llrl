@@ -4,10 +4,10 @@
 (import "~/context" Context)
 (import "~/message" message/consume!)
 (import "~/type" _)
-(export Value _.Value value/_ const/_ global-value/_ function/_ phi-node/_)
+(export Value _.Value value/_ const/_ global-value/_ global-variable/_ function/_ phi-node/_)
 (export BasicBlock _.BasicBlock basic-block/_)
 
-(value-data Value (value: (Ptr U8)))
+(derive (Eq) value-data Value (value: (Ptr U8)))
 
 (instance Display.Value (Display Value)
   (function (display! w a)
@@ -15,9 +15,16 @@
 
 (c-function <print-value-to-string> {(-> Value (Ptr U8))} "LLVMPrintValueToString")
 
+(instance DebugDisplay.Value (DebugDisplay Value)
+  (function (debug-display! w a)
+    (display-all! w "<" a ">")))
+
 ; Value
 
 (c-function value/type {(-> Value Type)} "LLVMTypeOf")
+
+(function (value/unsafe-from-ptr? ptr) {(-> (Ptr U8) (Option Value))}
+  (when? (ne? ptr:null ptr) (value: ptr)))
 
 (function (value/context value) {(-> Value Context)}
   (|> value value/type type/context))
@@ -345,11 +352,15 @@
 
 ; Basic block
 
-(value-data BasicBlock (bb: (Ptr U8)))
+(derive (Eq) value-data BasicBlock (bb: (Ptr U8)))
 
 (instance Display.BasicBlock (Display BasicBlock)
   (function (display! w a)
     (display! w (basic-block/name a))))
+
+(instance DebugDisplay.BasicBlock (DebugDisplay BasicBlock)
+  (function (debug-display! w a)
+    (display-all! w "<" a ">")))
 
 (function (basic-block/context bb) {(-> BasicBlock Context)}
   (|> bb basic-block/parent value/context))

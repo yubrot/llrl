@@ -1,0 +1,61 @@
+(import "~/module" _)
+(import "~/context" with-context)
+(import "~/type" _)
+(import "~/value" _)
+(import "~/data-layout" _)
+(println! "llvm1/tests/module")
+
+(with-context (lambda (ctx)
+  (with-module "name" ctx (lambda (module)
+    (let1 dl (data-layout/new "e-m:e-i64:64-f80:128-n8:16:32:64-S128")
+      (module/set-data-layout! dl module)
+      (assert-eq? (string dl) (string (module/data-layout module))))
+
+    ; TODO: target triple
+
+    ; Verifying an empty module is OK:
+    (assert-is? (ok _) (module/verify module))
+
+    ; Verifying a module that has an incomplete function is ERROR:
+    (let1 f (module/add-function! "test" (type/build ctx (-> i32)) module)
+      (function/append-block! "block" f))
+    (assert-is? (err _) (module/verify module))))))
+
+(with-context (lambda (ctx)
+  (with-module "name" ctx (lambda (module)
+    (let ([a (module/add-global! "a" (type/build ctx i32) none module)]
+          [b (module/add-global! "b" (type/build ctx i32) none module)])
+      (global-variable/set-initializer! (some (const/build ctx (i32 ,1234))) b)
+      (assert-eq? none (global-variable/initializer a))
+      (assert-eq? (some (const/build ctx (i32 ,1234))) (global-variable/initializer b))
+      (assert-eq? none (module/lookup-global? "c" module))
+      (assert-eq? (some b) (module/lookup-global? "b" module))
+      (global-variable/erase-from-parent! a)
+      (assert-eq? none (module/lookup-global? "a" module))
+      (assert-eq? (type/build ctx (pointer i32)) (value/type b))
+      (assert-eq? (some "b") (value/name b))
+      (value/set-name! "x" b)
+      (assert-eq? none (module/lookup-global? "b" module))
+      (assert-eq? (some b) (module/lookup-global? "x" module))
+      (assert-eq? (vector b) (module/globals module)))))))
+
+(with-context (lambda (ctx)
+  (with-module "name" ctx (lambda (module)
+    (let1 f (module/add-function! "f" (type/build ctx (-> i8 i16 i32)) module)
+      (assert-eq? 2 (array/length (function/params f)))
+      (assert-eq? (type/build ctx i8) (value/type (get (function/params f)[0])))
+      (assert-eq? (type/build ctx i16) (value/type (get (function/params f)[1])))
+      (assert-eq? (some f) (module/lookup-function? "f" module))
+      (assert-eq? none (module/lookup-function? "g" module))
+      (function/erase-from-parent! f)
+      (assert-eq? none (module/lookup-function? "f" module))
+      (assert-eq? (vector) (module/functions module)))))))
+
+(with-context (lambda (ctx)
+  (with-module "name" ctx (lambda (module)
+    (let* ([f (module/add-function! "f" (type/build ctx (-> i8 i16 i32)) module)]
+           [bb (function/append-block! "test" f)])
+      (assert-eq? "test" (basic-block/name bb))
+      (assert-eq? f (basic-block/parent bb))
+      (assert-eq? (array bb) (function/basic-blocks f))
+      (assert-eq? (some bb) (function/entry-block? f)))))))

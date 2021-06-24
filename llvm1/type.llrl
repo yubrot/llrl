@@ -11,7 +11,7 @@
 
 (instance DebugDisplay.Type (DebugDisplay Type)
   (function (debug-display! w a)
-    (display! w a)))
+    (display-all! w "<" a ">")))
 
 (c-function <print-type-to-string> {(-> Type (Ptr U8))} "LLVMPrintTypeToString")
 

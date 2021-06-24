@@ -6,4 +6,5 @@
 (import "~/tests/value")
 (import "~/tests/data-layout")
 (import "~/tests/target")
+(import "~/tests/module")
 (import "~")

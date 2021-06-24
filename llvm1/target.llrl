@@ -12,7 +12,7 @@
 
 (instance DebugDisplay.Target (DebugDisplay Target)
   (function (debug-display! w a)
-    (display! w a)))
+    (display-all! w "<" a ">")))
 
 (function target/default-triple {String}
   (message/consume! (<get-default-target-triple>)))

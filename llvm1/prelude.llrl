@@ -5,4 +5,5 @@
 (import "~/type" _ [type type/build])
 (import "~/value" _ [const const/build])
 (import "~/target" _)
+(import "~/module" _)
 (export _)
