@@ -1,38 +1,24 @@
 #define _GNU_SOURCE
 
-#include <stdio.h>
+#include <rt.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
-#include <inttypes.h>
-#include <stdnoreturn.h>
 #include <math.h>
 #include <errno.h>
 #include <unistd.h>
-#include <dirent.h>
 #include <fcntl.h>
 #include <gc/gc.h>
 #include <sys/random.h>
 #include <sys/time.h>
 #include <sys/wait.h>
 
-void llrt_init_signal() {
+static void llrt_init_signal() {
   signal(SIGPIPE, SIG_IGN);
 }
 
-void llrt_restore_signal() {
+static void llrt_restore_signal() {
   signal(SIGPIPE, SIG_DFL);
 }
-
-typedef struct {
-  char *ptr;
-  uint64_t len;
-} rt_string;
-
-typedef struct {
-  uint64_t argc;
-  rt_string *argv;
-} rt_args;
 
 static rt_args last_args = (rt_args){.argc = 0, .argv = NULL};
 
@@ -69,14 +55,6 @@ noreturn void llrt_panic(rt_string msg) {
 void llrt_exit(int32_t exitcode) {
   exit(exitcode);
 }
-
-typedef struct {
-  int32_t err;
-  int32_t pid;
-  FILE *cin;
-  FILE *cout;
-  FILE *cerr;
-} rt_process;
 
 rt_process llrt_process(const char *name, char *const argv[]) {
   rt_process ret;
@@ -238,7 +216,7 @@ rt_string llrt_f64_to_string(double a) {
 
 static rt_string zero_string = {.len = 1, .ptr = "0"};
 
-char digit_to_char(uint8_t digit) {
+static char digit_to_char(uint8_t digit) {
   return digit < 10 ? '0' + digit : 'a' + (digit - 10);
 }
 
@@ -279,7 +257,7 @@ rt_string llrt_u64_to_string(uint8_t radix, uint64_t value) {
   return ret;
 }
 
-int8_t char_to_digit(char c) {
+static int8_t char_to_digit(char c) {
   return
     ('0' <= c && c <= '9')
       ? (c - '0')
@@ -289,11 +267,6 @@ int8_t char_to_digit(char c) {
           ? (c - 'A' + 10)
           : -1;
 }
-
-typedef struct {
-  int32_t success;
-  int64_t value;
-} to_i64;
 
 to_i64 llrt_string_to_i64(uint8_t radix, rt_string s) {
   size_t index;
@@ -322,11 +295,6 @@ to_i64 llrt_string_to_i64(uint8_t radix, rt_string s) {
   return (to_i64){.success = 1, .value = value};
 }
 
-typedef struct {
-  int32_t success;
-  uint64_t value;
-} to_u64;
-
 to_u64 llrt_string_to_u64(uint8_t radix, rt_string s) {
   if (s.len == 0) return (to_u64){.success = 0};
   uint64_t value = 0;
@@ -341,11 +309,6 @@ to_u64 llrt_string_to_u64(uint8_t radix, rt_string s) {
   return (to_u64){.success = 1, .value = value};
 }
 
-typedef struct {
-  int32_t success;
-  float value;
-} to_f32;
-
 to_f32 llrt_string_to_f32(rt_string s) {
   if (s.len == 0 || 64 <= s.len) return (to_f32){.success = 0};
   char buf[64];
@@ -357,11 +320,6 @@ to_f32 llrt_string_to_f32(rt_string s) {
   if (errno != 0 || end != buf + s.len) return (to_f32){.success = 0};
   return (to_f32){.success = 1, .value = value};
 }
-
-typedef struct {
-  int32_t success;
-  double value;
-} to_f64;
 
 to_f64 llrt_string_to_f64(rt_string s) {
   if (s.len == 0 || 64 <= s.len) return (to_f64){.success = 0};
