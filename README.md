@@ -83,7 +83,7 @@ The goal of llrl is not to create a modern, practical programming language. Inst
     - [x] Command line arguments
     - [x] Process
 - [ ] llrl1: llrl compiler by llrl
-  - [ ] LLVM-C API porting
+  - [x] LLVM-C API porting
   - [x] S-expression parser
   - [x] Syntax analysis
   - [x] Loading mechanism for a set of source codes

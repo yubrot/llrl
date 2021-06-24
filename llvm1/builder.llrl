@@ -1,0 +1,344 @@
+(import "std/memory" ptr:_)
+(import "~/context" Context)
+(import "~/type" _)
+(import "~/value" _)
+(export Builder _.Builder builder/_ with-builder)
+(export Inst inst:_ Unary unary:_ Binary binary:_ Convert convert:_)
+
+(value-data Builder
+  (builder: (Ptr U8)))
+
+(function (builder/new target) {(-> BasicBlock Builder)}
+  (let1 builder (<create-builder> (basic-block/context target))
+    (<position-builder-at-end> builder target)
+    builder))
+
+(c-function <create-builder> {(-> Context Builder)} "LLVMCreateBuilderInContext")
+
+(c-function builder/dispose! {(-> Builder unit)} "LLVMDisposeBuilder")
+
+(function (with-builder target f) {(forall A) (-> BasicBlock (-> Builder A) A)}
+  (let* ([builder (builder/new target)]
+         [ret (f builder)])
+    (builder/dispose! builder)
+    ret))
+
+(function (builder/context builder) {(-> Builder Context)}
+  (|> builder builder/insert-point basic-block/context))
+
+(c-function builder/insert-point {(-> Builder BasicBlock)}  "LLVMGetInsertBlock")
+
+(function (builder/set-insert-point! target end? builder) {(-> BasicBlock Bool Builder unit)}
+  (if end?
+    (<position-builder-at-end> builder target)
+    (match (<get-first-instruction> target)
+      [ptr:null
+        (<position-builder-at-end> builder target)]
+      [(let instr)
+        (<position-builder-before> builder instr)])))
+
+(c-function <position-builder-before> {(-> Builder (Ptr U8) unit)} "LLVMPositionBuilderBefore")
+(c-function <position-builder-at-end> {(-> Builder BasicBlock unit)} "LLVMPositionBuilderAtEnd")
+
+(c-function <get-first-instruction> {(-> BasicBlock (Ptr U8))} "LLVMGetFirstInstruction")
+
+(function (builder/append-block! name builder) {(-> String Builder BasicBlock)}
+  (|> builder builder/insert-point basic-block/parent (function/append-block! name)))
+
+(function (builder/put! inst builder) {(-> Inst Builder Value)}
+  (match inst
+    [(inst:ret (let value))
+      (<build-ret> builder value)]
+    [inst:ret-void
+      (<build-ret-void> builder)]
+    [(inst:br (let bb))
+      (<build-br> builder bb)]
+    [(inst:cond-br (let cond) (let then-bb) (let else-bb))
+      (<build-cond-br> builder cond then-bb else-bb)]
+    [inst:unreachable
+      (<build-unreachable> builder)]
+    [(inst:unary (let op) (let a))
+      (
+        (match op
+          [unary:neg <build-neg>]
+          [unary:nswneg <build-nswneg>]
+          [unary:fneg <build-fneg>]
+          [unary:not <build-not>])
+        builder
+        a
+        (ptr:non-null 0))]
+    [(inst:binary (let op) (let a) (let b))
+      (
+        (match op
+          [binary:add <build-add>]
+          [binary:nswadd <build-nswadd>]
+          [binary:fadd <build-fadd>]
+          [binary:sub <build-sub>]
+          [binary:nswsub <build-nswsub>]
+          [binary:fsub <build-fsub>]
+          [binary:mul <build-mul>]
+          [binary:nswmul <build-nswmul>]
+          [binary:fmul <build-fmul>]
+          [binary:sdiv <build-sdiv>]
+          [binary:udiv <build-udiv>]
+          [binary:fdiv <build-fdiv>]
+          [binary:srem <build-srem>]
+          [binary:urem <build-urem>]
+          [binary:frem <build-frem>]
+          [binary:shl <build-shl>]
+          [binary:ashr <build-ashr>]
+          [binary:lshr <build-lshr>]
+          [binary:and <build-and>]
+          [binary:or <build-or>]
+          [binary:xor <build-xor>]
+          [binary:ieq [^4 (<build-icmp> %1 int-predicate/eq %2 %3 %4)]]
+          [binary:ine [^4 (<build-icmp> %1 int-predicate/ne %2 %3 %4)]]
+          [binary:ugt [^4 (<build-icmp> %1 int-predicate/ugt %2 %3 %4)]]
+          [binary:uge [^4 (<build-icmp> %1 int-predicate/uge %2 %3 %4)]]
+          [binary:ult [^4 (<build-icmp> %1 int-predicate/ult %2 %3 %4)]]
+          [binary:ule [^4 (<build-icmp> %1 int-predicate/ule %2 %3 %4)]]
+          [binary:sgt [^4 (<build-icmp> %1 int-predicate/sgt %2 %3 %4)]]
+          [binary:sge [^4 (<build-icmp> %1 int-predicate/sge %2 %3 %4)]]
+          [binary:slt [^4 (<build-icmp> %1 int-predicate/slt %2 %3 %4)]]
+          [binary:sle [^4 (<build-icmp> %1 int-predicate/sle %2 %3 %4)]]
+          [binary:feq [^4 (<build-fcmp> %1 real-predicate/oeq %2 %3 %4)]]
+          [binary:fgt [^4 (<build-fcmp> %1 real-predicate/ogt %2 %3 %4)]]
+          [binary:fge [^4 (<build-fcmp> %1 real-predicate/oge %2 %3 %4)]]
+          [binary:flt [^4 (<build-fcmp> %1 real-predicate/olt %2 %3 %4)]]
+          [binary:fle [^4 (<build-fcmp> %1 real-predicate/ole %2 %3 %4)]]
+          [binary:fne [^4 (<build-fcmp> %1 real-predicate/one %2 %3 %4)]])
+        builder
+        a
+        b
+        (ptr:non-null 0))]
+    [(inst:alloca (let name) (let ty))
+      (<build-alloca> builder ty (string/c-compatible-ptr name))]
+    [(inst:array-alloca (let name) (let ty) (let num))
+      (<build-array-alloca> builder ty num (string/c-compatible-ptr name))]
+    [(inst:entry-alloca (let name) (let ty))
+      (let1 stash-bb (builder/insert-point builder)
+        (builder/set-insert-point!
+          (|> stash-bb basic-block/parent function/entry-block? option/force)
+          #f
+          builder)
+        (let1 alloca (<build-alloca> builder ty (string/c-compatible-ptr name))
+          (builder/set-insert-point! stash-bb #t builder)
+          alloca))]
+    [(inst:load (let name) (let a))
+      (<build-load> builder a (string/c-compatible-ptr name))]
+    [(inst:store (let val) (let ptr))
+      (<build-store> builder val ptr)]
+    [(inst:gep (let ptr) (let indices))
+      (<build-gep> builder ptr (array/ptr indices) (conv (array/length indices)) (ptr:non-null 0))]
+    [(inst:struct-gep (let ptr) (let index))
+      (<build-struct-gep> builder ptr index (ptr:non-null 0))]
+    [(inst:conv (let op) (let val) (let ty))
+      (
+        (match op
+          [convert:trunc <build-trunc>]
+          [convert:zext <build-zext>]
+          [convert:sext <build-sext>]
+          [convert:fp-to-ui <build-fp-to-ui>]
+          [convert:fp-to-si <build-fp-to-si>]
+          [convert:ui-to-fp <build-ui-to-fp>]
+          [convert:si-to-fp <build-si-to-fp>]
+          [convert:fptrunc <build-fptrunc>]
+          [convert:fpext <build-fpext>]
+          [convert:ptr-to-int <build-ptr-to-int>]
+          [convert:int-to-ptr <build-int-to-ptr>]
+          [convert:bit-cast <build-bit-cast>]
+          [convert:addr-space-cast <build-addr-space-cast>])
+        builder
+        val
+        ty
+        (ptr:non-null 0))]
+    [(inst:phi (let ty))
+      (<build-phi> builder ty (ptr:non-null 0))]
+    [(inst:call (let f) (let args))
+      (<build-call> builder f (array/ptr args) (conv (array/length args)) (ptr:non-null 0))]
+    [(inst:select (let cond) (let then) (let else))
+      (<build-select> builder cond then else (ptr:non-null 0))]
+    [(inst:extract-value (let agg) (let index))
+      (<build-extract-value> builder agg index (ptr:non-null 0))]
+    [(inst:insert-value (let agg) (let index) (let elt))
+      (<build-insert-value> builder agg elt index (ptr:non-null 0))]))
+
+(value-data Inst
+  (inst:ret Value)
+  inst:ret-void
+  (inst:br BasicBlock)
+  (inst:cond-br Value BasicBlock BasicBlock) ; cond then else
+  inst:unreachable
+  (inst:unary Unary Value)
+  (inst:binary Binary Value Value)
+  (inst:alloca String Type)
+  (inst:array-alloca String Type Value) ; name ty num
+  (inst:entry-alloca String Type)
+  (inst:load String Value)
+  (inst:store Value Value) ; val ptr
+  (inst:gep Value (Array Value)) ; ptr indices
+  (inst:struct-gep Value U32) ; ptr index
+  (inst:conv Convert Value Type)
+  (inst:phi Type)
+  (inst:call Value (Array Value))
+  (inst:select Value Value Value)
+  (inst:extract-value Value U32) ; agg index
+  (inst:insert-value Value U32 Value)) ; agg index elt
+
+(value-data Unary
+  unary:neg
+  unary:nswneg
+  unary:fneg
+  unary:not)
+
+(value-data Binary
+  binary:add
+  binary:nswadd
+  binary:fadd
+  binary:sub
+  binary:nswsub
+  binary:fsub
+  binary:mul
+  binary:nswmul
+  binary:fmul
+  binary:sdiv
+  binary:udiv
+  binary:fdiv
+  binary:srem
+  binary:urem
+  binary:frem
+  binary:shl
+  binary:ashr
+  binary:lshr
+  binary:and
+  binary:or
+  binary:xor
+  binary:ieq
+  binary:ine
+  binary:ugt
+  binary:uge
+  binary:ult
+  binary:ule
+  binary:sgt
+  binary:sge
+  binary:slt
+  binary:sle
+  binary:feq
+  binary:fgt
+  binary:fge
+  binary:flt
+  binary:fle
+  binary:fne)
+
+(value-data Convert
+  convert:trunc
+  convert:zext
+  convert:sext
+  convert:fp-to-ui
+  convert:fp-to-si
+  convert:ui-to-fp
+  convert:si-to-fp
+  convert:fptrunc
+  convert:fpext
+  convert:ptr-to-int
+  convert:int-to-ptr
+  convert:bit-cast
+  convert:addr-space-cast)
+
+(c-function <build-ret> {(-> Builder Value Value)} "LLVMBuildRet")
+(c-function <build-ret-void> {(-> Builder Value)} "LLVMBuildRetVoid")
+(c-function <build-br> {(-> Builder BasicBlock Value)} "LLVMBuildBr")
+(c-function <build-cond-br> {(-> Builder Value BasicBlock BasicBlock Value)} "LLVMBuildCondBr")
+(c-function <build-unreachable> {(-> Builder Value)} "LLVMBuildUnreachable")
+
+(c-function <build-neg> {(-> Builder Value (Ptr U8) Value)} "LLVMBuildNeg")
+(c-function <build-nswneg> {(-> Builder Value (Ptr U8) Value)} "LLVMBuildNSWNeg")
+(c-function <build-fneg> {(-> Builder Value (Ptr U8) Value)} "LLVMBuildFNeg")
+(c-function <build-not> {(-> Builder Value (Ptr U8) Value)} "LLVMBuildNot")
+
+(c-function <build-add> {(-> Builder Value Value (Ptr U8) Value)} "LLVMBuildAdd")
+(c-function <build-nswadd> {(-> Builder Value Value (Ptr U8) Value)} "LLVMBuildNSWAdd")
+(c-function <build-fadd> {(-> Builder Value Value (Ptr U8) Value)} "LLVMBuildFAdd")
+(c-function <build-sub> {(-> Builder Value Value (Ptr U8) Value)} "LLVMBuildSub")
+(c-function <build-nswsub> {(-> Builder Value Value (Ptr U8) Value)} "LLVMBuildNSWSub")
+(c-function <build-fsub> {(-> Builder Value Value (Ptr U8) Value)} "LLVMBuildFSub")
+(c-function <build-mul> {(-> Builder Value Value (Ptr U8) Value)} "LLVMBuildMul")
+(c-function <build-nswmul> {(-> Builder Value Value (Ptr U8) Value)} "LLVMBuildNSWMul")
+(c-function <build-fmul> {(-> Builder Value Value (Ptr U8) Value)} "LLVMBuildFMul")
+(c-function <build-sdiv> {(-> Builder Value Value (Ptr U8) Value)} "LLVMBuildSDiv")
+(c-function <build-udiv> {(-> Builder Value Value (Ptr U8) Value)} "LLVMBuildUDiv")
+(c-function <build-fdiv> {(-> Builder Value Value (Ptr U8) Value)} "LLVMBuildFDiv")
+(c-function <build-srem> {(-> Builder Value Value (Ptr U8) Value)} "LLVMBuildSRem")
+(c-function <build-urem> {(-> Builder Value Value (Ptr U8) Value)} "LLVMBuildURem")
+(c-function <build-frem> {(-> Builder Value Value (Ptr U8) Value)} "LLVMBuildFRem")
+(c-function <build-shl> {(-> Builder Value Value (Ptr U8) Value)} "LLVMBuildShl")
+(c-function <build-ashr> {(-> Builder Value Value (Ptr U8) Value)} "LLVMBuildAShr")
+(c-function <build-lshr> {(-> Builder Value Value (Ptr U8) Value)} "LLVMBuildLShr")
+(c-function <build-and> {(-> Builder Value Value (Ptr U8) Value)} "LLVMBuildAnd")
+(c-function <build-or> {(-> Builder Value Value (Ptr U8) Value)} "LLVMBuildOr")
+(c-function <build-xor> {(-> Builder Value Value (Ptr U8) Value)} "LLVMBuildXor")
+
+(c-function <build-alloca> {(-> Builder Type (Ptr U8) Value)} "LLVMBuildAlloca")
+(c-function <build-array-alloca> {(-> Builder Type Value (Ptr U8) Value)} "LLVMBuildArrayAlloca")
+
+(c-function <build-load> {(-> Builder Value (Ptr U8) Value)} "LLVMBuildLoad")
+(c-function <build-store> {(-> Builder Value Value Value)} "LLVMBuildStore")
+
+(c-function <build-gep> {(-> Builder Value (Ptr Value) U32 (Ptr U8) Value)} "LLVMBuildGEP")
+(c-function <build-struct-gep> {(-> Builder Value U32 (Ptr U8) Value)} "LLVMBuildStructGEP")
+
+(c-function <build-trunc> {(-> Builder Value Type (Ptr U8) Value)} "LLVMBuildTrunc")
+(c-function <build-zext> {(-> Builder Value Type (Ptr U8) Value)} "LLVMBuildZExt")
+(c-function <build-sext> {(-> Builder Value Type (Ptr U8) Value)} "LLVMBuildSExt")
+(c-function <build-fp-to-ui> {(-> Builder Value Type (Ptr U8) Value)} "LLVMBuildFPToUI")
+(c-function <build-fp-to-si> {(-> Builder Value Type (Ptr U8) Value)} "LLVMBuildFPToSI")
+(c-function <build-ui-to-fp> {(-> Builder Value Type (Ptr U8) Value)} "LLVMBuildUIToFP")
+(c-function <build-si-to-fp> {(-> Builder Value Type (Ptr U8) Value)} "LLVMBuildSIToFP")
+(c-function <build-fptrunc> {(-> Builder Value Type (Ptr U8) Value)} "LLVMBuildFPTrunc")
+(c-function <build-fpext> {(-> Builder Value Type (Ptr U8) Value)} "LLVMBuildFPExt")
+(c-function <build-ptr-to-int> {(-> Builder Value Type (Ptr U8) Value)} "LLVMBuildPtrToInt")
+(c-function <build-int-to-ptr> {(-> Builder Value Type (Ptr U8) Value)} "LLVMBuildIntToPtr")
+(c-function <build-bit-cast> {(-> Builder Value Type (Ptr U8) Value)} "LLVMBuildBitCast")
+(c-function <build-addr-space-cast> {(-> Builder Value Type (Ptr U8) Value)} "LLVMBuildAddrSpaceCast")
+
+(c-function <build-icmp> {(-> Builder IntPredicate Value Value (Ptr U8) Value)} "LLVMBuildICmp")
+(c-function <build-fcmp> {(-> Builder RealPredicate Value Value (Ptr U8) Value)} "LLVMBuildFCmp")
+
+(c-function <build-phi> {(-> Builder Type (Ptr U8) Value)} "LLVMBuildPhi")
+(c-function <build-call> {(-> Builder Value (Ptr Value) U32 (Ptr U8) Value)} "LLVMBuildCall")
+(c-function <build-select> {(-> Builder Value Value Value (Ptr U8) Value)} "LLVMBuildSelect")
+
+(c-function <build-extract-value> {(-> Builder Value U32 (Ptr U8) Value)} "LLVMBuildExtractValue")
+(c-function <build-insert-value> {(-> Builder Value Value U32 (Ptr U8) Value)} "LLVMBuildInsertValue")
+
+(value-data IntPredicate (int-predicate: U32))
+
+(function int-predicate/eq (int-predicate: 32))
+(function int-predicate/ne (int-predicate: 33))
+(function int-predicate/ugt (int-predicate: 34))
+(function int-predicate/uge (int-predicate: 35))
+(function int-predicate/ult (int-predicate: 36))
+(function int-predicate/ule (int-predicate: 37))
+(function int-predicate/sgt (int-predicate: 38))
+(function int-predicate/sge (int-predicate: 39))
+(function int-predicate/slt (int-predicate: 40))
+(function int-predicate/sle (int-predicate: 41))
+
+(value-data RealPredicate (real-predicate: U32))
+
+(function real-predicate/false (real-predicate: 0))
+(function real-predicate/oeq (real-predicate: 1))
+(function real-predicate/ogt (real-predicate: 2))
+(function real-predicate/oge (real-predicate: 3))
+(function real-predicate/olt (real-predicate: 4))
+(function real-predicate/ole (real-predicate: 5))
+(function real-predicate/one (real-predicate: 6))
+(function real-predicate/ord (real-predicate: 7))
+(function real-predicate/uno (real-predicate: 8))
+(function real-predicate/ueq (real-predicate: 9))
+(function real-predicate/ugt (real-predicate: 10))
+(function real-predicate/uge (real-predicate: 11))
+(function real-predicate/ult (real-predicate: 12))
+(function real-predicate/ule (real-predicate: 13))
+(function real-predicate/une (real-predicate: 14))
+(function real-predicate/true (real-predicate: 15))

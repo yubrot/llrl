@@ -9,5 +9,6 @@
 (import "~/target" _)
 (import "~/target-machine" _)
 (import "~/pass-manager" _)
+(import "~/builder" _)
 (import "~/execution-engine" _)
 (export _)

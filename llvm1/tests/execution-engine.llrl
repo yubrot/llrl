@@ -1,20 +1,18 @@
+(import "std/memory" ptr:_ ptr/_)
 (import "~/execution-engine" _)
 (import "~/context" _)
 (import "~/data-layout" _)
+(import "~/type" _)
+(import "~/value" _)
+(import "~/module" _)
 (import "~/target" _)
 (import "~/target-machine" _)
+(import "~/builder" _)
 (println! "llvm1/tests/execution-engine")
 
-(with-context (lambda (ctx)
-  (println! "  Interpreter")
-  (with-interpreter ctx ee-unavailable dump-ee)))
-
-(with-context (lambda (ctx)
-  (println! "  MCJIT")
-  (with-mcjit ctx none none none none ee-unavailable dump-ee)))
-
 (function (ee-unavailable s)
-  (println! "    ... is not available: " s))
+  (println! "    ... is not available: " s)
+  unit)
 
 (function (dump-ee ee)
   (println! "    data-layout = " (execution-engine/data-layout ee))
@@ -22,6 +20,32 @@
     [(some (let tm))
       (println! "    target-machine = {target = " (target-machine/target tm) ", triple = " (target-machine/triple tm) "}")]
     [none
-      (println! "    target-machine = none")]))
+      (println! "    target-machine = none")])
+  unit)
 
-; TODO: Add {add-module!,remove-modules!,get-function-address} tests
+(with-context (lambda (ctx)
+  (println! "  Interpreter")
+  (with-interpreter ctx ee-unavailable dump-ee)))
+
+(with-context (lambda (ctx)
+  (println! "  MCJIT")
+  (with-mcjit ctx none none none none ee-unavailable (lambda (ee)
+    (dump-ee ee)
+
+    (let1 module (module/new "module" ctx)
+      ; To make it compatible with llrl closures, sqrLength takes a pointer as its first argument.
+      (let1 f (module/add-function! "sqrLength" (type/build ctx (-> (pointer i8) double double double)) module)
+        (with-builder (function/append-block! "entry" f) (lambda (builder)
+          (let* ([a (get (function/params f)[1])]
+                 [b (get (function/params f)[2])]
+                 [tmp0 (builder/put! (inst:binary binary:fmul a a) builder)]
+                 [tmp1 (builder/put! (inst:binary binary:fmul b b) builder)]
+                 [tmp2 (builder/put! (inst:binary binary:fadd tmp0 tmp1) builder)])
+            (builder/put! (inst:ret tmp2) builder)))))
+      (execution-engine/add-module! module ee))
+
+    ; llrl closures are represented by a pair of function pointer and environment pointer.
+    (let* ([address (execution-engine/get-function-address "sqrLength" ee)]
+           [closure {(: U64 (Ptr U8))} (: address ptr:null)]
+           [sqr-length {(-> F64 F64 F64)} (ptr/load (ptr/cast (ptr:non-null closure)))])
+      (assert-eq? 25 (sqr-length 3 4)))))))

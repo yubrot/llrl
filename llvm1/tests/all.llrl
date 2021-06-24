@@ -9,5 +9,6 @@
 (import "~/tests/target")
 (import "~/tests/target-machine")
 (import "~/tests/pass-manager")
+(import "~/tests/builder")
 (import "~/tests/execution-engine")
 (import "~")
