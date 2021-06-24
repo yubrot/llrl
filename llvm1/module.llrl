@@ -27,6 +27,9 @@
 
 (c-function <module-create> {(-> (Ptr U8) Context Module)} "LLVMModuleCreateWithNameInContext")
 
+(function (module/unsafe-from-ptr? ptr) {(-> (Ptr U8) (Option Module))}
+  (when? (ne? ptr ptr:null) (module: ptr)))
+
 (c-function module/dispose! {(-> Module unit)} "LLVMDisposeModule")
 
 (function (with-module name ctx f) {(forall A) (-> String Context (-> Module A) A)}

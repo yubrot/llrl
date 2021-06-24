@@ -67,6 +67,9 @@
 
 (c-function <create-target-machine> {(-> Target (Ptr U8) (Ptr U8) (Ptr U8) OptLevel RelocMode CodeModel (Ptr U8))} "LLVMCreateTargetMachine")
 
+(function (target-machine/unsafe-from-ptr? ptr) {(-> (Ptr U8) (Option TargetMachine))}
+  (when? (ne? ptr ptr:null) (target-machine: ptr)))
+
 (c-function target-machine/dispose! {(-> TargetMachine unit)} "LLVMDisposeTargetMachine")
 
 (c-function target-machine/target {(-> TargetMachine Target)} "LLVMGetTargetMachineTarget")

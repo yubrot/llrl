@@ -1,0 +1,27 @@
+(import "~/execution-engine" _)
+(import "~/context" _)
+(import "~/data-layout" _)
+(import "~/target" _)
+(import "~/target-machine" _)
+(println! "llvm1/tests/execution-engine")
+
+(with-context (lambda (ctx)
+  (println! "  Interpreter")
+  (with-interpreter ctx ee-unavailable dump-ee)))
+
+(with-context (lambda (ctx)
+  (println! "  MCJIT")
+  (with-mcjit ctx none none none none ee-unavailable dump-ee)))
+
+(function (ee-unavailable s)
+  (println! "    ... is not available: " s))
+
+(function (dump-ee ee)
+  (println! "    data-layout = " (execution-engine/data-layout ee))
+  (match (execution-engine/target-machine? ee)
+    [(some (let tm))
+      (println! "    target-machine = {target = " (target-machine/target tm) ", triple = " (target-machine/triple tm) "}")]
+    [none
+      (println! "    target-machine = none")]))
+
+; TODO: Add {add-module!,remove-modules!,get-function-address} tests
