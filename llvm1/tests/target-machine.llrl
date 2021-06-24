@@ -1,0 +1,16 @@
+(import "~/data-layout" _)
+(import "~/target" _)
+(import "~/target-machine" _)
+(println! "llvm1/tests/target-machine")
+
+(with? ([(ok (let target)) (target/from-triple target/default-triple)]
+        [(some (let tm)) (target-machine/new target target/default-triple none none default default default)])
+  (println! "  " (debug tm))
+  (println! "    target = " (target-machine/target tm))
+  (println! "    triple = " (target-machine/triple tm))
+  (println! "    cpu = " (target-machine/cpu tm))
+  (println! "    feature = " (target-machine/feature tm))
+  (println! "    data-layout = " (target-machine/data-layout tm))
+  (target-machine/dispose! tm))
+
+target-machine/emit-to-file!

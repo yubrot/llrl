@@ -1,0 +1,151 @@
+(import "std/ref" ref/ptr)
+(import "std/memory" ptr:_ size-of)
+(import "~/context" Context)
+(import "~/message" message/consume!)
+(import "~/data-layout" DataLayout)
+(import "~/value" Value value/_)
+(import "~/module" Module module/_)
+(import "~/target-machine" _)
+(export ExecutionEngine _.ExecutionEngine execution-engine/_ with-interpreter with-mcjit)
+
+<link-in-mcjit>
+<link-in-interpreter>
+
+(c-function <link-in-mcjit> {unit} "LLVMLinkInMCJIT")
+(c-function <link-in-interpreter> {unit} "LLVMLinkInInterpreter")
+
+(value-data ExecutionEngine
+  (execution-engine: (Ptr U8) (Vector Module)))
+
+(function (ee-ptr ee)
+  (with1 (execution-engine: (let ptr) _) ee
+    ptr))
+
+(function (execution-engine/dispose! ee) {(-> ExecutionEngine unit)}
+  (<dispose-execution-engine> (ee-ptr ee))) ; modules are owned by LLVM EE
+
+(c-function <dispose-execution-engine> {(-> (Ptr U8) unit)} "LLVMDisposeExecutionEngine")
+
+(function (new-with ctx create)
+  {(-> Context (-> (Ptr (Ptr U8)) Module (Ptr (Ptr U8)) I32) (Result ExecutionEngine String))}
+  (let ([dummy-module (module/new "dummy" ctx)] ; Dummy module for ExecutionEngine creation. must be consumed by `create`
+        [ee (ref ptr:null)]
+        [error (ref ptr:null)])
+    (match (create (ref/ptr ee) dummy-module (ref/ptr error))
+      [0 (ok (execution-engine: ~ee vector/empty))]
+      [_ (err (message/consume! ~error))])))
+
+(function (execution-engine/new-interpreter ctx) {(-> Context (Result ExecutionEngine String))}
+  (new-with ctx <create-interpreter>))
+
+(c-function <create-interpreter> {(-> (Ptr (Ptr U8)) Module (Ptr (Ptr U8)) I32)} "LLVMCreateInterpreterForModule")
+
+(function (with-interpreter ctx errf f) {(forall A) (-> Context (-> String A) (-> ExecutionEngine A) A)}
+  (match (execution-engine/new-interpreter ctx)
+    [(ok (let ee))
+      (let1 ret (f ee)
+        (execution-engine/dispose! ee)
+        ret)]
+    [(err (let e))
+      (errf e)]))
+
+(function (execution-engine/new-mcjit ctx opt-level code-model no-frame-pointer-elim? enable-fast-isel?)
+  {(-> Context (Option OptLevel) (Option CodeModel) (Option Bool) (Option Bool) (Result ExecutionEngine String))}
+  (let1
+    options
+    (mcjit-compiler-options/update
+      (option/map opt-level/value opt-level)
+      code-model
+      (option/map [^1 (if %1 1 0)] no-frame-pointer-elim?)
+      (option/map [^1 (if %1 1 0)] enable-fast-isel?)
+      default)
+    (new-with ctx (lambda (out m err)
+      (<create-mcjit> out m (ptr:non-null options) (size-of MCJITCompilerOptions) err)))))
+
+(c-function <create-mcjit>
+  {(-> (Ptr (Ptr U8)) Module (Ptr MCJITCompilerOptions) U64 (Ptr (Ptr U8)) I32)}
+  "LLVMCreateMCJITCompilerForModule")
+
+(function (with-mcjit ctx opt-level code-model no-frame-pointer-elim? enable-fast-isel? errf f)
+  {(forall A) (-> Context (Option OptLevel) (Option CodeModel) (Option Bool) (Option Bool) (-> String A) (-> ExecutionEngine A) A)}
+  (match (execution-engine/new-mcjit ctx opt-level code-model no-frame-pointer-elim? enable-fast-isel?)
+    [(ok (let ee))
+      (let1 ret (f ee)
+        (execution-engine/dispose! ee)
+        ret)]
+    [(err (let e))
+      (errf e)]))
+
+(function (execution-engine/add-module! module ee) {(-> Module ExecutionEngine unit)}
+  (with1 (execution-engine: (let ptr) (let modules)) ee
+    (<add-module> ptr module)
+    (vector/push! module modules)))
+
+(c-function <add-module> {(-> (Ptr U8) Module unit)} "LLVMAddModule")
+
+(function (execution-engine/remove-modules! ee) {(-> ExecutionEngine (Array Module))}
+  (with1 (execution-engine: (let ptr) (let modules)) ee
+    (let1
+      removed-modules
+      (|> modules
+          (it/map (lambda (m)
+            (let ([out (ref ptr:null)]
+                  [error (ref ptr:null)])
+              (match (<remove-module> ptr m (ref/ptr out) (ref/ptr error))
+                [0 (option/force (module/unsafe-from-ptr? ~out))]
+                [_ (assert #f (string "execution-engine/remove-modules!: failed to remove module: " (message/consume! ~error)))]))))
+          collect)
+      (vector/clear! modules)
+      removed-modules)))
+
+(c-function <remove-module> {(-> (Ptr U8) Module (Ptr (Ptr U8)) (Ptr (Ptr U8)) I32)} "LLVMRemoveModule")
+
+(function (execution-engine/get-function-address name ee) {(-> String ExecutionEngine U64)}
+  (<get-function-address> (ee-ptr ee) (string/c-compatible-ptr name)))
+
+(c-function <get-function-address> {(-> (Ptr U8) (Ptr U8) U64)} "LLVMGetFunctionAddress")
+
+(function (execution-engine/find-function? name ee) {(-> String ExecutionEngine (Option Value))}
+  (let1 out (ref ptr:null)
+    (match (<find-function> (ee-ptr ee) (string/c-compatible-ptr name) (ref/ptr out))
+      [0 (value/unsafe-from-ptr? ~out)]
+      [_ none])))
+
+(c-function <find-function> {(-> (Ptr U8) (Ptr U8) (Ptr (Ptr U8)) I32)} "LLVMFindFunction")
+
+(function (execution-engine/data-layout ee) {(-> ExecutionEngine DataLayout)}
+  (<get-execution-engine-target-data> (ee-ptr ee)))
+
+(c-function <get-execution-engine-target-data> {(-> (Ptr U8) DataLayout)} "LLVMGetExecutionEngineTargetData")
+
+(function (execution-engine/target-machine? ee) {(-> ExecutionEngine (Option TargetMachine))}
+  (target-machine/unsafe-from-ptr? (<get-execution-engine-target-machine> (ee-ptr ee))))
+
+(c-function <get-execution-engine-target-machine> {(-> (Ptr U8) (Ptr U8))} "LLVMGetExecutionEngineTargetMachine")
+
+(c-data MCJITCompilerOptions
+  (mcjit-compiler-options: U32 CodeModel I32 I32 (Ptr U8)))
+
+(instance Default.MCJITCompilerOptions (Default MCJITCompilerOptions)
+  (function default
+    (let1 options (ref (mcjit-compiler-options: 0 default 0 0 ptr:null))
+      (<initialize-mcjit-compiler-options> (ref/ptr options) (size-of MCJITCompilerOptions))
+      ~options)))
+
+(c-function <initialize-mcjit-compiler-options> {(-> (Ptr MCJITCompilerOptions) U64 unit)} "LLVMInitializeMCJITCompilerOptions")
+
+(function (mcjit-compiler-options/update opt-level code-model no-frame-pointer-elim? enable-fast-isel? options)
+  {(-> (Option U32) (Option CodeModel) (Option I32) (Option I32) MCJITCompilerOptions MCJITCompilerOptions)}
+  (with1
+    (mcjit-compiler-options:
+      (let present-opt-level)
+      (let present-code-model)
+      (let present-no-frame-pointer-elim?)
+      (let present-enable-fast-isel?)
+      (let present-mcjmm)) options
+    (mcjit-compiler-options:
+      (option/unwrap present-opt-level opt-level)
+      (option/unwrap present-code-model code-model)
+      (option/unwrap present-no-frame-pointer-elim? no-frame-pointer-elim?)
+      (option/unwrap present-enable-fast-isel? enable-fast-isel?)
+      present-mcjmm)))

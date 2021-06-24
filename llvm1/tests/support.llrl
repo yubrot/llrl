@@ -1,0 +1,7 @@
+(import "~/support" _)
+(println! "llvm1/tests/support")
+
+(assert-eq? (ok unit) (initialize-native-target!))
+(assert-eq? (ok unit) (initialize-native-asm-printer!))
+(assert-eq? (ok unit) (initialize-native-asm-parser!))
+(assert-eq? (ok unit) (initialize-native-disassembler!))

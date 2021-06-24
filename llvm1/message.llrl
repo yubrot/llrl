@@ -1,0 +1,13 @@
+(export message/_)
+
+(function (message/from-string s) {(-> String (Ptr U8))}
+  (<create-message> (string/c-compatible-ptr s)))
+
+(function (message/consume! msg) {(-> (Ptr U8) String)}
+  (let1 s (string/unsafe-from-c-ptr msg)
+    (message/dispose! msg)
+    s))
+
+(c-function message/dispose! {(-> (Ptr U8) unit)} "LLVMDisposeMessage")
+
+(c-function <create-message> {(-> (Ptr U8) (Ptr U8))} "LLVMCreateMessage")

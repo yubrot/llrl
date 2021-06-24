@@ -1,0 +1,21 @@
+(export initialize-_)
+
+(function (result status) {(-> I32 (Result unit unit))}
+  (if (ne? status 1) (ok unit) (err unit)))
+
+(function (initialize-native-target!) {(-> (Result unit unit))}
+  (result (<initialize-native-target>)))
+
+(function (initialize-native-asm-printer!) {(-> (Result unit unit))}
+  (result (<initialize-native-asm-printer>)))
+
+(function (initialize-native-asm-parser!) {(-> (Result unit unit))}
+  (result (<initialize-native-asm-parser>)))
+
+(function (initialize-native-disassembler!) {(-> (Result unit unit))}
+  (result (<initialize-native-disassembler>)))
+
+(c-function <initialize-native-target> {(-> I32)} "llrl_LLVMInitializeNativeTarget")
+(c-function <initialize-native-asm-printer> {(-> I32)} "llrl_LLVMInitializeNativeAsmPrinter")
+(c-function <initialize-native-asm-parser> {(-> I32)} "llrl_LLVMInitializeNativeAsmParser")
+(c-function <initialize-native-disassembler> {(-> I32)} "llrl_LLVMInitializeNativeDisassembler")

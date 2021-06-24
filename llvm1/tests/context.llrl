@@ -1,0 +1,4 @@
+(import "~/context" _)
+(println! "llvm1/tests/context")
+
+(with-context ignore)

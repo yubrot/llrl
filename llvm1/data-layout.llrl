@@ -1,0 +1,64 @@
+(import "~/message" message/consume!)
+(import "~/type" _)
+(export DataLayout _.DataLayout data-layout/_ with-data-layout ByteOrdering _.ByteOrdering byte-ordering/_)
+
+(value-data DataLayout
+  (data-layout: (Ptr U8)))
+
+(instance Display.DataLayout (Display DataLayout)
+  (function (display! w a)
+    (display! w (data-layout/string-rep a))))
+
+(instance DebugDisplay.DataLayout (DebugDisplay DataLayout)
+  (function (debug-display! w a)
+    (display-all! w "<" a ">")))
+
+(function (data-layout/new string-rep) {(-> String DataLayout)}
+  (<create-target-data> (string/c-compatible-ptr string-rep)))
+
+(c-function <create-target-data> {(-> (Ptr U8) DataLayout)} "LLVMCreateTargetData")
+
+(c-function data-layout/dispose! {(-> DataLayout unit)} "LLVMDisposeTargetData")
+
+(function (with-data-layout string-rep f) {(forall A) (-> String (-> DataLayout A) A)}
+  (let* ([ctx (data-layout/new string-rep)]
+         [ret (f ctx)])
+    (data-layout/dispose! ctx)
+    ret))
+
+(function (data-layout/string-rep dl) {(-> DataLayout String)}
+  (message/consume! (<copy-string-rep-of-target-data> dl)))
+
+(c-function <copy-string-rep-of-target-data> {(-> DataLayout (Ptr U8))} "LLVMCopyStringRepOfTargetData")
+
+(c-function data-layout/byte-order {(-> DataLayout ByteOrdering)} "LLVMByteOrder")
+
+(derive (Eq Ord DebugDisplay Hash) value-data ByteOrdering (byte-ordering: U32))
+
+(function byte-ordering/big-endian (byte-ordering: 0))
+(function byte-ordering/little-endian (byte-ordering: 1))
+
+(function (data-layout/pointer-size address-space dl) {(-> (Option U32) DataLayout U32)}
+  (if-match1 (some (let address-space)) address-space
+    (<pointer-size-for-as> dl address-space)
+    (<pointer-size> dl)))
+
+(c-function <pointer-size> {(-> DataLayout U32)} "LLVMPointerSize")
+(c-function <pointer-size-for-as> {(-> DataLayout U32 U32)} "LLVMPointerSizeForAS")
+
+(c-function data-layout/type-size-in-bits {(-> DataLayout Type U64)} "LLVMSizeOfTypeInBits")
+(c-function data-layout/type-store-size {(-> DataLayout Type U64)} "LLVMStoreSizeOfType")
+(c-function data-layout/type-alloc-size {(-> DataLayout Type U64)} "LLVMABISizeOfType")
+(c-function data-layout/abi-type-alignment {(-> DataLayout Type U32)} "LLVMABIAlignmentOfType")
+(c-function data-layout/pref-type-alignment {(-> DataLayout Type U32)} "LLVMPreferredAlignmentOfType")
+
+(function (data-layout/element-containing-offset dl ty offset) {(-> DataLayout Type U64 U32)}
+  (assert (type/struct? ty) "data-layout/element-containing-offset: Not a struct type")
+  (<element-at-offset> dl ty offset))
+
+(function (data-layout/element-offset dl ty index) {(-> DataLayout Type U32 U64)}
+  (assert (type/struct? ty) "data-layout/element-offset: Not a struct type")
+  (<offset-of-element> dl ty index))
+
+(c-function <element-at-offset> {(-> DataLayout Type U64 U32)} "LLVMElementAtOffset")
+(c-function <offset-of-element> {(-> DataLayout Type U32 U64)} "LLVMOffsetOfElement")

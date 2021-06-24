@@ -132,6 +132,8 @@
 (assert-eq? "foo" (string/join "<>" (array "foo")))
 (assert-eq? "foo<>bar<>baz" (string/join "<>" (array "foo" "bar" "baz")))
 
+(assert-eq? "foobar" (string/unsafe-from-c-ptr (string/c-compatible-ptr "foobar")))
+
 (assert-eq? "" (string ""))
 (assert-eq? "hello" (string "hello"))
 (assert-eq? "Hello, World!\n" (string "Hello, World!\n"))

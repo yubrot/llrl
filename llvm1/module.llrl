@@ -1,0 +1,113 @@
+(import "std/ref" ref/ptr)
+(import "std/memory" ptr:_)
+(import "~/context" Context)
+(import "~/message" message/consume!)
+(import "~/data-layout" DataLayout)
+(import "~/type" _)
+(import "~/value" _)
+(export Module _.Module module/_ with-module)
+
+(derive (Eq DebugDisplay) value-data Module
+  (module: (Ptr U8)))
+
+(instance Display.Module (Display Module)
+  (function (display! w a)
+    (display! w (message/consume! (<print-module-to-string> a)))))
+
+(c-function <print-module-to-string> {(-> Module (Ptr U8))} "LLVMPrintModuleToString")
+
+(instance DeepCopy.Module (DeepCopy Module)
+  (function (deep-copy a)
+    (<clone-module> a)))
+
+(c-function <clone-module> {(-> Module Module)} "LLVMCloneModule")
+
+(function (module/new name ctx) {(-> String Context Module)}
+  (<module-create> (string/c-compatible-ptr name) ctx))
+
+(c-function <module-create> {(-> (Ptr U8) Context Module)} "LLVMModuleCreateWithNameInContext")
+
+(function (module/unsafe-from-ptr? ptr) {(-> (Ptr U8) (Option Module))}
+  (when? (ne? ptr ptr:null) (module: ptr)))
+
+(c-function module/dispose! {(-> Module unit)} "LLVMDisposeModule")
+
+(function (with-module name ctx f) {(forall A) (-> String Context (-> Module A) A)}
+  (let* ([module (module/new name ctx)]
+         [ret (f module)])
+    (module/dispose! module)
+    ret))
+
+(c-function module/context {(-> Module Context)} "LLVMGetModuleContext")
+
+(c-function module/data-layout {(-> Module DataLayout)} "LLVMGetModuleDataLayout")
+
+(function (module/set-data-layout! dl module) {(-> DataLayout Module unit)}
+  (<set-data-layout> module dl))
+
+(c-function <set-data-layout> {(-> Module DataLayout unit)} "LLVMSetModuleDataLayout")
+
+(function (module/target-triple module) {(-> Module String)}
+  (string/unsafe-from-c-ptr (<get-target> module)))
+
+(c-function <get-target> {(-> Module (Ptr U8))} "LLVMGetTarget")
+
+(function (module/set-target-triple! triple module) {(-> String Module unit)}
+  (<set-target> module (string/c-compatible-ptr triple)))
+
+(c-function <set-target> {(-> Module (Ptr U8) unit)} "LLVMSetTarget")
+
+(function (module/add-global! name ty address-space module) {(-> String Type (Option U32) Module Value)}
+  (if-match1 (some (let address-space)) address-space
+    (<add-global-in-as> module ty (string/c-compatible-ptr name) address-space)
+    (<add-global> module ty (string/c-compatible-ptr name))))
+
+(c-function <add-global-in-as> {(-> Module Type (Ptr U8) U32 Value)} "LLVMAddGlobalInAddressSpace")
+(c-function <add-global> {(-> Module Type (Ptr U8) Value)} "LLVMAddGlobal")
+
+(function (module/lookup-global? name module) {(-> String Module (Option Value))}
+  (value/unsafe-from-ptr? (<get-named-global> module (string/c-compatible-ptr name))))
+
+(c-function <get-named-global> {(-> Module (Ptr U8) (Ptr U8))} "LLVMGetNamedGlobal")
+
+(function (module/globals module) {(-> Module (Vector Value))}
+  (let ([globals vector/empty]
+        [global (ref (<get-first-global> module))])
+    (while-match1 (some (let value)) (value/unsafe-from-ptr? ~global)
+      (vector/push! value globals)
+      (set! global (<get-next-global> ~global)))
+    globals))
+
+(c-function <get-first-global> {(-> Module (Ptr U8))} "LLVMGetFirstGlobal")
+(c-function <get-next-global> {(-> (Ptr U8) (Ptr U8))} "LLVMGetNextGlobal")
+
+(function (module/add-function! name ty module) {(-> String Type Module Value)}
+  (assert (type/function? ty) "module/add-function!: Not a function type")
+  (<add-function> module (string/c-compatible-ptr name) ty))
+
+(c-function <add-function> {(-> Module (Ptr U8) Type Value)} "LLVMAddFunction")
+
+(function (module/lookup-function? name module) {(-> String Module (Option Value))}
+  (value/unsafe-from-ptr? (<get-named-fucntion> module (string/c-compatible-ptr name))))
+
+(c-function <get-named-fucntion> {(-> Module (Ptr U8) (Ptr U8))} "LLVMGetNamedFunction")
+
+(function (module/functions module) {(-> Module (Vector Value))}
+  (let ([functions vector/empty]
+        [f (ref (<get-first-function> module))])
+    (while-match1 (some (let value)) (value/unsafe-from-ptr? ~f)
+      (vector/push! value functions)
+      (set! f (<get-next-function> ~f)))
+    functions))
+
+(c-function <get-first-function> {(-> Module (Ptr U8))} "LLVMGetFirstFunction")
+(c-function <get-next-function> {(-> (Ptr U8) (Ptr U8))} "LLVMGetNextFunction")
+
+(function (module/verify module) {(-> Module (Result unit String))}
+  (let ([out (ref ptr:null)]
+        [verify-failure-action:return-status 2])
+    (match (<verify-module> module verify-failure-action:return-status (ref/ptr out))
+      [1 (err (message/consume! ~out))]
+      [_ (ok unit)])))
+
+(c-function <verify-module> {(-> Module U32 (Ptr (Ptr U8)) I32)} "LLVMVerifyModule")

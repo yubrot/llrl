@@ -1,0 +1,12 @@
+(export Context _.Context context/_ with-context)
+
+(derive (Eq) value-data Context (context: (Ptr U8)))
+
+(c-function context/new {(-> Context)} "LLVMContextCreate")
+(c-function context/dispose! {(-> Context unit)} "LLVMContextDispose")
+
+(function (with-context f) {(forall A) (-> (-> Context A) A)}
+  (let* ([ctx (context/new)]
+         [ret (f ctx)])
+    (context/dispose! ctx)
+    ret))

@@ -1,0 +1,21 @@
+(import "~/builder" _)
+(import "~/context" _)
+(import "~/type" _)
+(import "~/value" _)
+(import "~/module" _)
+(println! "llvm1/tests/builder")
+
+(with-context (lambda (ctx)
+  (with-module "test" ctx (lambda (module)
+    (let1 f (module/add-function! "sqrLength" (type/build ctx (-> double double double)) module)
+      (with-builder (function/append-block! "entry" f) (lambda (builder)
+        (let* ([a (get (function/params f)[0])]
+               [b (get (function/params f)[1])]
+               [tmp0 (builder/put! (inst:binary binary:fmul a a) builder)]
+               [tmp1 (builder/put! (inst:binary binary:fmul b b) builder)]
+               [tmp2 (builder/put! (inst:binary binary:fadd tmp0 tmp1) builder)])
+          (builder/put! (inst:ret tmp2) builder)))))
+
+    ; (println! module)
+    (when-match1 (err (let e)) (module/verify module)
+      (assert #f e))))))
