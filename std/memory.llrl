@@ -3,12 +3,13 @@
 (import "std/prelude/stage-1" _)
 (import "std/integer" integer/to-string _.U64)
 (import "std/phantom" Phantom phantom)
-(export Ptr ptr:_ ptr/_ size-of align-of _.Ptr)
+(export Ptr ptr:_ ptr/_ reinterpret size-of align-of _.Ptr)
 
 (builtin-type (Ptr A) "ptr"
   [ptr:null "null"]
   [(ptr:non-null A) "non-null"])
 
+(builtin-op ptr/temporary {(forall A) (-> A (Ptr A))} "ptr.temporary")
 (builtin-op ptr/load {(forall A) (-> (Ptr A) A)} "ptr.load")
 (builtin-op ptr/store! {(forall A) (-> A (Ptr A) unit)} "ptr.store")
 (builtin-op ptr/offset {(forall A) (-> I64 (Ptr A) (Ptr A))} "ptr.offset")
@@ -39,6 +40,8 @@
 
 (builtin-op ptr/address {(forall A) (-> (Ptr A) U64)} "ptr.to-integer")
 (builtin-op ptr/from-address {(forall A) (-> U64 (Ptr A))} "integer.to-ptr")
+
+(builtin-op reinterpret {(forall A B) (-> A B)} "reinterpret")
 
 (macro (size-of s)
   (s/match s

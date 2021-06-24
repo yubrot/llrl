@@ -877,6 +877,7 @@ fn builtin_rt(symbol: &Symbol, name: &str, mut ct_args: Vec<Ct>, mut args: Vec<R
         ("ptr.le", _, [a, b]) => Rt::binary(Binary::PtrLe, take(a), take(b)),
         ("ptr.gt", _, [a, b]) => Rt::binary(Binary::PtrGt, take(a), take(b)),
         ("ptr.ge", _, [a, b]) => Rt::binary(Binary::PtrGe, take(a), take(b)),
+        ("ptr.temporary", [_], [a]) => Rt::alloc(Location::Stack, take(a)),
         ("ptr.load", [_], [a]) => Rt::unary(Unary::Load, take(a)),
         ("ptr.store", [_], [a, b]) => Rt::binary(Binary::Store, take(a), take(b)),
         ("ptr.offset", [_], [a, b]) => Rt::binary(Binary::Offset, take(a), take(b)),
@@ -884,6 +885,9 @@ fn builtin_rt(symbol: &Symbol, name: &str, mut ct_args: Vec<Ct>, mut args: Vec<R
         ("ptr.copy", _, [a, b, c]) => Rt::ternary(Ternary::PtrCopy, take(a), take(b), take(c)),
         ("ptr.move", _, [a, b, c]) => Rt::ternary(Ternary::PtrMove, take(a), take(b), take(c)),
         ("ptr.to-integer", _, [ptr]) => Rt::unary(Unary::PtrToI, take(ptr)),
+        ("reinterpret", [from, to], [a]) => {
+            Rt::unary(Unary::Reinterpret(take(from), take(to)), take(a))
+        }
         ("array.construct", _, [a, b]) => Rt::binary(Binary::ArrayConstruct, take(a), take(b)),
         ("array.ptr", _, [a]) => Rt::unary(Unary::ArrayPtr, take(a)),
         ("array.length", _, [a]) => Rt::unary(Unary::ArrayLength, take(a)),

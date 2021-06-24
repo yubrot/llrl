@@ -1,5 +1,5 @@
 (import "std/ref" ref/ptr)
-(import "std/memory" ptr:_ size-of)
+(import "std/memory" ptr:_ ptr/temporary size-of)
 (import "~/context" Context)
 (import "~/message" message/consume!)
 (import "~/data-layout" DataLayout)
@@ -60,7 +60,7 @@
       (option/map [^1 (if %1 1 0)] enable-fast-isel?)
       default)
     (new-with ctx (lambda (out m err)
-      (<create-mcjit> out m (ptr:non-null options) (size-of MCJITCompilerOptions) err)))))
+      (<create-mcjit> out m (ptr/temporary options) (size-of MCJITCompilerOptions) err)))))
 
 (c-function <create-mcjit>
   {(-> (Ptr (Ptr U8)) Module (Ptr MCJITCompilerOptions) U64 (Ptr (Ptr U8)) I32)}

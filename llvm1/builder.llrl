@@ -1,4 +1,4 @@
-(import "std/memory" ptr:_)
+(import "std/memory" ptr:_ ptr/temporary)
 (import "~/context" Context)
 (import "~/type" _)
 (import "~/value" _)
@@ -66,7 +66,7 @@
           [unary:not <build-not>])
         builder
         a
-        (ptr:non-null 0))]
+        (ptr/temporary 0))]
     [(inst:binary (let op) (let a) (let b))
       (
         (match op
@@ -110,7 +110,7 @@
         builder
         a
         b
-        (ptr:non-null 0))]
+        (ptr/temporary 0))]
     [(inst:alloca (let name) (let ty))
       (<build-alloca> builder ty (string/c-compatible-ptr name))]
     [(inst:array-alloca (let name) (let ty) (let num))
@@ -129,9 +129,9 @@
     [(inst:store (let val) (let ptr))
       (<build-store> builder val ptr)]
     [(inst:gep (let ptr) (let indices))
-      (<build-gep> builder ptr (array/ptr indices) (conv (array/length indices)) (ptr:non-null 0))]
+      (<build-gep> builder ptr (array/ptr indices) (conv (array/length indices)) (ptr/temporary 0))]
     [(inst:struct-gep (let ptr) (let index))
-      (<build-struct-gep> builder ptr index (ptr:non-null 0))]
+      (<build-struct-gep> builder ptr index (ptr/temporary 0))]
     [(inst:conv (let op) (let val) (let ty))
       (
         (match op
@@ -151,17 +151,17 @@
         builder
         val
         ty
-        (ptr:non-null 0))]
+        (ptr/temporary 0))]
     [(inst:phi (let ty))
-      (<build-phi> builder ty (ptr:non-null 0))]
+      (<build-phi> builder ty (ptr/temporary 0))]
     [(inst:call (let f) (let args))
-      (<build-call> builder f (array/ptr args) (conv (array/length args)) (ptr:non-null 0))]
+      (<build-call> builder f (array/ptr args) (conv (array/length args)) (ptr/temporary 0))]
     [(inst:select (let cond) (let then) (let else))
-      (<build-select> builder cond then else (ptr:non-null 0))]
+      (<build-select> builder cond then else (ptr/temporary 0))]
     [(inst:extract-value (let agg) (let index))
-      (<build-extract-value> builder agg index (ptr:non-null 0))]
+      (<build-extract-value> builder agg index (ptr/temporary 0))]
     [(inst:insert-value (let agg) (let index) (let elt))
-      (<build-insert-value> builder agg elt index (ptr:non-null 0))]))
+      (<build-insert-value> builder agg elt index (ptr/temporary 0))]))
 
 (value-data Inst
   (inst:ret Value)

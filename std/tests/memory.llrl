@@ -28,6 +28,8 @@
   (assert-eq? 111 (|> x string/unsafe-ptr (ptr/offset 4) ptr/load))
   (assert-eq? 0 (|> x string/unsafe-ptr (ptr/offset 5) ptr/load)))
 
+(assert-eq? 123 (|> 123 ptr/temporary ptr/load))
+
 (assert-eq? -1 {I8} (|> 255 {U8} box box/unsafe-ptr ptr/cast ptr/load))
 
 (let ([x (array 1 {I32} 2 3)])
@@ -35,6 +37,8 @@
   (assert-eq? 2 (|> x array/ptr (ptr/add 1) ptr/load))
   (assert-eq? 3 (|> x array/ptr (ptr/add 2) ptr/load))
   (assert-eq? 2 (|> x array/ptr ptr/address (+ 4) ptr/from-address ptr/load)))
+
+(assert-eq? (: -1 {I32} -1 {I32}) (reinterpret -1 {I64}))
 
 (assert-eq? 1 (size-of I8))
 (assert-eq? 2 (size-of U16))

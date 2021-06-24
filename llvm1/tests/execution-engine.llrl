@@ -1,4 +1,4 @@
-(import "std/memory" ptr:_ ptr/_)
+(import "std/memory" ptr:_ reinterpret)
 (import "~/execution-engine" _)
 (import "~/context" _)
 (import "~/data-layout" _)
@@ -47,5 +47,5 @@
     ; llrl closures are represented by a pair of function pointer and environment pointer.
     (let* ([address (execution-engine/get-function-address "sqrLength" ee)]
            [closure {(: U64 (Ptr U8))} (: address ptr:null)]
-           [sqr-length {(-> F64 F64 F64)} (ptr/load (ptr/cast (ptr:non-null closure)))])
+           [sqr-length {(-> F64 F64 F64)} (reinterpret closure)])
       (assert-eq? 25 (sqr-length 3 4)))))))

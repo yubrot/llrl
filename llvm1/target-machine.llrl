@@ -1,4 +1,4 @@
-(import "std/memory" ptr:_)
+(import "std/memory" ptr:_ ptr/temporary)
 (import "std/ref" ref/ptr)
 (import "~/message" message/consume!)
 (import "~/data-layout" DataLayout)
@@ -58,8 +58,8 @@
     (<create-target-machine>
       target
       (string/c-compatible-ptr triple)
-      (if-match1 (some (let cpu)) cpu (string/c-compatible-ptr cpu) (ptr:non-null 0))
-      (if-match1 (some (let feature)) feature (string/c-compatible-ptr feature) (ptr:non-null 0))
+      (if-match1 (some (let cpu)) cpu (string/c-compatible-ptr cpu) (ptr/temporary 0))
+      (if-match1 (some (let feature)) feature (string/c-compatible-ptr feature) (ptr/temporary 0))
       opt-level
       reloc-mode
       code-model)

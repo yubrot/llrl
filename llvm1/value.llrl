@@ -1,5 +1,5 @@
 (import "std/s" s/_)
-(import "std/memory" ptr:_)
+(import "std/memory" ptr:_ ptr/temporary)
 (import "std/ref" ref/ptr)
 (import "~/context" Context)
 (import "~/message" message/consume!)
@@ -346,7 +346,7 @@
 
 (function (phi-node/add-incoming! value bb phi-node) {(-> Value BasicBlock Value unit)}
   (assert (value/phi-node? phi-node) "phi-node/add-incoming!: Not a PHI node")
-  (<add-incoming> phi-node (ptr:non-null value) (ptr:non-null bb) 1))
+  (<add-incoming> phi-node (ptr/temporary value) (ptr/temporary bb) 1))
 
 (c-function <add-incoming> {(-> Value (Ptr Value) (Ptr BasicBlock) U32 unit)} "LLVMAddIncoming")
 
