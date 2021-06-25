@@ -79,6 +79,8 @@
   (assert-eq? "i16" (string (type/build ctx i16)))
   (assert-eq? "i32" (string (type/build ctx i32)))
   (assert-eq? "i64" (string (type/build ctx i64)))
+  (assert-eq? "i128" (string (type/build ctx (integer 128))))
+  (assert-eq? "i128" (string (type/build ctx (integer ,(+ 64 64)))))
   (assert-eq? "float" (string (type/build ctx float)))
   (assert-eq? "double" (string (type/build ctx double)))
   (assert-eq? "i1 ()" (string (type/build ctx (-> i1))))

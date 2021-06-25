@@ -214,7 +214,9 @@
       (ok `(,\type/integer ,ctx 32))]
     [(_ ,ctx i64)
       (ok `(,\type/integer ,ctx 64))]
-    [(_ ,ctx integer ,(s:list (s:symbol "unquote") (let expr)))
+    [(_ ,ctx (integer ,(let bit-width (s:integer _ _))))
+      (ok `(,\type/integer ,ctx ,bit-width))]
+    [(_ ,ctx (integer ,(s:list (s:symbol "unquote") (let expr))))
       (ok `(,\type/integer ,ctx ,expr))]
     [(_ ,ctx float)
       (ok `(,\type/float ,ctx))]
@@ -243,8 +245,11 @@
     [(_ ,ctx (: ,@tys))
       (ok `(,\type/struct ,ctx (,\array ,@(s/map [^1 `(,\type/build ,ctx ,%1)] tys)!) #f))]
 
+    [(_ ,ctx (array ,ty ,(let size (s:integer _ _))))
+      (ok `(,\type/array (,\type/build ,ctx ,ty) ,size))]
     [(_ ,ctx (array ,ty ,(s:list (s:symbol "unquote") (let size))))
       (ok `(,\type/array (,\type/build ,ctx ,ty) ,size))]
+
     [(_ ,ctx (pointer ,ty))
       (ok `(,\type/pointer (,\type/build ,ctx ,ty) 0))]
     [_

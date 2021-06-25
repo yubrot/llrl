@@ -376,73 +376,68 @@
 
 ; Builder
 
-(macro (const/build s)
-  (s/match s
-    [(_ ,ctx ,(s:list (s:symbol "unquote") (let expr)))
-      (ok expr)]
-    [(_ ,ctx #t)
-      (ok `(,\const/bool ,ctx #t))]
-    [(_ ,ctx #f)
-      (ok `(,\const/bool ,ctx #f))]
-    [(_ ,ctx ,(let s (s:string _)))
-      (ok `(,\const/string ,ctx ,s #t))]
+($$
+  (macro (const/build s)
+    (s/match s
+      [(_ ,ctx ,(s:list (s:symbol "unquote") (let expr)))
+        (ok expr)]
+      [(_ ,ctx #t)
+        (ok `(,\const/bool ,ctx #t))]
+      [(_ ,ctx #f)
+        (ok `(,\const/bool ,ctx #f))]
+      [(_ ,ctx (bool ,(s:list (s:symbol "unquote") (let value))))
+        (ok `(,\const/bool ,ctx ,value))]
 
-    [(_ ,ctx (bool ,(s:list (s:symbol "unquote") (let value))))
-      (ok `(,\const/bool ,ctx ,value))]
-    [(_ ,ctx (i8 ,(s:list (s:symbol "unquote") (let value))))
-      (ok `(,\const/integer (,\type/integer ,ctx 8) (,\conv-from ,\I8 ,value) #t))]
-    [(_ ,ctx (i16 ,(s:list (s:symbol "unquote") (let value))))
-      (ok `(,\const/integer (,\type/integer ,ctx 16) (,\conv-from ,\I16 ,value) #t))]
-    [(_ ,ctx (i32 ,(s:list (s:symbol "unquote") (let value))))
-      (ok `(,\const/integer (,\type/integer ,ctx 32) (,\conv-from ,\I32 ,value) #t))]
-    [(_ ,ctx (i64 ,(s:list (s:symbol "unquote") (let value))))
-      (ok `(,\const/integer (,\type/integer ,ctx 64) (,\conv-from ,\I64 ,value) #t))]
-    [(_ ,ctx (u8 ,(s:list (s:symbol "unquote") (let value))))
-      (ok `(,\const/integer (,\type/integer ,ctx 8) (,\conv-from ,\U8 ,value) #f))]
-    [(_ ,ctx (u16 ,(s:list (s:symbol "unquote") (let value))))
-      (ok `(,\const/integer (,\type/integer ,ctx 16) (,\conv-from ,\U16 ,value) #f))]
-    [(_ ,ctx (u32 ,(s:list (s:symbol "unquote") (let value))))
-      (ok `(,\const/integer (,\type/integer ,ctx 32) (,\conv-from ,\U32 ,value) #f))]
-    [(_ ,ctx (u64 ,(s:list (s:symbol "unquote") (let value))))
-      (ok `(,\const/integer (,\type/integer ,ctx 64) (,\conv-from ,\U64 ,value) #f))]
-    [(_ ,ctx (float ,(s:list (s:symbol "unquote") (let value))))
-      (ok `(,\const/fp (,\type/float ,ctx) (,\conv-from ,\F32 ,value)))]
-    [(_ ,ctx (double ,(s:list (s:symbol "unquote") (let value))))
-      (ok `(,\const/fp (,\type/double ,ctx) ,value))]
+      ($for-each
+        [$name $type $size $signed]
+        ([i8 I8 8 #t] [i16 I16 16 #t] [i32 I32 32 #t] [i64 I64 64 #t]
+         [u8 U8 8 #f] [u16 U16 16 #f] [u32 U32 32 #f] [u64 U64 64 #f])
+        [(_ ,ctx ($name ,(let value (s:integer _ _))))
+          (ok `(,\const/integer (,\type/integer ,ctx $size) (,\conv-from ,\$type ,value) $signed))]
+        [(_ ,ctx ($name ,(s:list (s:symbol "unquote") (let value))))
+          (ok `(,\const/integer (,\type/integer ,ctx $size) (,\conv-from ,\$type ,value) $signed))])
 
-    [(_ ,ctx (: ,(s:list (s:symbol "unquote-splicing") (let expr))))
-      (ok `(,\const/struct ,ctx ,expr #f))]
-    [(_ ,ctx (: ,@elems))
-      (ok `(,\const/struct ,ctx (,\array ,@(s/map [^1 `(,\const/build ,ctx ,%1)] elems)!) #f))]
+      ($for-each [$name $type] ([float F32] [double F64])
+        [(_ ,ctx ($name ,(let value (s:fpnumber _))))
+          (ok `(,\const/fp (,\($symbol-concat type/ $name) ,ctx) (,\conv-from ,\$type ,value)))]
+        [(_ ,ctx ($name ,(s:list (s:symbol "unquote") (let value))))
+          (ok `(,\const/fp (,\($symbol-concat type/ $name) ,ctx) (,\conv-from ,\$type ,value)))])
 
-    [(_ ,ctx (array))
-      (err "const/build: array requires at least one constant to determine the type")]
-    [(_ ,ctx (array ,elem ,@elems))
-      (ok
-        (let1 tmp-elem (gensym)
-          `(let ([,tmp-elem (,\const/build ,ctx ,elem)])
-            (,\const/array (,\value/type ,tmp-elem) (,\array ,tmp-elem ,@(s/map [^1 `(,\const/build ,ctx ,%1)] elems)!)))))]
+      [(_ ,ctx (: ,(s:list (s:symbol "unquote-splicing") (let expr))))
+        (ok `(,\const/struct ,ctx ,expr #f))]
+      [(_ ,ctx (: ,@elems))
+        (ok `(,\const/struct ,ctx (,\array ,@(s/map [^1 `(,\const/build ,ctx ,%1)] elems)!) #f))]
 
-    [(_ ,ctx (string ,(s:list (s:symbol "unquote") (let expr))))
-      (ok `(,\const/string ,ctx ,expr #t))]
+      [(_ ,ctx (array))
+        (err "const/build: array requires at least one constant to determine the type")]
+      [(_ ,ctx (array ,elem ,@elems))
+        (ok
+          (let1 tmp-elem (gensym)
+            `(let ([,tmp-elem (,\const/build ,ctx ,elem)])
+              (,\const/array (,\value/type ,tmp-elem) (,\array ,tmp-elem ,@(s/map [^1 `(,\const/build ,ctx ,%1)] elems)!)))))]
 
-    [(_ ,ctx (null ,ty))
-      (ok `(,\const/null (,\type/build ,ctx ,ty)))]
-    [(_ ,ctx (undef ,ty))
-      (ok `(,\const/undef (,\type/build ,ctx ,ty)))]
-    [(_ ,ctx (align-of ,ty))
-      (ok `(,\const/align-of (,\type/build ,ctx ,ty)))]
-    [(_ ,ctx (size-of ,ty))
-      (ok `(,\const/size-of (,\type/build ,ctx ,ty)))]
+      [(_ ,ctx ,(let s (s:string _)))
+        (ok `(,\const/string ,ctx ,s #t))]
+      [(_ ,ctx (string ,(s:list (s:symbol "unquote") (let value))))
+        (ok `(,\const/string ,ctx ,value #t))]
 
-    [(_ ,ctx (bit-cast ,ty ,c))
-      (ok `(,\const/bit-cast (,\type/build ,ctx ,ty) (,\const/build ,ctx ,c)))]
-    [(_ ,ctx (trunc-or-bit-cast ,ty ,c))
-      (ok `(,\const/trunc-or-bit-cast (,\type/build ,ctx ,ty) (,\const/build ,ctx ,c)))]
-    [(_ ,ctx (int-to-ptr ,ty ,c))
-      (ok `(,\const/int-to-ptr (,\type/build ,ctx ,ty) (,\const/build ,ctx ,c)))]
-    [(_ ,ctx (ptr-to-int ,ty ,c))
-      (ok `(,\const/ptr-to-int (,\type/build ,ctx ,ty) (,\const/build ,ctx ,c)))]
+      [(_ ,ctx (null ,ty))
+        (ok `(,\const/null (,\type/build ,ctx ,ty)))]
+      [(_ ,ctx (undef ,ty))
+        (ok `(,\const/undef (,\type/build ,ctx ,ty)))]
+      [(_ ,ctx (align-of ,ty))
+        (ok `(,\const/align-of (,\type/build ,ctx ,ty)))]
+      [(_ ,ctx (size-of ,ty))
+        (ok `(,\const/size-of (,\type/build ,ctx ,ty)))]
 
-    [_
-      (err (string "Expected (const/build ctx const-form) but got " s))]))
+      [(_ ,ctx (bit-cast ,ty ,c))
+        (ok `(,\const/bit-cast (,\type/build ,ctx ,ty) (,\const/build ,ctx ,c)))]
+      [(_ ,ctx (trunc-or-bit-cast ,ty ,c))
+        (ok `(,\const/trunc-or-bit-cast (,\type/build ,ctx ,ty) (,\const/build ,ctx ,c)))]
+      [(_ ,ctx (int-to-ptr ,ty ,c))
+        (ok `(,\const/int-to-ptr (,\type/build ,ctx ,ty) (,\const/build ,ctx ,c)))]
+      [(_ ,ctx (ptr-to-int ,ty ,c))
+        (ok `(,\const/ptr-to-int (,\type/build ,ctx ,ty) (,\const/build ,ctx ,c)))]
+
+      [_
+        (err (string "Expected (const/build ctx const-form) but got " s))])))

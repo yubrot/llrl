@@ -7,15 +7,31 @@
 
 (with-context (lambda (ctx)
   (with-module "test" ctx (lambda (module)
-    (let1 f (module/add-function! "sqrLength" (type/build ctx (-> double double double)) module)
+    (let* ([f (module/add-function! "foo" (type/build ctx (-> double double double)) module)]
+           [a (get (function/params f)[0])]
+           [b (get (function/params f)[1])])
       (with-builder (function/append-block! "entry" f) (lambda (builder)
-        (let* ([a (get (function/params f)[0])]
-               [b (get (function/params f)[1])]
-               [tmp0 (builder/put! (inst:binary binary:fmul a a) builder)]
-               [tmp1 (builder/put! (inst:binary binary:fmul b b) builder)]
-               [tmp2 (builder/put! (inst:binary binary:fadd tmp0 tmp1) builder)])
-          (builder/put! (inst:ret tmp2) builder)))))
+        (builder/build! builder (ret (fadd (fmul ,a (double ,5)) (fmul (double ,7) ,b)))))))
 
     ; (println! module)
     (when-match1 (err (let e)) (module/verify module)
       (assert #f e))))))
+
+(function (<macro-expansion-succeeds> bb ty val) {(-> BasicBlock Type Value unit)}
+  (with-builder bb (lambda (builder)
+    (builder/build! builder (cond-br ,val ,bb ,bb))
+    (builder/build! builder (neg ,val))
+    (builder/build! builder (alloca "hello" i32))
+    (builder/build! builder (array-alloca ,"world" i32 (u64 4)))
+    (builder/build! builder (store (nswadd (load "tmp" ,val) (i32 1)) ,val))
+    (builder/build! builder (gep ,val (i32 0) (i32 1)))
+    (builder/build! builder (struct-gep ,val 4))
+    (builder/build! builder (struct-gep ,val ,(+ 1 2)))
+    (builder/build! builder (zext ,val i64))
+    (builder/build! builder (phi i64))
+    (builder/build! builder (call ,val (float 1.0) (double 2.0)))
+    (builder/build! builder (call ,val ,@(array)))
+    (builder/build! builder (select ,val ,val ,val))
+    (builder/build! builder (extract-value ,val 2))
+    (builder/build! builder (insert-value ,val ,(+ 1 2) ,val))
+    unit)))

@@ -1,3 +1,4 @@
+(import "std/s" s/_)
 (import "std/memory" ptr:_ ptr/temporary)
 (import "~/context" Context)
 (import "~/type" _)
@@ -342,3 +343,88 @@
 (function real-predicate/ule (real-predicate: 13))
 (function real-predicate/une (real-predicate: 14))
 (function real-predicate/true (real-predicate: 15))
+
+($$ begin
+  (macro (builder/build! s)
+    (s/match s
+      [(_ ,builder (ret ,value))
+        (ok `(,\builder/put! (,\inst:ret (,\builder/build! ,builder ,value)) ,builder))]
+      [(_ ,builder ret-void)
+        (ok `(,\builder/put! ,\inst:ret-void ,builder))]
+      [(_ ,builder (br ,(s:list (s:symbol "unquote") (let bb))))
+        (ok `(,\builder/put! (,\inst:br ,bb) ,builder))]
+      [(_ ,builder (cond-br ,cond ,(s:list (s:symbol "unquote") (let then-bb)) ,(s:list (s:symbol "unquote") (let else-bb))))
+        (ok `(,\builder/put! (,\inst:cond-br (,\builder/build! ,builder ,cond) ,then-bb ,else-bb) ,builder))]
+      [(_ ,builder unreachable)
+        (ok `(,\builder/put! ,\inst:unreachable ,builder))]
+
+      ($for-each $unary [neg nswneg fneg not]
+        [(_ ,builder ($unary ,a))
+          (ok `(,\builder/put! (,\inst:unary ,\($symbol-concat unary: $unary) (,\builder/build! ,builder ,a)) ,builder))])
+
+      ($for-each $binary [add nswadd fadd sub nswsub fsub mul nswmul fmul sdiv udiv fdiv srem urem frem shl ashr lshr and or xor ieq ine ugt uge ult ule sgt sge slt sle feq fgt fge flt fle fne]
+        [(_ ,builder ($binary ,a ,b))
+          (ok `(,\builder/put! (,\inst:binary ,\($symbol-concat binary: $binary) (,\builder/build! ,builder ,a) (,\builder/build! ,builder ,b)) ,builder))])
+
+      [(_ ,builder (alloca ,(let name (s:string _)) ,ty))
+        (ok `(,\builder/put! (,\inst:alloca ,name (,\type/build (,\builder/context ,builder) ,ty)) ,builder))]
+      [(_ ,builder (alloca ,(s:list (s:symbol "unquote") (let name)) ,ty))
+        (ok `(,\builder/put! (,\inst:alloca ,name (,\type/build (,\builder/context ,builder) ,ty)) ,builder))]
+      [(_ ,builder (array-alloca ,(let name (s:string _)) ,ty ,num))
+        (ok `(,\builder/put! (,\inst:array-alloca ,name (,\type/build (,\builder/context ,builder) ,ty) (,\builder/build! ,builder ,num)) ,builder))]
+      [(_ ,builder (array-alloca ,(s:list (s:symbol "unquote") (let name)) ,ty ,num))
+        (ok `(,\builder/put! (,\inst:array-alloca ,name (,\type/build (,\builder/context ,builder) ,ty) (,\builder/build! ,builder ,num)) ,builder))]
+      [(_ ,builder (entry-alloca ,(let name (s:string _)) ,ty))
+        (ok `(,\builder/put! (,\inst:entry-alloca ,name (,\type/build (,\builder/context ,builder) ,ty)) ,builder))]
+      [(_ ,builder (entry-alloca ,(s:list (s:symbol "unquote") (let name)) ,ty))
+        (ok `(,\builder/put! (,\inst:entry-alloca ,name (,\type/build (,\builder/context ,builder) ,ty)) ,builder))]
+      [(_ ,builder (load ,(let name (s:string _)) ,a))
+        (ok `(,\builder/put! (,\inst:load ,name (,\builder/build! ,builder ,a)) ,builder))]
+      [(_ ,builder (load ,(s:list (s:symbol "unquote") (let name)) ,a))
+        (ok `(,\builder/put! (,\inst:load ,name (,\builder/build! ,builder ,a)) ,builder))]
+      [(_ ,builder (store ,val ,ptr))
+        (ok `(,\builder/put! (,\inst:store (,\builder/build! ,builder ,val) (,\builder/build! ,builder ,ptr)) ,builder))]
+
+      [(_ ,builder (gep ,val ,(s:list (s:symbol "unquote-splicing") (let expr))))
+        (ok `(,\builder/put! (,\inst:gep (,\builder/build! ,builder ,val) ,expr) ,builder))]
+      [(_ ,builder (gep ,val ,@indices))
+        (ok `(,\builder/put! (,\inst:gep (,\builder/build! ,builder ,val) (,\array ,@(s/map [^1 `(,\builder/build! ,builder ,%1)] indices)!)) ,builder))]
+
+      [(_ ,builder (struct-gep ,val ,(let index (s:integer _ _))))
+        (ok `(,\builder/put! (,\inst:struct-gep (,\builder/build! ,builder ,val) ,index) ,builder))]
+      [(_ ,builder (struct-gep ,val ,(s:list (s:symbol "unquote") (let index))))
+        (ok `(,\builder/put! (,\inst:struct-gep (,\builder/build! ,builder ,val) ,index) ,builder))]
+      [_
+        ; XXX: Avoid stack overflow due to large number of match clauses. This should be fixed by the compiler.
+        (<build-continue> s)]))
+
+  (function (<build-continue> s)
+    (s/match s
+      ($for-each $convert [trunc zext sext fp-to-ui fp-to-si ui-to-fp si-to-fp fptrunc fpext ptr-to-int int-to-ptr bit-cast addr-space-cast]
+        [(_ ,builder ($convert ,val ,ty))
+          (ok `(,\builder/put! (,\inst:conv ,\($symbol-concat convert: $convert) (,\builder/build! ,builder ,val) (,\type/build (,\builder/context ,builder) ,ty)) ,builder))])
+
+      [(_ ,builder (phi ,ty))
+        (ok `(,\builder/put! (,\inst:phi (,\type/build (,\builder/context ,builder) ,ty)) ,builder))]
+
+      [(_ ,builder (call ,f ,(s:list (s:symbol "unquote-splicing") (let expr))))
+        (ok `(,\builder/put! (,\inst:call (,\builder/build! ,builder ,f) ,expr) ,builder))]
+      [(_ ,builder (call ,f ,@args))
+        (ok `(,\builder/put! (,\inst:call (,\builder/build! ,builder ,f) (,\array ,@(s/map [^1 `(,\builder/build! ,builder ,%1)] args)!)) ,builder))]
+
+      [(_ ,builder (select ,cond ,then ,else))
+        (ok `(,\builder/put! (,\inst:select (,\builder/build! ,builder ,cond) (,\builder/build! ,builder ,then) (,\builder/build! ,builder ,else)) ,builder))]
+
+      [(_ ,builder (extract-value ,agg ,(let index (s:integer _ _))))
+        (ok `(,\builder/put! (,\inst:extract-value (,\builder/build! ,builder ,agg) ,index) ,builder))]
+      [(_ ,builder (extract-value ,agg ,(s:list (s:symbol "unquote") (let index))))
+        (ok `(,\builder/put! (,\inst:extract-value (,\builder/build! ,builder ,agg) ,index) ,builder))]
+      [(_ ,builder (insert-value ,agg ,(let index (s:integer _ _)) ,elt))
+        (ok `(,\builder/put! (,\inst:insert-value (,\builder/build! ,builder ,agg) ,index (,\builder/build! ,builder ,elt)) ,builder))]
+      [(_ ,builder (insert-value ,agg ,(s:list (s:symbol "unquote") (let index)) ,elt))
+        (ok `(,\builder/put! (,\inst:insert-value (,\builder/build! ,builder ,agg) ,index (,\builder/build! ,builder ,elt)) ,builder))]
+
+      [(_ ,builder ,const)
+        (ok `(,\const/build (,\builder/context ,builder) ,const))]
+      [_
+        (err (string "Expected (builder/build! builder <inst-form or const-form>) but got " s))])))
