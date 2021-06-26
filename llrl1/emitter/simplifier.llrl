@@ -339,7 +339,6 @@
                      [#t (and (eq? con ast/value-con/syntax) (eq? (array/length args) 1))])
             (rt:construct-syntax
               (m/symbol/loc (option/force (m/module-set/symbol? id e)))
-              (simplify! e (get (|> (m/module-set/instantiation? callee-id e) option/force ast/instantiation/ty-args)[0]))
               (simplify! e (get args[0])))
             (rt:call (simplify! e callee) (simplify! e args)))]
         [(ast/expr-rep:unresolved-capture _)
@@ -640,7 +639,7 @@
     [(: "array.alloc" 1 1) (rt:alloc-array location:heap (get ct-args[0]) (get args[0]))]
     [(: "array.stackalloc" 1 1) (rt:alloc-array location:stack (get ct-args[0]) (get args[0]))]
     [(: "integer.to-ptr" 1 1) (rt:unary (unary:i-to-ptr (get ct-args[0])) (get args[0]))]
-    [(: "syntax" 1 1) (rt:construct-syntax (m/symbol/loc symbol) (get ct-args[0]) (get args[0]))]
+    [(: "syntax" 1 1) (rt:construct-syntax (m/symbol/loc symbol) (get args[0]))]
     [(: "panic" _ 1) (rt:unary unary:panic (get args[0]))]
     [(: (let name) (let ct-arity) (let arity))
       (assert #f (string "Unsupported builtin-rt " name " (ct-arity=" ct-arity ") (arity=" arity ")"))]))

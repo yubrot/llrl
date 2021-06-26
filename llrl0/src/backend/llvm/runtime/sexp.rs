@@ -140,13 +140,13 @@ impl RtExpand for RtSexp {
     fn expand_on_buffer<'ctx: 'm, 'm>(
         &self,
         buf: &mut [LLVMConstant<'ctx, 'm>],
-        ctx: &impl RtContext<'ctx, 'm>,
+        module: &'m LLVMModule<'ctx>,
     ) {
         let o = buf_offset!(Self, body);
         match self.into_view() {
-            RtSexpView::Symbol(s) => s.expand_on_buffer(&mut buf[o..], ctx),
-            RtSexpView::String(s) => s.expand_on_buffer(&mut buf[o..], ctx),
-            RtSexpView::Cons(c) => c.expand_on_buffer(&mut buf[o..], ctx),
+            RtSexpView::Symbol(s) => s.expand_on_buffer(&mut buf[o..], module),
+            RtSexpView::String(s) => s.expand_on_buffer(&mut buf[o..], module),
+            RtSexpView::Cons(c) => c.expand_on_buffer(&mut buf[o..], module),
             _ => {}
         }
     }
@@ -207,9 +207,9 @@ impl RtExpand for RtSexpSymbol {
     fn expand_on_buffer<'ctx: 'm, 'm>(
         &self,
         buf: &mut [LLVMConstant<'ctx, 'm>],
-        ctx: &impl RtContext<'ctx, 'm>,
+        module: &'m LLVMModule<'ctx>,
     ) {
-        self.value.expand_on_buffer(buf, ctx);
+        self.value.expand_on_buffer(buf, module);
     }
 }
 
@@ -223,9 +223,9 @@ impl RtExpand for RtSexpString {
     fn expand_on_buffer<'ctx: 'm, 'm>(
         &self,
         buf: &mut [LLVMConstant<'ctx, 'm>],
-        ctx: &impl RtContext<'ctx, 'm>,
+        module: &'m LLVMModule<'ctx>,
     ) {
-        self.value.expand_on_buffer(buf, ctx);
+        self.value.expand_on_buffer(buf, module);
     }
 }
 
@@ -246,11 +246,11 @@ impl RtExpand for RtSexpCons {
     fn expand_on_buffer<'ctx: 'm, 'm>(
         &self,
         buf: &mut [LLVMConstant<'ctx, 'm>],
-        ctx: &impl RtContext<'ctx, 'm>,
+        module: &'m LLVMModule<'ctx>,
     ) {
-        self.car.expand_on_buffer(buf, ctx);
+        self.car.expand_on_buffer(buf, module);
         self.cdr
-            .expand_on_buffer(&mut buf[buf_offset!(Self, cdr)..], ctx);
+            .expand_on_buffer(&mut buf[buf_offset!(Self, cdr)..], module);
     }
 }
 

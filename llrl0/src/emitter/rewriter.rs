@@ -250,7 +250,6 @@ impl Rewrite for Rt {
                 }
                 Self::ConstructSyntax(con) => {
                     rewriter.rewrite(&mut con.1)?;
-                    rewriter.rewrite(&mut con.2)?;
                 }
                 Self::Seq(seq) => {
                     rewriter.rewrite(&mut seq.0)?;

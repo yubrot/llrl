@@ -3,6 +3,7 @@
 (import "~/sexp" S _.S)
 (import "~/source-location" [SyntaxMetadata SourceLocation] [_.SyntaxMetadata _.SourceLocation])
 (import "~/ast" [CapturedUse Construct] [_.CapturedUse _.Construct])
+(export S _.S SyntaxMetadata _.SyntaxMetadata CapturedUse _.CapturedUse)
 (export CtId _.CtId ct-id/_ CtIdGen _.CtIdGen ct-id-gen/_)
 (export Ct _.Ct ct:_ ct/_)
 (export CtDef _.CtDef ct-def:_ ct-def/_)
@@ -205,7 +206,7 @@
   (rt:construct-env Location (Array Rt))
   (rt:construct-data Ct U64 (Array Rt)) ; erased by data-expander
   (rt:construct-struct Ct (Array Rt))
-  (rt:construct-syntax SyntaxMetadata Ct Rt)
+  (rt:construct-syntax SyntaxMetadata Rt)
 
   (rt:seq (Array Rt) Rt)
   (rt:if Rt Rt Rt)

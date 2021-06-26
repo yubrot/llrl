@@ -273,7 +273,7 @@ pub enum Rt {
     ConstructEnv(Box<(Location, Vec<Rt>)>),
     ConstructData(Box<(Ct, usize, Vec<Rt>)>), // erased by data_expander
     ConstructStruct(Box<(Ct, Vec<Rt>)>),
-    ConstructSyntax(Box<(SyntaxMetadata, Ct, Rt)>),
+    ConstructSyntax(Box<(SyntaxMetadata, Rt)>),
 
     Seq(Box<(Vec<Rt>, Rt)>),
     If(Box<(Rt, Rt, Rt)>),
@@ -347,8 +347,8 @@ impl Rt {
         Self::ConstructStruct(Box::new((ty, args)))
     }
 
-    pub fn construct_syntax(meta: SyntaxMetadata, body_ty: Ct, body: Self) -> Self {
-        Self::ConstructSyntax(Box::new((meta, body_ty, body)))
+    pub fn construct_syntax(meta: SyntaxMetadata, body: Self) -> Self {
+        Self::ConstructSyntax(Box::new((meta, body)))
     }
 
     pub fn seq(stmts: Vec<Self>, ret: Self) -> Self {

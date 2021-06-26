@@ -23,7 +23,7 @@ pub enum Value {
     Env(Vec<Value>),
     Struct(Ct, Vec<Value>),
     Reinterpret(Ct, Ct, Box<Value>),
-    Syntax(SyntaxMetadata, Ct, Box<Value>),
+    Syntax(SyntaxMetadata, Box<Value>),
     Box(Arc<Mutex<Value>>),
 }
 
@@ -62,8 +62,8 @@ impl Value {
         Self::Env(elems)
     }
 
-    pub fn construct_syntax(meta: SyntaxMetadata, ty: Ct, body: Self) -> Self {
-        Self::Syntax(meta, ty, Box::new(body))
+    pub fn construct_syntax(meta: SyntaxMetadata, body: Self) -> Self {
+        Self::Syntax(meta, Box::new(body))
     }
 
     pub fn from_const(c: &Const) -> Result<Self> {
@@ -144,19 +144,11 @@ impl Value {
         }
     }
 
-    pub fn syntax_body(self, ty: &Ct) -> Result<Self> {
+    pub fn syntax_body(self) -> Result<Self> {
         self.exclude_uninitialized_as_ub("Value::syntax_body")?;
 
         match self {
-            Self::Syntax(_, bty, body) => {
-                if !ty.is_compatible_with(&bty) {
-                    Err(Error::Internal(format!(
-                        "Value::syntax_body[{}]({})",
-                        bty, ty
-                    )))?;
-                }
-                Ok(*body)
-            }
+            Self::Syntax(_, body) => Ok(*body),
             v => Err(Error::Internal(format!("Value::syntax_body({})", v))),
         }
     }
@@ -306,7 +298,6 @@ impl Value {
 
         Self::construct_syntax(
             meta,
-            Ct::Hole,
             Self::Struct(
                 Ct::Hole,
                 vec![
@@ -321,7 +312,7 @@ impl Value {
         self.exclude_uninitialized_as_ub("Value::into_syntax_sexp")?;
 
         if_chain! {
-            if let Self::Syntax(meta, _, body) = self;
+            if let Self::Syntax(meta, body) = self;
             if let Self::Struct(_, mut fields) = *body;
             if let [tag, body] = fields.as_mut_slice();
 
@@ -378,7 +369,7 @@ impl fmt::Display for Value {
             Self::Clos(id, None) => write!(f, "closure({}, none)", id),
             Self::Clos(id, Some(env)) => write!(f, "closure({}, {})", id, env),
             Self::Env(values) => write!(f, "env({})", values.iter().format(", ")),
-            Self::Syntax(_, _, body) => write!(f, "syntax({})", body),
+            Self::Syntax(_, body) => write!(f, "syntax({})", body),
             Self::Struct(_, fields) => write!(f, "{{{}}}", fields.iter().format(", ")),
             Self::Reinterpret(_, to, body) => write!(f, "[{} {}]", to, body),
             Self::Box(v) => write!(f, "box({})", v.lock().unwrap()),

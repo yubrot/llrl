@@ -556,10 +556,7 @@ impl Simplify for ast::Expr {
                     if con == ast::ValueCon::SYNTAX && args.len() == 1 {
                         let symbol = set.symbol_of(self.id).unwrap();
                         let body = args.into_iter().next().unwrap();
-                        let mut ct_args =
-                            env.simplify(set.instantiation_of(apply.callee.id).unwrap());
-                        assert_eq!(ct_args.len(), 1);
-                        return Rt::construct_syntax(symbol.loc, ct_args.remove(0), body);
+                        return Rt::construct_syntax(symbol.loc, body);
                     }
                 }
                 let callee = env.simplify(&apply.callee);
@@ -898,7 +895,7 @@ fn builtin_rt(symbol: &Symbol, name: &str, mut ct_args: Vec<Ct>, mut args: Vec<R
         ("array.alloc", [ty], [a]) => Rt::alloc_array(Location::Heap, take(ty), take(a)),
         ("array.stackalloc", [ty], [a]) => Rt::alloc_array(Location::Stack, take(ty), take(a)),
         ("integer.to-ptr", [ty], [a]) => Rt::unary(Unary::IToPtr(take(ty)), take(a)),
-        ("syntax", [ty], [a]) => Rt::construct_syntax(symbol.loc, take(ty), take(a)),
+        ("syntax", [_], [a]) => Rt::construct_syntax(symbol.loc, take(a)),
         ("panic", _, [a]) => Rt::unary(Unary::Panic, take(a)),
         (name, _, _) => panic!(
             "Unsupported builtin-value {} (ct_args={}, args={})",

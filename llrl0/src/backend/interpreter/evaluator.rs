@@ -64,7 +64,7 @@ impl<'a> Evaluator<'a> {
                     Load => a.load(),
                     StructElem(ty, index) => a.struct_elem(ty, *index),
                     Reinterpret(from, to) => a.reinterpret(from, to),
-                    SyntaxBody(ty) => a.syntax_body(ty),
+                    SyntaxBody(_) => a.syntax_body(),
                     Panic => match a {
                         Value::String(s) => Err(Error::Panic(s)),
                         v => Err(Error::Internal(format!("panic({})", v))),
@@ -120,8 +120,8 @@ impl<'a> Evaluator<'a> {
                 Ok(Value::Struct(con.0.clone(), fields))
             }
             Rt::ConstructSyntax(con) => {
-                let body = self.eval(&con.2)?;
-                Ok(Value::construct_syntax(con.0, con.1.clone(), body))
+                let body = self.eval(&con.1)?;
+                Ok(Value::construct_syntax(con.0, body))
             }
             Rt::Seq(seq) => {
                 for stmt in seq.0.iter() {

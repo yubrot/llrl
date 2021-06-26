@@ -190,7 +190,7 @@ impl fmt::Display for Rt {
             Self::ConstructStruct(con) => {
                 write!(f, "{}({})", con.0, con.1.iter().format(", "))
             }
-            Self::ConstructSyntax(con) => write!(f, "syntax[{}]({})", con.1, con.2),
+            Self::ConstructSyntax(con) => write!(f, "syntax({})", con.1),
             Self::Seq(seq) => write!(f, "{}; {}", seq.0.iter().format("; "), seq.1),
             Self::If(if_) => {
                 write!(f, "if({} then {} else {})", if_.0, if_.1, if_.2)

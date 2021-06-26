@@ -15,7 +15,7 @@ pub trait RtValue: Sized {
     fn from_native(native: Self::Native) -> Self;
 }
 
-/// Types that can be represented on LLVM-IR Constant.
+/// Types that can be represented as a constant on LLVM-IR.
 pub trait RtConstant: RtValue {
     type Src: ?Sized;
 
@@ -23,15 +23,17 @@ pub trait RtConstant: RtValue {
 
     fn llvm_constant<'ctx: 'm, 'm>(
         src: &Self::Src,
-        ctx: &impl RtContext<'ctx, 'm>,
+        module: &'m LLVMModule<'ctx>,
     ) -> LLVMConstant<'ctx, 'm>;
 }
 
+/// Types that can be expanded on LLVM-IR array constants.
+/// The element type of an array is an integer of pointer size.
 pub trait RtExpand {
     fn expand_on_buffer<'ctx: 'm, 'm>(
         &self,
         buf: &mut [LLVMConstant<'ctx, 'm>],
-        ctx: &impl RtContext<'ctx, 'm>,
+        module: &'m LLVMModule<'ctx>,
     );
 }
 
@@ -50,7 +52,7 @@ pub use sexp::RtSexp;
 pub fn build_panic<'ctx: 'm, 'm>(
     msg: impl LLVMAnyValue<'ctx, 'm>,
     builder: &LLVMBuilder<'ctx, 'm>,
-    ctx: &impl RtContext<'ctx, 'm>,
+    ctx: &impl BuildContext<'ctx, 'm>,
 ) {
     let panic = ctx.library().llrt_panic();
     builder.build_call(panic, &[msg.as_value()]);
@@ -60,7 +62,7 @@ pub fn build_panic<'ctx: 'm, 'm>(
 pub fn build_heap_alloc<'ctx: 'm, 'm>(
     ty: impl LLVMAnyType<'ctx>,
     builder: &LLVMBuilder<'ctx, 'm>,
-    ctx: &impl RtContext<'ctx, 'm>,
+    ctx: &impl BuildContext<'ctx, 'm>,
 ) -> LLVMValue<'ctx, 'm> {
     let gc_malloc = ctx.library().gc_malloc();
     let size = llvm_constant!(*ctx, (trunc_or_bit_cast isize (size_of {ty})));
@@ -72,7 +74,7 @@ pub fn build_heap_array_alloc<'ctx: 'm, 'm>(
     ty: impl LLVMAnyType<'ctx>,
     num: impl LLVMAnyValue<'ctx, 'm>,
     builder: &LLVMBuilder<'ctx, 'm>,
-    ctx: &impl RtContext<'ctx, 'm>,
+    ctx: &impl BuildContext<'ctx, 'm>,
 ) -> LLVMValue<'ctx, 'm> {
     let gc_malloc = ctx.library().gc_malloc();
     let size = llvm_constant!(*ctx, (trunc_or_bit_cast isize (size_of {ty})));
@@ -81,7 +83,7 @@ pub fn build_heap_array_alloc<'ctx: 'm, 'm>(
     builder.build_bit_cast(ptr, LLVMPointerType::get(ty, 0))
 }
 
-pub trait RtContext<'ctx: 'm, 'm>: LLVMTypeBuilder<'ctx> {
+pub trait BuildContext<'ctx: 'm, 'm>: LLVMTypeBuilder<'ctx> {
     fn module(&self) -> &'m LLVMModule<'ctx>;
     fn library(&self) -> &RtLibrary<'ctx, 'm>;
 }
@@ -107,27 +109,27 @@ impl RtString {
 
     pub fn to_llvm_constant<'ctx: 'm, 'm>(
         &self,
-        ctx: &impl RtContext<'ctx, 'm>,
+        module: &'m LLVMModule<'ctx>,
     ) -> LLVMConstant<'ctx, 'm> {
-        Self::llvm_constant(self.as_str(), ctx)
+        Self::llvm_constant(self.as_str(), module)
     }
 
     fn llvm_constant_body<'ctx: 'm, 'm>(
         s: &str,
-        ctx: &impl RtContext<'ctx, 'm>,
+        module: &'m LLVMModule<'ctx>,
     ) -> LLVMConstant<'ctx, 'm> {
         if s.is_empty() {
             // TODO: Is it OK? Rust disallows null-pointer even if the length is 0:
             // https://doc.rust-lang.org/std/slice/fn.from_raw_parts.html
             // the llrl currently does not do optimizations like enum layout optimization.
-            llvm_constant!(*ctx, (nullptr (ptr u8)))
+            llvm_constant!(*module, (nullptr (ptr u8)))
         } else {
-            let init = llvm_constant!(*ctx, (str s));
-            let var = ctx.module().add_global("", init.get_type(), None);
+            let init = llvm_constant!(*module, (str s));
+            let var = module.add_global("", init.get_type(), None);
             var.set_linkage(llvm::Linkage::Internal);
             var.set_is_constant(true);
             var.set_initializer(Some(init));
-            llvm_constant!(*ctx, (bit_cast (ptr u8) {var}))
+            llvm_constant!(*module, (bit_cast (ptr u8) {var}))
         }
     }
 
@@ -147,7 +149,7 @@ impl RtString {
 
     pub fn build_genid<'ctx: 'm, 'm>(
         builder: &LLVMBuilder<'ctx, 'm>,
-        ctx: &impl RtContext<'ctx, 'm>,
+        ctx: &impl BuildContext<'ctx, 'm>,
     ) -> LLVMValue<'ctx, 'm> {
         let string_genid = ctx.library().llrt_string_genid();
         builder.build_call(string_genid, &[])
@@ -168,7 +170,7 @@ impl RtString {
         a: impl LLVMAnyValue<'ctx, 'm>,
         b: impl LLVMAnyValue<'ctx, 'm>,
         builder: &LLVMBuilder<'ctx, 'm>,
-        ctx: &impl RtContext<'ctx, 'm>,
+        ctx: &impl BuildContext<'ctx, 'm>,
     ) -> LLVMValue<'ctx, 'm> {
         let string_eq = ctx.library().llrt_string_eq();
         let ret = builder.build_call(string_eq, &[a.as_value(), b.as_value()]);
@@ -179,7 +181,7 @@ impl RtString {
         a: impl LLVMAnyValue<'ctx, 'm>,
         b: impl LLVMAnyValue<'ctx, 'm>,
         builder: &LLVMBuilder<'ctx, 'm>,
-        ctx: &impl RtContext<'ctx, 'm>,
+        ctx: &impl BuildContext<'ctx, 'm>,
     ) -> LLVMValue<'ctx, 'm> {
         let string_cmp = ctx.library().llrt_string_cmp();
         builder.build_call(string_cmp, &[a.as_value(), b.as_value()])
@@ -189,7 +191,7 @@ impl RtString {
         a: impl LLVMAnyValue<'ctx, 'm>,
         b: impl LLVMAnyValue<'ctx, 'm>,
         builder: &LLVMBuilder<'ctx, 'm>,
-        ctx: &impl RtContext<'ctx, 'm>,
+        ctx: &impl BuildContext<'ctx, 'm>,
     ) -> LLVMValue<'ctx, 'm> {
         let string_concat = ctx.library().llrt_string_concat();
         builder.build_call(string_concat, &[a.as_value(), b.as_value()])
@@ -235,10 +237,10 @@ impl RtConstant for RtString {
 
     fn llvm_constant<'ctx: 'm, 'm>(
         src: &str,
-        ctx: &impl RtContext<'ctx, 'm>,
+        module: &'m LLVMModule<'ctx>,
     ) -> LLVMConstant<'ctx, 'm> {
-        let body = Self::llvm_constant_body(src, ctx);
-        llvm_constant!(*ctx, (struct {body} (u64 src.len()))).as_constant()
+        let body = Self::llvm_constant_body(src, module);
+        llvm_constant!(*module, (struct {body} (u64 src.len()))).as_constant()
     }
 }
 
@@ -246,10 +248,10 @@ impl RtExpand for RtString {
     fn expand_on_buffer<'ctx: 'm, 'm>(
         &self,
         buf: &mut [LLVMConstant<'ctx, 'm>],
-        ctx: &impl RtContext<'ctx, 'm>,
+        module: &'m LLVMModule<'ctx>,
     ) {
-        let body = Self::llvm_constant_body(self.as_str(), ctx);
-        buf[0] = llvm_constant!(*ctx, (ptr_to_int isize {body}));
+        let body = Self::llvm_constant_body(self.as_str(), module);
+        buf[0] = llvm_constant!(*module, (ptr_to_int isize {body}));
     }
 }
 
@@ -292,9 +294,9 @@ impl RtConstant for RtChar {
 
     fn llvm_constant<'ctx: 'm, 'm>(
         src: &char,
-        ctx: &impl RtContext<'ctx, 'm>,
+        module: &'m LLVMModule<'ctx>,
     ) -> LLVMConstant<'ctx, 'm> {
-        llvm_constant!(*ctx, (u32 {*src as u32})).as_constant()
+        llvm_constant!(*module, (u32 {*src as u32})).as_constant()
     }
 }
 
@@ -396,10 +398,10 @@ impl RtConstant for RtCapturedUse {
 
     fn llvm_constant<'ctx: 'm, 'm>(
         src: &CapturedUse,
-        ctx: &impl RtContext<'ctx, 'm>,
+        module: &'m LLVMModule<'ctx>,
     ) -> LLVMConstant<'ctx, 'm> {
         let data = Self::from_native(*src);
-        llvm_constant!(*ctx, (struct (u64 {data.tag}) (u64 {data.node_id}))).as_constant()
+        llvm_constant!(*module, (struct (u64 {data.tag}) (u64 {data.node_id}))).as_constant()
     }
 }
 
@@ -479,14 +481,14 @@ impl RtSyntax<()> {
 
     pub fn build_construct_syntax<'ctx: 'm, 'm>(
         metadata: SyntaxMetadata,
-        body_ty: impl LLVMAnyType<'ctx>,
         body: impl LLVMAnyValue<'ctx, 'm>,
         builder: &LLVMBuilder<'ctx, 'm>,
-        ctx: &impl RtContext<'ctx, 'm>,
+        ctx: &impl BuildContext<'ctx, 'm>,
     ) -> LLVMValue<'ctx, 'm> {
-        let ty = llvm_type!(*ctx, (struct {RtSyntaxMetadata::llvm_type(ctx.context())} {body_ty}));
+        let body = body.as_value();
+        let ty = llvm_type!(*ctx, (struct {RtSyntaxMetadata::llvm_type(ctx.context())} {body.get_type()}));
         let value = llvm_constant!(*ctx, (undef { ty }));
-        let meta = RtSyntaxMetadata::llvm_constant(&metadata, ctx);
+        let meta = RtSyntaxMetadata::llvm_constant(&metadata, ctx.module());
         let value = builder.build_insert_value(value, meta, 0);
         let value = builder.build_insert_value(value, body, 1);
         let ptr = build_heap_alloc(ty, builder, ctx);
@@ -498,7 +500,7 @@ impl RtSyntax<()> {
         body_ty: impl LLVMAnyType<'ctx>,
         value: impl LLVMAnyValue<'ctx, 'm>,
         builder: &LLVMBuilder<'ctx, 'm>,
-        ctx: &impl RtContext<'ctx, 'm>,
+        ctx: &impl BuildContext<'ctx, 'm>,
     ) -> LLVMValue<'ctx, 'm> {
         let ty = llvm_type!(*ctx, (struct {RtSyntaxMetadata::llvm_type(ctx.context())} {body_ty}));
         let value = builder.build_bit_cast(value, llvm_type!(*ctx, (ptr { ty })));
@@ -510,7 +512,7 @@ impl RtSyntax<()> {
 impl<T: RtExpand> RtSyntax<T> {
     pub fn to_llvm_constant<'ctx: 'm, 'm>(
         &self,
-        ctx: &impl RtContext<'ctx, 'm>,
+        module: &'m LLVMModule<'ctx>,
     ) -> LLVMConstant<'ctx, 'm> {
         let psize = size_of::<usize>();
         assert_eq!(psize, align_of::<RtSyntaxBuffer<T>>());
@@ -518,17 +520,17 @@ impl<T: RtExpand> RtSyntax<T> {
         let data = unsafe { std::slice::from_raw_parts(self.0 as *const usize, len) };
 
         let mut buf = (0..len)
-            .map(|index| llvm_constant!(*ctx, (isize {data[index]})).as_constant())
+            .map(|index| llvm_constant!(*module, (isize {data[index]})).as_constant())
             .collect::<Vec<_>>();
 
-        unsafe { &*self.0 }.expand_on_buffer(&mut buf[..], ctx);
+        unsafe { &*self.0 }.expand_on_buffer(&mut buf[..], module);
 
-        let buf = LLVMConstantArray::get(llvm_type!(*ctx, isize), &buf);
-        let var = ctx.module().add_global("", buf.get_type(), None);
+        let buf = LLVMConstantArray::get(llvm_type!(*module, isize), &buf);
+        let var = module.add_global("", buf.get_type(), None);
         var.set_linkage(llvm::Linkage::Internal);
         var.set_is_constant(true);
         var.set_initializer(Some(buf));
-        llvm_constant!(*ctx, (bit_cast (ptr u8) {var}))
+        llvm_constant!(*module, (bit_cast (ptr u8) {var}))
     }
 }
 
@@ -572,11 +574,11 @@ where
     }
 
     fn llvm_constant<'ctx: 'm, 'm>(
-        src: &Syntax<T::Native>,
-        ctx: &impl RtContext<'ctx, 'm>,
+        src: &Self::Src,
+        module: &'m LLVMModule<'ctx>,
     ) -> LLVMConstant<'ctx, 'm> {
         // TODO: Reduce allocation (We don't need to allocate memories for temporary RtSyntax)
-        Self::from_native(src.clone()).to_llvm_constant(ctx)
+        Self::from_native(src.clone()).to_llvm_constant(module)
     }
 }
 
@@ -584,9 +586,9 @@ impl<T: RtExpand> RtExpand for RtSyntax<T> {
     fn expand_on_buffer<'ctx: 'm, 'm>(
         &self,
         buf: &mut [LLVMConstant<'ctx, 'm>],
-        ctx: &impl RtContext<'ctx, 'm>,
+        module: &'m LLVMModule<'ctx>,
     ) {
-        buf[0] = llvm_constant!(*ctx, (ptr_to_int isize {self.to_llvm_constant(ctx)}));
+        buf[0] = llvm_constant!(*module, (ptr_to_int isize {self.to_llvm_constant(module)}));
     }
 }
 
@@ -601,10 +603,10 @@ impl<T: RtExpand> RtExpand for RtSyntaxBuffer<T> {
     fn expand_on_buffer<'ctx: 'm, 'm>(
         &self,
         buf: &mut [LLVMConstant<'ctx, 'm>],
-        ctx: &impl RtContext<'ctx, 'm>,
+        module: &'m LLVMModule<'ctx>,
     ) {
         self.body
-            .expand_on_buffer(&mut buf[buf_offset!(Self, body)..], ctx);
+            .expand_on_buffer(&mut buf[buf_offset!(Self, body)..], module);
     }
 }
 
@@ -640,9 +642,9 @@ impl RtConstant for RtSyntaxMetadata {
 
     fn llvm_constant<'ctx: 'm, 'm>(
         src: &SyntaxMetadata,
-        ctx: &impl RtContext<'ctx, 'm>,
+        module: &'m LLVMModule<'ctx>,
     ) -> LLVMConstant<'ctx, 'm> {
         let Self { ip, ir } = Self::from_native(*src);
-        llvm_constant!(*ctx, [(u32 ip) (u32 ir)]).as_constant()
+        llvm_constant!(*module, [(u32 ip) (u32 ir)]).as_constant()
     }
 }

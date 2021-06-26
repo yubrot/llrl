@@ -500,7 +500,7 @@ impl<'ctx: 'm, 'm> LLVMTypeBuilder<'ctx> for ModuleArtifact<'ctx, 'm> {
     }
 }
 
-impl<'ctx: 'm, 'm> RtContext<'ctx, 'm> for ModuleArtifact<'ctx, 'm> {
+impl<'ctx: 'm, 'm> BuildContext<'ctx, 'm> for ModuleArtifact<'ctx, 'm> {
     fn module(&self) -> &'m LLVMModule<'ctx> {
         self.module()
     }

@@ -219,8 +219,8 @@
                  (rewrite/3 x rt:construct-data (transform t ty)! (rewrite/unchanged idx) (transform t fields)!)]
                [(rt:construct-struct (let ty) (let fields))
                  (rewrite/2 x rt:construct-struct (transform t ty)! (transform t fields)!)]
-               [(rt:construct-syntax (let meta) (let ty) (let rt))
-                 (rewrite/3 x rt:construct-syntax (rewrite/unchanged meta) (transform t ty)! (transform t rt)!)]
+               [(rt:construct-syntax (let meta) (let rt))
+                 (rewrite/2 x rt:construct-syntax (rewrite/unchanged meta) (transform t rt)!)]
                [(rt:seq (let stmts) (let ret))
                  (rewrite/2 x rt:seq (transform t stmts)! (transform t ret)!)]
                [(rt:if (let cond) (let then) (let else))

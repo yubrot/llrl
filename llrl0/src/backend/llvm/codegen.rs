@@ -418,9 +418,8 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
                 Some(result)
             }
             Rt::ConstructSyntax(con) => {
-                let x = self.eval(&con.2)?;
-                let ty = self.ctx.llvm_type(&con.1);
-                let x = RtSyntax::build_construct_syntax(con.0, ty, x, &self.builder, self.module);
+                let x = self.eval(&con.1)?;
+                let x = RtSyntax::build_construct_syntax(con.0, x, &self.builder, self.module);
                 Some(x)
             }
             Rt::Seq(seq) => {
@@ -679,9 +678,9 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
                 value.into_inner(),
             )
             .as_constant(),
-            Const::String(s) => RtString::llvm_constant(s, self.module),
-            Const::Char(c) => RtChar::llvm_constant(c, self.module),
-            Const::SyntaxSexp(_, s) => RtSyntax::<RtSexp>::llvm_constant(s, self.module),
+            Const::String(s) => RtString::llvm_constant(s, self.module.module()),
+            Const::Char(c) => RtChar::llvm_constant(c, self.module.module()),
+            Const::SyntaxSexp(_, s) => RtSyntax::<RtSexp>::llvm_constant(s, self.module.module()),
             Const::Unit => llvm_constant!(*self.ctx, (struct)).as_constant(),
         }
     }

@@ -251,7 +251,6 @@ impl Traverse for Rt {
                 }
                 Self::ConstructSyntax(con) => {
                     traverser.traverse(&con.1)?;
-                    traverser.traverse(&con.2)?;
                 }
                 Self::Seq(seq) => {
                     traverser.traverse(&seq.0)?;
