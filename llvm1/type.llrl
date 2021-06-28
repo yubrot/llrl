@@ -229,7 +229,7 @@
         (ok
           `(let ([,tmp-args ,expr]
                  [,tmp-ret (,\type/build ,ctx ,ret)])
-            (,\type/build ,ctx ,tmp-args ,tmp-ret))))]
+            (,\type/function ,tmp-ret ,tmp-args #f))))]
     [(_ ,ctx (-> ,@args-ret))
       (if-match1 (some (: (let args) (let ret))) (s/unsnoc args-ret)!
         (let ([tmp-args (gensym)]

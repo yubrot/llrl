@@ -23,7 +23,7 @@
     (builder/build! builder (neg ,val))
     (builder/build! builder (alloca "hello" i32))
     (builder/build! builder (array-alloca ,"world" i32 (u64 4)))
-    (builder/build! builder (store (nswadd (load "tmp" ,val) (i32 1)) ,val))
+    (builder/build! builder (store (nswadd (load ,val) (i32 1)) ,val))
     (builder/build! builder (gep ,val (i32 0) (i32 1)))
     (builder/build! builder (struct-gep ,val 4))
     (builder/build! builder (struct-gep ,val ,(+ 1 2)))

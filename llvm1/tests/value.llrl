@@ -84,6 +84,8 @@
   (assert-eq? "{ i32, i32, i32 } { i32 1, i32 10, i32 100 }" (string (const/build ctx (: (i32 1) (i32 10) (i32 100)))))
   (assert-eq? "{ { i8, i16 } } { { i8, i16 } { i8 1, i16 2 } }" (string (const/build ctx (: (: (i8 1) (i16 2))))))
   (assert-eq? "[3 x i32] [i32 100, i32 -1000, i32 10000]" (string (const/build ctx (array (i32 100) (i32 -1000) (i32 10000)))))
+  (assert-eq? "[0 x i32] zeroinitializer" (string (const/build ctx (array-of i32))))
+  (assert-eq? "[0 x i32] zeroinitializer" (string (const/build ctx (array-of i32 ,@(array)))))
   (assert-eq? "[14 x i8] c\"Hello, World!\\00\"" (string (const/build ctx "Hello, World!")))
   (assert-eq? "[4 x i8] zeroinitializer" (string (const/build ctx (null (array i8 4)))))
   (assert-eq? "i8* null" (string (const/build ctx (null (pointer i8)))))

@@ -4,7 +4,7 @@
 (import "~/support" _)
 (import "~/type" _ [type type/build])
 (import "~/value" _ [const const/build])
-(import "~/data-layout")
+(import "~/data-layout" _)
 (import "~/module" _)
 (import "~/target" _)
 (import "~/target-machine" _)

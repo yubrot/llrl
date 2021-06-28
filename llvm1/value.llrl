@@ -5,6 +5,7 @@
 (import "~/message" message/consume!)
 (import "~/type" _)
 (export Value _.Value value/_ const/_ global-value/_ global-variable/_ function/_ phi-node/_)
+(export Linkage _.Linkage linkage/_ Visibility _.Visibility visibility/_)
 (export BasicBlock _.BasicBlock basic-block/_)
 
 (derive (Eq) value-data Value (value: (Ptr U8)))
@@ -286,7 +287,19 @@
 
 (c-function <set-initializer> {(-> Value (Ptr U8) unit)} "LLVMSetInitializer")
 
-; TODO: global-variable/{thread-local?,constant?,externally-initialized?}
+(function (global-variable/constant? gv) {(-> Value Bool)}
+  (assert (value/global-variable? gv) "global-variable/constant?: Not a global variable")
+  (ne? (<is-global-constant> gv) 0))
+
+(c-function <is-global-constant> {(-> Value I32)} "LLVMIsGlobalConstant")
+
+(function (global-variable/set-constant?! value gv) {(-> Bool Value unit)}
+  (assert (value/global-variable? gv) "global-variable/constant?: Not a global variable")
+  (<set-global-constant> gv (if value 1 0)))
+
+(c-function <set-global-constant> {(-> Value I32 unit)} "LLVMSetGlobalConstant")
+
+; TODO: global-variable/{thread-local?,externally-initialized?}
 
 (function (global-variable/erase-from-parent! gv) {(-> Value unit)}
   (assert (value/global-variable? gv) "global-variable/erase-from-parent!: Not a global variable")
@@ -415,6 +428,11 @@
           (let1 tmp-elem (gensym)
             `(let ([,tmp-elem (,\const/build ,ctx ,elem)])
               (,\const/array (,\value/type ,tmp-elem) (,\array ,tmp-elem ,@(s/map [^1 `(,\const/build ,ctx ,%1)] elems)!)))))]
+
+      [(_ ,ctx (array-of ,ty ,(s:list (s:symbol "unquote-splicing") (let expr))))
+        (ok `(,\const/array (,\type/build ,ctx ,ty) ,expr))]
+      [(_ ,ctx (array-of ,ty ,@elems))
+        (ok `(,\const/array (,\type/build ,ctx ,ty) (,\array ,@(s/map [^1 `(,\const/build ,ctx ,%1)] elems)!)))]
 
       [(_ ,ctx ,(let s (s:string _)))
         (ok `(,\const/string ,ctx ,s #t))]

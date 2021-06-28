@@ -125,8 +125,8 @@
         (let1 alloca (<build-alloca> builder ty (string/c-compatible-ptr name))
           (builder/set-insert-point! stash-bb #t builder)
           alloca))]
-    [(inst:load (let name) (let a))
-      (<build-load> builder a (string/c-compatible-ptr name))]
+    [(inst:load (let a))
+      (<build-load> builder a (ptr/temporary 0))]
     [(inst:store (let val) (let ptr))
       (<build-store> builder val ptr)]
     [(inst:gep (let ptr) (let indices))
@@ -175,7 +175,7 @@
   (inst:alloca String Type)
   (inst:array-alloca String Type Value) ; name ty num
   (inst:entry-alloca String Type)
-  (inst:load String Value)
+  (inst:load Value)
   (inst:store Value Value) ; val ptr
   (inst:gep Value (Array Value)) ; ptr indices
   (inst:struct-gep Value U32) ; ptr index
@@ -378,10 +378,8 @@
         (ok `(,\builder/put! (,\inst:entry-alloca ,name (,\type/build (,\builder/context ,builder) ,ty)) ,builder))]
       [(_ ,builder (entry-alloca ,(s:list (s:symbol "unquote") (let name)) ,ty))
         (ok `(,\builder/put! (,\inst:entry-alloca ,name (,\type/build (,\builder/context ,builder) ,ty)) ,builder))]
-      [(_ ,builder (load ,(let name (s:string _)) ,a))
-        (ok `(,\builder/put! (,\inst:load ,name (,\builder/build! ,builder ,a)) ,builder))]
-      [(_ ,builder (load ,(s:list (s:symbol "unquote") (let name)) ,a))
-        (ok `(,\builder/put! (,\inst:load ,name (,\builder/build! ,builder ,a)) ,builder))]
+      [(_ ,builder (load ,a))
+        (ok `(,\builder/put! (,\inst:load (,\builder/build! ,builder ,a)) ,builder))]
       [(_ ,builder (store ,val ,ptr))
         (ok `(,\builder/put! (,\inst:store (,\builder/build! ,builder ,val) (,\builder/build! ,builder ,ptr)) ,builder))]
 
