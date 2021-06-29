@@ -1,0 +1,120 @@
+(import "std/memory" size-of align-of reinterpret ptr:_)
+(import "std/phantom" _)
+(import "llvm" [llvm/_ _])
+(import "~/util" _)
+(import "~/emitter" Value _.Value value:_)
+(import "~/emitter/ir" [ir/_ _])
+(export Executor _.Executor executor/_)
+(export ExecutorFun ExecutorFun._ ExecutorArg ExecutorArg._ ExecutorRet ExecutorRet._)
+
+; NOTE: Only native targets are supported. For more details, see
+; assert_data_layout_matches_native_environment
+(assert-eq? (ok unit) (llvm/initialize-native-target!))
+(assert-eq? (ok unit) (llvm/initialize-native-asm-printer!))
+
+(derive (DebugDisplay) value-data Executor
+  (executor: llvm/ExecutionEngine))
+
+(getter executor: engine)
+
+(function (executor/new ctx optimize?) {(-> llvm/Context Bool Executor)}
+  (match
+    (llvm/execution-engine/new-mcjit
+      ctx
+      (some (if optimize? llvm/opt-level/default llvm/opt-level/none))
+      none
+      none
+      none)
+    [(ok (let ee))
+      (assert-data-layout-matches-native-environment (llvm/execution-engine/data-layout ee))
+      (executor: ee)]
+    [(err (let e))
+      (assert #f (string "Failed to create execution engine: " e))]))
+
+(function (executor/dispose! executor) {(-> Executor unit)}
+  (llvm/execution-engine/dispose! (engine executor)))
+
+(function (executor/data-layout executor) {(-> Executor llvm/DataLayout)}
+  (llvm/execution-engine/data-layout (engine executor)))
+
+(function (executor/target-machine executor) {(-> Executor llvm/TargetMachine)}
+  (option/force (llvm/execution-engine/target-machine? (engine executor))))
+
+(function (executor/add-module! module executor) {(-> llvm/Module Executor unit)}
+  (llvm/execution-engine/add-module! module (engine executor)))
+
+(function (executor/remove-modules! executor) {(-> Executor (Array llvm/Module))}
+  (llvm/execution-engine/remove-modules! (engine executor)))
+
+; Caller must ensure that the function named `name` exists and it is compatible with the llrl closure typed `F`.
+(function (executor/unsafe-call! name sig args executor)
+  {(forall F) (-> String (Phantom F) (Array Value) Executor (Result Value String)) (where (ExecutorFun F))}
+  (let1 address (llvm/execution-engine/get-function-address name (engine executor))
+    (assert (ne? 0 address) (string "Function not found: " name))
+    (let* ([closure {(: U64 (Ptr U8))} (: address ptr:null)]
+           [closure {F} (reinterpret closure)])
+      (call-with-values closure args))))
+
+(function (assert-data-layout-matches-native-environment dl)
+  ; NOTE: llrl assumes that the native environment (i.e., at the time of executing
+  ; the JIT function for macro expansion) and the target environment are the same.
+  ; The entire implementation of the LLVM backend is based on this assumption, so it is
+  ; likely that major changes will be required if we wish to support cross-compilation.
+  (llvm/with-context (lambda (ctx)
+    (assert-eq? (llvm/data-layout/type-alloc-size dl (llvm/type ctx i1)) (size-of Bool))
+    (assert-eq? (llvm/data-layout/abi-type-alignment dl (llvm/type ctx i1)) (conv (align-of Bool)))
+    (assert-eq? (llvm/data-layout/type-alloc-size dl (llvm/type ctx i8)) (size-of I8))
+    (assert-eq? (llvm/data-layout/abi-type-alignment dl (llvm/type ctx i8)) (conv (align-of I8)))
+    (assert-eq? (llvm/data-layout/type-alloc-size dl (llvm/type ctx i16)) (size-of I16))
+    (assert-eq? (llvm/data-layout/abi-type-alignment dl (llvm/type ctx i16)) (conv (align-of I16)))
+    (assert-eq? (llvm/data-layout/type-alloc-size dl (llvm/type ctx i32)) (size-of I32))
+    (assert-eq? (llvm/data-layout/abi-type-alignment dl (llvm/type ctx i32)) (conv (align-of I32)))
+    (assert-eq? (llvm/data-layout/type-alloc-size dl (llvm/type ctx i64)) (size-of I64))
+    (assert-eq? (llvm/data-layout/abi-type-alignment dl (llvm/type ctx i64)) (conv (align-of I64)))
+    (assert-eq? (llvm/data-layout/type-alloc-size dl (llvm/type ctx (pointer i8))) (size-of (Ptr I8)))
+    (assert-eq? (llvm/data-layout/abi-type-alignment dl (llvm/type ctx (pointer i8))) (conv (align-of (Ptr I8)))))))
+
+(class (ExecutorFun A)
+  (function (call-with-values f args) {(-> A (Array Value) (Result Value String))}))
+
+(class (ExecutorArg A)
+  (function (value-as-arg v) {(-> Value (Result A String))}))
+
+(class (ExecutorRet A)
+  (function (ret-as-value v) {(-> A Value)}))
+
+($$ begin
+  ($for-each
+    [$arity $name $params]
+    ([0 Nullary ()]
+     [1 Unary (A)]
+     [2 Binary (A B)]
+     [3 Ternary (A B C)])
+    (instance
+      ($symbol-concat ExecutorFun. $name)
+      (forall ($for-each $param $params $param) R)
+      (ExecutorFun (-> ($for-each $param $params $param) R))
+      (where ($for-each $param $params (ExecutorArg $param)) (ExecutorRet R))
+      (function (call-with-values f args)
+        (when (ne? (array/length args) $arity)
+          (err (string "Expected " $arity " arguments but got " (array/length args) " arguments"))!)
+
+        (let* (($for-each $param $params
+                 [($symbol-concat arg- $param) (value-as-arg (get args[0]))!]
+                 [args (array/skip 1 args)])
+               [ret (f ($for-each $param $params ($symbol-concat arg- $param)))])
+          (ok (ret-as-value ret)))))))
+
+(instance ExecutorArg.Sexp (ExecutorArg (ir/S ir/CapturedUse))
+  (function (value-as-arg v)
+    (match v
+      [(value:sexp (let s)) (ok s)]
+      [_ (err (string "Cannot treat " v " as Sexp"))])))
+
+(instance ExecutorRet.Bool (ExecutorRet Bool)
+  (function (ret-as-value v)
+    (value:bool v)))
+
+(instance ExecutorRet.ResultSexpString (ExecutorRet (Result (ir/S ir/CapturedUse) String))
+  (function (ret-as-value v)
+    (value:result-sexp-string v)))

@@ -1,0 +1,711 @@
+(import "std/memory" size-of align-of)
+(import "std/ord-map" _)
+(import "std/hash-map" next-power-of-two) ; NOTE: This should be moved to the appropriate module
+(import "llvm" [llvm/_ _])
+(import "~/util" _)
+(import "~/emitter/ir" [ir/_ _])
+(import "~/backend/llvm/runtime" _)
+(export TypeSize _.TypeSize type-size/_)
+(export TypeEnv type-env/_ BuildEnv build-env/_ codegen/_)
+
+(derive (Eq Ord DebugDisplay Hash) value-data TypeSize
+  (type-size: U64 U64))
+
+(getter type-size: type-size/size type-size/align)
+
+(assert-eq? (size-of (Ptr U8)) 8)
+(assert-eq? (align-of (Ptr U8)) 8)
+
+(function type-size/pointer {TypeSize}
+  (type-size: 8 8))
+
+(function (aligned size align) {(-> U64 U64 U64)}
+  (if (ne? align 0)
+    (+ size (% (- align (% size align)) align))
+    size))
+
+(function (type-size/struct tss) {(-> (Array TypeSize) TypeSize)}
+  (let* ([align (|> tss (it/map type-size/align) (it/fold [^2 (max %1 %2)] 0))]
+         [size (ref 0)])
+    (for (type-size: (let esize) (let ealign)) tss
+      (set! size (+ (aligned ~size ealign) esize)))
+    (type-size: (aligned ~size align) align)))
+
+(function (type-size/union tss) {(-> (Array TypeSize) TypeSize)}
+  (let* ([align (|> tss (it/map type-size/align) (it/fold [^2 (max %1 %2)] 0))]
+         [size (|> tss (it/map type-size/size) (it/fold [^2 (max %1 %2)] 0))])
+    (type-size: (aligned size align) align)))
+
+(function (codegen/type-size! defs known-type-sizes ty)
+  {(-> (OrdMap ir/CtId ir/CtDef) (OrdMap ir/CtId (Option TypeSize)) ir/Ct TypeSize)}
+  (match ty
+    [(ir/ct:id (let id))
+      (match (ord-map/get? id known-type-sizes)
+        [(some none)
+          (assert #f (string "Unsized type: " (debug id)))]
+        [(some (some (let ts)))
+          ts]
+        [none
+          (ord-map/insert! id none known-type-sizes)
+          (let1
+            ts
+            (match (ord-map/get? id defs)
+              [(some (ir/ct-def:struct (ir/struct: _ (let fields))))
+                (type-size/struct (|> fields (it/map [^1 (codegen/type-size! defs known-type-sizes %1)]) collect))]
+              [(some (ir/ct-def:union (ir/union: (let tys))))
+                (type-size/union (|> tys (it/map [^1 (codegen/type-size! defs known-type-sizes %1)]) collect))]
+              [(some _)
+                (assert #f (string "Not a type: " (debug id)))]
+              [none
+                (assert #f (string "Unknown type: " (debug id)))])
+            (ord-map/insert! id (some ts) known-type-sizes)
+            ts)])]
+      [(ir/ct:generic-inst _ _)
+        (assert #f "Found ct:generic-inst on codegen/type-size!")]
+      [(ir/ct:table-get _ _)
+        (assert #f "Found ct:table-get on codegen/type-size!")]
+      [(ir/ct:ptr _)
+        type-size/pointer]
+      [(ir/ct:clos _ _)
+        (type-size: 16 8)]
+
+      ; TODO: To be precise, we need to follow the integer type specification of the DataLayout
+      [(ir/ct:s (let n))
+        (let1 size (next-power-of-two (/ (+ n 7) 8))
+          (type-size: size size))]
+      [(ir/ct:u (let n))
+        (let1 size (next-power-of-two (/ (+ n 7) 8))
+          (type-size: size size))]
+      [ir/ct:f32
+        (type-size: 4 4)]
+      [ir/ct:f64
+        (type-size: 8 8)]
+
+      [ir/ct:string
+        (type-size: runtime/string/size runtime/string/align)]
+      [ir/ct:char
+        (type-size: runtime/char/size runtime/char/align)]
+      [(ir/ct:array _)
+        (type-size: runtime/array/size runtime/array/align)]
+      [ir/ct:captured-use
+        (type-size: runtime/captured-use/size runtime/captured-use/align)]
+      [ir/ct:unit
+        (type-size: 0 0)]
+      [ir/ct:env
+        type-size/pointer]
+      [(ir/ct:syntax _)
+        (type-size: runtime/syntax/size runtime/syntax/align)]
+      [ir/ct:hole
+        (assert #f "Found ct:hole at codegen/type-size!")]))
+
+(class (TypeEnv E) (where (Conv E llvm/Context))
+  (function (type-env/get-type? id env) {(-> ir/CtId E (Option llvm/Type))}))
+
+(function (codegen/type env ty) {(forall E) (-> E ir/Ct llvm/Type) (where (TypeEnv E))}
+  (let1 (rec ty) (codegen/type env ty)
+    (match ty
+      [(ir/ct:id (let id))
+        (if-match1 (some (let ty)) (type-env/get-type? id env)
+          ty
+          (assert #f (string "Unknown type: " (debug id))))]
+      [(ir/ct:generic-inst _ _)
+        (assert #f "Found ct:generic-inst on codegen/type")]
+      [(ir/ct:table-get _ _)
+        (assert #f "Found ct:table-get on codegen/type")]
+      [(ir/ct:ptr (let ty))
+        (llvm/type (conv env) (pointer ,(rec ty)))]
+      [(ir/ct:clos (let params) (let ret))
+        (let* ([e (rec ir/ct:env)]
+               [args (collect (it/chain (some e) (it/map rec params)))]
+               [ret (rec ret)])
+          (llvm/type (conv env) (: (pointer (-> ,@args ,ret)) ,e)))]
+      [(ir/ct:s (let n))
+        (llvm/type (conv env) (integer ,(conv n)))]
+      [(ir/ct:u (let n))
+        (llvm/type (conv env) (integer ,(conv n)))]
+      [ir/ct:f32
+        (llvm/type (conv env) float)]
+      [ir/ct:f64
+        (llvm/type (conv env) double)]
+      [ir/ct:string
+        (runtime/string/type (conv env))]
+      [ir/ct:char
+        (runtime/char/type (conv env))]
+      [(ir/ct:array (let ty))
+        (runtime/array/type (conv env) (rec ty))]
+      [ir/ct:captured-use
+        (runtime/captured-use/type (conv env))]
+      [ir/ct:unit
+        (llvm/type (conv env) (:))]
+      [ir/ct:env
+        (llvm/type (conv env) (pointer i8))]
+      [(ir/ct:syntax _)
+        (runtime/syntax/type (conv env))]
+      [ir/ct:hole
+        (assert #f "Found ct:hole on codegen/type")])))
+
+(function (codegen/union-type ts ctx) {(-> TypeSize llvm/Context llvm/Type)}
+  (with1 (type-size: (let size) (let align)) ts
+    (if (ne? align 0)
+      (llvm/type ctx (array (integer ,(conv (* align 8))) ,(conv (/ size align))))
+      (llvm/type ctx (array i1 0)))))
+
+(class (BuildEnv E) (where (TypeEnv E) (RuntimeBuildEnv E))
+  (function (build-env/capture-function! id env) {(-> ir/CtId E llvm/Value)})
+  (function (build-env/capture-c-function! name tyf env) {(-> String (-> llvm/Context llvm/Type) E (: llvm/Value Bool))}) ; (: cfun return-by-pointer-store?)
+  (function (build-env/capture-intrinsic-function! name tyf env) {(-> String (-> llvm/Context llvm/Type) E llvm/Value)}))
+
+($$ begin
+  ($for-each
+    [$name $symbol $ty]
+    ([ceil-f32 "llvm.ceil.f32" (-> float float)]
+     [ceil-f64 "llvm.ceil.f64" (-> double double)]
+     [floor-f32 "llvm.floor.f32" (-> float float)]
+     [floor-f64 "llvm.floor.f64" (-> double double)]
+     [trunc-f32 "llvm.trunc.f32" (-> float float)]
+     [trunc-f64 "llvm.trunc.f64" (-> double double)]
+     [round-f32 "llvm.round.f32" (-> float float)]
+     [round-f64 "llvm.round.f64" (-> double double)]
+     [sqrt-f32 "llvm.sqrt.f32" (-> float float)]
+     [sqrt-f64 "llvm.sqrt.f64" (-> double double)]
+     [sin-f32 "llvm.sin.f32" (-> float float)]
+     [sin-f64 "llvm.sin.f64" (-> double double)]
+     [cos-f32 "llvm.cos.f32" (-> float float)]
+     [cos-f64 "llvm.cos.f64" (-> double double)]
+     [pow-f32 "llvm.pow.f32" (-> float float float)]
+     [pow-f64 "llvm.pow.f64" (-> double double double)]
+     [exp-f32 "llvm.exp.f32" (-> float float)]
+     [exp-f64 "llvm.exp.f64" (-> double double)]
+     [log-f32 "llvm.log.f32" (-> float float)]
+     [log-f64 "llvm.log.f64" (-> double double)]
+     [ctpop-i8 "llvm.ctpop.i8" (-> i8 i8)]
+     [ctpop-i16 "llvm.ctpop.i16" (-> i16 i16)]
+     [ctpop-i32 "llvm.ctpop.i32" (-> i32 i32)]
+     [ctpop-i64 "llvm.ctpop.i64" (-> i64 i64)]
+     [memcpy-i64 "llvm.memcpy.p0i8.p0i8.i64" (-> (pointer i8) (pointer i8) i64 i1 void)]
+     [memmove-i64 "llvm.memmove.p0i8.p0i8.i64" (-> (pointer i8) (pointer i8) i64 i1 void)])
+
+    (function (($symbol-concat capture- $name ($symbol "!")) env)
+      (build-env/capture-intrinsic-function! $symbol [^1 (llvm/type %1 $ty)] env))))
+
+(function (codegen/c-main-adapter! llrl-main env)
+  {(forall E) (-> llvm/Value E unit) (where (BuildEnv E))}
+  (let* ([c-main-ty (llvm/type (conv env) (-> i32 (pointer (pointer i8)) i32))]
+         [c-main (llvm/module/add-function! "main" c-main-ty (conv env))]
+         [llrt-init-ty (llvm/type (conv env) (-> i32 (pointer (pointer i8)) void))]
+         [llrt-init (runtime-build-env/capture-runtime-function! "llrt_init" [^1 llrt-init-ty] env)]
+         [argc (get (llvm/function/params c-main)[0])]
+         [argv (get (llvm/function/params c-main)[1])])
+    (llvm/with-builder (llvm/function/append-block! "entry" c-main) (lambda (builder)
+      (llvm/build! builder (call ,llrt-init ,argc ,argv))
+      (llvm/build! builder (call ,llrl-main (null (pointer i8))))
+      (llvm/build! builder (ret (i32 0))))))
+  unit)
+
+(function (codegen/function-body! name value f env)
+  {(forall E) (-> String llvm/Value ir/Function E unit) (where (BuildEnv E))}
+  (llvm/with-builder (llvm/function/append-block! "entry" value) (lambda (builder)
+    (with1 (ir/function: _ (let fenv) (let fparams) _ (let fbody)) f
+      (let* ([local-values ord-map/empty]
+             [params (llvm/function/params value)]
+             [env-param (get params[0])]
+             [params (array/skip 1 params)])
+        ; Bind arguments
+        (for (: (ir/function-param: (let id) _) (let p)) (it/zip fparams params)
+          (ord-map/insert! id p local-values))
+
+      (when-match1 (some (ir/function-env: (let id) (let felems))) fenv
+        ; Bind an environment argument
+        (ord-map/insert! id env-param local-values)
+
+        (let* ([elem-tys
+                 (|> felems
+                     (it/map (case1 (ir/function-param: _ (let ty)) (codegen/type env ty)))
+                     collect)]
+               [env-param
+                 (llvm/build! builder (bit-cast ,env-param (pointer (: ,@elem-tys))))])
+          ; Bind the environment argument elements
+          (for (: (let i) (ir/function-param: (let id) _)) (it/with-index felems)
+            (ord-map/insert! id (llvm/build! builder (load (struct-gep ,env-param ,(conv i)))) local-values))))
+
+      (let1 ctx (build-context: env builder local-values ord-map/empty)
+        (when-match1 (some (let ret)) (codegen/expr! ctx fbody)
+          (llvm/build! builder (ret ,ret))))))))
+  unit)
+
+(data (BuildContext E)
+  (build-context: E llvm/Builder (OrdMap ir/RtId llvm/Value) (OrdMap ir/RtId Cont)))
+
+(instance Conv.From.BuildContext.To.llvm/Context (forall E) (Conv (BuildContext E) llvm/Context) (where (TypeEnv E))
+  (function (conv ctx) (conv (build-env ctx))))
+
+(instance Conv.From.BuildContext.To.llvm/Module (forall E) (Conv (BuildContext E) llvm/Module) (where (RuntimeBuildEnv E))
+  (function (conv ctx) (conv (build-env ctx))))
+
+(instance Conv.From.BuildContext.To.llvm/DataLayout (forall E) (Conv (BuildContext E) llvm/DataLayout) (where (RuntimeBuildEnv E))
+  (function (conv ctx) (llvm/module/data-layout (conv ctx))))
+
+(instance Conv.From.BuildContext.To.llvm/Builder (forall E) (Conv (BuildContext E) llvm/Builder)
+  (function (conv ctx) (llvm-builder ctx)))
+
+(instance TypeEnv.BuildContext (forall E) (TypeEnv (BuildContext E)) (where (TypeEnv E))
+  (function (type-env/get-type? id ctx) (type-env/get-type? id (build-env ctx))))
+
+(instance RuntimeBuildEnv.BuildContext (forall E) (RuntimeBuildEnv (BuildContext E)) (where (RuntimeBuildEnv E))
+  (function (runtime-build-env/capture-runtime-function! name tyf ctx)
+    (runtime-build-env/capture-runtime-function! name tyf (build-env ctx))))
+
+(instance BuildEnv.BuildContext (forall E) (BuildEnv (BuildContext E)) (where (BuildEnv E))
+  (function (build-env/capture-function! id ctx)
+    (build-env/capture-function! id (build-env ctx)))
+  (function (build-env/capture-c-function! name tyf ctx)
+    (build-env/capture-c-function! name tyf (build-env ctx)))
+  (function (build-env/capture-intrinsic-function! name tyf ctx)
+    (build-env/capture-intrinsic-function! name tyf (build-env ctx))))
+
+(getter build-context: build-env llvm-builder local-values local-conts)
+
+(function (codegen/expr! ctx rt)
+  {(forall E) (-> (BuildContext E) ir/Rt (Option llvm/Value)) (where (BuildEnv E))}
+  (match rt
+    [(ir/rt:local (let id))
+      (if-match1 (some (let value)) (ord-map/get? id (local-values ctx))
+        (some value)
+        (assert #f (string "Undefined variable: " (debug id))))]
+    [(ir/rt:local-fun _ _)
+      (assert #f "Found rt:local-fun at codegen, this should be erased by emitter")]
+    [(ir/rt:static-fun (ir/ct:id (let id)) (let env))
+      (let ([fp (build-env/capture-function! id ctx)]
+            [env
+              (if-match1 (some (let env)) env
+                (codegen/expr! ctx env)?
+                (llvm/build! (conv ctx) (null ,(codegen/type ctx ir/ct:env))))])
+        (some (llvm/build! (conv ctx)
+          (insert-value (insert-value (undef (: ,(llvm/value/type fp) ,(llvm/value/type env))) 0 ,fp) 1 ,env))))]
+    [(ir/rt:static-fun (let ct) _)
+      (assert #f (string "Unresolved Ct: " (debug ct) ", this should be resolved by emitter"))]
+    [(ir/rt:const (let c))
+      (some (codegen/const! ctx c))]
+    [(ir/rt:call (let callee) (let args))
+      (let* ([callee (codegen/expr! ctx callee)?]
+             [args (vector/buffer (it/traverse-option [^1 (codegen/expr! ctx %1)] args)?)]
+             [fp (llvm/build! (conv ctx) (extract-value ,callee 0))]
+             [env (llvm/build! (conv ctx) (extract-value ,callee 1))])
+        (some (llvm/build! (conv ctx) (call ,fp ,@(array/unshift env args)))))]
+    [(ir/rt:c-call (let name) (let ty) (let args))
+      (let1 args (vector/buffer (it/traverse-option [^1 (codegen/expr! ctx %1)] args)?)
+        (with1
+          (: (let cfun) (let return-by-pointer-store?))
+          (build-env/capture-c-function!
+            name
+            (lambda (_)
+              (if-match1 (ir/ct:clos (let args) (let ret)) ty
+                (let ([args (|> args (it/map [^1 (codegen/type ctx %1)]) collect)]
+                      [ret
+                        (if-match1 ir/ct:unit ret
+                          (llvm/type (conv ctx) void)
+                          (codegen/type ctx ret))])
+                  (llvm/type (conv ctx) (-> ,@args ,ret)))
+                (assert #f (string "c-call type is not a function type: " (debug ty)))))
+            ctx)
+          (some
+            (if return-by-pointer-store?
+              (let* ([ret-param (get (llvm/function/params cfun)[0])]
+                     [ret-ptr (llvm/build! (conv ctx) (entry-alloca "rettmp" ,(|> ret-param llvm/value/type llvm/type/element-type)))])
+                (llvm/build! (conv ctx) (call ,cfun ,@(array/unshift ret-ptr args)))
+                (llvm/build! (conv ctx) (load ,ret-ptr)))
+              (let1 ret (llvm/build! (conv ctx) (call ,cfun ,@args))
+                (if (|> ret llvm/value/type llvm/type/sized?)
+                  ret
+                  (codegen/const! ctx ir/const:unit)))))))]
+    [(ir/rt:nullary (let op))
+      (some (match op
+        [(ir/nullary:uninitialized (let ty))
+          (llvm/build! (conv ctx) (undef ,(codegen/type ctx ty)))]
+        [(ir/nullary:null (let ty))
+          (llvm/build! (conv ctx) (null (pointer ,(codegen/type ctx ty))))]
+        [ir/nullary:gen-id
+          (runtime/string/build-genid! (conv ctx) ctx)]
+        [(ir/nullary:size-of (let ty))
+          (llvm/build! (conv ctx) (u64 ,(llvm/data-layout/type-alloc-size (conv ctx) (codegen/type ctx ty))))]
+        [(ir/nullary:align-of (let ty))
+          (llvm/build! (conv ctx) (u64 ,(conv (llvm/data-layout/abi-type-alignment (conv ctx) (codegen/type ctx ty)))))]))]
+    [(ir/rt:unary (let op) (let x))
+      (let1 x (codegen/expr! ctx x)?
+        (some (match op
+          [ir/unary:not
+            (llvm/build! (conv ctx) (not ,x))]
+          [ir/unary:load
+            (llvm/build! (conv ctx) (load ,x))]
+          [(ir/unary:struct-elem _ (let i))
+            (llvm/build! (conv ctx) (extract-value ,x ,(conv i)))]
+          [(ir/unary:reinterpret (let a) (let b))
+            (let* ([a (codegen/type ctx a)]
+                   [b (codegen/type ctx b)]
+                   [as (llvm/data-layout/type-alloc-size (conv ctx) a)]
+                   [bs (llvm/data-layout/type-alloc-size (conv ctx) b)])
+              (if (< as bs)
+                (let* ([ptr (llvm/build! (conv ctx) (entry-alloca "reinterpret" ,b))]
+                       [a-ptr (llvm/build! (conv ctx) (bit-cast ,ptr (pointer ,a)))]
+                       [_ (llvm/build! (conv ctx) (store ,x ,a-ptr))])
+                  (llvm/build! (conv ctx) (load ,ptr)))
+                (let* ([ptr (llvm/build! (conv ctx) (entry-alloca "reinterpret" ,a))]
+                       [_ (llvm/build! (conv ctx) (store ,x ,ptr))]
+                       [b-ptr (llvm/build! (conv ctx) (bit-cast ,ptr (pointer ,b)))])
+                  (llvm/build! (conv ctx) (load ,b-ptr)))))]
+          [(ir/unary:syntax-body (let ty))
+            (runtime/syntax/build-syntax-body! (conv ctx) x (codegen/type ctx ty))]
+          [ir/unary:panic
+            (runtime/build-panic! (conv ctx) ctx x)
+            (return none)]
+          [(ir/unary:bit-cast (let ty))
+            (llvm/build! (conv ctx) (bit-cast ,x ,(codegen/type ctx ty)))]
+          [ir/unary:ptr-to-i
+            (llvm/build! (conv ctx) (ptr-to-int ,x i64))]
+          [(ir/unary:i-to-ptr (let ty))
+            (llvm/build! (conv ctx) (int-to-ptr ,x (pointer ,(codegen/type ctx ty))))]
+          [ir/unary:i-complement
+            (llvm/build! (conv ctx) (xor ,x ,(llvm/const/integer (llvm/value/type x) (conv-from I64 -1) #t)))]
+          [(ir/unary:i-trunc (let ty))
+            (llvm/build! (conv ctx) (trunc ,x ,(codegen/type ctx ty)))]
+          [ir/unary:i-pop-count
+            (let1
+              f
+              (match (|> x llvm/value/type llvm/type/bit-width)
+                [8 (capture-ctpop-i8! ctx)]
+                [16 (capture-ctpop-i16! ctx)]
+                [32 (capture-ctpop-i32! ctx)]
+                [64 (capture-ctpop-i64! ctx)]
+                [_ (assert #f (string "popcount is not defined for type: " (llvm/value/type x)))])
+              (llvm/build! (conv ctx) (call ,f ,x)))]
+          [(ir/unary:s-ext (let ty))
+            (llvm/build! (conv ctx) (sext ,x ,(codegen/type ctx ty)))]
+          [(ir/unary:s-to-f (let ty))
+            (llvm/build! (conv ctx) (si-to-fp ,x ,(codegen/type ctx ty)))]
+          [(ir/unary:u-ext (let ty))
+            (llvm/build! (conv ctx) (zext ,x ,(codegen/type ctx ty)))]
+          [(ir/unary:u-to-f (let ty))
+            (llvm/build! (conv ctx) (ui-to-fp ,x ,(codegen/type ctx ty)))]
+          [(ir/unary:f-to-s (let ty))
+            (llvm/build! (conv ctx) (fp-to-si ,x ,(codegen/type ctx ty)))]
+          [(ir/unary:f-to-u (let ty))
+            (llvm/build! (conv ctx) (fp-to-ui ,x ,(codegen/type ctx ty)))]
+          [(ir/unary:f-trunc (let ty))
+            (llvm/build! (conv ctx) (fptrunc ,x ,(codegen/type ctx ty)))]
+          [(ir/unary:f-ext (let ty))
+            (llvm/build! (conv ctx) (fpext ,x ,(codegen/type ctx ty)))]
+          [ir/unary:real-ceil
+            (codegen-fp-op! ctx "ceil" capture-ceil-f32! capture-ceil-f64! x)]
+          [ir/unary:real-floor
+            (codegen-fp-op! ctx "floor" capture-floor-f32! capture-floor-f64! x)]
+          [ir/unary:real-trunc
+            (codegen-fp-op! ctx "trunc" capture-trunc-f32! capture-trunc-f64! x)]
+          [ir/unary:real-round
+            (codegen-fp-op! ctx "round" capture-round-f32! capture-round-f64! x)]
+          [ir/unary:math-sqrt
+            (codegen-fp-op! ctx "sqrt" capture-sqrt-f32! capture-sqrt-f64! x)]
+          [ir/unary:math-sin
+            (codegen-fp-op! ctx "sin" capture-sin-f32! capture-sin-f64! x)]
+          [ir/unary:math-cos
+            (codegen-fp-op! ctx "cos" capture-cos-f32! capture-cos-f64! x)]
+          [ir/unary:math-exp
+            (codegen-fp-op! ctx "exp" capture-exp-f32! capture-exp-f64! x)]
+          [ir/unary:math-log
+            (codegen-fp-op! ctx "log" capture-log-f32! capture-log-f64! x)]
+          [ir/unary:string-ptr
+            (runtime/string/build-getptr! (conv ctx) x)]
+          [ir/unary:string-length
+            (runtime/string/build-getlen! (conv ctx) x)]
+          [ir/unary:array-ptr
+            (runtime/array/build-getptr! (conv ctx) x)]
+          [ir/unary:array-length
+            (runtime/array/build-getlen! (conv ctx) x)])))]
+    [(ir/rt:binary (let op) (let x) (let y))
+      (let* ([x (codegen/expr! ctx x)?]
+             [y (codegen/expr! ctx y)?])
+        (some (match op
+          [ir/binary:store
+            (llvm/build! (conv ctx) (store ,x ,y))
+            (codegen/const! ctx ir/const:unit)]
+          [ir/binary:offset
+            (llvm/build! (conv ctx) (gep ,y ,x))]
+          [ir/binary:ptr-eq (llvm/build! (conv ctx) (ieq ,x ,y))]
+          [ir/binary:ptr-lt (llvm/build! (conv ctx) (ult ,x ,y))]
+          [ir/binary:ptr-le (llvm/build! (conv ctx) (ule ,x ,y))]
+          [ir/binary:ptr-gt (llvm/build! (conv ctx) (ugt ,x ,y))]
+          [ir/binary:ptr-ge (llvm/build! (conv ctx) (uge ,x ,y))]
+          [ir/binary:i-eq (llvm/build! (conv ctx) (ieq ,x ,y))]
+          [ir/binary:i-shl (llvm/build! (conv ctx) (shl ,x ,y))]
+          [ir/binary:i-ashr (llvm/build! (conv ctx) (ashr ,x ,y))]
+          [ir/binary:i-lshr (llvm/build! (conv ctx) (lshr ,x ,y))]
+          [ir/binary:i-and (llvm/build! (conv ctx) (and ,x ,y))]
+          [ir/binary:i-or (llvm/build! (conv ctx) (or ,x ,y))]
+          [ir/binary:i-xor (llvm/build! (conv ctx) (xor ,x ,y))]
+          [ir/binary:s-lt (llvm/build! (conv ctx) (slt ,x ,y))]
+          [ir/binary:s-le (llvm/build! (conv ctx) (sle ,x ,y))]
+          [ir/binary:s-gt (llvm/build! (conv ctx) (sgt ,x ,y))]
+          [ir/binary:s-ge (llvm/build! (conv ctx) (sge ,x ,y))]
+          [ir/binary:s-add (llvm/build! (conv ctx) (nswadd ,x ,y))]
+          [ir/binary:s-sub (llvm/build! (conv ctx) (nswsub ,x ,y))]
+          [ir/binary:s-mul (llvm/build! (conv ctx) (nswmul ,x ,y))]
+          [ir/binary:s-div (llvm/build! (conv ctx) (sdiv ,x ,y))]
+          [ir/binary:s-rem (llvm/build! (conv ctx) (srem ,x ,y))]
+          [ir/binary:u-lt (llvm/build! (conv ctx) (ult ,x ,y))]
+          [ir/binary:u-le (llvm/build! (conv ctx) (ule ,x ,y))]
+          [ir/binary:u-gt (llvm/build! (conv ctx) (ugt ,x ,y))]
+          [ir/binary:u-ge (llvm/build! (conv ctx) (uge ,x ,y))]
+          [ir/binary:u-add (llvm/build! (conv ctx) (add ,x ,y))]
+          [ir/binary:u-sub (llvm/build! (conv ctx) (sub ,x ,y))]
+          [ir/binary:u-mul (llvm/build! (conv ctx) (mul ,x ,y))]
+          [ir/binary:u-div (llvm/build! (conv ctx) (udiv ,x ,y))]
+          [ir/binary:u-rem (llvm/build! (conv ctx) (urem ,x ,y))]
+          [ir/binary:f-eq (llvm/build! (conv ctx) (feq ,x ,y))]
+          [ir/binary:f-lt (llvm/build! (conv ctx) (flt ,x ,y))]
+          [ir/binary:f-le (llvm/build! (conv ctx) (fle ,x ,y))]
+          [ir/binary:f-gt (llvm/build! (conv ctx) (fgt ,x ,y))]
+          [ir/binary:f-ge (llvm/build! (conv ctx) (fge ,x ,y))]
+          [ir/binary:f-add (llvm/build! (conv ctx) (fadd ,x ,y))]
+          [ir/binary:f-sub (llvm/build! (conv ctx) (fsub ,x ,y))]
+          [ir/binary:f-mul (llvm/build! (conv ctx) (fmul ,x ,y))]
+          [ir/binary:f-div (llvm/build! (conv ctx) (fdiv ,x ,y))]
+          [ir/binary:f-rem (llvm/build! (conv ctx) (frem ,x ,y))]
+          [ir/binary:math-pow
+            (let1 ty (llvm/value/type x)
+              (cond
+                [(llvm/type/float? ty)
+                  (llvm/build! (conv ctx) (call ,(capture-pow-f32! ctx) ,x ,y))]
+                [(llvm/type/double? ty)
+                  (llvm/build! (conv ctx) (call ,(capture-pow-f64! ctx) ,x ,y))]
+                [else
+                  (assert #f (string "pow is not defined for type: " ty))]))]
+          [ir/binary:string-construct
+            (runtime/string/build-construct! (conv ctx) x y)]
+          [ir/binary:string-eq
+            (runtime/string/build-eq! (conv ctx) ctx x y)]
+          [ir/binary:string-cmp
+            (runtime/string/build-cmp! (conv ctx) ctx x y)]
+          [ir/binary:string-concat
+            (runtime/string/build-concat! (conv ctx) ctx x y)]
+          [ir/binary:char-eq
+            (runtime/char/build-eq! (conv ctx) x y)]
+          [ir/binary:array-construct
+            (runtime/array/build-construct! (conv ctx) x y)]
+          [ir/binary:array-load
+            (runtime/array/build-load! (conv ctx) x y)])))]
+    [(ir/rt:ternary (let op) (let x) (let y) (let z))
+      (let* ([x (codegen/expr! ctx x)?]
+             [y (codegen/expr! ctx y)?]
+             [z (codegen/expr! ctx z)?])
+        (some (match op
+          [ir/ternary:ptr-copy
+            (let1 value-ty (|> x llvm/value/type llvm/type/element-type)
+              (llvm/build! (conv ctx)
+                (call
+                  ,(capture-memcpy-i64! ctx)
+                  (bit-cast ,z (pointer i8))
+                  (bit-cast ,x (pointer i8))
+                  (mul (u64 ,(llvm/data-layout/type-alloc-size (conv ctx) value-ty)) ,y)
+                  #f)))
+            (codegen/const! ctx ir/const:unit)]
+          [ir/ternary:ptr-move
+            (let1 value-ty (|> x llvm/value/type llvm/type/element-type)
+              (llvm/build! (conv ctx)
+                (call
+                  ,(capture-memmove-i64! ctx)
+                  (bit-cast ,z (pointer i8))
+                  (bit-cast ,x (pointer i8))
+                  (mul (u64 ,(llvm/data-layout/type-alloc-size (conv ctx) value-ty)) ,y)
+                  #f)))
+            (codegen/const! ctx ir/const:unit)]
+          [ir/ternary:array-store
+            (runtime/array/build-store! (conv ctx) x y z)
+            (codegen/const! ctx ir/const:unit)])))]
+    [(ir/rt:alloc (let location) (let a))
+      (let* ([a (codegen/expr! ctx a)?]
+             [ptr (codegen-alloc! ctx location (llvm/value/type a))])
+        (llvm/build! (conv ctx) (store ,a ,ptr))
+        (some ptr))]
+    [(ir/rt:alloc-array (let location) (let ty) (let len))
+      (let* ([ty (codegen/type ctx ty)]
+             [len (codegen/expr! ctx len)?]
+             [ptr (codegen-array-alloc! ctx location ty len)])
+        (some (runtime/array/build-construct! (conv ctx) ptr len)))]
+    [(ir/rt:construct-env (let location) (let elems))
+      (let* ([elems (it/traverse-option [^1 (codegen/expr! ctx %1)] elems)?]
+             [elem-tys (|> elems (it/map llvm/value/type) collect)]
+             [ptr (codegen-alloc! ctx location (llvm/type (conv ctx) (: ,@elem-tys)))])
+        (for (: (let i) (let elem)) (it/with-index elems)
+          (llvm/build! (conv ctx) (store ,elem (struct-gep ,ptr ,(conv i)))))
+        (some (llvm/build! (conv ctx) (bit-cast ,ptr ,(codegen/type ctx ir/ct:env)))))]
+    [(ir/rt:construct-data _ _ _)
+      (assert #f "Found rt:construct-data at codegen, this should be erased by emitter")]
+    [(ir/rt:construct-struct (let ty) (let fields))
+      (let1 result (ref (llvm/build! (conv ctx) (undef ,(codegen/type ctx ty))))
+        (for (: (let i) (let field)) (it/with-index fields)
+          (let1 value (codegen/expr! ctx field)?
+            (set! result (llvm/build! (conv ctx) (insert-value ,~result ,(conv i) ,value)))))
+        (some ~result))]
+    [(ir/rt:construct-syntax (let metadata) (let a))
+      (let1 a (codegen/expr! ctx a)?
+        (some (runtime/syntax/build-construct! (conv ctx) ctx metadata a)))]
+    [(ir/rt:seq (let stmts) (let ret))
+      (for (let stmt) stmts (codegen/expr! ctx stmt)?)
+      (codegen/expr! ctx ret)]
+    [(ir/rt:if (let cond) (let then) (let else))
+      (let ([cond (codegen/expr! ctx cond)?]
+            [then-bb (llvm/builder/append-block! "then" (conv ctx))]
+            [else-bb (llvm/builder/append-block! "else" (conv ctx))]
+            [merge-cont (cont/new "merge" [^1 (some (get %1[0]))])])
+        (llvm/build! (conv ctx) (cond-br ,cond ,then-bb ,else-bb))
+
+        (llvm/builder/set-insert-point! then-bb #t (conv ctx))
+        (when-match1 (some (let then)) (codegen/expr! ctx then)
+          (cont/enter! ctx (array then) merge-cont))
+
+        (llvm/builder/set-insert-point! else-bb #t (conv ctx))
+        (when-match1 (some (let else)) (codegen/expr! ctx else)
+          (cont/enter! ctx (array else) merge-cont))
+
+        (cont/continue! ctx merge-cont))]
+    [(ir/rt:while (let cond) (let body))
+      (let* ([cond-bb (llvm/builder/append-block! "cond" (conv ctx))]
+             [then-bb (llvm/builder/append-block! "then" (conv ctx))]
+             [else-bb (llvm/builder/append-block! "else" (conv ctx))])
+        (llvm/build! (conv ctx) (br ,cond-bb))
+
+        (llvm/builder/set-insert-point! cond-bb #t (conv ctx))
+        (let1 cond (codegen/expr! ctx cond)?
+          (llvm/build! (conv ctx) (cond-br ,cond ,then-bb ,else-bb)))
+
+        (llvm/builder/set-insert-point! then-bb #t (conv ctx))
+        (when-match1 (some _) (codegen/expr! ctx body)
+          (llvm/build! (conv ctx) (br ,cond-bb)))
+
+        (llvm/builder/set-insert-point! else-bb #t (conv ctx)))
+      (some (codegen/const! ctx ir/const:unit))]
+    [(ir/rt:and _ _)
+      (assert #f "Found rt:and at codegen, this should be erased by emitter")]
+    [(ir/rt:or _ _)
+      (assert #f "Found rt:or at codegen, this should be erased by emitter")]
+    [(ir/rt:match _ _)
+      (assert #f "Found rt:match at codegen, this should be erased by emitter")]
+    [(ir/rt:return (let ret))
+      (llvm/build! (conv ctx) (ret ,(codegen/expr! ctx ret)?))
+      none]
+    [(ir/rt:cont (let id) (let args))
+      (let ([args (vector/buffer (it/traverse-option [^1 (codegen/expr! ctx %1)] args)?)]
+            [cont (option/force (ord-map/get? id (local-conts ctx)))])
+        (cont/enter! ctx args cont))
+      none]
+    [ir/rt:never
+      (llvm/build! (conv ctx) unreachable)
+      none]
+    [(ir/rt:let-function _ _)
+      (assert #f "Found rt:let-function at codegen, this should be erased by emitter")]
+    [(ir/rt:let-var (let vars) (let body))
+      (for (ir/rt-var: (let id) _ (let init)) vars
+        (let1 value (codegen/expr! ctx init)?
+          (ord-map/insert! id value (local-values ctx))))
+      (codegen/expr! ctx body)]
+    [(ir/rt:let-cont (let conts) (let body))
+      (for (ir/rt-cont: (let id) (let params) (let body)) conts
+        (ord-map/insert!
+          id
+          (cont/new "cont" (lambda (args)
+            (assert-eq? (array/length params) (array/length args))
+            (for (: (ir/function-param: (let id) _) (let arg)) (it/zip params args)
+              (ord-map/insert! id arg (local-values ctx)))
+            (codegen/expr! ctx body)))
+          (local-conts ctx)))
+
+      (let1 merge-cont (cont/new "merge" [^1 (some (get %1[0]))])
+        (when-match1 (some (let ret)) (codegen/expr! ctx body)
+          (cont/enter! ctx (array ret) merge-cont))
+
+        (for (ir/rt-cont: (let id) _ _) conts
+          (let1 cont (option/force (ord-map/remove! id (local-conts ctx)))
+            (when-match1 (some (let ret)) (cont/continue! ctx cont)
+              (cont/enter! ctx (array ret) merge-cont))))
+
+        (cont/continue! ctx merge-cont))]))
+
+(function (codegen-fp-op! ctx name f32f f64f x)
+  (let1 ty (llvm/value/type x)
+    (cond
+      [(llvm/type/float? ty)
+        (llvm/build! (conv ctx) (call ,(f32f ctx) ,x))]
+      [(llvm/type/double? ty)
+        (llvm/build! (conv ctx) (call ,(f64f ctx) ,x))]
+      [else
+        (assert #f (string name " is not defined for type: " ty))])))
+
+(function (codegen-alloc! ctx loc ty)
+  (match loc
+    [ir/location:heap (runtime/build-heap-alloc! (conv ctx) ctx ty)]
+    [ir/location:stack (llvm/build! (conv ctx) (alloca "" ,ty))]))
+
+(function (codegen-array-alloc! ctx loc ty num)
+  (match loc
+    [ir/location:heap (runtime/build-heap-array-alloc! (conv ctx) ctx ty num)]
+    [ir/location:stack (llvm/build! (conv ctx) (array-alloca "" ,ty ,num))]))
+
+(function (codegen/const! ctx c)
+  {(forall E) (-> (BuildContext E) ir/Const llvm/Value) (where (BuildEnv E))}
+  (match c
+    [(ir/const:integer (let ty) (let signed?) (let value))
+      (let1 llvm-ty (codegen/type ctx ty)
+        (if (or (is? ir/ct:f32 ty) (is? ir/ct:f64 ty))
+          (llvm/const/fp llvm-ty (if signed? (conv (conv-to I64 value)) (conv value)))
+          (llvm/const/integer llvm-ty value signed?)))]
+    [(ir/const:fp-number (let ty) (let value))
+      (let1 llvm-ty (codegen/type ctx ty)
+        (llvm/const/fp llvm-ty value))]
+    [(ir/const:string (let value))
+      (runtime/const (conv ctx) value)]
+    [(ir/const:char (let value))
+      (runtime/const (conv ctx) value)]
+    [(ir/const:sexp _ (let value))
+      (runtime/const (conv ctx) value)]
+    [ir/const:unit
+      (llvm/build! (conv ctx) (:))]))
+
+(value-data Cont
+  (cont: (Ref ContBody)))
+
+(getter cont: cont-body)
+
+(value-data ContBody
+  (cont-body:never String (-> (Array llvm/Value) (Option llvm/Value)))
+  (cont-body:reach llvm/BasicBlock (Array llvm/Value) (Option (: llvm/BasicBlock llvm/Value))))
+
+(function (cont/new name f) {(-> String (-> (Array llvm/Value) (Option llvm/Value)) Cont)}
+  (cont: (ref (cont-body:never name f))))
+
+(function (cont/enter! ctx args cont) {(forall E) (-> (BuildContext E) (Array llvm/Value) Cont unit)}
+  (let1 current-bb (llvm/builder/insert-point (conv ctx))
+    (with1
+      (: (let bb) (let phis))
+      (match ~(cont-body cont)
+        [(cont-body:never (let name) (let f))
+          ; Build continuation header
+          (let* ([cont-bb (llvm/builder/append-block! name (conv ctx))]
+                 [_ (llvm/builder/set-insert-point! cont-bb #t (conv ctx))]
+                 [phis (|> args (it/map [^1 (llvm/build! (conv ctx) (phi ,(llvm/value/type %1)))]) collect)]
+                 [_ (set! (cont-body cont) (cont-body:reach cont-bb phis none))])
+            ; Build continuation body
+            (when-match1 (some (let ret-value)) (f phis)
+              (let1 ret-bb (llvm/builder/insert-point (conv ctx))
+                (set! (cont-body cont) (cont-body:reach cont-bb phis (some (: ret-bb ret-value))))))
+
+            (llvm/builder/set-insert-point! current-bb #t (conv ctx)) ; restore
+            (: cont-bb phis))]
+        [(cont-body:reach (let bb) (let phis) _)
+          (: bb phis)])
+      (llvm/build! (conv ctx) (br ,bb))
+      (for (: (let phi) (let arg)) (it/zip phis args)
+        (llvm/phi-node/add-incoming! arg current-bb phi)))))
+
+(function (cont/continue! ctx cont) {(forall E) (-> (BuildContext E) Cont (Option llvm/Value))}
+  (with1? (cont-body:reach _ _ (some (: (let bb) (let value)))) ~(cont-body cont)
+    (llvm/builder/set-insert-point! bb #t (conv ctx))
+    value))

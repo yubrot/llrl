@@ -6,7 +6,6 @@
 (import "~/sexp" s*_)
 (import "~/syntax" [syntax-error: error:] syntax/list-of)
 (import "~/module/builder" [ModuleBackend.unit Backend.unit])
-(import "~/backend/unit" [EmitterBackend.unit Backend.unit]) ; temporary
 (import "~/tests/testcases/module-validation" _)
 (import "~/tests/testcases/error-expectation" _)
 (export TestCase _.TestCase test-case/_ syntax/test-case)
@@ -85,7 +84,8 @@
           (embed-text-file-as-string! "../llrl0/src/tests/test-std/prelude-for-backend-test.llrl")
           loader))]
       [test-target:std
-        (assert (code-loader/add-embedded-std! loader))])
+        ; (assert (code-loader/add-embedded-std! loader)) ; embedded-std does not contain tests
+        (assert (code-loader/add-package-filepath! package-name/std "../std" loader))])
     loader))
 
 (function (test-target/run! slt report codes condition target)
@@ -94,21 +94,20 @@
     [test-target:module
       (test-condition/run! slt (module/build! codes default unit report) condition)]
     [_
-      (let* ([backend unit] ; TODO: LLVM Backend
-             [emitter (emitter/new backend)]
-             [entry-points (hash-set path/current)])
-        (test-condition/run! slt (module/build! codes entry-points emitter report) condition)!
-        (when-match1 (test-condition:pass _) condition
+      (with-llvm-backend #t #f (lambda (backend)
+        (let ([emitter (emitter/new backend)]
+              [entry-points (hash-set path/current)])
+          (test-condition/run! slt (module/build! codes entry-points emitter report) condition)!
           (emitter/complete! report emitter)
-          ; TODO: LLVM Backend
-          ; (match (backend/execute-main! backend)
-          ;   [(ok (value:bool #t))]
-          ;   [(ok (let value))
-          ;     (err (string "Expected #t but got " value))!]
-          ;   [(err (let error))
-          ;     (err (string "Execution error:\n" error))!])
-          (backend/complete! report backend))
-        (ok unit))]))
+          (when-match1 (test-condition:pass _) condition
+            (match (backend/execute-main! backend)
+              [(ok (value:bool #t))]
+              [(ok (let value))
+                (err (string "Expected #t but got " value))!]
+              [(err (let error))
+                (err (string "Execution error:\n" error))!])))
+        (backend/complete! report backend)
+        (ok unit)))]))
 
 (derive (DebugDisplay) value-data TestCondition
   (test-condition:pass (Array ModuleValidation))

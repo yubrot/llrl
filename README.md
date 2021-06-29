@@ -88,7 +88,7 @@ The goal of llrl is not to create a modern, practical programming language. Inst
   - [x] Syntax analysis
   - [x] Loading mechanism for a set of source codes
   - [x] Semantic analysis
-  - [ ] Code generation
+  - [x] Code generation
   - [ ] Driver
 
 ## Usage

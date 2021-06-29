@@ -1,0 +1,143 @@
+(import "llvm" [llvm/_ _])
+(import "std/phantom" _)
+(import "std/system" Process process process/_)
+(import "std/ord-map" _)
+(import "~/util" _)
+(import "~/report" Report _.Report report/_ phase:_)
+(import "~/emitter" Backend)
+(import "~/emitter/ir" [ir/_ _])
+(import "~/backend/llvm/artifact" _)
+(import "~/backend/llvm/executor" _)
+(export LLVMBackend _.LLVMBackend llvm-backend/_ with-llvm-backend)
+
+(derive (DebugDisplay) data LLVMBackend
+  (backend:
+    Bool
+    Report
+    llvm/Context
+    llvm/PassManager
+    (OrdMap ir/CtId ir/CtDef)
+    (Vector ir/Init)
+    ContextArtifact
+    Executor
+    (Ref U32)))
+
+(instance Backend.LLVMBackend (Backend LLVMBackend)
+  (function (backend/put-def! id def b)
+    (ignore (ord-map/insert! id def (queued-defs b))))
+
+  (function (backend/put-main! init b)
+    (assert-is? none (|> b context-artifact context-artifact/main-function-symbol?) "main is frozen")
+    (vector/push! init (queued-main b)))
+
+  (function (backend/execute-main! b)
+    (when-match1 none (|> b context-artifact context-artifact/main-function-symbol?)
+      (executor/add-module!
+        (report/on (llvm-backend/report b) phase:codegen (llvm-backend/build! "entry" #t b))
+        (executor b)))
+
+    (report/on (llvm-backend/report b) phase:jit
+      (let1 symbol (|> b context-artifact context-artifact/main-function-symbol? option/force)
+        (assert-is? (function-symbol-kind:main (ir/ct:u 1)) (function-symbol/kind symbol))
+        (executor/unsafe-call!
+          (function-symbol/name symbol)
+          (phantom (-> Bool))
+          array/empty
+          (executor b)))))
+
+  (function (backend/execute-function! id args b)
+    (when (not (ord-map/empty? (queued-defs b)))
+      (let1 generation ~(next-generation b)
+        (set! (next-generation b) (+ generation 1))
+        (executor/add-module!
+          (report/on (llvm-backend/report b) phase:codegen (llvm-backend/build! (string "gen" generation) #f b))
+          (executor b))))
+
+      (if-match1 (some (let symbol)) (context-artifact/function-symbol? id (context-artifact b))
+        (match (function-symbol/kind symbol)
+          [function-symbol-kind:macro
+            (executor/unsafe-call!
+              (function-symbol/name symbol)
+              (phantom (-> (ir/S ir/CapturedUse) (Result (ir/S ir/CapturedUse) String)))
+              args
+              (executor b))]
+          [(let kind)
+            (err (string "Calling non-macro function is unsupported: " (debug kind)))])
+        (err (string "Undefined function: " (debug id)))))
+
+  (function (backend/complete! report b)
+    (report/merge! (llvm-backend/report b) report)))
+
+(getter backend:
+  llvm-backend/verbose?
+  llvm-backend/report
+  llvm-ctx
+  llvm-pm
+  queued-defs
+  queued-main
+  context-artifact
+  executor
+  next-generation)
+
+(function (llvm-backend/new optimize? verbose?) {(-> Bool Bool LLVMBackend)}
+  (let* ([ctx (llvm/context/new)]
+         [pm (llvm/pass-manager/new)]
+         [executor (executor/new ctx optimize?)]
+         [ca (context-artifact/new ctx (executor/data-layout executor))])
+    (llvm/with-pass-manager-builder (lambda (pmb)
+      (llvm/pass-manager-builder/set-opt-level! (if optimize? 2 0) pmb)
+      (llvm/pass-manager-builder/populate-module-pass-manager! pm pmb)))
+    (backend: verbose? (report/new) ctx pm ord-map/empty vector/empty ca executor (ref 0))))
+
+(function (llvm-backend/dispose! b) {(-> LLVMBackend unit)}
+  (llvm/pass-manager/dispose! (llvm-pm b))
+  (executor/dispose! (executor b))
+  (llvm/context/dispose! (llvm-ctx b)))
+
+(function (with-llvm-backend optimize? verbose? f) {(forall A) (-> Bool Bool (-> LLVMBackend A) A)}
+  (let* ([backend (llvm-backend/new optimize? verbose?)]
+         [ret (f backend)])
+    (llvm-backend/dispose! backend)
+    ret))
+
+(function (llvm-backend/build! name build-main? b) {(-> String Bool LLVMBackend llvm/Module)}
+  (context-artifact/add-types! (queued-defs b) (context-artifact b))
+  (let1 artifact (module-artifact/new name (context-artifact b))
+
+    (when (llvm-backend/verbose? b)
+      (eprintln! "### adding defs")
+      (for (: (let id) (let def)) (ord-map/elems (queued-defs b))
+        (eprintln! (debug id) " = " (debug def))))
+
+    (module-artifact/add-functions! (queued-defs b) artifact)
+    (ord-map/clear! (queued-defs b))
+
+    (when (llvm-backend/verbose? b)
+      (eprintln! "### added defs")
+      (eprintln! (module-artifact/llvm-module artifact)))
+
+    (when build-main?
+      (when (llvm-backend/verbose? b)
+        (eprintln! "### adding main")
+        (for (let init) (queued-main b) (eprintln! (debug init))))
+
+      (module-artifact/add-main! (vector/consume-all! (queued-main b)) artifact)
+
+      (when (llvm-backend/verbose? b)
+        (eprintln! "### added main")
+        (eprintln! (|> artifact module-artifact/main-function? option/force function-artifact/value))))
+
+    (when-match1 (err (let msg)) (|> artifact module-artifact/llvm-module llvm/module/verify)
+      (assert #f (string "LLVM verify module failed: " msg)))
+
+    (llvm/pass-manager/run! (module-artifact/llvm-module artifact) (llvm-pm b))
+
+    (when (llvm-backend/verbose? b)
+      (eprintln! "### optimized")
+      (eprintln! (module-artifact/llvm-module artifact)))
+
+    (module-artifact/complete! artifact)))
+
+(function (llvm-backend/produce-executable! dest clang-options b)
+  {(-> String (Array String) LLVMBackend Process)}
+  (assert #f "TODO"))

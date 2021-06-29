@@ -172,9 +172,6 @@
 
 (getter rt-id: rt-id/index)
 
-(function rt-id/argc (rt-id: (conv-to U32 -1 {I32})))
-(function rt-id/argv (rt-id: (conv-to U32 -2 {I32})))
-
 (derive (DebugDisplay) value-data RtIdGen
   (rt-id-gen: (Ref U32)))
 

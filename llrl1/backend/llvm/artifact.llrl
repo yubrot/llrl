@@ -1,0 +1,239 @@
+(import "std/ord-map" _)
+(import "std/hash-map" _)
+(import "llvm" [llvm/_ _])
+(import "~/util" _)
+(import "~/emitter/ir" [ir/_ _])
+(import "~/backend/llvm/runtime" RuntimeBuildEnv)
+(import "~/backend/llvm/codegen" TypeSize _.TypeSize TypeEnv type-env/_ BuildEnv codegen/_)
+(export ContextArtifact _.ContextArtifact context-artifact/_)
+(export FunctionSymbol _.FunctionSymbol function-symbol: function-symbol/_)
+(export FunctionSymbolKind _.FunctionSymbolKind function-symbol-kind:_)
+(export ModuleArtifact _.ModuleArtifact module-artifact/_)
+(export FunctionArtifact _.FunctionArtifact function-artifact/_)
+(export RawFunctionArtifact _.RawFunctionArtifact raw-function-artifact/_)
+
+(derive (DebugDisplay) data ContextArtifact
+  (context-artifact:
+    llvm/Context
+    llvm/DataLayout
+    (OrdMap ir/CtId (Option TypeSize))
+    (OrdMap ir/CtId llvm/Type)
+    (OrdMap ir/CtId FunctionSymbol)
+    (Ref (Option FunctionSymbol))))
+
+(instance Conv.From.ContextArtifact.To.llvm/Context (Conv ContextArtifact llvm/Context)
+  (function (conv a) (context-artifact/llvm-context a)))
+
+(instance TypeEnv.ContextArtifact (TypeEnv ContextArtifact)
+  (function (type-env/get-type? id ca) (ord-map/get? id (llvm-types ca))))
+
+(getter context-artifact:
+  context-artifact/llvm-context
+  context-artifact/data-layout
+  type-sizes
+  llvm-types
+  function-symbols
+  main-function-symbol)
+
+(function (context-artifact/new llvm-context llvm-data-layout)
+  {(-> llvm/Context llvm/DataLayout ContextArtifact)}
+  (context-artifact: llvm-context llvm-data-layout ord-map/empty ord-map/empty ord-map/empty (ref none)))
+
+(function (context-artifact/function-symbol? id ca) {(-> ir/CtId ContextArtifact (Option FunctionSymbol))}
+  (ord-map/get? id (function-symbols ca)))
+
+(function (context-artifact/main-function-symbol? ca) {(-> ContextArtifact (Option FunctionSymbol))}
+  ~(main-function-symbol ca))
+
+(function (context-artifact/add-types! defs ca) {(-> (OrdMap ir/CtId ir/CtDef) ContextArtifact unit)}
+  ; Put type headers
+  (for (: (let id) (let def)) (ord-map/elems defs)
+    (match def
+      [(ir/ct-def:struct _)
+        (codegen/type-size! defs (type-sizes ca) (ir/ct:id id))
+        (ord-map/insert! id (llvm/type/named-struct (conv ca) (|> id ir/ct-id/index string)) (llvm-types ca))
+        unit]
+      [(ir/ct-def:union _)
+        (let1 ts (codegen/type-size! defs (type-sizes ca) (ir/ct:id id))
+          (ord-map/insert! id (codegen/union-type ts (conv ca)) (llvm-types ca)))
+        unit]
+      [_]))
+
+  ; Set struct bodies
+  (for (: (let id) (let def)) (ord-map/elems defs)
+    (when-match1 (ir/ct-def:struct (ir/struct: _ (let fields))) def
+      ; Bacause currently we always use C-compatible structures, there is no difference by def.repr
+      (llvm/type/struct-set-body!
+        (|> fields (it/map [^1 (codegen/type ca %1)]) collect)
+        #f
+        (|> ca llvm-types (ord-map/get? id) option/force)))))
+
+(derive (DebugDisplay) value-data FunctionSymbol
+  (function-symbol: String FunctionSymbolKind llvm/Type))
+
+(getter function-symbol: function-symbol/name function-symbol/kind function-symbol/ty)
+
+(function (function-symbol/new name def ca) {(-> String ir/Function ContextArtifact FunctionSymbol)}
+  (let* ([param-tys
+           (it/chain
+             ; llrl functions always take the environment parameter as its first argument.
+             (some (codegen/type ca ir/ct:env))
+             (it/map [^1 (codegen/type ca (ir/function-param/ty %1))] (ir/function/params def)))]
+         [ret-ty (codegen/type ca (ir/function/ret def))])
+    (function-symbol:
+      name
+      (conv def)
+      (llvm/type (conv ca) (-> ,@(collect param-tys) ,ret-ty)))))
+
+(derive (DebugDisplay) value-data FunctionSymbolKind
+  function-symbol-kind:macro
+  (function-symbol-kind:main ir/Ct)
+  function-symbol-kind:other)
+
+(instance Conv.From.ir/Function.To.FunctionSymbolKind (Conv ir/Function FunctionSymbolKind)
+  (function (conv def)
+    (match (ir/function/kind def)
+      [ir/function-kind:main (function-symbol-kind:main (ir/function/ret def))]
+      [ir/function-kind:macro function-symbol-kind:macro]
+      [_ function-symbol-kind:other])))
+
+(derive (DebugDisplay) data ModuleArtifact
+  (module-artifact:
+    ContextArtifact
+    llvm/Module
+    (OrdMap ir/CtId FunctionArtifact)
+    (Ref (Option FunctionArtifact))
+    (HashMap String RawFunctionArtifact)))
+
+(instance Conv.From.ModuleArtifact.To.ContextArtifact (Conv ModuleArtifact ContextArtifact)
+  (function (conv a) (module-artifact/parent a)))
+
+(instance Conv.From.ModuleArtifact.To.llvm/Context (Conv ModuleArtifact llvm/Context)
+  (function (conv a) (conv (conv-to ContextArtifact a))))
+
+(instance Conv.From.ModuleArtifact.To.llvm/Module (Conv ModuleArtifact llvm/Module)
+  (function (conv a) (module-artifact/llvm-module a)))
+
+(instance TypeEnv.ModuleArtifact (TypeEnv ModuleArtifact)
+  (function (type-env/get-type? id ma) (type-env/get-type? id (module-artifact/parent ma))))
+
+(instance RuntimeBuildEnv.ModuleArtifact (RuntimeBuildEnv ModuleArtifact)
+  (function (runtime-build-env/capture-runtime-function! name tyf ma)
+    (raw-function-artifact/value (module-artifact/capture-raw-function! name tyf #f ma))))
+
+(instance BuildEnv.ModuleArtifact (BuildEnv ModuleArtifact)
+  (function (build-env/capture-function! id ma)
+    (function-artifact/value (module-artifact/capture-function! id ma)))
+
+  (function (build-env/capture-c-function! name tyf ma)
+    (with1
+      (raw-function-artifact: (let value) (let return-by-pointer-store?))
+      (module-artifact/capture-raw-function! name tyf #t ma)
+      (: value return-by-pointer-store?)))
+
+  (function (build-env/capture-intrinsic-function! name tyf ma)
+    (raw-function-artifact/value (module-artifact/capture-raw-function! name tyf #f ma))))
+
+(getter module-artifact:
+  module-artifact/parent
+  module-artifact/llvm-module
+  functions
+  main-function
+  raw-functions)
+
+(function (module-artifact/new name ca) {(-> String ContextArtifact ModuleArtifact)}
+  (let1 module (llvm/module/new name (conv ca))
+    (llvm/module/set-target-triple! llvm/target/default-triple module)
+    (llvm/module/set-data-layout! (context-artifact/data-layout ca) module)
+    (module-artifact: ca module ord-map/empty (ref none) hash-map/empty)))
+
+(function (module-artifact/complete! ma) {(-> ModuleArtifact llvm/Module)}
+  (module-artifact/llvm-module ma))
+
+(function (module-artifact/function? id ma) {(-> ir/CtId ModuleArtifact (Option FunctionArtifact))}
+  (ord-map/get? id (functions ma)))
+
+(function (module-artifact/main-function? ma) {(-> ModuleArtifact (Option FunctionArtifact))}
+  ~(main-function ma))
+
+(function (module-artifact/add-functions! defs ma) {(-> (OrdMap ir/CtId ir/CtDef) ModuleArtifact unit)}
+  ; Put symbols
+  (for (: (let id) (let def)) (ord-map/elems defs)
+    (when-match1 (ir/ct-def:function (let f)) def
+      (let* ([symbol (function-symbol/new (string (ir/ct-id/index id)) f (conv ma))]
+             [duplicated-symbol (ord-map/insert! id symbol (function-symbols (conv ma)))])
+        (assert-is? none duplicated-symbol))))
+  ; Generate function bodies
+  (for (: (let id) (let def)) (ord-map/elems defs)
+    (when-match1 (ir/ct-def:function (let f)) def
+      (with1 (function-artifact: (let symbol) (let value)) (module-artifact/capture-function! id ma)
+        (codegen/function-body! (function-symbol/name symbol) value f ma)))))
+
+(function (module-artifact/add-main! main ma) {(-> (Array ir/Init) ModuleArtifact FunctionArtifact)}
+  (assert-is? none ~(main-function-symbol (conv ma)))
+  (let* ([f
+           (with1
+             (: (let stmts) (let ret))
+             (if-match1 (some (: (let ret) (let stmts))) (array/split-last? main)
+               (: stmts ret)
+               (: main (ir/init: ir/ct:unit (ir/rt:const ir/const:unit))))
+             (ir/function:
+               ir/function-kind:main
+               none
+               array/empty
+               (ir/init/ty ret)
+               (ir/rt/seq (collect (it/map ir/init/expr stmts)) (ir/init/expr ret))))]
+         [symbol (function-symbol/new "llrl_main" f (conv ma))]
+         [artifact (module-artifact/bind-function! symbol ma)])
+    (codegen/function-body!
+      (function-symbol/name symbol)
+      (function-artifact/value artifact)
+      f
+      ma)
+    (set! (main-function-symbol (conv ma)) (some symbol))
+    (set! (main-function ma) (some artifact))
+    artifact))
+
+(function (module-artifact/bind-function! symbol ma) {(-> FunctionSymbol ModuleArtifact FunctionArtifact)}
+  (function-artifact:
+    symbol
+    (llvm/module/add-function! (function-symbol/name symbol) (function-symbol/ty symbol) (conv ma))))
+
+(function (module-artifact/capture-function! id ma) {(-> ir/CtId ModuleArtifact FunctionArtifact)}
+  (if-match1 (some (let artifact)) (ord-map/get? id (functions ma))
+    artifact
+    (if-match1 (some (let symbol)) (context-artifact/function-symbol? id (conv ma))
+      (let1 artifact (module-artifact/bind-function! symbol ma)
+        (ord-map/insert! id artifact (functions ma))
+        artifact)
+      (assert #f (string "Unresolved function symbol: " (debug id))))))
+
+(function (module-artifact/capture-raw-function! name tyf adjust-to-c-abi? ma)
+  {(-> String (-> llvm/Context llvm/Type) Bool ModuleArtifact RawFunctionArtifact)}
+  (if-match1 (some (let artifact)) (hash-map/get? name (raw-functions ma))
+    artifact
+    (let* ([function-ty (tyf (conv ma))]
+           [param-tys (llvm/type/param-types function-ty)]
+           [ret-ty (llvm/type/return-type function-ty)])
+      ; TODO: This adjustment is not enough. We need to follow the System V ABI.
+      (with1
+        (: (let ty) (let return-by-pointer-store?))
+        (if (and adjust-to-c-abi?
+                 (llvm/type/sized? ret-ty)
+                 (< (* 4 8) (llvm/data-layout/type-alloc-size (|> ma conv llvm/module/data-layout) ret-ty)))
+          (: (llvm/type (conv ma) (-> ,@(array/unshift (llvm/type (conv ma) (pointer ,ret-ty)) param-tys) void)) #t)
+          (: (llvm/type (conv ma) (-> ,@param-tys ,ret-ty)) #f))
+        (let* ([value (llvm/module/add-function! name ty (conv ma))]
+               [artifact (raw-function-artifact: value return-by-pointer-store?)])
+          (hash-map/insert! name artifact (raw-functions ma))
+          artifact)))))
+
+(derive (DebugDisplay) value-data FunctionArtifact
+  (function-artifact: FunctionSymbol llvm/Value))
+
+(getter function-artifact: function-artifact/symbol function-artifact/value)
+
+(derive (DebugDisplay) value-data RawFunctionArtifact
+  (raw-function-artifact: llvm/Value Bool))
+
+(getter raw-function-artifact: raw-function-artifact/value raw-function-artifact/return-by-pointer-store?)

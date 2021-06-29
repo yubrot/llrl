@@ -1,0 +1,251 @@
+(import "std/memory" reinterpret size-of align-of)
+(import "llvm" [llvm/_ _])
+(import "~/util" _)
+(import "~/sexp" [sexp/_ _])
+(import "~/emitter/ir" [ir/_ _])
+(export RuntimeBuildEnv runtime-build-env/_ runtime/_ RuntimeConst RuntimeConst._)
+
+<initialize-llvm-jit-library-binding>
+(c-function <initialize-llvm-jit-library-binding> {unit} "llrt_initialize_llvm_jit_library_binding")
+
+(instance Conv.From.llvm/Module.To.llvm/Context (Conv llvm/Module llvm/Context)
+  (function (conv a) (llvm/module/context a)))
+
+(instance Conv.From.llvm/Builder.To.llvm/Context (Conv llvm/Builder llvm/Context)
+  (function (conv a) (llvm/builder/context a)))
+
+(class (RuntimeBuildEnv E) (where (Conv E llvm/Module))
+  (function (runtime-build-env/capture-runtime-function! name tyf env)
+    {(-> String (-> llvm/Context llvm/Type) E llvm/Value)}))
+
+($$ begin
+  ($for-each
+    [$name $symbol $ty]
+    ([gc-malloc "GC_malloc" (-> i64 (pointer i8))]
+     [llrt-panic "llrt_panic" (-> (: (pointer i8) i64) void)]
+     [llrt-string-genid "llrt_string_genid" (-> (: (pointer i8) i64))]
+     [llrt-string-eq "llrt_string_eq" (-> (: (pointer i8) i64) (: (pointer i8) i64) i32)]
+     [llrt-string-cmp "llrt_string_cmp" (-> (: (pointer i8) i64) (: (pointer i8) i64) i32)]
+     [llrt-string-concat "llrt_string_concat" (-> (: (pointer i8) i64) (: (pointer i8) i64) (: (pointer i8) i64))])
+
+    (function (($symbol-concat capture- $name ($symbol "!")) env)
+      (runtime-build-env/capture-runtime-function! $symbol [^1 (llvm/type %1 $ty)] env))))
+
+(function (runtime/build-panic! builder env msg)
+  {(forall E) (-> llvm/Builder E llvm/Value llvm/Value) (where (RuntimeBuildEnv E))}
+  (let1 llrt-panic (capture-llrt-panic! env)
+    (llvm/build! builder (call ,llrt-panic ,msg))
+    (llvm/build! builder unreachable)))
+
+(function (runtime/build-heap-alloc! builder env ty)
+  {(forall E) (-> llvm/Builder E llvm/Type llvm/Value) (where (RuntimeBuildEnv E))}
+  (let1 gc-malloc (capture-gc-malloc! env)
+    (llvm/build! builder (bit-cast (call ,gc-malloc (trunc-or-bit-cast i64 (size-of ,ty))) (pointer ,ty)))))
+
+(function (runtime/build-heap-array-alloc! builder env ty num)
+  {(forall E) (-> llvm/Builder E llvm/Type llvm/Value llvm/Value) (where (RuntimeBuildEnv E))}
+  (let1 gc-malloc (capture-gc-malloc! env)
+    (llvm/build! builder (bit-cast (call ,gc-malloc (mul (trunc-or-bit-cast i64 (size-of ,ty)) ,num)) (pointer ,ty)))))
+
+; Types that can be represented as a constant on LLVM-IR.
+(class (RuntimeConst A)
+  (function (runtime/const m a) {(-> llvm/Module A llvm/Value)}))
+
+; Types that can be expanded on LLVM-IR array constants.
+; The element type of an array is an integer of pointer size.
+(class (RuntimeExpand A)
+  (function (expand-on-buffer! m buf a) {(-> llvm/Module (Array llvm/Value) A unit)}))
+
+(instance RuntimeConst.String (RuntimeConst String)
+  (function (runtime/const m a)
+    (llvm/const (conv m) (: ,(runtime/string/const-body m a) (u64 ,(string/length a))))))
+
+(instance RuntimeExpand.String (RuntimeExpand String)
+  (function (expand-on-buffer! m buf a)
+    (set! buf[0] (llvm/const (conv m) (ptr-to-int i64 ,(runtime/string/const-body m a))))))
+
+(assert-eq? (size-of String) runtime/string/size)
+(assert-eq? (align-of String) runtime/string/align)
+
+(function runtime/string/size 16)
+(function runtime/string/align 8)
+
+(function (runtime/string/type ctx) {(-> llvm/Context llvm/Type)}
+  (llvm/type ctx (: (pointer i8) i64)))
+
+(function (runtime/string/const-body m a) {(-> llvm/Module String llvm/Value)}
+  (if (string/empty? a)
+    ; TODO: Is it OK? Rust disallows null-pointer even if the length is 0:
+    ; https://doc.rust-lang.org/std/slice/fn.from_raw_parts.html
+    ; the llrl currently does not do optimizations like enum layout optimization.
+    (llvm/const (conv m) (null (pointer i8)))
+    (let* ([init (llvm/const (conv m) (string ,a))]
+           [var (llvm/module/add-global! "" (llvm/value/type init) none m)])
+      (llvm/global-value/set-linkage! llvm/linkage/internal var)
+      (llvm/global-variable/set-constant?! #t var)
+      (llvm/global-variable/set-initializer! (some init) var)
+      (llvm/const (conv m) (bit-cast (pointer i8) ,var)))))
+
+(function (runtime/string/build-getptr! builder a) {(-> llvm/Builder llvm/Value llvm/Value)}
+  (llvm/build! builder (extract-value ,a 0)))
+
+(function (runtime/string/build-getlen! builder a) {(-> llvm/Builder llvm/Value llvm/Value)}
+  (llvm/build! builder (extract-value ,a 1)))
+
+(function (runtime/string/build-genid! builder env)
+  {(forall E) (-> llvm/Builder E llvm/Value) (where (RuntimeBuildEnv E))}
+  (let1 string-genid (capture-llrt-string-genid! env)
+    (llvm/build! builder (call ,string-genid))))
+
+(function (runtime/string/build-construct! builder ptr len) {(-> llvm/Builder llvm/Value llvm/Value llvm/Value)}
+  (llvm/build! builder (insert-value (insert-value (undef (: (pointer i8) i64)) 0 ,ptr) 1 ,len)))
+
+(function (runtime/string/build-eq! builder env a b)
+  {(forall E) (-> llvm/Builder E llvm/Value llvm/Value llvm/Value) (where (RuntimeBuildEnv E))}
+  (let1 string-eq (capture-llrt-string-eq! env)
+    (llvm/build! builder (ine (call ,string-eq ,a ,b) (i32 0)))))
+
+(function (runtime/string/build-cmp! builder env a b)
+  {(forall E) (-> llvm/Builder E llvm/Value llvm/Value llvm/Value) (where (RuntimeBuildEnv E))}
+  (let1 string-cmp (capture-llrt-string-cmp! env)
+    (llvm/build! builder (call ,string-cmp ,a ,b))))
+
+(function (runtime/string/build-concat! builder env a b)
+  {(forall E) (-> llvm/Builder E llvm/Value llvm/Value llvm/Value) (where (RuntimeBuildEnv E))}
+  (let1 string-concat (capture-llrt-string-concat! env)
+    (llvm/build! builder (call ,string-concat ,a ,b))))
+
+(instance RuntimeConst.Char (RuntimeConst Char)
+  (function (runtime/const m a)
+    (llvm/const (conv m) (u32 ,(char/unicode-scalar a)))))
+
+(assert-eq? (size-of Char) runtime/char/size)
+(assert-eq? (align-of Char) runtime/char/align)
+
+(function runtime/char/size 4)
+(function runtime/char/align 4)
+
+(function (runtime/char/type ctx) {(-> llvm/Context llvm/Type)}
+  (llvm/type ctx i32))
+
+(function (runtime/char/build-eq! builder a b) {(-> llvm/Builder llvm/Value llvm/Value llvm/Value)}
+  (llvm/build! builder (ieq ,a ,b)))
+
+(assert-eq? (size-of (Array U8)) runtime/array/size)
+(assert-eq? (align-of (Array U8)) runtime/array/align)
+
+(function runtime/array/size 16)
+(function runtime/array/align 8)
+
+(function (runtime/array/type ctx elem-ty) {(-> llvm/Context llvm/Type llvm/Type)}
+  (llvm/type ctx (: (pointer ,elem-ty) i64)))
+
+(function (runtime/array/build-getptr! builder a) {(-> llvm/Builder llvm/Value llvm/Value)}
+  (llvm/build! builder (extract-value ,a 0)))
+
+(function (runtime/array/build-getlen! builder a) {(-> llvm/Builder llvm/Value llvm/Value)}
+  (llvm/build! builder (extract-value ,a 1)))
+
+(function (runtime/array/build-construct! builder ptr len) {(-> llvm/Builder llvm/Value llvm/Value llvm/Value)}
+  (llvm/build! builder (insert-value (insert-value (undef (: ,(llvm/value/type ptr) i64)) 0 ,ptr) 1 ,len)))
+
+(function (runtime/array/build-load! builder index array) {(-> llvm/Builder llvm/Value llvm/Value llvm/Value)}
+  (llvm/build! builder (load (gep (extract-value ,array 0) ,index))))
+
+(function (runtime/array/build-store! builder index value array) {(-> llvm/Builder llvm/Value llvm/Value llvm/Value llvm/Value)}
+  (llvm/build! builder (store ,value (gep (extract-value ,array 0) ,index))))
+
+(assert-eq? (size-of ir/CapturedUse) runtime/captured-use/size)
+(assert-eq? (align-of ir/CapturedUse) runtime/captured-use/align)
+
+(function runtime/captured-use/size 16)
+(function runtime/captured-use/align 8)
+
+; Ensure that the reinterpret is OK (*1)
+(assert-eq? (size-of ir/CapturedUse) (size-of (: U64 U64)))
+
+(instance RuntimeConst.ir/CapturedUse (RuntimeConst ir/CapturedUse)
+  (function (runtime/const m a)
+    (with1 (: (let x) (let y)) (reinterpret a) {(: U64 U64)} ; (*1)
+      (llvm/const (conv m) (: (u64 ,x) (u64 ,y))))))
+
+(function (runtime/captured-use/type ctx) {(-> llvm/Context llvm/Type)}
+  (llvm/type ctx (: i64 i64)))
+
+; Ensure that the reinterpret is OK (*2)
+(assert-eq? (size-of ir/SyntaxMetadata) (size-of (: U32 U32)))
+
+(instance RuntimeConst.ir/SyntaxMetadata (RuntimeConst ir/SyntaxMetadata)
+  (function (runtime/const m a)
+    (with1 (: (let x) (let y)) (reinterpret a) {(: U32 U32)} ; (*2)
+      (llvm/const (conv m) (: (u32 ,x) (u32 ,y))))))
+
+(function (runtime/syntax-metadata/type ctx) {(-> llvm/Context llvm/Type)}
+  (llvm/type ctx (: i32 i32)))
+
+(assert-eq? (size-of (Syntax unit)) runtime/syntax/size)
+(assert-eq? (align-of (Syntax unit)) runtime/syntax/align)
+
+(function runtime/syntax/size 8)
+(function runtime/syntax/align 8)
+
+(function (runtime/syntax/type ctx) {(-> llvm/Context llvm/Type)}
+  (llvm/type ctx (pointer i8)))
+
+(function (runtime/syntax/build-construct! builder env metadata body)
+  {(forall E) (-> llvm/Builder E ir/SyntaxMetadata llvm/Value llvm/Value) (where (RuntimeBuildEnv E))}
+  (let* ([metadata (runtime/const (conv env) metadata)]
+         [value (llvm/build! builder (undef (: ,(llvm/value/type metadata) ,(llvm/value/type body))))]
+         [value (llvm/build! builder (insert-value (insert-value ,value 0 ,metadata) 1 ,body))]
+         [ptr (runtime/build-heap-alloc! builder env (llvm/value/type value))]
+         [_ (llvm/build! builder (store ,value ,ptr))])
+    (llvm/build! builder (bit-cast ,ptr (pointer i8)))))
+
+(function (runtime/syntax/build-syntax-body! builder value body-ty)
+  {(-> llvm/Builder llvm/Value llvm/Type llvm/Value)}
+  (llvm/build! builder
+    (load (struct-gep (bit-cast ,value (pointer (: ,(runtime/syntax-metadata/type (conv builder)) ,body-ty))) 1))))
+
+; Ensure that the reinterpret is compatible with expand-on-buffer! (*3)
+; Ensure that the offset of the body of (sexp/SRep ir/CapturedUse) is 1 (*5)
+(assert-eq? (size-of I64) (align-of (sexp/SRep ir/CapturedUse)))
+
+; Ensure that the offset of the sexp/s/rep is 1 (*4)
+(assert-eq? (size-of ir/SyntaxMetadata) (size-of I64))
+
+; (ir/S ir/CapturedUse) is compatible with (Syntax Sexp)
+(instance RuntimeConst.Sexp (RuntimeConst (ir/S ir/CapturedUse))
+  (function (runtime/const m a)
+    (let* ([raw-len (/ (size-of (: ir/SyntaxMetadata (sexp/SRep ir/CapturedUse))) (size-of I64))]
+           [raw-data (array/unsafe-from-ptr (reinterpret a) {(Ptr I64)} raw-len)] ; (*3)
+           [buf (array/unsafe-alloc-uninitialized raw-len)])
+
+      ; Fill with raw-data
+      (for (let i) (iterator/range 0 raw-len 1)
+        (set! buf[i] (llvm/const (conv m) (i64 ,(get raw-data[i])))))
+      ; Overwrite indirect references
+      (expand-on-buffer! m (array/skip 1 buf) (sexp/s/rep a)) ; skip sexp/s/location (*4)
+
+      (let* ([init (llvm/const (conv m) (array-of i64 ,@buf))]
+             [var (llvm/module/add-global! "" (llvm/value/type init) none m)])
+        (llvm/global-value/set-linkage! llvm/linkage/internal var)
+        (llvm/global-variable/set-constant?! #t var)
+        (llvm/global-variable/set-initializer! (some init) var)
+        (llvm/const (conv m) (bit-cast (pointer i8) ,var))))))
+
+(instance RuntimeExpand.Sexp (RuntimeExpand (ir/S ir/CapturedUse))
+  (function (expand-on-buffer! m buf a)
+    (set! buf[0] (llvm/const (conv m) (ptr-to-int i64 ,(runtime/const m a))))))
+
+(instance RuntimeExpand.SexpBody (RuntimeExpand (sexp/SRep ir/CapturedUse))
+  (function (expand-on-buffer! m buf a)
+    (let1 buf (array/skip 1 buf) ; skip the tag of (sexp/SRep ir/CapturedUse) (*5)
+      (match a
+        [(sexp/s-rep:symbol (let s))
+          (expand-on-buffer! m buf s)]
+        [(sexp/s-rep:string (let s))
+          (expand-on-buffer! m buf s)]
+        [(sexp/s-rep:cons (let car) (let cdr))
+          (expand-on-buffer! m buf car)
+          (expand-on-buffer! m (array/skip 1 buf) cdr)] ; skip car
+        [_]))))
