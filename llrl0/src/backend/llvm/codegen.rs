@@ -431,10 +431,10 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
             Rt::If(if_) => self.eval_if(&if_.0, &if_.1, &if_.2),
             Rt::While(while_) => self.eval_while(&while_.0, &while_.1),
             Rt::And(_) => {
-                panic!("Found Binary::And at Evaluator, this should be erased by emitter")
+                panic!("Found Rt::And at Codegen, this should be erased by emitter")
             }
             Rt::Or(_) => {
-                panic!("Found Binary::Or at Evaluator, this should be erased by emitter")
+                panic!("Found Rt::Or at Codegen, this should be erased by emitter")
             }
             Rt::Match(_) => {
                 panic!("Found Rt::Match at Codegen, this should be erased by emitter")
@@ -496,7 +496,7 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
         if cfun.return_by_pointer_store {
             let ret_param = cfun.value.params()[0];
             let ret_ptr = self.builder.build_entry_alloca(
-                "reinterpret",
+                "rettmp",
                 ret_param
                     .get_type()
                     .as_type_of::<LLVMPointerType>()

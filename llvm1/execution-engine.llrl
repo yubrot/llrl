@@ -4,7 +4,7 @@
 (import "~/message" message/consume!)
 (import "~/data-layout" DataLayout)
 (import "~/value" Value value/_)
-(import "~/module" Module module/_)
+(import "~/module" Module _.Module module/_)
 (import "~/target-machine" _)
 (export ExecutionEngine _.ExecutionEngine execution-engine/_ with-interpreter with-mcjit)
 
@@ -14,7 +14,7 @@
 (c-function <link-in-mcjit> {unit} "LLVMLinkInMCJIT")
 (c-function <link-in-interpreter> {unit} "LLVMLinkInInterpreter")
 
-(value-data ExecutionEngine
+(derive (DebugDisplay) value-data ExecutionEngine
   (execution-engine: (Ptr U8) (Vector Module)))
 
 (function (ee-ptr ee)
