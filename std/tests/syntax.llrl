@@ -1,4 +1,5 @@
 (import "std/syntax" _)
+(println! "std/tests/syntax")
 
 (let ([s (syntax #t)])
   (assert (syntax/body s)))

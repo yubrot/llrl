@@ -1,4 +1,6 @@
 (import "std/arithmetic" _)
+(println! "std/tests/arithmetic")
+
 (export test-signed test-unsigned)
 
 (function (test-signed proxy) {(forall A) (-> A unit) (where (Number A) (Ord A) (Zero A) (One A) (Add A) (Sub A) (Mul A) (Div A) (Rem A))}

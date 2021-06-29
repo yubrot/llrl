@@ -1,3 +1,4 @@
 (import "std/num-literals" _)
+(println! "std/tests/num-literals")
 
 ; Nothing to do

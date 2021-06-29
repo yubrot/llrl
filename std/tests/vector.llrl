@@ -1,4 +1,6 @@
 (import "std/vector" _)
+(println! "std/tests/vector")
+
 (import "std/array" array/_)
 (import "std/memory" ptr:null)
 

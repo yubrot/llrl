@@ -1,3 +1,4 @@
 (import "std/display" _)
+(println! "std/tests/display")
 
 ; Nothing to do

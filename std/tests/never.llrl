@@ -1,3 +1,4 @@
 (import "std/never" _)
+(println! "std/tests/never")
 
 ; Nothing to do

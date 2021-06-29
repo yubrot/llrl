@@ -1,4 +1,5 @@
 (import "std/preprocess" _)
+(println! "std/tests/preprocess")
 
 (assert-is? (s:list (s:symbol "$foo") (s:bool #t) (s:string "bar") (s:symbol "$baz"))
   ($$

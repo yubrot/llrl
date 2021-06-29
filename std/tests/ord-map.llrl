@@ -1,4 +1,6 @@
 (import "std/ord-map" _)
+(println! "std/tests/ord-map")
+
 (import "std/tests/hash" h)
 
 (assert (ord-map/empty? ord-map/empty))

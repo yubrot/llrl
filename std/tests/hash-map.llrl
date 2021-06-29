@@ -1,4 +1,6 @@
 (import "std/hash-map" _)
+(println! "std/tests/hash-map")
+
 (import "std/ord-map" _)
 
 (assert-eq? (next-power-of-two 2) 2)

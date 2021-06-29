@@ -1,4 +1,6 @@
 (import "std/float" _)
+(println! "std/tests/float")
+
 (import "std/tests/ord" [ord/_ _])
 (import "std/tests/arithmetic" [arithmetic/_ _])
 

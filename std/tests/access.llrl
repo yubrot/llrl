@@ -1,3 +1,4 @@
 (import "std/access" _)
+(println! "std/tests/access")
 
 ; Macros are tested in std/tests/array

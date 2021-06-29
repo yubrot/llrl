@@ -1,4 +1,5 @@
 (import "std/array" _)
+(println! "std/tests/array")
 
 (assert-eq? 0 (array/length array/empty))
 (assert-eq? 0 (array/length (array/new #f 0)))

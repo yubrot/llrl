@@ -1,6 +1,8 @@
+(import "std/hash" _)
+(println! "std/tests/hash")
+
 (import "std/box" box/unsafe-ptr)
 (import "std/ord-map" OrdMap ord-map/_ _.OrdMap)
-(import "std/hash" _)
 (import "std/xxhash" _)
 (export h test-hasher)
 

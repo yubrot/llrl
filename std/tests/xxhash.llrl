@@ -1,4 +1,6 @@
 (import "std/xxhash" _)
+(println! "std/tests/xxhash")
+
 (import "std/tests/hash" test-hasher)
 
 (test-hasher xx-hasher/new)

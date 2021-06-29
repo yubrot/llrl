@@ -1,4 +1,5 @@
 (import "std/eq" _)
+(println! "std/tests/eq")
 
 (assert (=))
 (assert (= #f))

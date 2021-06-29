@@ -1,4 +1,6 @@
 (import "std/either" _)
+(println! "std/tests/either")
+
 (import "std/tests/ord" [ord/_ _])
 
 (assert-is? (some 123)

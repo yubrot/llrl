@@ -1,4 +1,6 @@
 (import "std/ref" _)
+(println! "std/tests/ref")
+
 (import "std/tests/ord" [ord/_ _])
 
 (assert-eq? (ref #t) (ref #t))

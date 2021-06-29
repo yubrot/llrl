@@ -1,4 +1,6 @@
 (import "std/memory" _)
+(println! "std/tests/memory")
+
 (import "std/box" box/unsafe-ptr)
 (import "std/ref" ref/ptr)
 (import "std/string" string/unsafe-ptr)

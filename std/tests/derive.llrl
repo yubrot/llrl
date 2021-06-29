@@ -1,3 +1,4 @@
 (import "std/derive" _)
+(println! "std/tests/derive")
 
 ; Nothing to do

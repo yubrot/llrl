@@ -1,4 +1,5 @@
 (import "std/bits" _)
+(println! "std/tests/bits")
 
 (assert-eq? (bw<< 1 0) 1)
 (assert-eq? (bw<< 1 1) 2)

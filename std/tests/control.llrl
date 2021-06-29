@@ -1,4 +1,6 @@
 (import "std/control" _)
+(println! "std/tests/control")
+
 (import "std/option" option/_)
 
 (assert (is? (some _) (some #t)))

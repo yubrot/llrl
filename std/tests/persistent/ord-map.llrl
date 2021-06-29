@@ -1,4 +1,5 @@
 (import "std/persistent/ord-map" _)
+(println! "std/tests/persistent/ord-map")
 (import "std/tests/hash" h)
 
 (let* ([a ord-map/empty]

@@ -1,4 +1,5 @@
 (import "std/default" _)
+(println! "std/tests/default")
 
 (derive (Eq Default) value-data T1
   (t1: I32 Bool))

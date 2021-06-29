@@ -1,4 +1,5 @@
 (import "std/conv" _)
+(println! "std/tests/conv")
 
 (assert-eq? (conv #t) #t)
 

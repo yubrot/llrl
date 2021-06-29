@@ -1,4 +1,5 @@
 (import "std/copy" _)
+(println! "std/tests/copy")
 
 (derive (Eq DeepCopy) data T1)
 

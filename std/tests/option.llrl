@@ -1,4 +1,6 @@
 (import "std/option" _)
+(println! "std/tests/option")
+
 (import "std/tests/ord" [ord/_ _])
 
 (assert-is? #t

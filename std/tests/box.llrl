@@ -1,4 +1,6 @@
 (import "std/box" _)
+(println! "std/tests/box")
+
 (import "std/tests/ord" [ord/_ _])
 
 (assert-eq? (box #t) (box #t))

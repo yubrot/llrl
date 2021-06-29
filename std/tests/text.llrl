@@ -1,4 +1,5 @@
 (import "std/text" _)
+(println! "std/tests/text")
 
 (let ([a text/empty]
       [b (text/from-string "hello")]

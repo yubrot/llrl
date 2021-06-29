@@ -1,4 +1,5 @@
 (import "std/debug" _)
+(println! "std/tests/debug")
 
 (derive (DebugDisplay) data (Test A B)
   (test:foo A)

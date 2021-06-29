@@ -1,4 +1,6 @@
 (import "std/ord" _)
+(println! "std/tests/ord")
+
 (export test1234 test123 test12)
 
 (assert (<))

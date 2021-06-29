@@ -1,4 +1,5 @@
 (import "std/real" _)
+(println! "std/tests/real")
 
 (assert-eq? (ceil 1.0) 1.0)
 (assert-eq? (ceil 1.1) 2.0)

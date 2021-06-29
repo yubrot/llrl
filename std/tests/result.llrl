@@ -1,4 +1,6 @@
 (import "std/result" _)
+(println! "std/tests/result")
+
 (import "std/tests/ord" [ord/_ _])
 
 (assert-is? (some 123)

@@ -1,4 +1,6 @@
 (import "std/tuple" _)
+(println! "std/tests/tuple")
+
 (import "std/tests/ord" [ord/_ _])
 (import "std/tests/hash" h)
 

@@ -1,4 +1,6 @@
 (import "std/string" _)
+(println! "std/tests/string")
+
 (import "std/tests/ord" [ord/_ _])
 
 (assert-eq? "Hello, World!" "Hello, World!")

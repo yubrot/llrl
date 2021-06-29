@@ -1,4 +1,5 @@
 (import "std/ordering" _)
+(println! "std/tests/ordering")
 
 (assert-eq? ordering:less ordering:less)
 (assert-eq? ordering:equal ordering:equal)

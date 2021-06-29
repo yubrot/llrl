@@ -1,4 +1,5 @@
 (import "std/it" _)
+(println! "std/tests/it")
 
 (assert-eq? 3 (it/count (array 1 4 9)))
 

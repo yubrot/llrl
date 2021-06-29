@@ -1,4 +1,6 @@
 (import "std/char" _)
+(println! "std/tests/char")
+
 (import "std/string" _)
 
 (assert-eq? 97 (char/unicode-scalar #\a))

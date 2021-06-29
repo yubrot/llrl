@@ -1,4 +1,6 @@
 (import "std/io" _ [:_ path-component:_])
+(println! "std/tests/io")
+
 (import "std/char" char/utf-8-length)
 
 (assert-eq? "" (path/base-name ""))

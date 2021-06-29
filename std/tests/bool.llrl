@@ -1,4 +1,5 @@
 (import "std/bool" _)
+(println! "std/tests/bool")
 
 (assert #t)
 (assert (not #f))

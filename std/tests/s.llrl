@@ -1,4 +1,5 @@
 (import "std/s" _)
+(println! "std/tests/s")
 
 (assert-is? (ok _) (s/force-proper-list #f '()))
 (assert-is? (err _) (s/force-proper-list #f 'a))

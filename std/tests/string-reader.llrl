@@ -1,4 +1,6 @@
 (import "std/string-reader" _)
+(println! "std/tests/string-reader")
+
 (import "std/io" IoError)
 
 (let1 buf (collect (string/bytes "Hello, World!\n")) {(Vector U8)}

@@ -1,4 +1,6 @@
 (import "std/iterator" _)
+(println! "std/tests/iterator")
+
 (import "std/array" array/_)
 
 (assert-eq? none (iterator/next! iterator/empty))

@@ -1,4 +1,6 @@
 (import "std/rw" _)
+(println! "std/tests/rw")
+
 (import "std/io" IoError io-error:_ _.IoError)
 
 (let1 buf vector/empty {(Vector U8)}

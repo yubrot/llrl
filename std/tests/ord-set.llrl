@@ -1,4 +1,6 @@
 (import "std/ord-set" _)
+(println! "std/tests/ord-set")
+
 (import "std/tests/hash" h)
 
 (assert (ord-set/empty? ord-set/empty))
