@@ -8,7 +8,7 @@
 (import "std/rw" Read Write)
 (import "std/string" string/c-compatible-ptr)
 (import "std/io/error" _)
-(export File file/_ _.File)
+(export File file/_ with-file! _.File)
 
 (value-data File
   (file: (Ref (Ptr <File>))))
@@ -79,6 +79,12 @@
 (function (file/closed? file) {(-> File Bool)}
   (with1 (file: (let handle)) file
     (eq? ~handle ptr:null)))
+
+(function (with-file! pathname mode f) {(forall A) (-> String String (-> File (Result A IoError)) (Result A IoError))}
+  (let* ([handle (file/open! pathname mode)!]
+         [ret (f handle)])
+    (ignore (file/close! handle))
+    ret))
 
 (data <File>)
 (c-function <fopen> {(-> (Ptr U8) (Ptr U8) (Ptr <File>))} "fopen")

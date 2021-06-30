@@ -8,8 +8,8 @@
 (import "std/io/directory" _)
 (export IoError io-error:_ io-error/_ _.IoError)
 (export path canonicalized-path path/_ PathComponent path-component:_ _.PathComponent)
-(export File file/_ _.File)
-(export Directory directory/_ _.Directory)
+(export File file/_ with-file! _.File)
+(export Directory directory/_ with-directory! _.Directory)
 (export stdin stdout stderr print! println! eprint! eprintln! fprint! fprintln!)
 
 ; NOTE: Should they be abstracted? Currently we are following the C representation.

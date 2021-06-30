@@ -12,7 +12,7 @@
 ; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (import "std/math" _)
-(import "std/io" IoError file/_)
+(import "std/io" IoError with-file! file/_)
 
 (function WIDTH 256)
 (function HEIGHT 256)
@@ -178,12 +178,11 @@
       (sphere: (vec: 1 0 -2.2) 0.5))))
 
 (function (saveppm! filename w h img) {(-> String I32 I32 (Array U8) (Result unit IoError))}
-  (let1 fh (file/open! filename "wb")!
+  (with-file! filename "wb" (lambda (fh)
     (fprintln! fh "P6")!
     (fprintln! fh w " " h)!
     (fprintln! fh "255")!
-    (write-bytes! img fh)!
-    (file/close! fh)))
+    (write-bytes! img fh))))
 
 (let ([img (array/new 0 (* WIDTH HEIGHT 3))]
       [scene (init-scene)])

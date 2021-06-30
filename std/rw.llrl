@@ -13,6 +13,7 @@
 ; Functions that exist only on the read side:
 ; * read-into-buf!
 ; * read-bytes-to-end!
+; * read-bytes-to-end-into!
 ; * read-string-to-end! (defined in std/string-reader)
 ; Functions that exist only on the write side:
 ; * flush!
@@ -45,7 +46,12 @@
   (function unexpected-eof
     (assert #f "Unexpected eof")))
 
-(function (read-bytes-to-end! buf r) {(forall R Error) (-> (Vector U8) R (Result U64 Error)) (where (Read R Error))}
+(function (read-bytes-to-end! r) {(forall R Error) (-> R (Result (Array U8) Error)) (where (Read R Error))}
+  (let1 buf vector/empty
+    (read-bytes-to-end-into! buf r)!
+    (ok (vector/buffer buf))))
+
+(function (read-bytes-to-end-into! buf r) {(forall R Error) (-> (Vector U8) R (Result U64 Error)) (where (Read R Error))}
   (let ([tmp (array/unsafe-stackalloc-uninitialized 4096)]
         [total-len (ref 0)])
     (while

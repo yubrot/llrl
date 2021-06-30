@@ -10,15 +10,18 @@
 (import "std/vector" vector/_ _.Vector)
 (import "std/string" string/_)
 (import "std/io" IoError io-error/_ File file/_)
-(export args exit Process process/_ process time)
+(export args exit! random! Process process/_ process time)
 
 (function (args) {(-> (Array String))}
   (with1 (<args>: (let argc) (let argv)) <args>
     (shallow-copy (array/unsafe-from-ptr argv argc))))
 
-(function (exit status) {(forall A) (-> I32 A)}
+(function (exit! status) {(forall A) (-> I32 A)}
   (<exit> status)
   (assert #f))
+
+(function (random! buf) {(-> (Array U8) unit)}
+  (ignore (<getrandom> (array/ptr buf) (array/length buf) 0)))
 
 (value-data Process
   (process: I32 File File File)) ; pid in out err
@@ -69,5 +72,6 @@
 
 (c-function <args> {<Args>} "llrt_args")
 (c-function <exit> {(-> I32 unit)} "llrt_exit")
+(c-function <getrandom> {(-> (Ptr U8) U64 U32 U64)} "getrandom")
 (c-function <process> {(-> (Ptr U8) (Ptr (Ptr U8)) <Process>)} "llrt_process")
 (c-function <wait> {(-> I32 I32)} "llrt_wait")

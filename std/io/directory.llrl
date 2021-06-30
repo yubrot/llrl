@@ -7,7 +7,7 @@
 (import "std/iterator" _)
 (import "std/string" string/empty? string/c-compatible-ptr)
 (import "std/io/error" _)
-(export Directory directory/_ _.Directory)
+(export Directory directory/_ with-directory! _.Directory)
 
 (value-data Directory
   (directory: (Ref (Ptr <Dir>))))
@@ -53,7 +53,26 @@
   (with1 (directory: (let handle)) dir
     (eq? ~handle ptr:null)))
 
+(function (directory/create! pathname) {(-> String (Result unit IoError))}
+  (match (<mkdir> (string/c-compatible-ptr pathname) 511)
+    [0 (ok unit)]
+    [_ (err (io-error/from-current-errno))]))
+
+(function (directory/remove! pathname) {(-> String (Result unit IoError))}
+  (match (<rmdir> (string/c-compatible-ptr pathname))
+    [0 (ok unit)]
+    [_ (err (io-error/from-current-errno))]))
+
+(function (with-directory! pathname f) {(forall A) (-> String (-> Directory (Result A IoError)) (Result A IoError))}
+  (let* ([handle (directory/open! pathname)!]
+         [ret (f handle)])
+    (ignore (directory/close! handle))
+    ret))
+
 (data <Dir>)
 (c-function <opendir> {(-> (Ptr U8) (Ptr <Dir>))} "opendir")
 (c-function <readdir> {(-> (Ptr <Dir>) String)} "llrt_readdir")
 (c-function <closedir> {(-> (Ptr <Dir>) I32)} "closedir")
+
+(c-function <mkdir> {(-> (Ptr U8) U32 I32)} "mkdir")
+(c-function <rmdir> {(-> (Ptr U8) I32)} "rmdir")

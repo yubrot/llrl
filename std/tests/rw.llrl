@@ -18,9 +18,14 @@
     (assert-eq? (ok 0) (read-into-buf! tmp buf))))
 
 (let* ([raw (|> (iterator/range 0 10000 1) (it/map conv) collect) {(Array U8)}]
+       [a (vector/from-array raw)])
+  (assert-eq? (ok raw) (read-bytes-to-end! a))
+  (assert-eq? (vector) a))
+
+(let* ([raw (|> (iterator/range 0 10000 1) (it/map conv) collect) {(Array U8)}]
        [a (vector/from-array raw)]
        [b vector/empty])
-  (assert-eq? (ok 10000) (read-bytes-to-end! b a))
+  (assert-eq? (ok 10000) (read-bytes-to-end-into! b a))
   (assert-eq? (vector/from-array raw) b)
   (assert-eq? (vector) a))
 
