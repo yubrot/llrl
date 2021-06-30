@@ -6,18 +6,15 @@
 (import "~/tests/testcases/test-case" _)
 
 (function (load-testcases!) {(-> (Result (OrdMap Path String) io/IoError))}
-  (let ([dh (io/directory/open! "../testcases")!]
-        [testcases ord-map/empty])
-    (for (let entry) (io/directory/entries! dh)
-      (when (eq? (io/path/extension? entry) (some "llrl"))
-        (let1 fh (io/file/open! (io/path "../testcases" entry) "r")!
+  (io/with-directory! "../testcases" (lambda (handle)
+    (let1 testcases ord-map/empty
+      (for (let entry) (io/directory/entries! handle)
+        (when (eq? (io/path/extension? entry) (some "llrl"))
           (ord-map/insert!
             (result/force (path/from-string (io/path/with-extension none entry)))
-            (read-string-to-end! fh)!
-            testcases)
-          (io/file/close! fh)!)))
-    (io/directory/close! dh)!
-    (ok testcases)))
+            (io/with-file! (io/path "../testcases" entry) "r" read-string-to-end!)!
+            testcases)))
+      (ok testcases)))))
 
 (let ([report (report/new)]
       [testcases

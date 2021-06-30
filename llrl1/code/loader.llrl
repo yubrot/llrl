@@ -99,7 +99,7 @@
                  (if (path/module-name/prelude? module-name)
                    (io/path/join fs-path "prelude")
                    (it/fold io/path/join fs-path (path/module-name/raw-parts module-name))))])
-        (match (read-source-text-file! fs-path)
+        (match (io/with-file! fs-path "r" read-string-to-end!)
           [(ok (let text))
             (ok (code/from-source-text path locator text))]
           [(err (let e))
@@ -123,9 +123,3 @@
       (code/from-source-text path locator s)]
     [(loadable-source:just (let ss))
       (code/from-source path ss)]))
-
-(function (read-source-text-file! pathname)
-  (let* ([fh (io/file/open! pathname "r")!]
-         [text (read-string-to-end! fh)!])
-    (io/file/close! fh)!
-    (ok text)))

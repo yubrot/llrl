@@ -2,7 +2,8 @@
 ; but the API is not well thought out enough to be adopted as std.
 
 (import "std/s" s/_)
-(import "std/io" IoError file/_)
+(import "std/integer" Integer._ integer/_)
+(import "std/io" IoError with-file! file/_)
 (import "std/ord-map" _)
 
 ;    (getter con: con/a con/b)
@@ -31,19 +32,34 @@
   (s/match s
     [(_ ,(s:string (let path)))
       ; FIXME: The file path should be relative to the caller of the macro
-      (match (load-text-file-as-string! path)
+      (match (with-file! path "r" read-string-to-end!)
         [(ok (let str))
           (ok (s:string str))]
         [(err (let e))
           (err (string e))])]
     [_
-      (err "Expected (embed-text! \"path\")")]))
+      (err "Expected (embed-text-file-as-string! \"path\")")]))
 
-(function (load-text-file-as-string! path) {(-> String (Result String IoError))}
-  (let1 fh (file/open! path "r")!
-    (let1 str (read-string-to-end! fh)!
-      (file/close! fh)!
-      (ok str))))
+(export embed-binary-file!)
+(macro (embed-binary-file! s)
+  (s/match s
+    [(_ ,(s:string (let path)))
+      ; FIXME: The file path should be relative to the caller of the macro
+      (match (with-file! path "rb" read-bytes-to-end!)
+        [(ok (let bytes))
+          ; TODO: Reduce size and overhead
+          ; Embedding (array ...) causes stack overflow!
+          (ok `(,\load-embedded-binary-data ,(s:string (string/join "," (it/map [^1 (integer/to-string 16 %1)] bytes)))))]
+        [(err (let e))
+          (err (string e))])]
+    [_
+      (err "Expected (embed-binary-file! \"path\")")]))
+
+(function (load-embedded-binary-data d) {(-> String (Array U8))}
+  (let1 buf vector/empty
+    (for (let s) (string/split "," d)
+      (vector/push! (option/force (integer/from-string? 16 s)) buf))
+    (vector/buffer buf)))
 
 ;    (string (it/format ", " (array 1 2 3)))
 ; => "1, 2, 3"

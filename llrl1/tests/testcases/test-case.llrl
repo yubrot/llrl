@@ -127,7 +127,7 @@
       (err (syntax-error: (s/location s) "<test-condition>"))]))
 
 (function (test-condition/run! slt result condition)
-  {(-> SourceLocationTable (: (OrdMap ModuleId Module) (Option ModuleError)) TestCondition (Result unit String))}
+  {(-> SourceLocationTable (: (OrdMap ModuleId Module) (Option (: Path ModuleError))) TestCondition (Result unit String))}
   (with1 (: (let module-set) (let error)) result
     (let1 ctx (module-display-context module-set slt)
       (match (: condition error)
@@ -136,7 +136,7 @@
             (for (let v) vs
               (module-validation/validate ctx module-set entry-module v)!))
           (ok unit)]
-        [(: (test-condition:pass _) (some (let error)))
+        [(: (test-condition:pass _) (some (: _ (let error))))
           (err (string "Expected success but got an error:\n" (contextual: error ctx)))]
         [(: (test-condition:fail none) none)
           (err "Expected failure but succeed")]
@@ -144,7 +144,7 @@
           (err (string "Expected " (debug ex) " but succeed"))]
         [(: (test-condition:fail none) (some _))
           (ok unit)]
-        [(: (test-condition:fail (some (let ex))) (some (let error)))
+        [(: (test-condition:fail (some (let ex))) (some (: _ (let error))))
           (if (error-expectation/matches? error ctx ex)
             (ok unit)
             (err (string "Expected " (debug ex) " but got an error:\n" (contextual: error ctx))))]))))

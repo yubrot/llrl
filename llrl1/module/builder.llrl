@@ -31,7 +31,7 @@
 ; Build a set of modules from the codes. The codes must be sorted by dependency order.
 (function (module/build! codes entry-points backend report)
   {(forall B)
-   (-> (Array (Code Construct)) (HashSet Path) B Report (: (OrdMap ModuleId Module) (Option Error)))
+   (-> (Array (Code Construct)) (HashSet Path) B Report (: (OrdMap ModuleId Module) (Option (: Path Error))))
    (where (Backend B))}
   (when (array/empty? codes) (return (: ord-map/empty none)))
 
@@ -54,7 +54,7 @@
                [result (semantic-analysis! module code external report)])
           (report/merge! (module/report module) report)
           (ord-map/insert! mid module modules)
-          (when-match1 (err (let e)) result (return (: modules (some e))))
+          (when-match1 (err (let e)) result (return (: modules (some (: path e)))))
           (hash-map/insert! path mid path-to-module)
           (backend/add-module! module (hash-set/has? path entry-points) backend))))
     (: modules none)))
