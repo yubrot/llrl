@@ -1,6 +1,9 @@
 (no-implicit-std)
 
 (import "std/prelude/stage-1" _)
+(import "std/iterator" _)
+(import "std/memory" Ptr)
+(import "std/string" string/c-compatible-ptr)
 (import "std/string-writer" string-writer)
 (import "std/io/error" _)
 (import "std/io/path" _)
@@ -11,6 +14,7 @@
 (export File file/_ with-file! _.File)
 (export Directory directory/_ with-directory! _.Directory)
 (export stdin stdout stderr print! println! eprint! eprintln! fprint! fprintln!)
+(export remove! remove-all!)
 
 ; NOTE: Should they be abstracted? Currently we are following the C representation.
 (c-function stdin {File} "llrt_stdin")
@@ -60,3 +64,24 @@
       (ok `(,\display-all! (,\string-writer ,iow) ,@displayables #\\n) {(,\Result unit ,\IoError)})]
     [_
       (err "Expected (fprintln! iow displayable ...)")]))
+
+; Remove the file or the empty directory.
+(function (remove! pathname) {(-> String (Result unit IoError))}
+  (match (<remove> (string/c-compatible-ptr pathname))
+    [0 (ok unit)]
+    [_ (err (io-error/from-current-errno))]))
+
+; Remove the all files and directories recursively.
+(function (remove-all! pathname) {(-> String (Result unit IoError))}
+  (when-match1 (ok (let handle)) (directory/open! pathname)
+    (let1 result (remove-directory-contents! pathname handle)
+      (ignore (directory/close! handle))
+      result !))
+  (remove! pathname))
+
+(function (remove-directory-contents! pathname handle) {(-> String Directory (Result unit IoError))}
+  (for (let entry) (directory/entries! handle)
+    (remove-all! (path pathname entry))!)
+  (ok unit))
+
+(c-function <remove> {(-> (Ptr U8) I32)} "remove")
