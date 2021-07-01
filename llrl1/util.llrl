@@ -3,7 +3,8 @@
 
 (import "std/s" s/_)
 (import "std/integer" Integer._ integer/_)
-(import "std/io" IoError with-file! file/_)
+(import "std/io" [io/_ _])
+(import "std/system" random!)
 (import "std/ord-map" _)
 
 ;    (getter con: con/a con/b)
@@ -32,7 +33,7 @@
   (s/match s
     [(_ ,(s:string (let path)))
       ; FIXME: The file path should be relative to the caller of the macro
-      (match (with-file! path "r" read-string-to-end!)
+      (match (io/with-file! path "r" read-string-to-end!)
         [(ok (let str))
           (ok (s:string str))]
         [(err (let e))
@@ -45,7 +46,7 @@
   (s/match s
     [(_ ,(s:string (let path)))
       ; FIXME: The file path should be relative to the caller of the macro
-      (match (with-file! path "rb" read-bytes-to-end!)
+      (match (io/with-file! path "rb" read-bytes-to-end!)
         [(ok (let bytes))
           ; TODO: Reduce size and overhead
           ; Embedding (array ...) causes stack overflow!
@@ -60,6 +61,17 @@
     (for (let s) (string/split "," d)
       (vector/push! (option/force (integer/from-string? 16 s)) buf))
     (vector/buffer buf)))
+
+(export with-tempdir!)
+(function (with-tempdir! f) {(forall A) (-> (-> String A) A)}
+  (let* ([buf (array/new 0 {U8} 8)]
+         [_ (random! buf)]
+         [dirname (string "llrl-tmp-" (string/join "" (it/map [^1 (integer/to-string 16 %1)] buf)))]
+         [dirpath (io/path "/tmp" dirname)]
+         [_ (result/unwrap* [^1 (assert #f (string "with-tempdir!: Failed to create " dirpath ": " %1))] (io/directory/create! dirpath))]
+         [ret (f dirpath)]
+         [_ (result/unwrap* [^1 (assert #f (string "with-tempdir!: Failed to remove " dirpath ": " %1))] (io/remove-all! dirpath))])
+    ret))
 
 ;    (string (it/format ", " (array 1 2 3)))
 ; => "1, 2, 3"

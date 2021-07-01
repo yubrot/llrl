@@ -1,0 +1,162 @@
+(import "std/io" [io/_ _])
+(import "std/system" args exit!)
+(import "~/util" with-tempdir!)
+(import "~" _)
+
+(derive (DebugDisplay Eq) value-data Arg
+  (arg: String)
+  arg:help
+  arg:optimize
+  arg:run
+  arg:verbose
+  (arg:clang-option String)
+  (arg:output String)
+  (arg:package String)
+  arg:double-slash)
+
+(function (parse-args! it) {(-> (Iterator String) (Iterator Arg))}
+  (if-match1 (some (let arg)) (iterator/next! it)
+    (let ([arg (parse-arg! arg it)]
+          [args (parse-args! it)])
+      (it/chain (iterator/only arg) args))
+    iterator/empty))
+
+(function (parse-arg! arg it) {(-> String (Iterator String) Arg)}
+  ($$ cond
+    ($for-each
+      [$id $short $long]
+      ([arg:help "-h" "--help"]
+       [arg:optimize "-O" "--optimize"]
+       [arg:run "-r" "--run"]
+       [arg:verbose "-v" "--verbose"])
+      [(or (eq? $short arg) (eq? $long arg))
+        $id])
+
+    ($for-each
+      [$id $short $long]
+      ([arg:clang-option "-c" "--clang-option"]
+       [arg:output "-o" "--output"]
+       [arg:package "-p" "--package"])
+      [(or (eq? arg $short) (eq? arg $long))
+        (if-match1 (some (let value)) (iterator/next! it)
+          ($id value)
+          (error! (string $short "/" $long " takes value")))]
+      [(string/starts-with? $short arg)
+        ($id (string/skip 2 arg))])
+
+    [(eq? "--" arg)
+      arg:double-slash]
+    [(string/starts-with? "-" arg)
+      (error! (string "Unknown option " arg))]
+    [else
+      (arg: arg)]))
+
+(function (parse-module-name! optname module-name) {(-> String String ModuleName)}
+  (match
+    (module-name/from-string
+      (if (string/ends-with? ".llrl" module-name)
+        (string/take (- (string/length module-name) 5) module-name)
+        module-name))
+    [(ok (let module-name)) module-name]
+    [(err (let e)) (error! (string "Invalid option for " optname ": " e))]))
+
+(function (parse-package! optname package) {(-> String String (: PackageName String))}
+  (let1 package (collect (string/split ":" package))
+    (match (array/length package)
+      [1
+        (match (package-name/from-string (io/path/base-name (get package[0])))
+          [(ok (let package-name))
+            (: package-name (get package[0]))]
+          [(err (let e))
+            (error! (string "Invalid package name for " optname ": " e " (The directory name is not compatible with the package name)"))])]
+      [2
+        (match (package-name/from-string (get package[0]))
+          [(ok (let package-name))
+            (: package-name (get package[1]))]
+          [(err (let e))
+            (error! (string "Invalid package name for " optname ": " e))])]
+      [_
+        (error! (string "Invalid option for " optname ": expected <DIRPATH> or <PACKAGE>:<DIRPATH>"))])))
+
+(let1 args {(Array Arg)} (collect (parse-args! (iterate (args))))
+  (when (it/any? [^1 (eq? arg:help %1)] args)
+    (show-help!)
+    (exit! 0))
+
+  (when (|> args
+            (it/take-while [^1 (ne? arg:double-slash %1)])
+            (it/any? [^1 (is? (arg: _) %1)])
+            not)
+    (eprintln! "No input files")
+    (show-usage!)
+    (exit! 1))
+
+  (let ([pipeline (pipeline/new ".")]
+        [output (ref none)]
+        [run? (ref #f)]
+        [run-args (ref none)])
+    (for (let arg) args
+      (match arg
+        [(arg: (let input))
+          (if-match1 (some (let run-args)) ~run-args
+            (vector/push! input run-args)
+            (pipeline/add-entry-path!
+              (path/new package-name/current (parse-module-name! "ENTRY-POINT" input))
+              pipeline))]
+        [arg:help]
+        [arg:optimize
+          (pipeline/set-optimize! #t pipeline)]
+        [arg:run
+          (set! run? #t)]
+        [arg:verbose
+          (pipeline/set-verbose! #t pipeline)]
+        [(arg:clang-option (let opt))
+          (pipeline/add-clang-option! opt pipeline)]
+        [(arg:output (let out))
+          (set! output (some out))]
+        [(arg:package (let package))
+          (with1 (: (let name) (let path)) (parse-package! "--package" package)
+            (when (not (pipeline/register-package! name path pipeline))
+              (error! (string "Failed to register package: " name))))]
+        [arg:double-slash
+          (if-match1 (some (let run-args)) ~run-args
+            (vector/push! "--" run-args)
+            (set! run-args (some vector/empty)))]))
+
+    (when (and ~run? (is? none ~run-args)) (set! run-args (some vector/empty)))
+
+    (let1 run-args (option/map vector/buffer ~run-args)
+      (match
+        (if-match1 (some (let output)) ~output
+          (pipeline/run! output run-args pipeline)
+          (with-tempdir! (lambda (tempdir)
+            (pipeline/run! (io/path tempdir "bin") (some (option/unwrap array/empty run-args)) pipeline))))
+        [(ok (some (let status))) (exit! status)]
+        [(ok none)]
+        [(err (let e)) (error! (string e))]))))
+
+(function (show-usage!)
+  (println! "USAGE:")
+  (println! "    llrl1 [FLAGS] [OPTIONS] <ENTRY-POINT>... [-- <RUN-ARG>...]"))
+
+(function (show-help!)
+  (show-usage!)
+  (println! "")
+  (println! "FLAGS:")
+  (println! "    -h, --help        Prints help information")
+  (println! "    -O, --optimize    Enables optimization")
+  (println! "    -r, --run         Run immediately (Enabled by default if --output is not specified)")
+  (println! "    -v, --verbose     Enables verbose output")
+  (println! "")
+  (println! "OPTIONS:")
+  (println! "    -c, --clang-option <OPTION>...                          Adds an option to be passed to clang")
+  (println! "    -o, --output <OUTPUT>                                   Sets the destination of the executable")
+  (println! "    -p, --package <DIRPATH> or <PACKAGE-NAME>:<DIRPATH>...  Adds a package reference")
+  (println! "")
+  (println! "ARGS:")
+  (println! "    <ENTRY-POINT>...    Target to be entry-point")
+  (println! "    <RUN-ARG>...        Arguments to run"))
+
+(function (error! e)
+  (eprintln! e)
+  (exit! 1))

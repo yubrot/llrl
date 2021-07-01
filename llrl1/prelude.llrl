@@ -25,4 +25,5 @@
 (import "~/module" [_.ModuleDisplayContext _.DisplayContext] [module-display-context display-context])
 (import "~/emitter" Value _.Value value:_ Backend backend/_ Emitter _.Emitter emitter/_)
 (import "~/backend/llvm" LLVMBackend _.LLVMBackend llvm-backend/_ with-llvm-backend)
+(import "~/pipeline" [PipelineError Error] [_.PipelineError _.Error] Pipeline pipeline/_)
 (export _)

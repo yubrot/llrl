@@ -194,6 +194,11 @@
     (set! (main-function ma) (some artifact))
     artifact))
 
+(function (module-artifact/add-c-main-adapter! ma) {(-> ModuleArtifact unit)}
+  (codegen/c-main-adapter!
+    (function-artifact/value (module-artifact/bind-function! (option/force ~(main-function-symbol (conv ma))) ma))
+    ma))
+
 (function (module-artifact/bind-function! symbol ma) {(-> FunctionSymbol ModuleArtifact FunctionArtifact)}
   (function-artifact:
     symbol

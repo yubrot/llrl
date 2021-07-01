@@ -1,8 +1,10 @@
 (import "llvm" [llvm/_ _])
 (import "std/phantom" _)
-(import "std/system" Process process process/_)
+(import "std/io" [io/_ _])
+(import "std/system" Process process/_)
 (import "std/ord-map" _)
 (import "~/util" _)
+(import "~/resources" resources/llrt-archive)
 (import "~/report" Report _.Report report/_ phase:_)
 (import "~/emitter" Backend)
 (import "~/emitter/ir" [ir/_ _])
@@ -139,5 +141,45 @@
     (module-artifact/complete! artifact)))
 
 (function (llvm-backend/produce-executable! dest clang-options b)
-  {(-> String (Array String) LLVMBackend Process)}
-  (assert #f "TODO"))
+  {(-> String (Array String) LLVMBackend (Result unit String))}
+  (when-match1 none (|> b context-artifact context-artifact/main-function-symbol?)
+    (executor/add-module!
+      (report/on (llvm-backend/report b) phase:codegen (llvm-backend/build! "entry" #t b))
+      (executor b)))
+
+  (let1 artifact (module-artifact/new "c-main-adapter" (context-artifact b))
+    (module-artifact/add-c-main-adapter! artifact)
+    (executor/add-module! (module-artifact/complete! artifact) (executor b)))
+
+  (report/on (llvm-backend/report b) phase:finalize
+    (with-tempdir! (lambda (tempdir)
+      (let* ([modules (executor/remove-modules! (executor b))]
+             [objects
+               (it/map
+                 (case1 (: (let index) (let module))
+                   (let1 path (io/path tempdir (string index ".o"))
+                     (|> (executor b)
+                         executor/target-machine
+                         (llvm/target-machine/emit-to-file! module path llvm/code-gen-file-type/object-file)
+                         (result/unwrap* [^1 (assert #f %1)]))
+                      path))
+                 (it/with-index modules))])
+        (enforce-io-success! (expand-libllrt! tempdir))
+        (let1 args {(Array String)} (collect (it/concat (array "-o" dest) objects (array "-lgc" "-lm" (string "-L" tempdir) "-lllrt") clang-options))
+          (when (llvm-backend/verbose? b)
+            (eprintln! "### link")
+            (eprintln! "clang " (it/format " " args)))
+          (let* ([proc (enforce-io-success! (process/spawn! "clang" args))]
+                 [status (process/wait! proc)])
+            (when (llvm-backend/verbose? b)
+              (eprintln! "### clang output")
+              (eprintln! (enforce-io-success! (|> proc process/out read-string-to-end!))))
+            (if-match1 (some 0) status
+              (ok unit)
+              (err (enforce-io-success! (|> proc process/err read-string-to-end!)))))))))))
+
+(function (expand-libllrt! dir) {(-> String (Result unit io/IoError))}
+  (io/with-file! (io/path dir "libllrt.a") "w" [^1 (write-bytes! (resources/llrt-archive) %1)]))
+
+(function (enforce-io-success! result) {(forall A) (-> (Result A io/IoError) A)}
+  (result/unwrap* [^1 (assert #f (string %1))] result))

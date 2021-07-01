@@ -93,6 +93,7 @@ impl Pipeline {
         output: &path::Path,
         run_args: Option<Vec<&str>>,
     ) -> Result<Option<ExitStatus>> {
+        let output = path::Path::new(".").join(output);
         let mut source_location_table = SourceLocationTable::new();
         let mut report = Report::new();
 
