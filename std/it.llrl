@@ -1,6 +1,7 @@
 (no-implicit-std)
 
 (import "std/prelude/stage-1" _)
+(import "std/s" s/foldl)
 (import "std/integer" _.U64)
 (import "std/ref" Ref ref _.Ref)
 (import "std/iterator" _)
@@ -43,6 +44,15 @@
           (some x)])]
     [(chain:b (let it))
       (iterator/next! it)]))
+
+(macro (it/concat s)
+  (s/match s
+    [(_)
+      (ok \iterator/empty)]
+    [(_ ,a ,@bs)
+      (s/foldl [^2 `(,\it/chain ,%1 ,%2)] a bs)]
+    [_
+      (err "Expected (it/concat iterable ...)")]))
 
 (function (it/zip it-a it-b) {(forall T S A B) (-> (T A) (S B) (Iterator (: A B))) (where (Iterate T) (Iterate S))}
   (let ([it-a (iterate it-a)]

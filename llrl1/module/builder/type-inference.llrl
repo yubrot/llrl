@@ -59,9 +59,10 @@
         (it/map [^1 (: c %1)] (u/types g)))
       (for
         (: (let construct) (let ty))
-        (|> (|> ctx u-types unifying-types ord-map/elems)
-            (it/chain (|> ctx u-types unifying-schemes ord-map/elems (it/flat-map each-types)))
-            (it/chain (|> ctx u-types unifying-instantiations ord-map/elems (it/flat-map each-types))))
+        (it/concat
+          (|> ctx u-types unifying-types ord-map/elems)
+          (|> ctx u-types unifying-schemes ord-map/elems (it/flat-map each-types))
+          (|> ctx u-types unifying-instantiations ord-map/elems (it/flat-map each-types)))
         (when-match1 (err _) (u/default-vars! ty (u/type:con type-con/unit) u-ctx)
           (err (error:on construct (error:cannot-resolve-ambiguity (u/exports! ty u-ctx) array/empty)))!)))
 

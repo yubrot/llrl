@@ -116,22 +116,24 @@
       (it/map [^1 (relation instance: %1 (root/instance-methods r) instance-con/methods)])))
 
 (function (root/expressions r) {(-> Root (Iterator Expr))}
-  (|> (|> r root/functions map/values (it/map function/body))
-      (it/chain (|> r root/macros map/values (it/map macro/body)))
-      (it/chain (|> r root/class-methods map/values (it/filter-map class-method/default-body)))
-      (it/chain (|> r root/instance-methods map/values (it/map instance-method/body)))
-      (it/chain (|> r root/init-expressions (it/filter-map (case1? (init-expr:eval (let e)) e))))))
+  (it/concat
+    (|> r root/functions map/values (it/map function/body))
+    (|> r root/macros map/values (it/map macro/body))
+    (|> r root/class-methods map/values (it/filter-map class-method/default-body))
+    (|> r root/instance-methods map/values (it/map instance-method/body))
+    (|> r root/init-expressions (it/filter-map (case1? (init-expr:eval (let e)) e)))))
 
 (function (root/constructs r) {(-> Root (Iterator Construct))}
   (let1 (constructs f) (|> r f map/keys (it/map conv))
-    (|> (constructs root/functions)
-        (it/chain (constructs root/c-functions))
-        (it/chain (constructs root/builtin-ops))
-        (it/chain (constructs root/macros))
-        (it/chain (constructs root/data-type-cons))
-        (it/chain (constructs root/builtin-type-cons))
-        (it/chain (constructs root/class-cons))
-        (it/chain (constructs root/instance-cons)))))
+    (it/concat
+      (constructs root/functions)
+      (constructs root/c-functions)
+      (constructs root/builtin-ops)
+      (constructs root/macros)
+      (constructs root/data-type-cons)
+      (constructs root/builtin-type-cons)
+      (constructs root/class-cons)
+      (constructs root/instance-cons))))
 
 (function (root/data-type? id r) {(-> (NodeId DataTypeCon) Root (Option DataType))}
   (with1? (some (let con)) (root/data-type-con? id r)
