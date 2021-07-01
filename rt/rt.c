@@ -56,7 +56,7 @@ void llrt_exit(int32_t exitcode) {
   exit(exitcode);
 }
 
-rt_process llrt_process(const char *name, char *const argv[]) {
+rt_process llrt_spawn_process(const char *name, char *const argv[]) {
   rt_process ret;
   int init[2]; // used to notify an execvp error
   int cin[2];
@@ -130,6 +130,60 @@ rt_process llrt_process(const char *name, char *const argv[]) {
   // FIXME: Error handling
   if (ret.cin == NULL || ret.cout == NULL || ret.cerr == NULL) abort();
 
+  ret.pid = pid;
+  ret.err = 0;
+  return ret;
+}
+
+rt_process llrt_execute_process(const char *name, char *const argv[]) {
+  rt_process ret;
+  int init[2]; // used to notify an execvp error
+
+  // TODO: Handle pipe error
+  pipe2(init, O_CLOEXEC);
+
+  pid_t pid = fork();
+
+  if (pid < 0) {
+    // fork failed
+    ret.err = errno;
+    for (int i = 0; i < 2; ++i) {
+      close(init[i]);
+    }
+    return ret;
+  }
+
+  if (pid == 0) {
+    // fork child
+    close(init[0]);
+
+    llrt_restore_signal();
+
+    execvp(name, argv);
+
+    // execvp failed: put error to init pipe
+    char buf[4];
+    *(int32_t *)buf = errno;
+    write(init[1], buf, 4); // FIXME: Ensure that writing succeeds atomically
+    exit(1);
+  }
+
+  // fork parent
+  close(init[1]);
+
+  char buf[4];
+  if (read(init[0], buf, 4) != 0) {
+    // execvp failed
+    ret.err = *(int32_t *)buf;
+    close(init[0]);
+    return ret;
+  }
+
+  // execvp succeeded
+  close(init[0]);
+  ret.cin = NULL;
+  ret.cout = NULL;
+  ret.cerr = NULL;
   ret.pid = pid;
   ret.err = 0;
   return ret;

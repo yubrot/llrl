@@ -91,7 +91,8 @@ extern "C" {
     pub fn llrt_panic(a: RtString) -> !;
     pub fn llrt_exit(exitcode: i32);
 
-    pub fn llrt_process(name: *const u8, argv: *const *const u8) -> RtProcess;
+    pub fn llrt_spawn_process(name: *const u8, argv: *const *const u8) -> RtProcess;
+    pub fn llrt_execute_process(name: *const u8, argv: *const *const u8) -> RtProcess;
     pub fn llrt_wait(pid: i32) -> i32;
 
     pub fn llrt_time() -> f64;

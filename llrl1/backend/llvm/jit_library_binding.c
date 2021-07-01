@@ -5,7 +5,8 @@ void llrt_initialize_llvm_jit_library_binding() {
   LLVMAddSymbol("llrt_args", llrt_args);
   LLVMAddSymbol("llrt_panic", llrt_panic);
   LLVMAddSymbol("llrt_exit", llrt_exit);
-  LLVMAddSymbol("llrt_process", llrt_process);
+  LLVMAddSymbol("llrt_spawn_process", llrt_spawn_process);
+  LLVMAddSymbol("llrt_execute_process", llrt_execute_process);
   LLVMAddSymbol("llrt_wait", llrt_wait);
   LLVMAddSymbol("llrt_time", llrt_time);
   LLVMAddSymbol("llrt_getcwd", llrt_getcwd);

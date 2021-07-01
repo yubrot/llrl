@@ -10,7 +10,7 @@
 (import "std/vector" vector/_ _.Vector)
 (import "std/string" string/_)
 (import "std/io" IoError io-error/_ File file/_)
-(export args exit! random! Process process/_ process time)
+(export args exit! random! Process process/_ time)
 
 (function (args) {(-> (Array String))}
   (with1 (<args>: (let argc) (let argv)) <args>
@@ -26,21 +26,36 @@
 (value-data Process
   (process: I32 File File File)) ; pid in out err
 
-(function (process name args) {(forall T) (-> String (T String) (Result Process IoError)) (where (Iterate T))}
+(function (process/spawn! name args) {(forall T) (-> String (T String) (Result Process IoError)) (where (Iterate T))}
   (let ([name (string/c-compatible-ptr name)]
         [argv vector/empty])
   (vector/push! name argv)
   (for (let arg) args (vector/push! (string/c-compatible-ptr arg) argv))
   (vector/push! ptr:null argv)
-    (with1
-      (<process>: (let errno) (let pid) (let cin) (let cout) (let cerr))
-      (<process> name (array/ptr (vector/buffer argv)))
-      (if (eq? errno 0)
-        (let ([cin (file/unsafe-from-handle cin)]
-              [cout (file/unsafe-from-handle cout)]
-              [cerr (file/unsafe-from-handle cerr)])
-          (ok (process: pid cin cout cerr)))
-        (err (io-error/from-errno errno))))))
+  (with1
+    (<process>: (let errno) (let pid) (let cin) (let cout) (let cerr))
+    (<spawn-process> name (array/ptr (vector/buffer argv)))
+    (if (eq? errno 0)
+      (let ([cin (file/unsafe-from-handle cin)]
+            [cout (file/unsafe-from-handle cout)]
+            [cerr (file/unsafe-from-handle cerr)])
+        (ok (process: pid cin cout cerr)))
+      (err (io-error/from-errno errno))))))
+
+(function (process/execute! name args) {(forall T) (-> String (T String) (Result (Option I32) IoError)) (where (Iterate T))}
+  (let ([name (string/c-compatible-ptr name)]
+        [argv vector/empty])
+  (vector/push! name argv)
+  (for (let arg) args (vector/push! (string/c-compatible-ptr arg) argv))
+  (vector/push! ptr:null argv)
+  (with1
+    (<process>: (let errno) (let pid) _ _ _)
+    (<execute-process> name (array/ptr (vector/buffer argv)))
+    (if (eq? errno 0)
+      (ok
+        (let1 status (<wait> pid)
+          (when? (<= 0 status) status)))
+      (err (io-error/from-errno errno))))))
 
 (function (process/pid proc) {(-> Process I32)}
   (with1 (process: (let pid) _ _ _) proc pid))
@@ -58,9 +73,7 @@
   (with1 (process: (let pid) (let in) _ _) proc
     (file/close! in)
     (let1 status (<wait> pid)
-      (if (< status 0) ; FIXME: Identify waitpid errors, SIGNALED, and STOPPED
-        none
-        (some status)))))
+      (when? (<= 0 status) status)))) ; FIXME: Identify waitpid errors, SIGNALED, and STOPPED
 
 (c-function time {(-> F64)} "llrt_time")
 
@@ -73,5 +86,6 @@
 (c-function <args> {<Args>} "llrt_args")
 (c-function <exit> {(-> I32 unit)} "llrt_exit")
 (c-function <getrandom> {(-> (Ptr U8) U64 U32 U64)} "getrandom")
-(c-function <process> {(-> (Ptr U8) (Ptr (Ptr U8)) <Process>)} "llrt_process")
+(c-function <spawn-process> {(-> (Ptr U8) (Ptr (Ptr U8)) <Process>)} "llrt_spawn_process")
+(c-function <execute-process> {(-> (Ptr U8) (Ptr (Ptr U8)) <Process>)} "llrt_execute_process")
 (c-function <wait> {(-> I32 I32)} "llrt_wait")

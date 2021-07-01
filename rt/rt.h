@@ -30,7 +30,8 @@ typedef struct {
   FILE *cerr;
 } rt_process;
 
-rt_process llrt_process(const char *name, char *const argv[]);
+rt_process llrt_spawn_process(const char *name, char *const argv[]);
+rt_process llrt_execute_process(const char *name, char *const argv[]);
 int32_t llrt_wait(int32_t pid);
 
 double llrt_time();
