@@ -1,6 +1,6 @@
 # llrl: Lisp-like programming language powered by Rust + LLVM
 
-llrl is an experimental/toy **L**isp-**l**ike programming language powered by **R**ust and **L**LVM.
+llrl is an experimental **L**isp-**l**ike programming language powered by **R**ust and **L**LVM.
 
 <p align="center">
 <img src="./examples/images/1.png">
@@ -11,8 +11,9 @@ llrl is an experimental/toy **L**isp-**l**ike programming language powered by **
 
 ## Features
 
-llrl is mainly influenced by OCaml, Rust, Haskell, Scala, and Scheme.
+llrl is not a highly carefully designed programming language, but it mainly borrows its design from OCaml, Rust, Haskell, and Scheme.
 
+- **Self-hosting compiler implementation**
 - **Statically-typed**
   - Hindley-Milner based type system
   - Supports type classes
@@ -30,6 +31,8 @@ llrl is mainly influenced by OCaml, Rust, Haskell, Scala, and Scheme.
 llrl was originally started by learning [LLVM Kaleidoscope Tutorial](https://llvm.org/docs/tutorial/index.html) in Rust. This tutorial is great for learning LLVM frontend basics, but as [the tutorial conclusion suggests](https://llvm.org/docs/tutorial/OCamlLangImpl8.html), there are a lot of things to do to make our compiler more practical.
 
 The goal of llrl is not to create a modern, practical programming language. Instead, llrl focuses to make a compiler [self-hosted](<https://en.wikipedia.org/wiki/Self-hosting_(compilers)>). To achieve this with [LLVM-C API](https://llvm.org/doxygen/group__LLVMC.html), we need to implement more language features like strings, pointers, etc. On the other hand, Implementing self-hosting compiler does not require a rich runtime system including garbage collections, exception handling, etc.
+
+This goal has been achieved and can be tested by `make self-hosting` in `llrl1/`.
 
 ### Roadmap
 
@@ -82,7 +85,7 @@ The goal of llrl is not to create a modern, practical programming language. Inst
   - [x] System
     - [x] Command line arguments
     - [x] Process
-- [ ] llrl1: llrl compiler by llrl
+- [x] llrl1: llrl compiler by llrl
   - [x] LLVM-C API porting
   - [x] S-expression parser
   - [x] Syntax analysis
@@ -90,6 +93,7 @@ The goal of llrl is not to create a modern, practical programming language. Inst
   - [x] Semantic analysis
   - [x] Code generation
   - [x] Driver
+  - [x] Self-hosting
 
 ## Usage
 

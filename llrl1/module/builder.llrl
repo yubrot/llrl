@@ -38,10 +38,10 @@
   ; (module-id 0) must be builtin
   (assert-eq? (code/path (get codes[0])) path/builtin)
   ; Every other module must depend on builtin
-  (assert (it/all? [^1 (hash-map/has? (string path/builtin) (code/dependencies %1))] (it/skip 1 codes)))
+  (assert (it/all? [^1 (ord-map/has? (string path/builtin) (code/dependencies %1))] (it/skip 1 codes)))
     ; Every implicit-std? enabled module must depend on std
   (assert (it/all? [^1 (or (not (code/implicit-std? %1))
-                           (hash-map/has? (string path/std) (code/dependencies %1)))] codes))
+                           (ord-map/has? (string path/std) (code/dependencies %1)))] codes))
 
   (let* ([modules ord-map/empty]
          [path-to-module hash-map/empty]
@@ -79,7 +79,7 @@
   {(forall E) (-> Module (Code Construct) E Report (Result unit Error)) (where (External E))}
 
   ; code/dependencies (Path) -> module/imports (ModuleId)
-  (for (let path) (|> code code/dependencies hash-map/values)
+  (for (let path) (|> code code/dependencies ord-map/values)
     (match (external/module-by-path? path external)
       [(some (let module))
         (imports/add! (module/id module) (module/imports module))]

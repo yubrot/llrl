@@ -237,15 +237,30 @@
   (function (expand-on-buffer! m buf a)
     (set! buf[0] (llvm/const (conv m) (ptr-to-int i64 ,(runtime/const m a))))))
 
+; Ensure that the length of (sexp/SRep ir/CapturedUse) is 3 (for clear-uninitialized-location!)
+(assert-eq? (* 3 (size-of I64)) (size-of (sexp/SRep ir/CapturedUse)))
+
 (instance RuntimeExpand.SexpBody (RuntimeExpand (sexp/SRep ir/CapturedUse))
   (function (expand-on-buffer! m buf a)
     (let1 buf (array/skip 1 buf) ; skip the tag of (sexp/SRep ir/CapturedUse) (*5)
       (match a
+        [(sexp/s-rep:fp-number _)
+          (clear-uninitialized-location! m buf 1)]
+        [(sexp/s-rep:bool _)
+          (clear-uninitialized-location! m buf 1)]
         [(sexp/s-rep:symbol (let s))
           (expand-on-buffer! m buf s)]
         [(sexp/s-rep:string (let s))
           (expand-on-buffer! m buf s)]
+        [(sexp/s-rep:char _)
+          (clear-uninitialized-location! m buf 1)]
         [(sexp/s-rep:cons (let car) (let cdr))
           (expand-on-buffer! m buf car)
           (expand-on-buffer! m (array/skip 1 buf) cdr)] ; skip car
+        [sexp/s-rep:nil
+          (clear-uninitialized-location! m buf 0)
+          (clear-uninitialized-location! m buf 1)]
         [_]))))
+
+(function (clear-uninitialized-location! m buf index) {(-> llvm/Module (Array llvm/Value) U64 unit)}
+  (set! buf[index] (llvm/const (conv m) (i64 0))))

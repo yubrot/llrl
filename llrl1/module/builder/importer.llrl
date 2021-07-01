@@ -1,4 +1,4 @@
-(import "std/hash-map" _)
+(import "std/ord-map" _)
 (import "~/util" _)
 (import "~/path" Path _.Path path/_)
 (import "~/sexp" S s/_ Ss ss/_)
@@ -56,7 +56,7 @@
 
   (for (let s) (ss/elems source)
     (when-match1 (ok (syntax:import _ (let path) (let targets))) (syntax/import s)
-      (let* ([import-path (option/force (hash-map/get? path (code/dependencies code)))]
+      (let* ([import-path (option/force (ord-map/get? path (code/dependencies code)))]
              [import-module (option/force (external/module-by-path? import-path external))])
 
         (for (syntax:port-target (let loc) (let name) (syntax:name _ (let target))) targets

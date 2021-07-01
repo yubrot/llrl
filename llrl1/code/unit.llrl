@@ -1,4 +1,4 @@
-(import "std/hash-map" _)
+(import "std/ord-map" _)
 (import "~/util" _)
 (import "~/path" Path PackageName ModuleName [path/_ _] path/_)
 (import "~/source-location" SourceLocator)
@@ -15,17 +15,17 @@
   (code:
     Path                  ; path
     Bool                  ; implicit-std?
-    (HashMap String Path) ; dependencies
+    (OrdMap String Path)  ; dependencies
     (CodeRep A)           ; rep
     (Array Error)))       ; errors
 
 (getter code: code/path code/implicit-std? code/dependencies code/rep code/errors)
 
 (function (code/from-error path error) {(forall A) (-> Path Error (Code A))}
-  (code: path #f hash-map/empty code-rep:empty (array error)))
+  (code: path #f ord-map/empty code-rep:empty (array error)))
 
 (function (code/from-source path source) {(forall A) (-> Path (Ss A) (Code A))}
-  (let ([dependencies hash-map/empty]
+  (let ([dependencies ord-map/empty]
         [errors vector/empty]
         [implicit-std? (ref #t)])
     (for (let s) (ss/elems source)
@@ -42,18 +42,18 @@
                   import-path)
                 (if (eq? import-path path)
                   (vector/push! error:cannot-import-module-itself errors)
-                  (ignore (hash-map/insert! p import-path dependencies))))]
+                  (ignore (ord-map/insert! p import-path dependencies))))]
             [(err (let e))
               (vector/push! (error:invalid-import-path p e) errors)])]))
     ; Every module except builtin depend on builtin.
     (when (ne? path path/builtin)
-      (hash-map/insert! (string path/builtin) path/builtin dependencies))
+      (ord-map/insert! (string path/builtin) path/builtin dependencies))
     ; Every module implicitly imports std.
     ; This behavior can be disabled by (no-implicit-std).
     (when ~implicit-std?
       (if (eq? path path/std)
         (vector/push! error:cannot-import-module-itself errors)
-        (ignore (hash-map/insert! (string path/std) path/std dependencies))))
+        (ignore (ord-map/insert! (string path/std) path/std dependencies))))
     (code: path ~implicit-std? dependencies (code-rep:source source) (vector/buffer errors))))
 
 (function (code/from-source-text path locator source-text) {(forall A) (-> Path SourceLocator String (Code A))}

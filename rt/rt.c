@@ -379,7 +379,7 @@ to_f64 llrt_string_to_f64(rt_string s) {
   if (s.len == 0 || 64 <= s.len) return (to_f64){.success = 0};
   if (s.len >= 2 &&
       s.ptr[0] == '0' &&
-      ('0' <= s.ptr[1] && s.ptr[1] <= '9' || s.ptr[1] == 'x' || s.ptr[1] == 'X')) {
+      (('0' <= s.ptr[1] && s.ptr[1] <= '9') || s.ptr[1] == 'x' || s.ptr[1] == 'X')) {
     return (to_f64){.success = 0};
   }
   char buf[64];
