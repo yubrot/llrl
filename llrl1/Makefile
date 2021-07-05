@@ -13,9 +13,13 @@ test:
 	make -C ../rt
 	llrl0 $(FLAGS) tests/all
 
-self-hosting: llrl1
+llrl2: llrl1
 	./llrl1 $(FLAGS) -O -o llrl2 main
+
+llrl3: llrl2
 	./llrl2 $(FLAGS) -O -o llrl3 main
+
+self-hosting: llrl2 llrl3
 	diff llrl2 llrl3
 
 clean:

@@ -6,8 +6,7 @@ llrl is an experimental **L**isp-**l**ike programming language powered by **R**u
 <img src="./examples/images/1.png">
 </p>
 
-- [Implementation notes (Japanese)](https://scrapbox.io/yubrot/llrl_programming_language)
-- [Language design choices (Japanese)](https://scrapbox.io/yubrot/llrl%E3%81%AE%E8%A8%80%E8%AA%9E%E3%83%87%E3%82%B6%E3%82%A4%E3%83%B3%E4%B8%8A%E3%81%AE%E9%81%B8%E6%8A%9E)
+- [Implementation notes (Japanese)](https://yubrot.github.io/2021/07/llrl/)
 
 ## Features
 
@@ -55,13 +54,13 @@ This goal has been achieved and can be tested by `make self-hosting` in `llrl1/`
     - [x] LLVM backend
     - [x] Macro expansion
   - [x] Driver
-- [ ] llstd: llrl standard library
+- [x] llstd: llrl standard library
   - [x] Macro helpers (`gensym`, `quasiquote`, `s/match`)
   - [x] S-expression
   - [x] Common macros (`let*`, `let1`, ...)
   - [x] Common type classes (`Default`, `Eq`, `Ord`, `Hash`, `Display`, `Conv`, ...)
   - [x] Common data types (`Bool`, Integers, Floating-point numbers, `Ptr`, `Option`, `Result`, `Char`, `String`, Tuples, ...)
-  - [ ] Aggregate data types
+  - [x] Aggregate data types
     - [x] Array
     - [x] Vector
     - [x] Ordered map (B-tree)
@@ -69,10 +68,10 @@ This goal has been achieved and can be tested by `make self-hosting` in `llrl1/`
     - [x] Hash map
     - [x] Hash set
     - [x] Persistent ordered map (Red-black tree)
-    - [ ] Persistent ordered set
+    - [ ] ~Persistent ordered set~
     - [x] Persistent hash map (HAMT)
-    - [ ] Persistent hash set
-    - [ ] Persistent sequence (rrb-vector)
+    - [ ] ~Persistent hash set~
+    - [ ] ~Persistent sequence (rrb-vector)~
   - [x] Arithmetic operations
   - [x] Bit operations
   - [x] [xxHash](https://github.com/Cyan4973/xxHash)
@@ -97,7 +96,7 @@ This goal has been achieved and can be tested by `make self-hosting` in `llrl1/`
 
 ## Usage
 
-Since `llrl0` is an executable that runs standalone, you can simply run it with `cargo run` or `cargo build`.
+Since `llrl0` is a standalone executable, you can simply run it with `cargo run` or `cargo build`.
 
 ```shell
 cargo install --path llrl0
