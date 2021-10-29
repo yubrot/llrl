@@ -2,7 +2,6 @@ use super::*;
 use crate::formatting::ContextualDisplay;
 use crate::topological_sort;
 use either::*;
-use std::convert::TryFrom;
 use std::fmt;
 
 /// In llrl, `Expr` represents a value-level expression.

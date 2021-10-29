@@ -5,7 +5,6 @@ use super::{
 use crate::ast::*;
 use either::*;
 use std::collections::HashMap;
-use std::convert::TryInto;
 
 pub fn run(module: &mut Module, external: &impl External) -> Result<()> {
     let mut ctx = ContextImpl {

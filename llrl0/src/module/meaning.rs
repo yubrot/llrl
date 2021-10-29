@@ -3,7 +3,6 @@ use crate::source_loc::SourceLocation;
 use once_cell::sync::Lazy;
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
-use std::convert::TryFrom;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy, Hash)]
 pub struct LocatedConstruct {

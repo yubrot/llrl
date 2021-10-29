@@ -2,7 +2,7 @@
 authors = ["yubrot <yubrot@gmail.com>"]
 build = "build.rs"
 description = "llrl standard library"
-edition = "2018"
+edition = "2021"
 keywords = ["compiler"]
 license = "BSD-3-Clause"
 name = "llstd"

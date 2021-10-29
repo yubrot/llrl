@@ -71,10 +71,7 @@ impl Context {
 
         let mut target = CanonicalizeTarget::new(&generation_defs, &mut dest, &mut self.ct_defs);
         data_expander::expand(&mut target, &self.data_expansions);
-        branch_expander::expand(
-            &mut target,
-            &mut MatchExpander::new(&mut self.rt_id_gen, &self.data_expansions),
-        );
+        branch_expander::expand(&mut target, &mut MatchExpander::new(&mut self.rt_id_gen));
         heap2stack::run(&mut target);
 
         // Possible optimizations that are not implemented:
@@ -299,7 +296,6 @@ impl<'a> data_expander::Env for DataExpansionComputetor<'a> {
 #[derive(Debug, new)]
 struct MatchExpander<'a> {
     rt_id_gen: &'a mut RtIdGen,
-    data_expansions: &'a HashMap<CtId, data_expander::DataExpansion>,
 }
 
 impl<'a> branch_expander::Env for MatchExpander<'a> {

@@ -1,5 +1,4 @@
 use super::*;
-use std::convert::TryFrom;
 use std::fmt;
 
 macro_rules! define_construct {

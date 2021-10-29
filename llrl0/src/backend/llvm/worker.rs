@@ -3,15 +3,15 @@ use std::thread;
 
 #[derive(Debug)]
 pub struct Thread {
-    handle: thread::JoinHandle<()>,
+    _handle: thread::JoinHandle<()>,
     sender: Sender<Box<dyn FnOnce() + Send + 'static>>,
 }
 
 impl Thread {
     pub fn spawn() -> Self {
         let (sender, receiver) = unbounded();
-        let handle = thread::spawn(move || process_tasks(receiver));
-        Self { handle, sender }
+        let _handle = thread::spawn(move || process_tasks(receiver));
+        Self { _handle, sender }
     }
 
     pub fn run<F, T>(&self, f: F) -> JoinHandle<T>

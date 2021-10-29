@@ -149,16 +149,19 @@ mod tests {
     }
 
     macro_rules! assert_sort {
-        ($graph:expr, $($result:pat)|*) => {
+        ($graph:expr, $result:pat) => {
             for g in random_graph(&$graph) {
                 let result = run_sort(g);
-                assert!(matches!(result.as_str(), $($result)|*), "{}", result);
+                assert!(matches!(result.as_str(), $result), "{}", result);
             }
         };
     }
 
     #[test]
     fn test_run() {
+        // Unnecessary parens are for rust-analyzer
+        // https://github.com/rust-analyzer/rust-analyzer/issues/9056
+
         assert_sort!([], "");
 
         assert_sort!([(0, &[])], "0");
@@ -179,7 +182,7 @@ mod tests {
         );
         assert_sort!(
             [(0, &[1, 2, 3]), (1, &[2]), (2, &[]), (3, &[])],
-            "3 / 2 / 1 / 0" | "2 / 1 / 3 / 0" | "2 / 3 / 1 / 0"
+            ("3 / 2 / 1 / 0" | "2 / 1 / 3 / 0" | "2 / 3 / 1 / 0")
         );
         assert_sort!(
             [(0, &[]), (1, &[2]), (2, &[3]), (3, &[2, 0])],
@@ -198,7 +201,7 @@ mod tests {
                 (3, &[1, 2, 4]),
                 (4, &[])
             ],
-            "4 / 0 / 1 / 3 / 2" | "0 / 4 / 1 / 2 / 3"
+            ("4 / 0 / 1 / 3 / 2" | "0 / 4 / 1 / 2 / 3")
         );
 
         assert_sort!(
@@ -225,7 +228,7 @@ mod tests {
                 (7, &[8]),
                 (8, &[6])
             ],
-            "3, 4, 5 / 6, 7, 8 / 0, 1, 2" | "6, 7, 8 / 3, 4, 5 / 0, 1, 2"
+            ("3, 4, 5 / 6, 7, 8 / 0, 1, 2" | "6, 7, 8 / 3, 4, 5 / 0, 1, 2")
         );
 
         assert_sort!([(0, &[1])], "0");

@@ -5,7 +5,6 @@ use crate::prelude::*;
 use crate::sexp::{self, matcher as m};
 use itertools::Itertools;
 use std::borrow::Cow;
-use std::convert::TryFrom;
 use std::fmt;
 
 #[derive(Debug)]

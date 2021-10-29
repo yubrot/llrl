@@ -5,7 +5,6 @@ use crate::source_loc::SourceLocation;
 use crate::syntax;
 use either::*;
 use std::borrow::Cow;
-use std::convert::TryInto;
 
 pub fn run(module: &mut Module, source: &Ss, external: &impl External) -> Result<()> {
     let mut ctx = ContextImpl { module, external };

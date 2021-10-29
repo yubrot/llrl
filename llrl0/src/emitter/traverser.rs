@@ -1,6 +1,5 @@
 use super::ir::*;
 use std::collections::HashSet;
-use std::iter::FromIterator;
 
 pub fn traverse<T: Traverser>(src: &impl Traverse, traverser: &mut T) -> Result<(), T::Error> {
     Traverse::traverse(src, traverser)
