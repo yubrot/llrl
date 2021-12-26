@@ -523,6 +523,9 @@ impl<T: RtExpand> RtSyntax<T> {
             .map(|index| llvm_constant!(*module, (isize {data[index]})).as_constant())
             .collect::<Vec<_>>();
 
+        // FIXME:
+        // This implementation is too technical. If performance is not a consideration,
+        // this implementation can be made unnecessary by building (Syntax Sexp) dynamically.
         unsafe { &*self.0 }.expand_on_buffer(&mut buf[..], module);
 
         let buf = LLVMConstantArray::get(llvm_type!(*module, isize), &buf);

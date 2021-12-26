@@ -220,6 +220,10 @@
            [raw-data (array/unsafe-from-ptr (reinterpret a) {(Ptr I64)} raw-len)] ; (*3)
            [buf (array/unsafe-alloc-uninitialized raw-len)])
 
+      ; FIXME:
+      ; This implementation is too technical. If performance is not a consideration,
+      ; this implementation can be made unnecessary by building (Syntax Sexp) dynamically.
+
       ; Fill with raw-data
       (for (let i) (iterator/range 0 raw-len 1)
         (set! buf[i] (llvm/const (conv m) (i64 ,(get raw-data[i])))))
