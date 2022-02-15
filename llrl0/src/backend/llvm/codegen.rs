@@ -139,7 +139,7 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
                         let ty = self.ctx.llvm_type(ty);
                         llvm_constant!(*self.ctx, (nullptr(ptr { ty }))).as_value()
                     }
-                    GenId => RtString::build_genid(&self.builder, self.module),
+                    GenId => EeString::build_genid(&self.builder, self.module),
                     SizeOf(ty) => {
                         let ty = self.ctx.llvm_type(ty);
                         let size = self.ctx.data_layout().type_alloc_size(ty);
@@ -166,7 +166,7 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
                     }
                     SyntaxBody(ty) => {
                         let ty = self.ctx.llvm_type(ty);
-                        RtSyntax::build_syntax_body(ty, x, &self.builder, self.module)
+                        EeSyntax::build_syntax_body(ty, x, &self.builder, self.module)
                     }
                     Panic => {
                         build_panic(x, &self.builder, self.module);
@@ -272,10 +272,10 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
                         };
                         self.builder.build_call(function, &[x])
                     }
-                    StringPtr => RtString::build_getptr(x, &self.builder),
-                    StringLength => RtString::build_getlen(x, &self.builder),
-                    ArrayPtr => RtArray::build_getptr(x, &self.builder),
-                    ArrayLength => RtArray::build_getlen(x, &self.builder),
+                    StringPtr => EeString::build_getptr(x, &self.builder),
+                    StringLength => EeString::build_getlen(x, &self.builder),
+                    ArrayPtr => EeArray::build_getptr(x, &self.builder),
+                    ArrayLength => EeArray::build_getlen(x, &self.builder),
                 })
             }
             Rt::Binary(binary) => {
@@ -336,13 +336,13 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
                         };
                         self.builder.build_call(function, &[x, y])
                     }
-                    StringConstruct => RtString::build_construct(x, y, &self.builder),
-                    StringEq => RtString::build_eq(x, y, &self.builder, self.module),
-                    StringCmp => RtString::build_cmp(x, y, &self.builder, self.module),
-                    StringConcat => RtString::build_concat(x, y, &self.builder, self.module),
-                    CharEq => RtChar::build_eq(x, y, &self.builder),
-                    ArrayConstruct => RtArray::build_construct(x, y, &self.builder),
-                    ArrayLoad => RtArray::build_load(x, y, &self.builder),
+                    StringConstruct => EeString::build_construct(x, y, &self.builder),
+                    StringEq => EeString::build_eq(x, y, &self.builder, self.module),
+                    StringCmp => EeString::build_cmp(x, y, &self.builder, self.module),
+                    StringConcat => EeString::build_concat(x, y, &self.builder, self.module),
+                    CharEq => EeChar::build_eq(x, y, &self.builder),
+                    ArrayConstruct => EeArray::build_construct(x, y, &self.builder),
+                    ArrayLoad => EeArray::build_load(x, y, &self.builder),
                 })
             }
             Rt::Ternary(ternary) => {
@@ -373,7 +373,7 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
                         self.llvm_constant(&Const::Unit).as_value()
                     }
                     ArrayStore => {
-                        RtArray::build_store(x, y, z, &self.builder);
+                        EeArray::build_store(x, y, z, &self.builder);
                         self.llvm_constant(&Const::Unit).as_value()
                     }
                 })
@@ -388,7 +388,7 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
                 let ty = self.ctx.llvm_type(&alloc.1);
                 let len = self.eval(&alloc.2)?;
                 let ptr = self.eval_array_alloc(alloc.0, ty, len);
-                Some(RtArray::build_construct(ptr, len, &self.builder))
+                Some(EeArray::build_construct(ptr, len, &self.builder))
             }
             Rt::ConstructEnv(con) => {
                 let elems = self.eval_all(&con.1)?;
@@ -419,7 +419,7 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
             }
             Rt::ConstructSyntax(con) => {
                 let x = self.eval(&con.1)?;
-                let x = RtSyntax::build_construct_syntax(con.0, x, &self.builder, self.module);
+                let x = EeSyntax::build_construct_syntax(con.0, x, &self.builder, self.module);
                 Some(x)
             }
             Rt::Seq(seq) => {
@@ -678,9 +678,9 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
                 value.into_inner(),
             )
             .as_constant(),
-            Const::String(s) => RtString::llvm_constant(s, self.module.module()),
-            Const::Char(c) => RtChar::llvm_constant(c, self.module.module()),
-            Const::SyntaxSexp(_, s) => RtSyntax::<RtSexp>::llvm_constant(s, self.module.module()),
+            Const::String(s) => EeString::llvm_constant(s, self.module.module()),
+            Const::Char(c) => EeChar::llvm_constant(c, self.module.module()),
+            Const::SyntaxSexp(_, s) => EeSyntax::<EeSexp>::llvm_constant(s, self.module.module()),
             Const::Unit => llvm_constant!(*self.ctx, (struct)).as_constant(),
         }
     }

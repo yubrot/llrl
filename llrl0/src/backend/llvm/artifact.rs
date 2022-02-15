@@ -4,6 +4,7 @@ use crate::emitter::ir::*;
 use derive_new::new;
 use llvm::prelude::*;
 use std::collections::HashMap;
+use std::mem::{align_of, size_of};
 use std::sync::Arc;
 
 #[derive(Debug)]
@@ -105,13 +106,13 @@ impl<'ctx> ContextArtifact<'ctx> {
             Ct::U(bw) => LLVMIntegerType::get(*bw as u32, self.context).as_type(),
             Ct::F32 => LLVMFPType::float(self.context).as_type(),
             Ct::F64 => LLVMFPType::double(self.context).as_type(),
-            Ct::String => RtString::llvm_type(self.context),
-            Ct::Char => RtChar::llvm_type(self.context),
-            Ct::Array(ty) => RtArray::llvm_type(self.llvm_type(ty)),
-            Ct::CapturedUse => RtCapturedUse::llvm_type(self.context),
+            Ct::String => EeString::llvm_type(self.context),
+            Ct::Char => EeChar::llvm_type(self.context),
+            Ct::Array(ty) => EeArray::llvm_type(self.llvm_type(ty)),
+            Ct::CapturedUse => EeCapturedUse::llvm_type(self.context),
             Ct::Unit => llvm_type!(*self, (struct)).as_type(),
             Ct::Env => llvm_type!(*self, (ptr i8)).as_type(),
-            Ct::Syntax(_) => RtSyntax::llvm_type(self.context),
+            Ct::Syntax(_) => EeSyntax::llvm_type(self.context),
             Ct::Hole => panic!("Found Ct::Hole at Codegen::get_type"),
         }
     }
@@ -155,13 +156,13 @@ impl<'ctx> ContextArtifact<'ctx> {
             }
             Ct::F32 => TypeSize::new(4, 4),
             Ct::F64 => TypeSize::new(8, 8),
-            Ct::String => RtString::size_align().into(),
-            Ct::Char => RtChar::size_align().into(),
-            Ct::Array(_) => RtArray::size_align().into(),
-            Ct::CapturedUse => RtCapturedUse::size_align().into(),
+            Ct::String => TypeSize::of::<EeString>(),
+            Ct::Char => TypeSize::of::<EeChar>(),
+            Ct::Array(_) => TypeSize::of::<EeArray<u8>>(),
+            Ct::CapturedUse => TypeSize::of::<EeCapturedUse>(),
             Ct::Unit => TypeSize::new(0, 0),
             Ct::Env => TypeSize::pointer(),
-            Ct::Syntax(_) => RtSyntax::size_align().into(),
+            Ct::Syntax(_) => TypeSize::of::<EeSyntax<u8>>(),
             Ct::Hole => panic!("Found Ct::Hole on TypeSizeCache::type_size"),
         }
     }
@@ -184,6 +185,10 @@ struct TypeSize {
 }
 
 impl TypeSize {
+    fn of<T>() -> Self {
+        Self::new(size_of::<T>(), align_of::<T>())
+    }
+
     fn pointer() -> Self {
         Self::new(std::mem::size_of::<usize>(), std::mem::align_of::<usize>())
     }
@@ -209,12 +214,6 @@ impl TypeSize {
         if align != 0 {
             size += (align - (size % align)) % align;
         }
-        Self::new(size, align)
-    }
-}
-
-impl From<(usize, usize)> for TypeSize {
-    fn from((size, align): (usize, usize)) -> Self {
         Self::new(size, align)
     }
 }

@@ -286,42 +286,42 @@ impl ExecutorValue for Env {
 }
 
 impl ExecutorValue for Syntax<Sexp> {
-    type Rt = RtSyntax<RtSexp>;
+    type Rt = EeSyntax<EeSexp>;
 
     fn into_rt(value: Value) -> Result<Self::Rt, String> {
         match value {
-            Value::SyntaxSexp(syntax_sexp) => Ok(Self::Rt::from_native(syntax_sexp)),
+            Value::SyntaxSexp(syntax_sexp) => Ok(Self::Rt::from_host(syntax_sexp)),
             v => Err(format!("Cannot treat {} as Syntax<Sexp>", v)),
         }
     }
 
     fn from_rt(rt: Self::Rt) -> Value {
-        Value::SyntaxSexp(rt.into_native())
+        Value::SyntaxSexp(rt.into_host())
     }
 }
 
 impl ExecutorValue for String {
-    type Rt = RtString;
+    type Rt = EeString;
 
     fn into_rt(value: Value) -> Result<Self::Rt, String> {
         match value {
-            Value::String(s) => Ok(Self::Rt::from_native(s)),
+            Value::String(s) => Ok(Self::Rt::from_host(s)),
             v => Err(format!("Cannot treat {} as String", v)),
         }
     }
 
     fn from_rt(rt: Self::Rt) -> Value {
-        Value::String(rt.into_native())
+        Value::String(rt.into_host())
     }
 }
 
 impl<T: ExecutorValue, E: ExecutorValue> ExecutorValue for Result<T, E> {
-    type Rt = RtResult<T::Rt, E::Rt>;
+    type Rt = EeResult<T::Rt, E::Rt>;
 
     fn into_rt(value: Value) -> Result<Self::Rt, String> {
         match value {
-            Value::Result(Ok(t)) => Ok(RtResult::ok(T::into_rt(*t)?)),
-            Value::Result(Err(e)) => Ok(RtResult::err(E::into_rt(*e)?)),
+            Value::Result(Ok(t)) => Ok(EeResult::ok(T::into_rt(*t)?)),
+            Value::Result(Err(e)) => Ok(EeResult::err(E::into_rt(*e)?)),
             v => Err(format!("Cannot treat {} as Result<_, _>", v)),
         }
     }

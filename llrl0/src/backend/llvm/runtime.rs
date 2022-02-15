@@ -1,22 +1,20 @@
 use crate::emitter::ir::{CapturedUse, Syntax, SyntaxBody, SyntaxMetadata};
-use derive_new::new;
 use llvm::prelude::*;
 use memoffset::offset_of;
-use std::mem::{align_of, size_of, ManuallyDrop};
+use once_cell::unsync::OnceCell;
+use std::mem::{align_of, size_of};
+use std::sync::Once;
 
-/// Interconversion with the equivalent value representation in the execution environment.
-pub trait RtValue: Sized {
-    type Native;
-
-    fn size_align() -> (usize, usize);
-
-    fn into_native(self) -> Self::Native;
-
-    fn from_native(native: Self::Native) -> Self;
+macro_rules! buf_offset {
+    ($parent:path, $field:tt) => {
+        offset_of!($parent, $field) / size_of::<usize>()
+    };
 }
 
+pub use crate::backend::ee::*;
+
 /// Types that can be represented as a constant on LLVM-IR.
-pub trait RtConstant: RtValue {
+pub trait RtConstant: EeValue {
     type Src: ?Sized;
 
     fn llvm_type<'ctx>(ctx: &'ctx LLVMContext) -> LLVMType<'ctx>;
@@ -37,17 +35,10 @@ pub trait RtExpand {
     );
 }
 
-macro_rules! buf_offset {
-    ($parent:path, $field:tt) => {
-        offset_of!($parent, $field) / size_of::<usize>()
-    };
+pub trait BuildContext<'ctx: 'm, 'm>: LLVMTypeBuilder<'ctx> {
+    fn module(&self) -> &'m LLVMModule<'ctx>;
+    fn library(&self) -> &RtLibrary<'ctx, 'm>;
 }
-
-mod library;
-mod sexp;
-
-pub use library::RtLibrary;
-pub use sexp::RtSexp;
 
 pub fn build_panic<'ctx: 'm, 'm>(
     msg: impl LLVMAnyValue<'ctx, 'm>,
@@ -83,30 +74,7 @@ pub fn build_heap_array_alloc<'ctx: 'm, 'm>(
     builder.build_bit_cast(ptr, LLVMPointerType::get(ty, 0))
 }
 
-pub trait BuildContext<'ctx: 'm, 'm>: LLVMTypeBuilder<'ctx> {
-    fn module(&self) -> &'m LLVMModule<'ctx>;
-    fn library(&self) -> &RtLibrary<'ctx, 'm>;
-}
-
-#[derive(Debug, Clone, Copy)]
-#[repr(C)]
-pub struct RtString {
-    ptr: *const u8,
-    len: u64,
-}
-
-impl RtString {
-    pub fn as_str(&self) -> &str {
-        unsafe {
-            if self.len == 0 {
-                &""
-            } else {
-                let slice = std::slice::from_raw_parts(self.ptr, self.len as usize);
-                std::str::from_utf8_unchecked(slice)
-            }
-        }
-    }
-
+impl EeString {
     pub fn to_llvm_constant<'ctx: 'm, 'm>(
         &self,
         module: &'m LLVMModule<'ctx>,
@@ -198,37 +166,7 @@ impl RtString {
     }
 }
 
-impl RtValue for RtString {
-    type Native = String;
-
-    fn size_align() -> (usize, usize) {
-        (size_of::<Self>(), align_of::<Self>())
-    }
-
-    fn into_native(self) -> Self::Native {
-        self.as_str().to_string()
-    }
-
-    fn from_native(native: Self::Native) -> Self {
-        unsafe {
-            if native.is_empty() {
-                RtString {
-                    ptr: std::ptr::null(),
-                    len: 0,
-                }
-            } else {
-                let ptr = llrt::GC_malloc(native.len()) as *mut u8;
-                std::ptr::copy_nonoverlapping(native.as_ptr(), ptr, native.len());
-                RtString {
-                    ptr: ptr as *const u8,
-                    len: native.len() as u64,
-                }
-            }
-        }
-    }
-}
-
-impl RtConstant for RtString {
+impl RtConstant for EeString {
     type Src = str;
 
     fn llvm_type<'ctx>(ctx: &'ctx LLVMContext) -> LLVMType<'ctx> {
@@ -244,7 +182,7 @@ impl RtConstant for RtString {
     }
 }
 
-impl RtExpand for RtString {
+impl RtExpand for EeString {
     fn expand_on_buffer<'ctx: 'm, 'm>(
         &self,
         buf: &mut [LLVMConstant<'ctx, 'm>],
@@ -255,11 +193,7 @@ impl RtExpand for RtString {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-#[repr(transparent)]
-pub struct RtChar(char);
-
-impl RtChar {
+impl EeChar {
     pub fn build_eq<'ctx: 'm, 'm>(
         a: impl LLVMAnyValue<'ctx, 'm>,
         b: impl LLVMAnyValue<'ctx, 'm>,
@@ -269,23 +203,7 @@ impl RtChar {
     }
 }
 
-impl RtValue for RtChar {
-    type Native = char;
-
-    fn size_align() -> (usize, usize) {
-        (size_of::<Self>(), align_of::<Self>())
-    }
-
-    fn into_native(self) -> Self::Native {
-        self.0
-    }
-
-    fn from_native(native: Self::Native) -> Self {
-        Self(native)
-    }
-}
-
-impl RtConstant for RtChar {
+impl RtConstant for EeChar {
     type Src = char;
 
     fn llvm_type<'ctx>(ctx: &'ctx LLVMContext) -> LLVMType<'ctx> {
@@ -300,18 +218,7 @@ impl RtConstant for RtChar {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-#[repr(C)]
-pub struct RtArray {
-    ptr: *const u8,
-    len: u64,
-}
-
-impl RtArray {
-    pub fn size_align() -> (usize, usize) {
-        (size_of::<Self>(), align_of::<Self>())
-    }
-
+impl EeArray<()> {
     pub fn llvm_type<'ctx>(elem_ty: impl LLVMAnyType<'ctx>) -> LLVMType<'ctx> {
         let ctx = elem_ty.context();
         llvm_type!(ctx, (struct (ptr {elem_ty}) u64)).as_type()
@@ -365,31 +272,7 @@ impl RtArray {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-#[repr(C)]
-pub struct RtCapturedUse {
-    tag: u64,
-    node_id: u64,
-}
-
-impl RtValue for RtCapturedUse {
-    type Native = CapturedUse;
-
-    fn size_align() -> (usize, usize) {
-        (size_of::<Self>(), align_of::<Self>())
-    }
-
-    fn into_native(self) -> Self::Native {
-        // NOTE: This compatibility can be broken by Rust changes.
-        unsafe { std::mem::transmute(self) }
-    }
-
-    fn from_native(native: Self::Native) -> Self {
-        unsafe { std::mem::transmute(native) }
-    }
-}
-
-impl RtConstant for RtCapturedUse {
+impl RtConstant for EeCapturedUse {
     type Src = CapturedUse;
 
     fn llvm_type<'ctx>(ctx: &'ctx LLVMContext) -> LLVMType<'ctx> {
@@ -400,81 +283,12 @@ impl RtConstant for RtCapturedUse {
         src: &CapturedUse,
         module: &'m LLVMModule<'ctx>,
     ) -> LLVMConstant<'ctx, 'm> {
-        let data = Self::from_native(*src);
+        let data = Self::from_host(*src);
         llvm_constant!(*module, (struct (u64 {data.tag}) (u64 {data.node_id}))).as_constant()
     }
 }
 
-#[repr(C)]
-pub struct RtResult<T, E> {
-    tag: u8,
-    body: RtResultBody<T, E>,
-}
-
-impl<T, E> RtResult<T, E> {
-    pub fn err(err: E) -> Self {
-        let err = ManuallyDrop::new(err);
-        Self {
-            tag: 0,
-            body: RtResultBody { err },
-        }
-    }
-
-    pub fn ok(ok: T) -> Self {
-        let ok = ManuallyDrop::new(ok);
-        Self {
-            tag: 1,
-            body: RtResultBody { ok },
-        }
-    }
-
-    pub fn into_inner(self) -> Result<T, E> {
-        match self.tag {
-            0 => Err(ManuallyDrop::into_inner(unsafe { self.body.err })),
-            1 => Ok(ManuallyDrop::into_inner(unsafe { self.body.ok })),
-            tag => panic!("Wrong tag: {}", tag),
-        }
-    }
-}
-
-impl<T: RtValue, E: RtValue> RtValue for RtResult<T, E> {
-    type Native = Result<T::Native, E::Native>;
-
-    fn size_align() -> (usize, usize) {
-        (size_of::<Self>(), align_of::<Self>())
-    }
-
-    fn into_native(self) -> Self::Native {
-        match self.into_inner() {
-            Err(err) => Err(err.into_native()),
-            Ok(ok) => Ok(ok.into_native()),
-        }
-    }
-
-    fn from_native(native: Self::Native) -> Self {
-        match native {
-            Err(e) => RtResult::err(E::from_native(e)),
-            Ok(t) => RtResult::ok(T::from_native(t)),
-        }
-    }
-}
-
-#[derive(Clone, Copy)]
-#[repr(C)]
-union RtResultBody<T, E> {
-    err: ManuallyDrop<E>, // 0
-    ok: ManuallyDrop<T>,  // 1
-}
-
-#[derive(Debug, Clone, Copy)]
-#[repr(transparent)]
-pub struct RtSyntax<T>(*const RtSyntaxBuffer<T>);
-
-impl RtSyntax<()> {
-    pub fn size_align() -> (usize, usize) {
-        (size_of::<*const u8>(), align_of::<*const u8>())
-    }
-
+impl EeSyntax<()> {
     pub fn llvm_type<'ctx>(ctx: &'ctx LLVMContext) -> LLVMType<'ctx> {
         llvm_type!(ctx, (ptr u8)).as_type()
     }
@@ -486,9 +300,9 @@ impl RtSyntax<()> {
         ctx: &impl BuildContext<'ctx, 'm>,
     ) -> LLVMValue<'ctx, 'm> {
         let body = body.as_value();
-        let ty = llvm_type!(*ctx, (struct {RtSyntaxMetadata::llvm_type(ctx.context())} {body.get_type()}));
+        let ty = llvm_type!(*ctx, (struct {EeSyntaxMetadata::llvm_type(ctx.context())} {body.get_type()}));
         let value = llvm_constant!(*ctx, (undef { ty }));
-        let meta = RtSyntaxMetadata::llvm_constant(&metadata, ctx.module());
+        let meta = EeSyntaxMetadata::llvm_constant(&metadata, ctx.module());
         let value = builder.build_insert_value(value, meta, 0);
         let value = builder.build_insert_value(value, body, 1);
         let ptr = build_heap_alloc(ty, builder, ctx);
@@ -502,21 +316,21 @@ impl RtSyntax<()> {
         builder: &LLVMBuilder<'ctx, 'm>,
         ctx: &impl BuildContext<'ctx, 'm>,
     ) -> LLVMValue<'ctx, 'm> {
-        let ty = llvm_type!(*ctx, (struct {RtSyntaxMetadata::llvm_type(ctx.context())} {body_ty}));
+        let ty = llvm_type!(*ctx, (struct {EeSyntaxMetadata::llvm_type(ctx.context())} {body_ty}));
         let value = builder.build_bit_cast(value, llvm_type!(*ctx, (ptr { ty })));
         let value = builder.build_struct_gep(value, 1);
         builder.build_load(value)
     }
 }
 
-impl<T: RtExpand> RtSyntax<T> {
+impl<T: RtExpand> EeSyntax<T> {
     pub fn to_llvm_constant<'ctx: 'm, 'm>(
         &self,
         module: &'m LLVMModule<'ctx>,
     ) -> LLVMConstant<'ctx, 'm> {
         let psize = size_of::<usize>();
-        assert_eq!(psize, align_of::<RtSyntaxBuffer<T>>());
-        let len = size_of::<RtSyntaxBuffer<T>>() / psize;
+        assert_eq!(psize, align_of::<EeSyntaxBuffer<T>>());
+        let len = size_of::<EeSyntaxBuffer<T>>() / psize;
         let data = unsafe { std::slice::from_raw_parts(self.0 as *const usize, len) };
 
         let mut buf = (0..len)
@@ -537,43 +351,15 @@ impl<T: RtExpand> RtSyntax<T> {
     }
 }
 
-impl<T: RtValue + RtExpand> RtValue for RtSyntax<T>
+impl<T: EeValue + RtExpand> RtConstant for EeSyntax<T>
 where
-    T::Native: SyntaxBody,
+    T::HostValue: SyntaxBody,
+    Syntax<T::HostValue>: Clone,
 {
-    type Native = Syntax<T::Native>;
-
-    fn size_align() -> (usize, usize) {
-        RtSyntax::size_align()
-    }
-
-    fn into_native(self) -> Self::Native {
-        let buffer = unsafe { std::ptr::read(self.0) };
-        let meta = buffer.metadata.into_native();
-        let body = ManuallyDrop::into_inner(buffer.body).into_native();
-        body.pack(meta)
-    }
-
-    fn from_native(native: Self::Native) -> Self {
-        let (meta, body) = T::Native::unpack(native);
-        let meta = RtSyntaxMetadata::from_native(meta);
-        let body = T::from_native(body);
-        let ptr =
-            unsafe { llrt::GC_malloc(size_of::<RtSyntaxBuffer<T>>()) } as *mut RtSyntaxBuffer<T>;
-        unsafe { std::ptr::write(ptr, RtSyntaxBuffer::new(meta, ManuallyDrop::new(body))) };
-        Self(ptr as *const _)
-    }
-}
-
-impl<T: RtValue + RtExpand> RtConstant for RtSyntax<T>
-where
-    T::Native: SyntaxBody,
-    Syntax<T::Native>: Clone,
-{
-    type Src = Syntax<T::Native>;
+    type Src = Syntax<T::HostValue>;
 
     fn llvm_type<'ctx>(ctx: &'ctx LLVMContext) -> LLVMType<'ctx> {
-        RtSyntax::llvm_type(ctx)
+        EeSyntax::llvm_type(ctx)
     }
 
     fn llvm_constant<'ctx: 'm, 'm>(
@@ -581,11 +367,11 @@ where
         module: &'m LLVMModule<'ctx>,
     ) -> LLVMConstant<'ctx, 'm> {
         // TODO: Reduce allocation (We don't need to allocate memories for temporary RtSyntax)
-        Self::from_native(src.clone()).to_llvm_constant(module)
+        Self::from_host(src.clone()).to_llvm_constant(module)
     }
 }
 
-impl<T: RtExpand> RtExpand for RtSyntax<T> {
+impl<T: RtExpand> RtExpand for EeSyntax<T> {
     fn expand_on_buffer<'ctx: 'm, 'm>(
         &self,
         buf: &mut [LLVMConstant<'ctx, 'm>],
@@ -595,14 +381,7 @@ impl<T: RtExpand> RtExpand for RtSyntax<T> {
     }
 }
 
-#[derive(Debug, Clone, Copy, new)]
-#[repr(C)]
-struct RtSyntaxBuffer<T> {
-    metadata: RtSyntaxMetadata,
-    body: ManuallyDrop<T>,
-}
-
-impl<T: RtExpand> RtExpand for RtSyntaxBuffer<T> {
+impl<T: RtExpand> RtExpand for EeSyntaxBuffer<T> {
     fn expand_on_buffer<'ctx: 'm, 'm>(
         &self,
         buf: &mut [LLVMConstant<'ctx, 'm>],
@@ -613,30 +392,7 @@ impl<T: RtExpand> RtExpand for RtSyntaxBuffer<T> {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-#[repr(C)]
-pub struct RtSyntaxMetadata {
-    ip: u32,
-    ir: u32,
-}
-
-impl RtValue for RtSyntaxMetadata {
-    type Native = SyntaxMetadata;
-
-    fn size_align() -> (usize, usize) {
-        (size_of::<Self>(), align_of::<Self>())
-    }
-
-    fn into_native(self) -> Self::Native {
-        unsafe { std::mem::transmute(self) }
-    }
-
-    fn from_native(native: Self::Native) -> Self {
-        unsafe { std::mem::transmute(native) }
-    }
-}
-
-impl RtConstant for RtSyntaxMetadata {
+impl RtConstant for EeSyntaxMetadata {
     type Src = SyntaxMetadata;
 
     fn llvm_type<'ctx>(ctx: &'ctx LLVMContext) -> LLVMType<'ctx> {
@@ -647,7 +403,173 @@ impl RtConstant for RtSyntaxMetadata {
         src: &SyntaxMetadata,
         module: &'m LLVMModule<'ctx>,
     ) -> LLVMConstant<'ctx, 'm> {
-        let Self { ip, ir } = Self::from_native(*src);
+        let Self { ip, ir } = Self::from_host(*src);
         llvm_constant!(*module, [(u32 ip) (u32 ir)]).as_constant()
+    }
+}
+
+impl RtExpand for EeSexp {
+    fn expand_on_buffer<'ctx: 'm, 'm>(
+        &self,
+        buf: &mut [LLVMConstant<'ctx, 'm>],
+        module: &'m LLVMModule<'ctx>,
+    ) {
+        let o = buf_offset!(Self, body);
+        match self.into_view() {
+            EeSexpView::Symbol(s) => s.expand_on_buffer(&mut buf[o..], module),
+            EeSexpView::String(s) => s.expand_on_buffer(&mut buf[o..], module),
+            EeSexpView::Cons(c) => c.expand_on_buffer(&mut buf[o..], module),
+            _ => {}
+        }
+    }
+}
+
+impl RtExpand for EeSexpSymbol {
+    fn expand_on_buffer<'ctx: 'm, 'm>(
+        &self,
+        buf: &mut [LLVMConstant<'ctx, 'm>],
+        module: &'m LLVMModule<'ctx>,
+    ) {
+        self.value.expand_on_buffer(buf, module);
+    }
+}
+
+impl RtExpand for EeSexpString {
+    fn expand_on_buffer<'ctx: 'm, 'm>(
+        &self,
+        buf: &mut [LLVMConstant<'ctx, 'm>],
+        module: &'m LLVMModule<'ctx>,
+    ) {
+        self.value.expand_on_buffer(buf, module);
+    }
+}
+
+impl RtExpand for EeSexpCons {
+    fn expand_on_buffer<'ctx: 'm, 'm>(
+        &self,
+        buf: &mut [LLVMConstant<'ctx, 'm>],
+        module: &'m LLVMModule<'ctx>,
+    ) {
+        self.car.expand_on_buffer(buf, module);
+        self.cdr
+            .expand_on_buffer(&mut buf[buf_offset!(Self, cdr)..], module);
+    }
+}
+
+#[derive(Debug)]
+pub struct RtLibrary<'ctx: 'm, 'm> {
+    module: &'m LLVMModule<'ctx>,
+    gc_malloc: OnceCell<LLVMFunction<'ctx, 'm>>,
+    panic: OnceCell<LLVMFunction<'ctx, 'm>>,
+    string_genid: OnceCell<LLVMFunction<'ctx, 'm>>,
+    string_eq: OnceCell<LLVMFunction<'ctx, 'm>>,
+    string_cmp: OnceCell<LLVMFunction<'ctx, 'm>>,
+    string_concat: OnceCell<LLVMFunction<'ctx, 'm>>,
+}
+
+impl<'ctx: 'm, 'm> RtLibrary<'ctx, 'm> {
+    pub fn new(module: &'m LLVMModule<'ctx>) -> Self {
+        static INIT_LIBRARY: Once = Once::new();
+
+        INIT_LIBRARY.call_once(|| unsafe {
+            use llrt::*;
+            llvm::add_symbol("llrt_init", llrt_init as *mut ());
+            llvm::add_symbol("llrt_args", llrt_args as *mut ());
+            llvm::add_symbol("llrt_panic", llrt_panic as *mut ());
+            llvm::add_symbol("llrt_exit", llrt_exit as *mut ());
+            llvm::add_symbol("llrt_spawn_process", llrt_spawn_process as *mut ());
+            llvm::add_symbol("llrt_execute_process", llrt_execute_process as *mut ());
+            llvm::add_symbol("llrt_wait", llrt_wait as *mut ());
+            llvm::add_symbol("llrt_time", llrt_time as *mut ());
+            llvm::add_symbol("llrt_getcwd", llrt_getcwd as *mut ());
+            llvm::add_symbol("llrt_string_genid", llrt_string_genid as *mut ());
+            llvm::add_symbol("llrt_string_eq", llrt_string_eq as *mut ());
+            llvm::add_symbol("llrt_string_cmp", llrt_string_cmp as *mut ());
+            llvm::add_symbol("llrt_string_concat", llrt_string_concat as *mut ());
+            llvm::add_symbol("llrt_f32_to_string", llrt_f32_to_string as *mut ());
+            llvm::add_symbol("llrt_f64_to_string", llrt_f64_to_string as *mut ());
+            llvm::add_symbol("llrt_i64_to_string", llrt_i64_to_string as *mut ());
+            llvm::add_symbol("llrt_u64_to_string", llrt_u64_to_string as *mut ());
+            llvm::add_symbol("llrt_string_to_i64", llrt_string_to_i64 as *mut ());
+            llvm::add_symbol("llrt_string_to_u64", llrt_string_to_u64 as *mut ());
+            llvm::add_symbol("llrt_string_to_f32", llrt_string_to_f32 as *mut ());
+            llvm::add_symbol("llrt_string_to_f64", llrt_string_to_f64 as *mut ());
+            llvm::add_symbol("llrt_readdir", llrt_readdir as *mut ());
+            llvm::add_symbol("llrt_stdin", llrt_stdin as *mut ());
+            llvm::add_symbol("llrt_stdout", llrt_stdout as *mut ());
+            llvm::add_symbol("llrt_stderr", llrt_stderr as *mut ());
+            llvm::add_symbol("llrt_current_errno", llrt_current_errno as *mut ());
+            llvm::add_symbol("llrt_xxh_seed", llrt_xxh_seed as *mut ());
+        });
+
+        Self {
+            module,
+            gc_malloc: OnceCell::new(),
+            panic: OnceCell::new(),
+            string_genid: OnceCell::new(),
+            string_eq: OnceCell::new(),
+            string_cmp: OnceCell::new(),
+            string_concat: OnceCell::new(),
+        }
+    }
+
+    pub fn gc_malloc(&self) -> LLVMFunction<'ctx, 'm> {
+        *self.gc_malloc.get_or_init(|| {
+            // TODO: The return value should be noalias
+            self.module
+                .add_function("GC_malloc", llvm_type!(*self, (function(isize) (ptr u8))))
+        })
+    }
+
+    pub fn llrt_panic(&self) -> LLVMFunction<'ctx, 'm> {
+        *self.panic.get_or_init(|| {
+            // TODO: put noreturn attribute
+            self.module.add_function(
+                "llrt_panic",
+                llvm_type!(*self, (function((struct (ptr u8) u64)) void)),
+            )
+        })
+    }
+
+    pub fn llrt_string_genid(&self) -> LLVMFunction<'ctx, 'm> {
+        *self.string_genid.get_or_init(|| {
+            self.module.add_function(
+                "llrt_string_genid",
+                llvm_type!(*self, (function() (struct (ptr u8) u64))),
+            )
+        })
+    }
+
+    pub fn llrt_string_eq(&self) -> LLVMFunction<'ctx, 'm> {
+        *self.string_eq.get_or_init(|| {
+            self.module.add_function(
+                "llrt_string_eq",
+                llvm_type!(*self, (function((struct (ptr u8) u64) (struct (ptr u8) u64)) i32)),
+            )
+        })
+    }
+
+    pub fn llrt_string_cmp(&self) -> LLVMFunction<'ctx, 'm> {
+        *self.string_cmp.get_or_init(|| {
+            self.module.add_function(
+                "llrt_string_cmp",
+                llvm_type!(*self, (function((struct (ptr u8) u64) (struct (ptr u8) u64)) i32)),
+            )
+        })
+    }
+
+    pub fn llrt_string_concat(&self) -> LLVMFunction<'ctx, 'm> {
+        *self.string_concat.get_or_init(|| {
+            self.module.add_function(
+                "llrt_string_concat",
+                llvm_type!(*self, (function((struct (ptr u8) u64) (struct (ptr u8) u64)) (struct (ptr u8) u64))),
+            )
+        })
+    }
+}
+
+impl<'ctx: 'm, 'm> LLVMTypeBuilder<'ctx> for RtLibrary<'ctx, 'm> {
+    fn context(&self) -> &'ctx LLVMContext {
+        self.module.context()
     }
 }
