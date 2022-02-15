@@ -1,5 +1,5 @@
 use super::codegen;
-use super::runtime::*;
+use super::runtime;
 use crate::emitter::ir::*;
 use derive_new::new;
 use llvm::prelude::*;
@@ -106,13 +106,13 @@ impl<'ctx> ContextArtifact<'ctx> {
             Ct::U(bw) => LLVMIntegerType::get(*bw as u32, self.context).as_type(),
             Ct::F32 => LLVMFPType::float(self.context).as_type(),
             Ct::F64 => LLVMFPType::double(self.context).as_type(),
-            Ct::String => EeString::llvm_type(self.context),
-            Ct::Char => EeChar::llvm_type(self.context),
-            Ct::Array(ty) => EeArray::llvm_type(self.llvm_type(ty)),
-            Ct::CapturedUse => EeCapturedUse::llvm_type(self.context),
+            Ct::String => runtime::string_type(self.context),
+            Ct::Char => runtime::char_type(self.context),
+            Ct::Array(ty) => runtime::array_type(self.llvm_type(ty)),
+            Ct::CapturedUse => runtime::captured_use_type(self.context),
             Ct::Unit => llvm_type!(*self, (struct)).as_type(),
             Ct::Env => llvm_type!(*self, (ptr i8)).as_type(),
-            Ct::Syntax(_) => EeSyntax::llvm_type(self.context),
+            Ct::Syntax(_) => runtime::syntax_type(self.context),
             Ct::Hole => panic!("Found Ct::Hole at Codegen::get_type"),
         }
     }
@@ -156,13 +156,13 @@ impl<'ctx> ContextArtifact<'ctx> {
             }
             Ct::F32 => TypeSize::new(4, 4),
             Ct::F64 => TypeSize::new(8, 8),
-            Ct::String => TypeSize::of::<EeString>(),
-            Ct::Char => TypeSize::of::<EeChar>(),
-            Ct::Array(_) => TypeSize::of::<EeArray<u8>>(),
-            Ct::CapturedUse => TypeSize::of::<EeCapturedUse>(),
+            Ct::String => TypeSize::of::<runtime::EeString>(),
+            Ct::Char => TypeSize::of::<runtime::EeChar>(),
+            Ct::Array(_) => TypeSize::of::<runtime::EeArray<u8>>(),
+            Ct::CapturedUse => TypeSize::of::<runtime::EeCapturedUse>(),
             Ct::Unit => TypeSize::new(0, 0),
             Ct::Env => TypeSize::pointer(),
-            Ct::Syntax(_) => TypeSize::of::<EeSyntax<u8>>(),
+            Ct::Syntax(_) => TypeSize::of::<runtime::EeSyntax<u8>>(),
             Ct::Hole => panic!("Found Ct::Hole on TypeSizeCache::type_size"),
         }
     }
@@ -330,7 +330,7 @@ macro_rules! get_intrinsic_function {
 #[derive(Debug)]
 pub struct ModuleArtifact<'ctx: 'm, 'm> {
     module: &'m LLVMModule<'ctx>,
-    library: RtLibrary<'ctx, 'm>,
+    runtime_library: runtime::Library<'ctx, 'm>,
     functions: HashMap<CtId, FunctionArtifact<'ctx, 'm>>,
     main_function: Option<FunctionArtifact<'ctx, 'm>>,
     c_functions: HashMap<String, CFunctionArtifact<'ctx, 'm>>,
@@ -341,7 +341,7 @@ impl<'ctx: 'm, 'm> ModuleArtifact<'ctx, 'm> {
     pub fn new(module: &'m LLVMModule<'ctx>) -> Self {
         Self {
             module,
-            library: RtLibrary::new(module),
+            runtime_library: runtime::Library::new(module),
             functions: HashMap::new(),
             main_function: None,
             c_functions: HashMap::new(),
@@ -353,8 +353,8 @@ impl<'ctx: 'm, 'm> ModuleArtifact<'ctx, 'm> {
         self.module
     }
 
-    pub fn library(&self) -> &RtLibrary<'ctx, 'm> {
-        &self.library
+    pub fn runtime_library(&self) -> &runtime::Library<'ctx, 'm> {
+        &self.runtime_library
     }
 
     pub fn function(&self, id: CtId) -> Option<&FunctionArtifact<'ctx, 'm>> {
@@ -499,13 +499,13 @@ impl<'ctx: 'm, 'm> LLVMTypeBuilder<'ctx> for ModuleArtifact<'ctx, 'm> {
     }
 }
 
-impl<'ctx: 'm, 'm> BuildContext<'ctx, 'm> for ModuleArtifact<'ctx, 'm> {
+impl<'ctx: 'm, 'm> runtime::BuildContext<'ctx, 'm> for ModuleArtifact<'ctx, 'm> {
     fn module(&self) -> &'m LLVMModule<'ctx> {
         self.module()
     }
 
-    fn library(&self) -> &RtLibrary<'ctx, 'm> {
-        self.library()
+    fn library(&self) -> &runtime::Library<'ctx, 'm> {
+        self.runtime_library()
     }
 }
 

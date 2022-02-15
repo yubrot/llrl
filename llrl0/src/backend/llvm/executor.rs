@@ -184,15 +184,15 @@ macro_rules! impl_executor_fun_args {
     ($l:literal, $( $name:ident: $tp:ident, )*) => {
         impl<Ret: ExecutorValue, $( $tp: ExecutorValue ),*> ExecutorFunArgs<Ret> for ($( $tp, )*) {
             unsafe fn call(f: *const (), mut args: Vec<Value>) -> Result<Value, String> {
-                let f = std::mem::transmute::<_, extern "C" fn($( $tp::Rt, )*) -> Ret::Rt>(f);
+                let f = std::mem::transmute::<_, extern "C" fn($( $tp::EeValue, )*) -> Ret::EeValue>(f);
 
                 if args.len() != $l {
                     Err(format!("Expected {} arguments but got {} arguments", $l, args.len()))?;
                 }
                 args.reverse();
-                $( let $name = $tp::into_rt(args.pop().unwrap())?; )*
+                $( let $name = $tp::unbox_value(args.pop().unwrap())?; )*
                 let ret = f($( $name, )*);
-                Ok(Ret::from_rt(ret))
+                Ok(Ret::box_value(ret))
             }
         }
     };
@@ -206,39 +206,39 @@ impl_executor_fun_args!(4, a: A, b: B, c: C, d: D,);
 impl_executor_fun_args!(5, a: A, b: B, c: C, d: D, e: E,);
 
 trait ExecutorValue {
-    type Rt;
+    type EeValue;
 
-    fn into_rt(value: Value) -> Result<Self::Rt, String>;
+    fn unbox_value(value: Value) -> Result<Self::EeValue, String>;
 
-    fn from_rt(rt: Self::Rt) -> Value;
+    fn box_value(rt: Self::EeValue) -> Value;
 }
 
 impl ExecutorValue for bool {
-    type Rt = bool;
+    type EeValue = bool;
 
-    fn into_rt(value: Value) -> Result<Self::Rt, String> {
+    fn unbox_value(value: Value) -> Result<Self::EeValue, String> {
         match value {
             Value::I(n) => Ok(if n == 0 { false } else { true }),
             v => Err(format!("Cannot treat {} as bool", v)),
         }
     }
 
-    fn from_rt(rt: Self::Rt) -> Value {
+    fn box_value(rt: Self::EeValue) -> Value {
         Value::I(if rt { 1 } else { 0 })
     }
 }
 
 impl ExecutorValue for i32 {
-    type Rt = i32;
+    type EeValue = i32;
 
-    fn into_rt(value: Value) -> Result<Self::Rt, String> {
+    fn unbox_value(value: Value) -> Result<Self::EeValue, String> {
         match value {
             Value::I(n) => Ok(n as i32),
             v => Err(format!("Cannot treat {} as i32", v)),
         }
     }
 
-    fn from_rt(rt: Self::Rt) -> Value {
+    fn box_value(rt: Self::EeValue) -> Value {
         Value::I(rt as i64)
     }
 }
@@ -249,16 +249,16 @@ struct Argv;
 const EMPTY_ARGV: &[*const u8] = &[std::ptr::null()];
 
 impl ExecutorValue for Argv {
-    type Rt = *const *const u8;
+    type EeValue = *const *const u8;
 
-    fn into_rt(value: Value) -> Result<Self::Rt, String> {
+    fn unbox_value(value: Value) -> Result<Self::EeValue, String> {
         match value {
             Value::EmptyArgv => Ok(EMPTY_ARGV.as_ptr()),
             v => Err(format!("Cannot treat {} as argv", v)),
         }
     }
 
-    fn from_rt(_: Self::Rt) -> Value {
+    fn box_value(_: Self::EeValue) -> Value {
         Value::Unknown
     }
 }
@@ -267,16 +267,16 @@ impl ExecutorValue for Argv {
 struct Env;
 
 impl ExecutorValue for Env {
-    type Rt = *const u8;
+    type EeValue = *const u8;
 
-    fn into_rt(value: Value) -> Result<Self::Rt, String> {
+    fn unbox_value(value: Value) -> Result<Self::EeValue, String> {
         match value {
             Value::Null => Ok(std::ptr::null_mut()),
             v => Err(format!("Cannot treat {} as env", v)),
         }
     }
 
-    fn from_rt(rt: Self::Rt) -> Value {
+    fn box_value(rt: Self::EeValue) -> Value {
         if rt.is_null() {
             Value::Null
         } else {
@@ -286,50 +286,50 @@ impl ExecutorValue for Env {
 }
 
 impl ExecutorValue for Syntax<Sexp> {
-    type Rt = EeSyntax<EeSexp>;
+    type EeValue = EeSyntax<EeSexp>;
 
-    fn into_rt(value: Value) -> Result<Self::Rt, String> {
+    fn unbox_value(value: Value) -> Result<Self::EeValue, String> {
         match value {
-            Value::SyntaxSexp(syntax_sexp) => Ok(Self::Rt::from_host(syntax_sexp)),
+            Value::SyntaxSexp(syntax_sexp) => Ok(Self::EeValue::from_host(syntax_sexp)),
             v => Err(format!("Cannot treat {} as Syntax<Sexp>", v)),
         }
     }
 
-    fn from_rt(rt: Self::Rt) -> Value {
+    fn box_value(rt: Self::EeValue) -> Value {
         Value::SyntaxSexp(rt.into_host())
     }
 }
 
 impl ExecutorValue for String {
-    type Rt = EeString;
+    type EeValue = EeString;
 
-    fn into_rt(value: Value) -> Result<Self::Rt, String> {
+    fn unbox_value(value: Value) -> Result<Self::EeValue, String> {
         match value {
-            Value::String(s) => Ok(Self::Rt::from_host(s)),
+            Value::String(s) => Ok(Self::EeValue::from_host(s)),
             v => Err(format!("Cannot treat {} as String", v)),
         }
     }
 
-    fn from_rt(rt: Self::Rt) -> Value {
+    fn box_value(rt: Self::EeValue) -> Value {
         Value::String(rt.into_host())
     }
 }
 
 impl<T: ExecutorValue, E: ExecutorValue> ExecutorValue for Result<T, E> {
-    type Rt = EeResult<T::Rt, E::Rt>;
+    type EeValue = EeResult<T::EeValue, E::EeValue>;
 
-    fn into_rt(value: Value) -> Result<Self::Rt, String> {
+    fn unbox_value(value: Value) -> Result<Self::EeValue, String> {
         match value {
-            Value::Result(Ok(t)) => Ok(EeResult::ok(T::into_rt(*t)?)),
-            Value::Result(Err(e)) => Ok(EeResult::err(E::into_rt(*e)?)),
+            Value::Result(Ok(t)) => Ok(EeResult::ok(T::unbox_value(*t)?)),
+            Value::Result(Err(e)) => Ok(EeResult::err(E::unbox_value(*e)?)),
             v => Err(format!("Cannot treat {} as Result<_, _>", v)),
         }
     }
 
-    fn from_rt(rt: Self::Rt) -> Value {
+    fn box_value(rt: Self::EeValue) -> Value {
         match rt.into_inner() {
-            Ok(t) => Value::Result(Ok(Box::new(T::from_rt(t)))),
-            Err(e) => Value::Result(Err(Box::new(E::from_rt(e)))),
+            Ok(t) => Value::Result(Ok(Box::new(T::box_value(t)))),
+            Err(e) => Value::Result(Err(Box::new(E::box_value(e)))),
         }
     }
 }

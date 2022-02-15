@@ -4,8 +4,8 @@ use crate::emitter::ir::Sexp;
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct EeSexp {
-    pub tag: u64,
-    pub body: EeSexpBody,
+    tag: u64,
+    body: EeSexpBody,
 }
 
 impl EeSexp {
@@ -81,7 +81,7 @@ impl EeSexp {
         }
     }
 
-    pub fn into_view(self) -> EeSexpView {
+    fn into_view(self) -> EeSexpView {
         match self.tag {
             0 => EeSexpView::Integer(unsafe { self.body.integer }),
             1 => EeSexpView::FPNumber(unsafe { self.body.fpnumber }),
@@ -132,7 +132,41 @@ impl EeValue for EeSexp {
     }
 }
 
-pub enum EeSexpView {
+impl EeData for EeSexp {
+    fn direct_data(&self) -> &[u8] {
+        sized_direct_data(self)
+    }
+
+    fn has_indirect_data(&self) -> bool {
+        matches!(
+            self.into_view(),
+            EeSexpView::Symbol(_) | EeSexpView::String(_) | EeSexpView::Cons(_)
+        )
+    }
+
+    fn traverse_indirect_data_(&self, mut handler: EeIndirectDataHandler) {
+        let mut handler = handler.offset(offset_of!(Self, body));
+        match self.into_view() {
+            EeSexpView::Symbol(s) => {
+                s.value
+                    .traverse_indirect_data_(handler.offset(offset_of!(EeSexpSymbol, value)));
+            }
+            EeSexpView::String(s) => {
+                s.value
+                    .traverse_indirect_data_(handler.offset(offset_of!(EeSexpString, value)));
+            }
+            EeSexpView::Cons(c) => {
+                c.car
+                    .traverse_indirect_data_(handler.offset(offset_of!(EeSexpCons, car)));
+                c.cdr
+                    .traverse_indirect_data_(handler.offset(offset_of!(EeSexpCons, cdr)));
+            }
+            _ => {}
+        }
+    }
+}
+
+enum EeSexpView {
     Integer(EeSexpInteger),
     FPNumber(EeSexpFPNumber),
     Bool(EeSexpBool),
@@ -146,68 +180,68 @@ pub enum EeSexpView {
 
 #[derive(Clone, Copy)]
 #[repr(C)]
-pub union EeSexpBody {
-    pub integer: EeSexpInteger,   // for tag=0
-    pub fpnumber: EeSexpFPNumber, // for tag=1
-    pub bool: EeSexpBool,         // for tag=2
-    pub symbol: EeSexpSymbol,     // for tag=3
-    pub string: EeSexpString,     // for tag=4
-    pub char: EeSexpChar,         // for tag=5
-    pub cons: EeSexpCons,         // for tag=6
-    pub nil: EeSexpNil,           // for tag=7
-    pub use_: EeSexpUse,          // for tag=8
+union EeSexpBody {
+    integer: EeSexpInteger,   // for tag=0
+    fpnumber: EeSexpFPNumber, // for tag=1
+    bool: EeSexpBool,         // for tag=2
+    symbol: EeSexpSymbol,     // for tag=3
+    string: EeSexpString,     // for tag=4
+    char: EeSexpChar,         // for tag=5
+    cons: EeSexpCons,         // for tag=6
+    nil: EeSexpNil,           // for tag=7
+    use_: EeSexpUse,          // for tag=8
 }
 
 #[derive(Debug, Clone, Copy, new)]
 #[repr(C)]
-pub struct EeSexpInteger {
-    pub signed: bool,
-    pub value: u64,
+struct EeSexpInteger {
+    signed: bool,
+    value: u64,
 }
 
 #[derive(Debug, Clone, Copy, new)]
 #[repr(C)]
-pub struct EeSexpFPNumber {
-    pub value: f64,
+struct EeSexpFPNumber {
+    value: f64,
 }
 
 #[derive(Debug, Clone, Copy, new)]
 #[repr(C)]
-pub struct EeSexpBool {
-    pub value: bool,
+struct EeSexpBool {
+    value: bool,
 }
 
 #[derive(Debug, Clone, Copy, new)]
 #[repr(C)]
-pub struct EeSexpSymbol {
-    pub value: EeString,
+struct EeSexpSymbol {
+    value: EeString,
 }
 
 #[derive(Debug, Clone, Copy, new)]
 #[repr(C)]
-pub struct EeSexpString {
-    pub value: EeString,
+struct EeSexpString {
+    value: EeString,
 }
 
 #[derive(Debug, Clone, Copy, new)]
 #[repr(C)]
-pub struct EeSexpChar {
-    pub value: EeChar,
+struct EeSexpChar {
+    value: EeChar,
 }
 
 #[derive(Clone, Copy, new)]
 #[repr(C)]
-pub struct EeSexpCons {
-    pub car: EeSyntax<EeSexp>,
-    pub cdr: EeSyntax<EeSexp>,
+struct EeSexpCons {
+    car: EeSyntax<EeSexp>,
+    cdr: EeSyntax<EeSexp>,
 }
 
 #[derive(Debug, Clone, Copy, new)]
 #[repr(C)]
-pub struct EeSexpNil;
+struct EeSexpNil;
 
 #[derive(Debug, Clone, Copy, new)]
 #[repr(C)]
-pub struct EeSexpUse {
-    pub value: EeCapturedUse,
+struct EeSexpUse {
+    value: EeCapturedUse,
 }

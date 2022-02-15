@@ -6,7 +6,6 @@ use crate::topological_sort;
 use derive_new::new;
 use either::*;
 use if_chain::if_chain;
-use itertools::Itertools;
 use std::collections::{BTreeSet, HashMap, HashSet};
 use typed_arena::Arena;
 
@@ -616,7 +615,7 @@ impl<'a, E: External> Context<'a, E> {
                 let ty = self.u_types.schemes[&construct.into()].body;
                 self.u_ctx.get_vars(ty, scope.level())
             })
-            .fold1(|a, b| a.intersection(&b).copied().collect())
+            .reduce(|a, b| a.intersection(&b).copied().collect())
             .unwrap_or_default()
     }
 
