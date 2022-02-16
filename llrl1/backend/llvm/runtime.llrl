@@ -1,8 +1,9 @@
-(import "std/memory" reinterpret size-of align-of)
+(import "std/memory" reinterpret size-of align-of ptr/_)
 (import "llvm" [llvm/_ _])
 (import "~/util" _)
 (import "~/sexp" [sexp/_ _])
 (import "~/emitter/ir" [ir/_ _])
+(import "~/backend/data" [data/_ _])
 (export RuntimeBuildEnv runtime-build-env/_ runtime/_ RuntimeConst RuntimeConst._)
 
 <initialize-llvm-jit-library-binding>
@@ -13,6 +14,29 @@
 
 (instance Conv.From.llvm/Builder.To.llvm/Context (Conv llvm/Builder llvm/Context)
   (function (conv a) (llvm/builder/context a)))
+
+(function (data-as-llvm-constant m value) {(forall A) (-> llvm/Module A llvm/Value) (where (data/Data A))}
+  (let1
+    buf
+    (if (is? (some _) (|> value data/indirect-data it/first?))
+      (let* ([direct-data (data/direct-data value)]
+             [_ (assert-eq? (% (array/length direct-data) (size-of U64)) 0)]
+             [len (/ (array/length direct-data) (size-of U64))]
+             [ptr (ptr/cast (array/ptr direct-data))]
+             [buf (|> (array/unsafe-from-ptr ptr len) (it/map [^1 (llvm/const (conv m) (u64 ,%1))]) collect)])
+        (for (: (let offset) (let d)) (data/indirect-data value)
+          (assert-eq? (% offset (size-of U64)) 0)
+          (let ([offset (/ offset (size-of U64))]
+                [body (data-as-llvm-constant m d)])
+            (set! buf[offset] (llvm/const (conv m) (ptr-to-int i64 ,body)))))
+        (llvm/const (conv m) (array-of i64 ,@buf)))
+      (let1 buf (|> value data/direct-data (it/map [^1 (llvm/const (conv m) (u8 ,%1))]) collect)
+        (llvm/const (conv m) (array-of i8 ,@buf))))
+    (let1 var (llvm/module/add-global! "" (llvm/value/type buf) none m)
+      (llvm/global-value/set-linkage! llvm/linkage/internal var)
+      (llvm/global-variable/set-constant?! #t var)
+      (llvm/global-variable/set-initializer! (some buf) var)
+      (llvm/const (conv m) (bit-cast (pointer i8) ,var)))))
 
 (class (RuntimeBuildEnv E) (where (Conv E llvm/Module))
   (function (runtime-build-env/capture-runtime-function! name tyf env)
@@ -51,18 +75,9 @@
 (class (RuntimeConst A)
   (function (runtime/const m a) {(-> llvm/Module A llvm/Value)}))
 
-; Types that can be expanded on LLVM-IR array constants.
-; The element type of an array is an integer of pointer size.
-(class (RuntimeExpand A)
-  (function (expand-on-buffer! m buf a) {(-> llvm/Module (Array llvm/Value) A unit)}))
-
 (instance RuntimeConst.String (RuntimeConst String)
   (function (runtime/const m a)
     (llvm/const (conv m) (: ,(runtime/string/const-body m a) (u64 ,(string/length a))))))
-
-(instance RuntimeExpand.String (RuntimeExpand String)
-  (function (expand-on-buffer! m buf a)
-    (set! buf[0] (llvm/const (conv m) (ptr-to-int i64 ,(runtime/string/const-body m a))))))
 
 (assert-eq? (size-of String) runtime/string/size)
 (assert-eq? (align-of String) runtime/string/align)
@@ -172,12 +187,12 @@
 (function (runtime/captured-use/type ctx) {(-> llvm/Context llvm/Type)}
   (llvm/type ctx (: i64 i64)))
 
-; Ensure that the reinterpret is OK (*2)
+; Ensure that the reinterpret is OK (*1)
 (assert-eq? (size-of ir/SyntaxMetadata) (size-of (: U32 U32)))
 
 (instance RuntimeConst.ir/SyntaxMetadata (RuntimeConst ir/SyntaxMetadata)
   (function (runtime/const m a)
-    (with1 (: (let x) (let y)) (reinterpret a) {(: U32 U32)} ; (*2)
+    (with1 (: (let x) (let y)) (reinterpret a) {(: U32 U32)} ; (*1)
       (llvm/const (conv m) (: (u32 ,x) (u32 ,y))))))
 
 (function (runtime/syntax-metadata/type ctx) {(-> llvm/Context llvm/Type)}
@@ -206,65 +221,7 @@
   (llvm/build! builder
     (load (struct-gep (bit-cast ,value (pointer (: ,(runtime/syntax-metadata/type (conv builder)) ,body-ty))) 1))))
 
-; Ensure that the reinterpret is compatible with expand-on-buffer! (*3)
-; Ensure that the offset of the body of (sexp/SRep ir/CapturedUse) is 1 (*5)
-(assert-eq? (size-of I64) (align-of (sexp/SRep ir/CapturedUse)))
-
-; Ensure that the offset of the sexp/s/rep is 1 (*4)
-(assert-eq? (size-of ir/SyntaxMetadata) (size-of I64))
-
-; (ir/S ir/CapturedUse) is compatible with (Syntax Sexp)
 (instance RuntimeConst.Sexp (RuntimeConst (ir/S ir/CapturedUse))
   (function (runtime/const m a)
-    (let* ([raw-len (/ (size-of (: ir/SyntaxMetadata (sexp/SRep ir/CapturedUse))) (size-of I64))]
-           [raw-data (array/unsafe-from-ptr (reinterpret a) {(Ptr I64)} raw-len)] ; (*3)
-           [buf (array/unsafe-alloc-uninitialized raw-len)])
-
-      ; FIXME:
-      ; This implementation is too technical. If performance is not a consideration,
-      ; this implementation can be made unnecessary by building (Syntax Sexp) dynamically.
-
-      ; Fill with raw-data
-      (for (let i) (iterator/range 0 raw-len 1)
-        (set! buf[i] (llvm/const (conv m) (i64 ,(get raw-data[i])))))
-      ; Overwrite indirect references
-      (expand-on-buffer! m (array/skip 1 buf) (sexp/s/rep a)) ; skip sexp/s/location (*4)
-
-      (let* ([init (llvm/const (conv m) (array-of i64 ,@buf))]
-             [var (llvm/module/add-global! "" (llvm/value/type init) none m)])
-        (llvm/global-value/set-linkage! llvm/linkage/internal var)
-        (llvm/global-variable/set-constant?! #t var)
-        (llvm/global-variable/set-initializer! (some init) var)
-        (llvm/const (conv m) (bit-cast (pointer i8) ,var))))))
-
-(instance RuntimeExpand.Sexp (RuntimeExpand (ir/S ir/CapturedUse))
-  (function (expand-on-buffer! m buf a)
-    (set! buf[0] (llvm/const (conv m) (ptr-to-int i64 ,(runtime/const m a))))))
-
-; Ensure that the length of (sexp/SRep ir/CapturedUse) is 3 (for clear-uninitialized-location!)
-(assert-eq? (* 3 (size-of I64)) (size-of (sexp/SRep ir/CapturedUse)))
-
-(instance RuntimeExpand.SexpBody (RuntimeExpand (sexp/SRep ir/CapturedUse))
-  (function (expand-on-buffer! m buf a)
-    (let1 buf (array/skip 1 buf) ; skip the tag of (sexp/SRep ir/CapturedUse) (*5)
-      (match a
-        [(sexp/s-rep:fp-number _)
-          (clear-uninitialized-location! m buf 1)]
-        [(sexp/s-rep:bool _)
-          (clear-uninitialized-location! m buf 1)]
-        [(sexp/s-rep:symbol (let s))
-          (expand-on-buffer! m buf s)]
-        [(sexp/s-rep:string (let s))
-          (expand-on-buffer! m buf s)]
-        [(sexp/s-rep:char _)
-          (clear-uninitialized-location! m buf 1)]
-        [(sexp/s-rep:cons (let car) (let cdr))
-          (expand-on-buffer! m buf car)
-          (expand-on-buffer! m (array/skip 1 buf) cdr)] ; skip car
-        [sexp/s-rep:nil
-          (clear-uninitialized-location! m buf 0)
-          (clear-uninitialized-location! m buf 1)]
-        [_]))))
-
-(function (clear-uninitialized-location! m buf index) {(-> llvm/Module (Array llvm/Value) U64 unit)}
-  (set! buf[index] (llvm/const (conv m) (i64 0))))
+    (with1 (: _ (let buffer)) (|> a data/indirect-data it/first? option/force)
+      (data-as-llvm-constant m buffer))))

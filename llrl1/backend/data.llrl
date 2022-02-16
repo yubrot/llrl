@@ -1,0 +1,111 @@
+(import "std/memory" size-of align-of ptr/_)
+(import "~/util" _)
+(import "~/sexp" [sexp/_ _])
+(import "~/emitter/ir" [ir/_ _])
+(export Data Data._ direct-data indirect-data data-rep DataRep)
+
+(function (plain-data value) {(forall A) (-> A (Array U8))}
+  (shallow-copy (array/unsafe-from-ptr (|> value ptr/temporary ptr/cast) (size-of A))))
+
+; Conversion to static data
+(class (Data A)
+  (function (direct-data value) {(-> A (Array U8))}
+    (plain-data value))
+
+  (function (indirect-data value) {(-> A (Iterator (: U64 DataRep)))}
+    iterator/empty)
+
+  (function (indirect-data-with-offset offset value) {(-> U64 A (Iterator (: U64 DataRep)))}
+    (it/map (case1 (: (let o) (let d)) (: (+ o offset) d)) (indirect-data value)))
+
+  (function (data-rep value) {(-> A DataRep)}
+    (data-rep: [^0 (direct-data value)] [^0 (indirect-data value)])))
+
+; Boxed data representation
+(data DataRep
+  (data-rep: (-> (Array U8)) (-> (Iterator (: U64 DataRep)))))
+
+(instance Data.DataRep (Data DataRep)
+  (function (direct-data value)
+    (with1 (data-rep: (let direct-data) _) value
+      (direct-data)))
+
+  (function (indirect-data value)
+    (with1 (data-rep: _ (let indirect-data)) value
+      (indirect-data)))
+
+  (function (data-rep value)
+    value))
+
+; string = [ ptr:8 | len:8 ] (*1)
+;   where
+;     ptr -> body
+;     body = [ data:<len> ]
+(assert-eq? (size-of String) 16) ; (*1)
+; TODO: Assert that the pointer is at offset=0
+
+(instance Data.String (Data String)
+  (function (indirect-data s)
+    (let1 body (data-rep: [^0 (|> s string/bytes collect)] [^0 iterator/empty])
+      (iterator/only (: 0 body)))))
+
+; char = [ value:4 ] (*1)
+(assert-eq? (size-of Char) 4) ; (*1)
+
+(instance Data.Char (Data Char))
+
+; captured-use = [ tag:8 | node-id:8 ] (*1)
+(assert-eq? (size-of ir/CapturedUse) 16) ; (*1)
+
+(instance Data.CapturedUse (Data ir/CapturedUse))
+
+; s = [ ptr:8 ] (*1)
+;   where
+;     ptr -> s-buffer
+(assert-eq? (size-of (ir/S ir/CapturedUse)) 8) ; (*1)
+
+(instance Data.S (Data (ir/S ir/CapturedUse))
+  (function (indirect-data value)
+    (iterator/only (: 0 (data-rep (: (sexp/s/location value) (sexp/s/rep value)))))))
+
+; s-buffer = [ syntax-metadata:8 | s-rep:24 ] (*1)
+;   where
+;     s-rep = [ tag:8 | body:16 ] (*2)
+(assert-eq? (size-of ir/SyntaxMetadata) 8) ; (*1)
+(assert-eq? (size-of (sexp/SRep ir/CapturedUse)) 24) ; (*1)
+(assert-eq? (align-of (sexp/SRep ir/CapturedUse)) 8) ; (*2)
+
+(instance Data.SBuffer (Data (: ir/SyntaxMetadata (sexp/SRep ir/CapturedUse)))
+  (function (direct-data value)
+    (let1 buf (plain-data value)
+      ; To make the binary of the self-hosting compiler consistent, we need to zero uninitialized areas manually...
+      (let1 tag {(Ptr U64)} (|> buf array/ptr (ptr/add 8) ptr/cast)
+        (ptr/store! (|> tag ptr/load (conv-to U8) conv) tag))
+      (match value
+        [(: _ (sexp/s-rep:fp-number _))
+          (array/fill! 0 (array/subarray 24 32 buf))]
+        [(: _ (sexp/s-rep:bool _))
+          (array/fill! 0 (array/subarray 24 32 buf))]
+        [(: _ (sexp/s-rep:char _))
+          (array/fill! 0 (array/subarray 24 32 buf))]
+        [(: _ sexp/s-rep:nil)
+          (array/fill! 0 (array/subarray 16 32 buf))]
+        [_])
+      buf))
+
+  (function (indirect-data value)
+    (match value
+      [(: _ (sexp/s-rep:symbol (let s)))
+        (indirect-data-with-offset 16 s)]
+      [(: _ (sexp/s-rep:string (let s)))
+        (indirect-data-with-offset 16 s)]
+      [(: _ (sexp/s-rep:cons (let car) (let cdr)))
+        (it/chain (indirect-data-with-offset 16 car)
+                  (indirect-data-with-offset 24 cdr))]
+      [_
+        iterator/empty])))
+
+; syntax-metadata = [ interned-path:4 | interned-location-range:4 ] (*1)
+(assert-eq? (size-of ir/SyntaxMetadata) 8) ; (*1)
+
+(instance Data.SyntaxMetadata (Data ir/SyntaxMetadata))
