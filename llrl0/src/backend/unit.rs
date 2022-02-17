@@ -1,6 +1,5 @@
-use crate::emitter::{self, ir::*};
+use crate::emitter::{self, ir::*, Value};
 use crate::report::Report;
-use std::fmt;
 use std::sync::Arc;
 
 impl emitter::Backend for () {
@@ -19,27 +18,4 @@ impl emitter::Backend for () {
     }
 
     fn complete(self, _: &mut Report) {}
-}
-
-#[derive(Debug, Clone)]
-pub struct Value;
-
-impl fmt::Display for Value {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "value")
-    }
-}
-
-impl emitter::BackendValue for Value {
-    fn as_bool(&self) -> Option<bool> {
-        None
-    }
-
-    fn from_macro_src(_: &Syntax<Sexp>) -> Self {
-        Self
-    }
-
-    fn into_macro_dest(self) -> Result<Syntax<Sexp>, String> {
-        Err("Internal error: Unit backend does not support into_macro_dest".to_string())
-    }
 }

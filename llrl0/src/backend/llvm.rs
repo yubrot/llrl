@@ -1,5 +1,5 @@
-use super::native;
-use crate::emitter::{self, ir};
+use crate::backend::native;
+use crate::emitter::{self, ir, Value};
 use crate::report::{Phase, Report};
 use crossbeam_channel::{bounded, unbounded, Receiver, Sender};
 use itertools::Itertools;
@@ -21,7 +21,7 @@ pub mod runtime;
 mod worker;
 
 pub use artifact::*;
-pub use executor::{Executor, Value};
+pub use executor::Executor;
 pub use optimizer::Optimizer;
 pub use options::Options;
 

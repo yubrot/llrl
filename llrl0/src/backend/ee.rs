@@ -5,6 +5,7 @@ use derive_new::new;
 use memoffset::offset_of;
 use std::mem::{size_of, ManuallyDrop};
 
+pub mod ffi;
 mod sexp;
 
 pub use sexp::*;

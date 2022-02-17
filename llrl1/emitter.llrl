@@ -14,9 +14,9 @@
 (import "~/emitter/heap2stack" [heap2stack/_ _])
 (export Value _.Value value:_ Backend backend/_ Emitter _.Emitter emitter/_)
 
-; NOTE: Unlike llrl0 implementation, the values handled by the backend are not abstract values and
-; cannot delay interconversion. it is difficult to implement in the same way because there is no
-; associated types or fundeps in the llrl type class system.
+; NOTE: Unlike llrl0 implementation, the values handled by the backend are not abstracted and
+; we cannot delay values interconversion. it is difficult to implement in the same way because
+; there is no associated types or fundeps in the llrl type class system.
 (derive (Eq Ord DebugDisplay Hash) value-data Value
   (value:bool Bool)
   (value:sexp (S ast/Construct))

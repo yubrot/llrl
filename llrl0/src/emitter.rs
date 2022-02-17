@@ -18,8 +18,10 @@ mod normalizer;
 mod rewriter;
 mod simplifier;
 mod traverser;
+mod value;
 
 pub use context::Context;
+pub use value::Value;
 
 pub trait Backend: Send + 'static {
     type Value: BackendValue;
