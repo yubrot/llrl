@@ -1,3 +1,4 @@
+use super::native;
 use crate::emitter::{self, ir};
 use crate::report::{Phase, Report};
 use crossbeam_channel::{bounded, unbounded, Receiver, Sender};
@@ -34,22 +35,10 @@ pub struct Backend {
 }
 
 impl Backend {
-    pub fn new(options: Options) -> Self {
+    fn new(options: Options) -> Self {
         let (sender, receiver) = unbounded();
         let handle = BACKEND_WORKER.run(move || process_requests(options, receiver));
         Self { sender, handle }
-    }
-
-    pub fn produce_executable(
-        &self,
-        dest: path::PathBuf,
-        clang_options: Vec<String>,
-    ) -> process::Output {
-        let (sender, receiver) = bounded(0);
-        self.sender
-            .send(Request::ProduceExecutable(dest, clang_options, sender))
-            .unwrap();
-        receiver.recv().unwrap()
     }
 }
 
@@ -81,6 +70,20 @@ impl emitter::Backend for Backend {
     fn complete(self, report: &mut Report) {
         drop(self.sender);
         report.merge(&self.handle.join());
+    }
+}
+
+impl native::Backend for Backend {
+    fn produce_executable(
+        &self,
+        dest: path::PathBuf,
+        clang_options: Vec<String>,
+    ) -> process::Output {
+        let (sender, receiver) = bounded(0);
+        self.sender
+            .send(Request::ProduceExecutable(dest, clang_options, sender))
+            .unwrap();
+        receiver.recv().unwrap()
     }
 }
 
@@ -301,5 +304,28 @@ impl ModuleBuilder {
         }
 
         module
+    }
+}
+
+#[derive(Debug)]
+pub struct BackendBuilder(Options);
+
+impl native::BackendBuilder for BackendBuilder {
+    type Backend = Backend;
+
+    fn new() -> Self {
+        Self(Options::new())
+    }
+
+    fn optimize(self, optimize: bool) -> Self {
+        Self(self.0.optimize(optimize))
+    }
+
+    fn verbose(self, verbose: bool) -> Self {
+        Self(self.0.optimize(verbose))
+    }
+
+    fn build(self) -> Self::Backend {
+        Backend::new(self.0)
     }
 }

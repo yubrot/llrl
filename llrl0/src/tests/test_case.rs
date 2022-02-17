@@ -155,11 +155,11 @@ impl TestTarget {
             Self::Backend => {
                 let backend = InterpreterBackend::new();
                 self.run_backend(codes.clone(), cond, backend, ctx);
-                let backend = LLVMBackend::new(LLVMBackendOptions::default());
+                let backend = DefaultNativeBackendBuilder::new().build();
                 self.run_backend(codes, cond, backend, ctx);
             }
             Self::Std => {
-                let backend = LLVMBackend::new(LLVMBackendOptions::default());
+                let backend = DefaultNativeBackendBuilder::new().build();
                 self.run_backend(codes, cond, backend, ctx);
             }
         }

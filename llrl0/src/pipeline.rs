@@ -132,11 +132,12 @@ impl Pipeline {
             }
         }
 
-        let emitter = Emitter::new(LLVMBackend::new(
-            LLVMBackendOptions::new()
+        let emitter = Emitter::new(
+            DefaultNativeBackendBuilder::new()
                 .optimize(self.optimize)
-                .verbose(self.verbose),
-        ));
+                .verbose(self.verbose)
+                .build(),
+        );
 
         let entry_points = self.entry_code_paths.into_iter().collect();
         let (_, module_errors) = build_modules(codes, entry_points, &emitter, &mut report);

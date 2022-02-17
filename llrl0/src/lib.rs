@@ -63,8 +63,13 @@ pub mod prelude {
 
     pub use super::emitter::{Backend, BackendValue, Emitter};
 
+    pub use super::backend::default::{
+        NativeBackend as DefaultNativeBackend, NativeBackendBuilder as DefaultNativeBackendBuilder,
+    };
     pub use super::backend::interpreter::Backend as InterpreterBackend;
-    pub use super::backend::llvm::{Backend as LLVMBackend, Options as LLVMBackendOptions};
+    pub use super::backend::native::{
+        Backend as NativeBackend, BackendBuilder as NativeBackendBuilder,
+    };
 
     pub use super::pipeline::{Error as PipelineError, Pipeline};
 }
