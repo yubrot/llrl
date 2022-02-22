@@ -449,7 +449,7 @@ impl<'ctx: 'm, 'm> ModuleArtifact<'ctx, 'm> {
         // TODO: This adjustment is not enough. We need to follow the System V ABI.
         let (function_ty, return_by_pointer_store) = if {
             function_ty.return_type().is_sized()
-                && 4 * 8 < ctx.data_layout().type_alloc_size(function_ty.return_type())
+                && 2 * 8 < ctx.data_layout().type_alloc_size(function_ty.return_type())
         } {
             let mut params = function_ty.param_types();
             let ret = function_ty.return_type();

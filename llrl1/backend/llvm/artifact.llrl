@@ -225,7 +225,7 @@
         (: (let ty) (let return-by-pointer-store?))
         (if (and adjust-to-c-abi?
                  (llvm/type/sized? ret-ty)
-                 (< (* 4 8) (llvm/data-layout/type-alloc-size (|> ma conv llvm/module/data-layout) ret-ty)))
+                 (< (* 2 8) (llvm/data-layout/type-alloc-size (|> ma conv llvm/module/data-layout) ret-ty)))
           (: (llvm/type (conv ma) (-> ,@(array/unshift (llvm/type (conv ma) (pointer ,ret-ty)) param-tys) void)) #t)
           (: (llvm/type (conv ma) (-> ,@param-tys ,ret-ty)) #f))
         (let* ([value (llvm/module/add-function! name ty (conv ma))]
