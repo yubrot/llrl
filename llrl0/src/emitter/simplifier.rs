@@ -874,7 +874,7 @@ fn builtin_rt(symbol: &Symbol, name: &str, mut ct_args: Vec<Ct>, mut args: Vec<R
         ("ptr.le", _, [a, b]) => Rt::binary(Binary::PtrLe, take(a), take(b)),
         ("ptr.gt", _, [a, b]) => Rt::binary(Binary::PtrGt, take(a), take(b)),
         ("ptr.ge", _, [a, b]) => Rt::binary(Binary::PtrGe, take(a), take(b)),
-        ("ptr.temporary", [_], [a]) => Rt::alloc(Location::Stack, take(a)),
+        ("ptr.temporary", [_], [a]) => Rt::alloc(Location::StackStatic, take(a)),
         ("ptr.load", [_], [a]) => Rt::unary(Unary::Load, take(a)),
         ("ptr.store", [_], [a, b]) => Rt::binary(Binary::Store, take(a), take(b)),
         ("ptr.offset", [_], [a, b]) => Rt::binary(Binary::Offset, take(a), take(b)),
@@ -893,7 +893,9 @@ fn builtin_rt(symbol: &Symbol, name: &str, mut ct_args: Vec<Ct>, mut args: Vec<R
             Rt::ternary(Ternary::ArrayStore, take(a), take(b), take(c))
         }
         ("array.alloc", [ty], [a]) => Rt::alloc_array(Location::Heap, take(ty), take(a)),
-        ("array.stackalloc", [ty], [a]) => Rt::alloc_array(Location::Stack, take(ty), take(a)),
+        ("array.stackalloc", [ty], [a]) => {
+            Rt::alloc_array(Location::StackDynamic, take(ty), take(a))
+        }
         ("integer.to-ptr", [ty], [a]) => Rt::unary(Unary::IToPtr(take(ty)), take(a)),
         ("syntax", [_], [a]) => Rt::construct_syntax(symbol.loc, take(a)),
         ("panic", _, [a]) => Rt::unary(Unary::Panic, take(a)),

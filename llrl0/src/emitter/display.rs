@@ -350,7 +350,8 @@ impl fmt::Display for Location {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Location::Heap => write!(f, "heap"),
-            Location::Stack => write!(f, "stack"),
+            Location::StackStatic => write!(f, "stack-static"),
+            Location::StackDynamic => write!(f, "stack-dynamic"),
         }
     }
 }

@@ -360,7 +360,8 @@
 
 (derive (Eq Ord DebugDisplay Hash) value-data Location
   location:heap
-  location:stack)
+  location:stack-static
+  location:stack-dynamic)
 
 (derive (DebugDisplay) value-data RtClause
   (rt-clause: RtPat Rt))

@@ -51,7 +51,7 @@ impl rewriter::Rewriter for Heap2Stack {
                     if self.load_only_vars.contains(&var.id) {
                         match var.init {
                             Rt::Alloc(ref mut alloc) => {
-                                alloc.0 = Location::Stack;
+                                alloc.0 = Location::StackStatic;
                             }
                             _ => {}
                         }

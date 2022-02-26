@@ -642,12 +642,19 @@
 (function (codegen-alloc! ctx loc ty)
   (match loc
     [ir/location:heap (runtime/build-heap-alloc! (conv ctx) ctx ty)]
-    [ir/location:stack (llvm/build! (conv ctx) (alloca "" ,ty))]))
+    [ir/location:stack-static (llvm/build! (conv ctx) (entry-alloca "" ,ty))]
+    [ir/location:stack-dynamic (llvm/build! (conv ctx) (alloca "" ,ty))]))
 
 (function (codegen-array-alloc! ctx loc ty num)
   (match loc
-    [ir/location:heap (runtime/build-heap-array-alloc! (conv ctx) ctx ty num)]
-    [ir/location:stack (llvm/build! (conv ctx) (array-alloca "" ,ty ,num))]))
+    [ir/location:heap
+      (runtime/build-heap-array-alloc! (conv ctx) ctx ty num)]
+    [ir/location:stack-static
+      (if (llvm/value/const-integer? num)
+        (assert #f "Not implemented")
+        (assert #f (string "Cannot determine the size of stackalloc: " num)))]
+    [ir/location:stack-dynamic
+      (llvm/build! (conv ctx) (array-alloca "" ,ty ,num))]))
 
 (function (codegen/const! ctx c)
   {(forall E) (-> (BuildContext E) ir/Const llvm/Value) (where (BuildEnv E))}

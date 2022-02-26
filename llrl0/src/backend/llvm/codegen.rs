@@ -604,7 +604,8 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
     fn eval_alloc(&mut self, loc: Location, ty: impl LLVMAnyType<'ctx>) -> LLVMValue<'ctx, 'm> {
         match loc {
             Location::Heap => runtime::build_heap_alloc(ty, &self.builder, self.module),
-            Location::Stack => self.builder.build_alloca("", ty),
+            Location::StackStatic => self.builder.build_entry_alloca("", ty),
+            Location::StackDynamic => self.builder.build_alloca("", ty),
         }
     }
 
@@ -616,7 +617,17 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
     ) -> LLVMValue<'ctx, 'm> {
         match loc {
             Location::Heap => runtime::build_heap_array_alloc(ty, num, &self.builder, self.module),
-            Location::Stack => self.builder.build_array_alloca("", ty, num),
+            Location::StackStatic => match num.as_value_of::<llvm::ConstantInt>() {
+                Some(c) => {
+                    let _value = c.zext_value();
+                    panic!("Not implemented")
+                }
+                None => panic!(
+                    "Cannot determine the size of stackalloc: {}",
+                    num.as_value()
+                ),
+            },
+            Location::StackDynamic => self.builder.build_array_alloca("", ty, num),
         }
     }
 

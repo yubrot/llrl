@@ -31,6 +31,6 @@
           (when-match ([#t (ord-set/has? id load-only-vars)]
                        [(rt:alloc location:heap (let init)) init])
             (rewrite/make-mutable! vars)
-            (set! (rewrite/value ~vars)[i] (rt-var: id ty (rt:alloc location:stack init)))))
+            (set! (rewrite/value ~vars)[i] (rt-var: id ty (rt:alloc location:stack-static init)))))
         (ok (rewrite/2 rt rt:let-var ~vars (rewrite/unchanged body))))
       (ok (rewrite/unchanged rt)))))

@@ -536,7 +536,8 @@ pub enum Ternary {
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy, Hash)]
 pub enum Location {
     Heap,
-    Stack,
+    StackStatic,
+    StackDynamic,
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Hash, new)]
