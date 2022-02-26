@@ -8,6 +8,7 @@
 (import "~/report" Report _.Report report/_ phase:_)
 (import "~/emitter" Backend)
 (import "~/emitter/ir" [ir/_ _])
+(import "~/emitter/value" DynamicCall._ DynamicArg._ DynamicRet._)
 (import "~/backend/llvm/artifact" _)
 (import "~/backend/llvm/executor" _)
 (export LLVMBackend _.LLVMBackend llvm-backend/_ with-llvm-backend)

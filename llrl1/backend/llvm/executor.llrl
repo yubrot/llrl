@@ -2,10 +2,9 @@
 (import "std/phantom" _)
 (import "llvm" [llvm/_ _])
 (import "~/util" _)
-(import "~/emitter" Value _.Value value:_)
 (import "~/emitter/ir" [ir/_ _])
+(import "~/emitter/value" Value DynamicCall dynamic-call)
 (export Executor _.Executor executor/_)
-(export ExecutorFun ExecutorFun._ ExecutorArg ExecutorArg._ ExecutorRet ExecutorRet._)
 
 ; NOTE: Only native targets are supported. For more details, see
 ; assert_data_layout_matches_native_environment
@@ -48,12 +47,12 @@
 
 ; Caller must ensure that the function named `name` exists and it is compatible with the llrl closure typed `F`.
 (function (executor/unsafe-call! name sig args executor)
-  {(forall F) (-> String (Phantom F) (Array Value) Executor (Result Value String)) (where (ExecutorFun F))}
+  {(forall F) (-> String (Phantom F) (Array Value) Executor (Result Value String)) (where (DynamicCall F))}
   (let1 address (llvm/execution-engine/get-function-address name (engine executor))
     (assert (ne? 0 address) (string "Function not found: " name))
     (let* ([closure {(: U64 (Ptr U8))} (: address ptr:null)]
            [closure {F} (reinterpret closure)])
-      (call-with-values closure args))))
+      (dynamic-call closure args))))
 
 (function (assert-data-layout-matches-native-environment dl)
   ; NOTE: llrl assumes that the native environment (i.e., at the time of executing
@@ -73,48 +72,3 @@
     (assert-eq? (llvm/data-layout/abi-type-alignment dl (llvm/type ctx i64)) (conv (align-of I64)))
     (assert-eq? (llvm/data-layout/type-alloc-size dl (llvm/type ctx (pointer i8))) (size-of (Ptr I8)))
     (assert-eq? (llvm/data-layout/abi-type-alignment dl (llvm/type ctx (pointer i8))) (conv (align-of (Ptr I8)))))))
-
-(class (ExecutorFun A)
-  (function (call-with-values f args) {(-> A (Array Value) (Result Value String))}))
-
-(class (ExecutorArg A)
-  (function (value-as-arg v) {(-> Value (Result A String))}))
-
-(class (ExecutorRet A)
-  (function (ret-as-value v) {(-> A Value)}))
-
-($$ begin
-  ($for-each
-    [$arity $name $params]
-    ([0 Nullary ()]
-     [1 Unary (A)]
-     [2 Binary (A B)]
-     [3 Ternary (A B C)])
-    (instance
-      ($symbol-concat ExecutorFun. $name)
-      (forall ($for-each $param $params $param) R)
-      (ExecutorFun (-> ($for-each $param $params $param) R))
-      (where ($for-each $param $params (ExecutorArg $param)) (ExecutorRet R))
-      (function (call-with-values f args)
-        (when (ne? (array/length args) $arity)
-          (err (string "Expected " $arity " arguments but got " (array/length args) " arguments"))!)
-
-        (let* (($for-each $param $params
-                 [($symbol-concat arg- $param) (value-as-arg (get args[0]))!]
-                 [args (array/skip 1 args)])
-               [ret (f ($for-each $param $params ($symbol-concat arg- $param)))])
-          (ok (ret-as-value ret)))))))
-
-(instance ExecutorArg.Sexp (ExecutorArg (ir/S ir/CapturedUse))
-  (function (value-as-arg v)
-    (match v
-      [(value:sexp (let s)) (ok s)]
-      [_ (err (string "Cannot treat " v " as Sexp"))])))
-
-(instance ExecutorRet.Bool (ExecutorRet Bool)
-  (function (ret-as-value v)
-    (value:bool v)))
-
-(instance ExecutorRet.ResultSexpString (ExecutorRet (Result (ir/S ir/CapturedUse) String))
-  (function (ret-as-value v)
-    (value:result-sexp-string v)))

@@ -2,10 +2,10 @@
 (import "std/ord-set" _)
 (import "~/util" _)
 (import "~/report" Report _.Report report/_ phase:_)
-(import "~/sexp" S _.S)
 (import "~/ast" [ast/_ _])
 (import "~/module" [m/_ _])
 (import "~/emitter/ir" _)
+(import "~/emitter/value" Value _.Value value:_)
 (import "~/emitter/transformer" _)
 (import "~/emitter/simplifier" [simplifier/_ _])
 (import "~/emitter/normalizer" [normalizer/_ _])
@@ -13,24 +13,6 @@
 (import "~/emitter/branch-expander" [branch-expander/_ _])
 (import "~/emitter/heap2stack" [heap2stack/_ _])
 (export Value _.Value value:_ Backend backend/_ Emitter _.Emitter emitter/_)
-
-; NOTE: Unlike llrl0 implementation, the values handled by the backend are not abstracted and
-; we cannot delay values interconversion. it is difficult to implement in the same way because
-; there is no associated types or fundeps in the llrl type class system.
-(derive (Eq Ord DebugDisplay Hash) value-data Value
-  (value:bool Bool)
-  (value:sexp (S ast/Construct))
-  (value:result-sexp-string (Result (S ast/Construct) String))
-  value:other)
-
-(instance Display.Value (Display Value)
-  (function (display! w a)
-    (match a
-      [(value:bool (let value)) (display! w value)]
-      [(value:sexp (let sexp)) (display! w sexp)]
-      [(value:result-sexp-string (ok (let sexp))) (display-all! w "(ok " sexp ")")]
-      [(value:result-sexp-string (err (let error))) (display-all! w "(err " (debug error) ")")]
-      [value:other (display! w "<other>")])))
 
 (class (Backend B)
   (function (backend/put-def! id def b) {(-> CtId CtDef B unit)})
