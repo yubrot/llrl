@@ -3,7 +3,7 @@
 (import "~/path" Path _.Path path/_)
 (import "~/sexp" S s/_ Ss ss/_)
 (import "~/syntax" Syntax_ syntax/_ syntax:_)
-(import "~/code" Code code/_)
+(import "~/source" Source source/_)
 (import "~/ast" _)
 (import "~/module/error" _)
 (import "~/module/unit" _)
@@ -48,15 +48,15 @@
     [(wildcard-port-target:ends-with (let suffix))
       (string input suffix)]))
 
-(function (run! module source code external)
-  {(forall E) (-> Module (Ss Construct) (Code Construct) E (Result unit Error)) (where (External E))}
+(function (run! module code source external)
+  {(forall E) (-> Module (Ss Construct) (Source Construct) E (Result unit Error)) (where (External E))}
 
-  (when (ne? (code/path code) path/builtin)
+  (when (ne? (source/path source) path/builtin)
     (module/add-init-expr! (init-expr:ensure-initialized module-id/builtin) module))
 
-  (for (let s) (ss/elems source)
+  (for (let s) (ss/elems code)
     (when-match1 (ok (syntax:import _ (let path) (let targets))) (syntax/import s)
-      (let* ([import-path (option/force (ord-map/get? path (code/dependencies code)))]
+      (let* ([import-path (option/force (ord-map/get? path (source/dependencies source)))]
              [import-module (option/force (external/module-by-path? import-path external))])
 
         (for (syntax:port-target (let loc) (let name) (syntax:name _ (let target))) targets
@@ -86,7 +86,7 @@
               (err (error:unresolved loc "import-target" target))!)))
         (module/add-init-expr! (init-expr:ensure-initialized (module/id import-module)) module))))
 
-    (when (code/implicit-std? code)
+    (when (source/implicit-std? source)
       (let1 std-module (option/force (external/module-by-path? path/std external))
         (module/add-init-expr! (init-expr:ensure-initialized (module/id std-module)) module)
 
@@ -94,7 +94,7 @@
           (when (is? none (|> module module/top-level (scope/get? name)))
             (scope/define!
               name
-              (located-construct (ss/location source) c)
+              (located-construct (ss/location code) c)
               (module/top-level module))!))))
 
     (for (: _ (let c)) (|> module module/top-level top-level/elems)

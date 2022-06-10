@@ -1,8 +1,8 @@
 use super::{Error, External, Module, Result, Scope};
 use crate::ast;
-use crate::code::Code;
 use crate::path::Path;
 use crate::sexp::Ss;
+use crate::source::Source;
 use crate::syntax;
 use std::borrow::Cow;
 
@@ -59,14 +59,19 @@ impl<'a> WildcardPortTarget<'a> {
     }
 }
 
-pub fn run(module: &mut Module, source: &Ss, code: &Code, external: &impl External) -> Result<()> {
-    if code.path != Path::builtin() {
+pub fn run(
+    module: &mut Module,
+    code: &Ss,
+    source: &Source,
+    external: &impl External,
+) -> Result<()> {
+    if source.path != Path::builtin() {
         module.add_init_expr(ast::InitExpr::EnsureInitialized(ast::ModuleId::builtin()));
     }
 
-    for s in source.ss.iter() {
+    for s in code.ss.iter() {
         if let Ok(import) = s.matches::<syntax::Import>() {
-            let import_path = &code.dependencies[import.path];
+            let import_path = &source.dependencies[import.path];
             let import_module = external.find_module(import_path).unwrap();
 
             for target in import.targets {
@@ -107,13 +112,13 @@ pub fn run(module: &mut Module, source: &Ss, code: &Code, external: &impl Extern
         }
     }
 
-    if code.implicit_std {
+    if source.implicit_std {
         let std_module = external.find_module(&Path::std()).unwrap();
         module.add_init_expr(ast::InitExpr::EnsureInitialized(std_module.id()));
 
         for (name, c) in std_module.exports.iter() {
             if module.top_level.get(name).is_none() {
-                module.top_level.define(name, c.with_loc(source.loc))?;
+                module.top_level.define(name, c.with_loc(code.loc))?;
             }
         }
     }

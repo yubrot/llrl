@@ -1,7 +1,7 @@
 use crate::parser;
 use crate::path;
 
-/// The error that occurred during the construction of the `Code`.
+/// The error that occurred during the construction of the `Source`.
 #[derive(PartialEq, PartialOrd, thiserror::Error, Debug, Clone)]
 pub enum Error {
     #[error("Package not found")]

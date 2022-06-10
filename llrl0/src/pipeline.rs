@@ -7,16 +7,16 @@ use std::process::{Command, ExitStatus};
 
 #[derive(thiserror::Error, Debug, Clone)]
 pub enum Error {
-    Code(Vec<(Path, CodeError)>),
+    Source(Vec<(Path, SourceError)>),
     CircularDependencies(Vec<Path>),
-    Module(SourceLocationTable, Vec<(Code, ModuleError)>),
+    Module(SourceLocationTable, Vec<(Source, ModuleError)>),
     Clang(String),
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Code(ref errors) => {
+            Self::Source(ref errors) => {
                 for (path, error) in errors {
                     writeln!(f, "{}: {}", path, error)?;
                 }
@@ -29,8 +29,13 @@ impl fmt::Display for Error {
                 writeln!(f, "Modules cannot import each other.")?;
             }
             Self::Module(ref table, ref errors) => {
-                for (code, error) in errors {
-                    writeln!(f, "{} (while building {})", error.fmt_on(table), code.path)?;
+                for (source, error) in errors {
+                    writeln!(
+                        f,
+                        "{} (while building {})",
+                        error.fmt_on(table),
+                        source.path
+                    )?;
                 }
             }
             Self::Clang(ref error) => {
@@ -45,8 +50,8 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Clone)]
 pub struct Pipeline {
-    code_loader: CodeLoader,
-    entry_code_paths: Vec<Path>,
+    source_loader: SourceLoader,
+    entry_source_paths: Vec<Path>,
     clang_options: Vec<String>,
     optimize: bool,
     verbose: bool,
@@ -54,14 +59,14 @@ pub struct Pipeline {
 
 impl Pipeline {
     pub fn new(current_path: impl Into<path::PathBuf>) -> Self {
-        let mut code_loader = CodeLoader::new();
-        code_loader.add_package(PackageName::builtin(), ast::builtin::module());
-        code_loader.add_package(PackageName::std(), llstd::modules());
-        code_loader.add_package(PackageName::current(), current_path.into());
+        let mut source_loader = SourceLoader::new();
+        source_loader.add_package(PackageName::builtin(), ast::builtin::module());
+        source_loader.add_package(PackageName::std(), llstd::modules());
+        source_loader.add_package(PackageName::current(), current_path.into());
 
         Self {
-            code_loader,
-            entry_code_paths: Vec::new(),
+            source_loader,
+            entry_source_paths: Vec::new(),
             clang_options: Vec::new(),
             optimize: false,
             verbose: false,
@@ -69,11 +74,11 @@ impl Pipeline {
     }
 
     pub fn register_package(&mut self, name: PackageName, path: impl Into<path::PathBuf>) -> bool {
-        self.code_loader.add_package(name, path.into())
+        self.source_loader.add_package(name, path.into())
     }
 
     pub fn add_entry_path(&mut self, path: Path) {
-        self.entry_code_paths.push(path);
+        self.entry_source_paths.push(path);
     }
 
     pub fn set_optimize(&mut self, optimize: bool) {
@@ -97,36 +102,36 @@ impl Pipeline {
         let mut source_location_table = SourceLocationTable::new();
         let mut report = Report::new();
 
-        let codes = collect_codes(
-            self.entry_code_paths.iter(),
-            &self.code_loader,
+        let sources = collect_sources(
+            self.entry_source_paths.iter(),
+            &self.source_loader,
             &mut source_location_table,
             &mut report,
         );
-        let code_errors = codes
+        let source_errors = sources
             .errors()
             .map(|(path, e)| (path.clone(), e.clone()))
             .collect::<Vec<_>>();
 
-        if !code_errors.is_empty() {
-            return Err(Error::Code(code_errors));
+        if !source_errors.is_empty() {
+            return Err(Error::Source(source_errors));
         }
 
-        let codes = codes
+        let sources = sources
             .resolve_dependencies_order()
             .map_err(Error::CircularDependencies)?;
 
         if self.verbose {
-            eprintln!("### collected codes");
-            for (index, code) in codes.iter().enumerate() {
-                if code.dependencies.is_empty() {
-                    eprintln!("[{}] {}", index, code.path);
+            eprintln!("### collected sources");
+            for (index, source) in sources.iter().enumerate() {
+                if source.dependencies.is_empty() {
+                    eprintln!("[{}] {}", index, source.path);
                 } else {
                     eprintln!(
                         "[{}] {} -> {}",
                         index,
-                        code.path,
-                        code.dependencies.values().format(", ")
+                        source.path,
+                        source.dependencies.values().format(", ")
                     );
                 }
             }
@@ -139,8 +144,8 @@ impl Pipeline {
                 .build(),
         );
 
-        let entry_points = self.entry_code_paths.into_iter().collect();
-        let (_, module_errors) = build_modules(codes, entry_points, &emitter, &mut report);
+        let entry_points = self.entry_source_paths.into_iter().collect();
+        let (_, module_errors) = build_modules(sources, entry_points, &emitter, &mut report);
 
         if !module_errors.is_empty() {
             return Err(Error::Module(source_location_table, module_errors));

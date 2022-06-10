@@ -5,8 +5,8 @@
 (import "~/path" Path PackageName ModuleName [path/_ _] path/_)
 (import "~/source-location" SourceLocator)
 (import "~/sexp" Ss _.Ss)
-(import "~/code/error" _)
-(import "~/code/unit" _)
+(import "~/source/error" _)
+(import "~/source/unit" _)
 (export Loader _.Loader loader/_ _.LoadablePackage _.LoadableSource)
 
 (derive (DebugDisplay) value-data (Loader A)
@@ -46,7 +46,7 @@
 (function (loader/add-embedded-std! loader) {(forall A) (-> (Loader A) Bool)}
   (loader/add-package! path/package-name/std (resources/std-source-codes) loader))
 
-(function (loader/load! path locator loader) {(forall A) (-> Path SourceLocator (Loader A) (Result (Code A) Error))}
+(function (loader/load! path locator loader) {(forall A) (-> Path SourceLocator (Loader A) (Result (Source A) Error))}
   (match (hash-map/get? (path/package path) (packages loader))
     [(some (let package))
       (loadable-package/load! path locator package)]
@@ -84,42 +84,43 @@
   (function (conv a)
     (loadable-package:in-memory (hash-map (: path/module-name/prelude (conv a))))))
 
-(function (loadable-package/load! path locator package) {(forall A) (-> Path SourceLocator (LoadablePackage A) (Result (Code A) Error))}
+(function (loadable-package/load! path locator package) {(forall A) (-> Path SourceLocator (LoadablePackage A) (Result (Source A) Error))}
   (match package
     [(loadable-package:in-memory (let map))
       (match (hash-map/get? (path/module path) map)
         [(some (let source))
-          (ok (loadable-source/to-code path locator source))]
+          (ok (loadable-source/to-source path locator source))]
         [none
           (err error:module-not-found)])]
     [(loadable-package:file-system (let fs-path))
       (let* ([module-name (path/module path)]
              [fs-path
-               (io/path/with-extension (some code/source-file-extension)
+               (io/path/with-extension (some source/source-file-extension)
                  (if (path/module-name/prelude? module-name)
                    (io/path/join fs-path "prelude")
                    (it/fold io/path/join fs-path (path/module-name/raw-parts module-name))))])
         (match (io/with-file! fs-path "r" read-string-to-end!)
           [(ok (let text))
-            (ok (code/from-source-text path locator text))]
+            (ok (source/from-code-text path locator text))]
           [(err (let e))
             (if (eq? e io/io-error:not-found)
               (err error:module-not-found)
               (err (error:load-failed (string e))))]))]))
 
 (derive (DebugDisplay) value-data (LoadableSource A)
-  (loadable-source:text String)
-  (loadable-source:just (Ss A)))
+  (loadable-source:code-text String)
+  (loadable-source:code (Ss A)))
 
 (instance Conv.From.String.To.LoadableSource (forall A) (Conv String (LoadableSource A))
-  (function (conv a) (loadable-source:text a)))
+  (function (conv a) (loadable-source:code-text a)))
 
 (instance Conv.From.Ss.To.LoadableSource (forall A) (Conv (Ss A) (LoadableSource A))
-  (function (conv a) (loadable-source:just a)))
+  (function (conv a) (loadable-source:code a)))
 
-(function (loadable-source/to-code path locator source) {(forall A) (-> Path SourceLocator (LoadableSource A) (Code A))}
+(function (loadable-source/to-source path locator source)
+  {(forall A) (-> Path SourceLocator (LoadableSource A) (Source A))}
   (match source
-    [(loadable-source:text (let s))
-      (code/from-source-text path locator s)]
-    [(loadable-source:just (let ss))
-      (code/from-source path ss)]))
+    [(loadable-source:code-text (let s))
+      (source/from-code-text path locator s)]
+    [(loadable-source:code (let ss))
+      (source/from-code path ss)]))

@@ -2,8 +2,8 @@ use super::{importer::WildcardPortTarget, Error, Module, Result, Scope};
 use crate::sexp::Ss;
 use crate::syntax;
 
-pub fn run(module: &mut Module, source: &Ss) -> Result<()> {
-    for s in source.ss.iter() {
+pub fn run(module: &mut Module, code: &Ss) -> Result<()> {
+    for s in code.ss.iter() {
         if let Ok(export) = s.matches::<syntax::Export>() {
             for target in export.targets {
                 let select = target.matches::<syntax::PortTarget>()?;

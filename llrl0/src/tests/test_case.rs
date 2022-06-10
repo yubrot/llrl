@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 pub(super) struct TestCase {
-    loader: CodeLoader,
+    loader: SourceLoader,
     target: TestTarget,
     condition: TestCondition,
 }
@@ -27,24 +27,24 @@ impl TestCase {
     pub(super) fn run(self, ctx: &mut TestContext) {
         println!("{}", ctx.header());
 
-        let codes = collect_codes(
+        let sources = collect_sources(
             &[Path::current()],
             &self.loader,
             &mut ctx.source_location_table,
             &mut ctx.report,
         );
 
-        for (path, error) in codes.errors() {
+        for (path, error) in sources.errors() {
             panic!(
-                "{}: Failed to create a code {}: {}",
+                "{}: Failed to create a source {}: {}",
                 ctx.header(),
                 path,
                 error
             );
         }
 
-        match codes.resolve_dependencies_order() {
-            Ok(codes) => self.target.run(codes, &self.condition, ctx),
+        match sources.resolve_dependencies_order() {
+            Ok(sources) => self.target.run(sources, &self.condition, ctx),
             Err(paths) => {
                 let paths = paths.into_iter().join(", ");
                 panic!("{}: Circular dependencies: {}", ctx.header(), paths);
@@ -112,8 +112,8 @@ pub(super) enum TestTarget {
 }
 
 impl TestTarget {
-    fn prepare_loader(&self, sources: HashMap<String, Ss>) -> CodeLoader {
-        let mut loader = CodeLoader::new();
+    fn prepare_loader(&self, sources: HashMap<String, Ss>) -> SourceLoader {
+        let mut loader = SourceLoader::new();
         loader.add_source(Path::builtin(), ast::builtin::module());
 
         for (path, source) in sources {
@@ -145,36 +145,36 @@ impl TestTarget {
         loader
     }
 
-    fn run(&self, codes: Vec<Code>, cond: &TestCondition, ctx: &mut TestContext) {
+    fn run(&self, sources: Vec<Source>, cond: &TestCondition, ctx: &mut TestContext) {
         match self {
             Self::Module => {
                 let (modules, errors) =
-                    build_modules(codes, Default::default(), &(), &mut ctx.report);
+                    build_modules(sources, Default::default(), &(), &mut ctx.report);
                 cond.run(&modules, &errors, ctx);
             }
             Self::Backend => {
                 let backend = InterpreterBackend::new();
-                self.run_backend(codes.clone(), cond, backend, ctx);
+                self.run_backend(sources.clone(), cond, backend, ctx);
                 let backend = DefaultNativeBackendBuilder::new().build();
-                self.run_backend(codes, cond, backend, ctx);
+                self.run_backend(sources, cond, backend, ctx);
             }
             Self::Std => {
                 let backend = DefaultNativeBackendBuilder::new().build();
-                self.run_backend(codes, cond, backend, ctx);
+                self.run_backend(sources, cond, backend, ctx);
             }
         }
     }
 
     fn run_backend<B: Backend>(
         &self,
-        codes: Vec<Code>,
+        sources: Vec<Source>,
         cond: &TestCondition,
         backend: B,
         ctx: &mut TestContext,
     ) {
         let emitter = Emitter::new(backend);
         let entry_points = vec![Path::current()].into_iter().collect();
-        let (modules, errors) = build_modules(codes, entry_points, &emitter, &mut ctx.report);
+        let (modules, errors) = build_modules(sources, entry_points, &emitter, &mut ctx.report);
         cond.run(&modules, &errors, ctx);
 
         if matches!(cond, TestCondition::Pass(_)) {
@@ -201,7 +201,7 @@ impl TestCondition {
     pub(super) fn run(
         &self,
         modules: &[Arc<Module>],
-        errors: &[(Code, ModuleError)],
+        errors: &[(Source, ModuleError)],
         ctx: &mut TestContext,
     ) {
         match self {
@@ -238,12 +238,12 @@ impl TestCondition {
                     ctx.header(),
                     error_expectation
                 ),
-                [(code, error)] => assert!(
+                [(source, error)] => assert!(
                     error_expectation.matches(error),
                     "{}: Expected `{:?}` but got an error:\n{}: {}",
                     ctx.header(),
                     error_expectation,
-                    code.path,
+                    source.path,
                     error.fmt_on(&ctx.source_location_table)
                 ),
                 errors => panic!(
@@ -279,14 +279,14 @@ impl<'a> m::Match<'a> for TestCondition {
     }
 }
 
-fn errors_summary(errors: &[(Code, ModuleError)], ctx: &TestContext) -> String {
+fn errors_summary(errors: &[(Source, ModuleError)], ctx: &TestContext) -> String {
     errors
         .into_iter()
-        .map(|(code, error)| {
+        .map(|(source, error)| {
             format!(
                 "{} (while building {})",
                 error.fmt_on(&ctx.source_location_table),
-                code.path
+                source.path
             )
         })
         .join("\n")

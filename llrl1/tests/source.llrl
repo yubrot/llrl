@@ -1,5 +1,5 @@
-(import "~/code" _)
-(println! "llrl1/tests/code")
+(import "~/source" _)
+(println! "llrl1/tests/source")
 
 (import "std/ord-map" _)
 (import "std/ord-set" _)
@@ -8,44 +8,44 @@
 (import "~/source-location" source-location-table/_ source-locator/_)
 
 (let1
-  code
-  (code/from-source-text
+  source
+  (source/from-code-text
     (result/force (path/from-string "~/foo"))
     (source-locator/temporary)
     ")")
-  (assert-eq? (result/force (path/from-string "~/foo")) (code/path code))
-  (assert (ord-map/empty? (code/dependencies code)))
-  (assert-eq? 1 (array/length (code/errors code)))
-  (assert-is? (error:parse-failed _) (get (code/errors code)[0])))
+  (assert-eq? (result/force (path/from-string "~/foo")) (source/path source))
+  (assert (ord-map/empty? (source/dependencies source)))
+  (assert-eq? 1 (array/length (source/errors source)))
+  (assert-is? (error:parse-failed _) (get (source/errors source)[0])))
 
 (let1
-  code
-  (code/from-source-text
+  source
+  (source/from-code-text
     (result/force (path/from-string "~/foo"))
     (source-locator/temporary)
     "(import \"std/io\" write) (import \"~/foo/bar\" baz)")
-  (assert-eq? (result/force (path/from-string "~/foo")) (code/path code))
+  (assert-eq? (result/force (path/from-string "~/foo")) (source/path source))
   (assert-eq? (ord-map (: "builtin" path/builtin)
                         (: "std" path/std)
                         (: "std/io" (result/force (path/from-string "std/io")))
                         (: "~/foo/bar" (result/force (path/from-string "~/foo/bar"))))
-              (code/dependencies code))
-  (assert (array/empty? (code/errors code))))
+              (source/dependencies source))
+  (assert (array/empty? (source/errors source))))
 
 (let1
-  code
-  (code/from-source-text
+  source
+  (source/from-code-text
     (result/force (path/from-string "hello/world"))
     (source-locator/temporary)
     "(no-implicit-std) (import \"std/io\" write) (import \"~/foo/bar\" baz) (import \"../hello\") (import \"~/world\")")
-  (assert-eq? (result/force (path/from-string "hello/world")) (code/path code))
+  (assert-eq? (result/force (path/from-string "hello/world")) (source/path source))
   (assert-eq? (ord-map (: "builtin" path/builtin)
                         (: "std/io" (result/force (path/from-string "std/io")))
                         (: "~/foo/bar" (result/force (path/from-string "hello/foo/bar"))))
-              (code/dependencies code))
-  (assert-eq? 2 (array/length (code/errors code)))
-  (assert-is? (error:invalid-import-path "../hello" _) (get (code/errors code)[0]))
-  (assert-eq? error:cannot-import-module-itself (get (code/errors code)[1])))
+              (source/dependencies source))
+  (assert-eq? 2 (array/length (source/errors source)))
+  (assert-is? (error:invalid-import-path "../hello" _) (get (source/errors source)[0]))
+  (assert-eq? error:cannot-import-module-itself (get (source/errors source)[1])))
 
 (function test-sources
   (|> (array
@@ -71,18 +71,18 @@
   (for (: (let path) (let text)) test-sources
     (loader/add-source! path text loader))
 
-  (let1 result (code-set/build! test-inputs loader source-location-table (report/new))
+  (let1 result (source-set/build! test-inputs loader source-location-table (report/new))
     (assert-eq? (ord-set "~" "std" "builtin")
-                (|> result code-set/packages ord-map/keys (it/map [^1 (string %1)]) ord-set/collect))
+                (|> result source-set/packages ord-map/keys (it/map [^1 (string %1)]) ord-set/collect))
     (assert-eq? (ord-set "~" "~/foo" "~/bar" "~/baz" "std" "std/a" "std/b" "std/c" "std" "builtin")
-                (|> result code-set/codes (it/map [^1 (string (code/path %1))]) ord-set/collect))
-    (for (let code) (code-set/codes result)
-      (match (string (code/path code))
+                (|> result source-set/sources (it/map [^1 (string (source/path %1))]) ord-set/collect))
+    (for (let source) (source-set/sources result)
+      (match (string (source/path source))
         ["~/baz"
           (assert-is? (some error:module-not-found)
-                      (get? (code/errors code)[0]))]
+                      (get? (source/errors source)[0]))]
         ["std/c"
           (assert-is? (some (error:parse-failed _))
-                      (get? (code/errors code)[0]))]
+                      (get? (source/errors source)[0]))]
         [_
-          (assert (array/empty? (code/errors code)))]))))
+          (assert (array/empty? (source/errors source)))]))))

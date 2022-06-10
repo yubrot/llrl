@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy, Hash)]
 pub enum Phase {
-    CollectCode,
+    CollectSource,
     BuildModule,
     Import,
     BuildAst,
@@ -23,7 +23,7 @@ pub enum Phase {
 impl fmt::Display for Phase {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::CollectCode => write!(f, "collect-code"),
+            Self::CollectSource => write!(f, "collect-source"),
             Self::BuildModule => write!(f, "build-module"),
             Self::Import => write!(f, "import"),
             Self::BuildAst => write!(f, "build-ast"),

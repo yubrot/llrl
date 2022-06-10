@@ -12,6 +12,6 @@
 (import "~/tests/unification/kind")
 (import "~/tests/unification/type")
 (import "~/tests/report")
-(import "~/tests/code")
+(import "~/tests/source")
 (import "~/tests/module")
 (import "~/tests/testcases")

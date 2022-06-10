@@ -21,3 +21,6 @@ pub trait BackendBuilder: Sized {
 
     fn build(self) -> Self::Backend;
 }
+
+#[cfg(feature = "llvm-backend")]
+pub use super::llvm as default;

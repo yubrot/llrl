@@ -1,7 +1,7 @@
 use crate::ast;
-use crate::code::Code;
 use crate::path::Path;
 use crate::report::Report;
+use crate::source::Source;
 use crate::topological_sort;
 
 mod builder;
@@ -42,13 +42,17 @@ pub struct Module {
 }
 
 impl Module {
-    /// Build the module from `Code`.
-    pub fn build(mid: ModuleId, code: &Code, external: &impl builder::External) -> Result<Self> {
+    /// Build the module from `Source`.
+    pub fn build(
+        mid: ModuleId,
+        source: &Source,
+        external: &impl builder::External,
+    ) -> Result<Self> {
         use once_cell::sync::Lazy;
         use std::sync::Mutex;
 
         // Module::build for the builtin will always have the same result. we cache it because
-        // we are repeatedly building the builtin in our test code. We would like to replace this
+        // we are repeatedly building the builtin in our unit tests. We would like to replace this
         // with a fast build cache mechanism, but for now there are no plan to support separate compilation.
         static BUILTIN_CACHE: Lazy<Mutex<Option<Module>>> = Lazy::new(|| Mutex::new(None));
 
@@ -58,8 +62,8 @@ impl Module {
             }
         }
 
-        let mut module = Module::new(mid, code.path.clone());
-        match builder::run(&mut module, code, external) {
+        let mut module = Module::new(mid, source.path.clone());
+        match builder::run(&mut module, source, external) {
             Ok(()) => {
                 if mid == ModuleId::builtin() {
                     let mut module = module.clone();

@@ -1,4 +1,4 @@
-use super::{Code, Error, SOURCE_CODE_EXTENSION};
+use super::{Error, Source, SOURCE_CODE_EXTENSION};
 use crate::path::{ModuleName, PackageName, Path};
 use crate::sexp::Ss;
 use crate::source_loc::SourceLocator;
@@ -46,7 +46,7 @@ impl Loader {
         }
     }
 
-    pub fn load(&self, path: Path, locator: &mut SourceLocator) -> Result<Code, (Path, Error)> {
+    pub fn load(&self, path: Path, locator: &mut SourceLocator) -> Result<Source, (Path, Error)> {
         match self.loadable_packages.get(&path.package) {
             Some(loadable_package) => loadable_package.load(path, locator),
             None => Err((path, Error::PackageNotFound)),
@@ -61,10 +61,10 @@ pub enum LoadablePackage {
 }
 
 impl LoadablePackage {
-    pub fn load(&self, path: Path, locator: &mut SourceLocator) -> Result<Code, (Path, Error)> {
+    pub fn load(&self, path: Path, locator: &mut SourceLocator) -> Result<Source, (Path, Error)> {
         match self {
             Self::InMemory(map) => match map.get(&path.module) {
-                Some(source) => Ok(source.to_code(path, locator)),
+                Some(source) => Ok(source.to_source(path, locator)),
                 None => Err((path, Error::ModuleNotFound)),
             },
             Self::FileSystem(fs_path) => {
@@ -83,7 +83,7 @@ impl LoadablePackage {
                 };
 
                 match fs::read_to_string(fs_path) {
-                    Ok(text) => Ok(Code::from_source_text(path, locator, &text)),
+                    Ok(text) => Ok(Source::from_code_text(path, locator, &text)),
                     Err(e) => Err((
                         path,
                         if e.kind() == io::ErrorKind::NotFound {
@@ -146,27 +146,27 @@ impl From<Ss> for LoadablePackage {
 
 #[derive(Debug, Clone)]
 pub enum LoadableSource {
-    Text(String),
-    Just(Ss),
+    CodeText(String),
+    Code(Ss),
 }
 
 impl LoadableSource {
-    pub fn to_code(&self, path: Path, locator: &mut SourceLocator) -> Code {
+    pub fn to_source(&self, path: Path, locator: &mut SourceLocator) -> Source {
         match self {
-            Self::Text(text) => Code::from_source_text(path, locator, text),
-            Self::Just(ss) => Code::from_source(path, ss.clone()),
+            Self::CodeText(text) => Source::from_code_text(path, locator, text),
+            Self::Code(ss) => Source::from_code(path, ss.clone()),
         }
     }
 }
 
 impl From<String> for LoadableSource {
     fn from(text: String) -> Self {
-        Self::Text(text)
+        Self::CodeText(text)
     }
 }
 
 impl From<Ss> for LoadableSource {
     fn from(ss: Ss) -> Self {
-        Self::Just(ss)
+        Self::Code(ss)
     }
 }

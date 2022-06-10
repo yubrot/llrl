@@ -1,7 +1,7 @@
 use super::*;
-use crate::code::CodeRep;
 use crate::report::Phase;
 use crate::sexp::Sexp;
+use crate::source::SourceRep;
 
 mod ast_builder;
 mod exporter;
@@ -37,8 +37,8 @@ impl<'a, E: External> ModuleSet for (&'a Module, &'a E) {
     }
 }
 
-pub fn run(module: &mut Module, code: &Code, external: &impl External) -> Result<()> {
-    for path in code.dependencies.values() {
+pub fn run(module: &mut Module, source: &Source, external: &impl External) -> Result<()> {
+    for path in source.dependencies.values() {
         let import_module = external
             .find_module(path)
             .unwrap_or_else(|| panic!("find_module({})", path));
@@ -46,15 +46,15 @@ pub fn run(module: &mut Module, code: &Code, external: &impl External) -> Result
         module.imports.insert(import_module.id());
     }
 
-    match code.rep {
-        CodeRep::Empty => {}
-        CodeRep::Source(ref source) => {
+    match source.rep {
+        SourceRep::Empty => {}
+        SourceRep::Code(ref code) => {
             module.report.enter_phase(Phase::Import);
-            importer::run(module, source, code, external)?;
+            importer::run(module, code, source, external)?;
             module.report.leave_phase(Phase::Import);
 
             module.report.enter_phase(Phase::BuildAst);
-            ast_builder::run(module, source, external)?;
+            ast_builder::run(module, code, external)?;
             module.report.leave_phase(Phase::BuildAst);
 
             module.report.enter_phase(Phase::Resolve);
@@ -74,7 +74,7 @@ pub fn run(module: &mut Module, code: &Code, external: &impl External) -> Result
             module.report.leave_phase(Phase::Validate);
 
             module.report.enter_phase(Phase::Export);
-            exporter::run(module, source)?;
+            exporter::run(module, code)?;
             module.report.leave_phase(Phase::Export);
         }
     }

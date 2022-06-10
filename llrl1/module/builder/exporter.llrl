@@ -9,8 +9,8 @@
 (import "~/module/builder/importer" wildcard-port-target/_)
 (export run!)
 
-(function (run! module source) {(-> Module (Ss Construct) (Result unit Error))}
-  (for (let s) (ss/elems source)
+(function (run! module code) {(-> Module (Ss Construct) (Result unit Error))}
+  (for (let s) (ss/elems code)
     (when-match1 (ok (syntax:export _ (let targets))) (syntax/export s)
       (for (syntax:port-target (let loc) (let name) (syntax:name _ (let target))) targets
         (if-match1 (some (let src)) (wildcard-port-target/from-pattern? target)

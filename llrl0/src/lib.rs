@@ -24,7 +24,7 @@ pub mod unification;
 
 pub mod report;
 
-pub mod code;
+pub mod source;
 
 pub mod module;
 
@@ -53,8 +53,8 @@ pub mod prelude {
 
     pub use super::report::{Phase, Report};
 
-    pub use super::code::{
-        collect as collect_codes, Code, CodeSet, Error as CodeError, Loader as CodeLoader,
+    pub use super::source::{
+        collect as collect_sources, Error as SourceError, Loader as SourceLoader, Source, SourceSet,
     };
 
     pub use super::module::{
@@ -63,10 +63,10 @@ pub mod prelude {
 
     pub use super::emitter::{Backend, BackendValue, Emitter};
 
-    pub use super::backend::default::{
-        NativeBackend as DefaultNativeBackend, NativeBackendBuilder as DefaultNativeBackendBuilder,
-    };
     pub use super::backend::interpreter::Backend as InterpreterBackend;
+    pub use super::backend::native::default::{
+        Backend as DefaultNativeBackend, BackendBuilder as DefaultNativeBackendBuilder,
+    };
     pub use super::backend::native::{
         Backend as NativeBackend, BackendBuilder as NativeBackendBuilder,
     };

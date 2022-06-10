@@ -1,0 +1,69 @@
+(import "std/ord-map" _)
+(import "std/ord-set" _)
+(import "~/util" _)
+(import "~/report" Report report/_ phase:_)
+(import "~/source-location" SourceLocationTable source-location-table/_)
+(import "~/path" Path PackageName ModuleName [path/_ _] path/_)
+(import "~/source/error" _)
+(import "~/source/unit" _)
+(import "~/source/loader" _)
+(export SourceSet _.SourceSet source-set/_)
+
+(derive (DebugDisplay) value-data (SourceSet A)
+  (source-set: (OrdMap PackageName (OrdMap ModuleName (Source A)))))
+
+(getter source-set: source-set/packages)
+
+(function (source-set/new) {(forall A) (-> (SourceSet A))}
+  (source-set: ord-map/empty))
+
+(function (source-set/insert! source set) {(forall A) (-> (Source A) (SourceSet A) unit)}
+  (let ([p (|> source source/path path/package)]
+        [m (|> source source/path path/module)]
+        [packages (source-set/packages set)])
+    (match (ord-map/get? p packages)
+      [(some (let modules))
+        (ignore (ord-map/insert! m source modules))]
+      [none
+        (ignore (ord-map/insert! p (ord-map (: m source)) packages))])))
+
+(function (source-set/sources set) {(forall A) (-> (SourceSet A) (Iterator (Source A)))}
+  (|> set
+      source-set/packages
+      ord-map/values
+      (it/flat-map ord-map/values)))
+
+(function (source-set/errors set) {(forall A) (-> (SourceSet A) (Iterator (: Path Error)))}
+  (|> set
+      source-set/sources
+      (it/flat-map (lambda (source) (it/map [^1 (: (source/path source) %1)] (source/errors source))))))
+
+(function (source-set/resolve-dependencies-order set) {(forall A) (-> (SourceSet A) (Result (Vector (Source A)) (Array Path)))}
+  (|> set
+      source-set/sources
+      (it/map [^1 (: (source/path %1) %1)])
+      (topological-sort (lambda (f source)
+        (for (let path) (|> source source/dependencies ord-map/values)
+          (f path))))
+      (it/traverse-result (lambda (sources)
+        (if (eq? (vector/length sources) 1)
+          (ok (get sources[0]))
+          (err (|> sources (it/map source/path) collect)))))))
+
+(function (source-set/build! inputs loader slt report)
+  {(forall T A) (-> (T Path) (Loader A) SourceLocationTable Report (SourceSet A)) (where (Iterate T))}
+  (let* ([result (source-set/new)]
+         [visit-log ord-set/empty]
+         [(collect path)
+           (when (not (ord-set/insert! path visit-log)) (return))
+           (let1
+             source
+             (result/unwrap*
+               [^1 (source/from-error path %1)]
+               (loader/load! path (source-location-table/get-locator! path slt) loader))
+             (for (let dep) (|> source source/dependencies ord-map/values) (collect dep))
+             (source-set/insert! source result))])
+    (report/on report phase:collect-source
+      (for (let input) inputs
+        (collect input)))
+    result))

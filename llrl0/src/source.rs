@@ -15,46 +15,48 @@ mod set;
 pub use collector::collect;
 pub use error::Error;
 pub use loader::{LoadablePackage, LoadableSource, Loader};
-pub use set::CodeSet;
+pub use set::SourceSet;
 
 #[cfg(test)]
 mod tests;
 
 pub const SOURCE_CODE_EXTENSION: &'static str = "llrl";
 
-/// `Code` is a representation to describe a llrl module.
+/// A source of a llrl module.
 #[derive(Debug, Clone)]
-pub struct Code {
+pub struct Source {
     pub path: Path,
     pub implicit_std: bool,
     pub dependencies: HashMap<String, Path>,
-    pub rep: CodeRep,
+    pub rep: SourceRep,
     pub errors: Vec<Error>,
 }
 
-impl Code {
+impl Source {
     pub fn from_error(path: Path, error: impl Into<Error>) -> Self {
         Self {
             path,
             implicit_std: false,
             dependencies: HashMap::new(),
-            rep: CodeRep::Empty,
+            rep: SourceRep::Empty,
             errors: vec![error.into()],
         }
     }
 
-    pub fn from_source(path: Path, source: Ss) -> Self {
+    pub fn from_code(path: Path, code: Ss) -> Self {
         let mut dependencies = HashMap::new();
         let mut errors = Vec::new();
         let mut implicit_std = true;
 
-        for s in source.ss.iter() {
+        // Collect the dependencies from (import ..) and (no-implicit-std) declarations.
+        for s in code.ss.iter() {
             if let Ok(()) = s.matches::<syntax::NoImplicitStd>() {
                 implicit_std = false;
             } else if let Ok(import) = s.matches::<syntax::Import>() {
                 match import.path.parse::<Path>() {
                     Ok(mut import_path) => {
                         if import_path.package.is_current() && !path.package.is_current() {
+                            // relative to the `path.package`
                             import_path.package = path.package.clone();
                         }
                         if import_path == path {
@@ -87,34 +89,34 @@ impl Code {
             path,
             implicit_std,
             dependencies,
-            rep: CodeRep::Source(source),
+            rep: SourceRep::Code(code),
             errors,
         }
     }
 
-    pub fn from_source_text(path: Path, locator: &mut SourceLocator, source_text: &str) -> Self {
-        let parse_result = parse::<Ss, _>(locator, Lexer::new(source_text));
-        let mut code = match parse_result.final_result {
-            Ok(source) => Self::from_source(path, source),
+    pub fn from_code_text(path: Path, locator: &mut SourceLocator, code_text: &str) -> Self {
+        let parse_result = parse::<Ss, _>(locator, Lexer::new(code_text));
+        let mut source = match parse_result.final_result {
+            Ok(code) => Self::from_code(path, code),
             Err(parse_error) => Self::from_error(path, parse_error),
         };
 
         for parse_error in parse_result.inner_errors {
-            code.errors.push(parse_error.into());
+            source.errors.push(parse_error.into());
         }
 
-        code
+        source
     }
 }
 
-impl topological_sort::DependencyList<Path> for Code {
+impl topological_sort::DependencyList<Path> for Source {
     fn traverse_dependencies(&self, f: &mut impl FnMut(&Path)) {
         self.dependencies.values().for_each(f);
     }
 }
 
 #[derive(Debug, Clone)]
-pub enum CodeRep {
+pub enum SourceRep {
     Empty,
-    Source(Ss),
+    Code(Ss),
 }

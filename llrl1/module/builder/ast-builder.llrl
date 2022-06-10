@@ -12,9 +12,9 @@
 (import "~/module/builder/external" External external/_)
 (export run!)
 
-(function (run! module source external)
+(function (run! module code external)
   {(forall E) (-> Module (Ss Construct) E (Result unit Error)) (where (External E))}
-  (for (let s) (ss/elems source) (define-top-level! s (context module external))!)
+  (for (let s) (ss/elems code) (define-top-level! s (context module external))!)
   (root/verify-relations (module/ast-root module))
   (ok unit))
 

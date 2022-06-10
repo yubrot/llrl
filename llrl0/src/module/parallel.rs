@@ -1,8 +1,8 @@
 use super::{builder, Error, Module, ModuleId};
 use crate::ast::{self, builtin};
-use crate::code::Code;
 use crate::path::Path;
 use crate::report::{Phase, Report};
+use crate::source::Source;
 use either::*;
 use itertools::Itertools;
 use std::cell::RefCell;
@@ -33,49 +33,49 @@ impl Backend for () {
     }
 }
 
-/// Build a set of modules from the codes sorted by dependency.
+/// Build a set of modules from the sources sorted by dependency.
 pub fn build(
-    codes: Vec<Code>,
+    sources: Vec<Source>,
     entry_points: HashSet<Path>,
     backend: &impl Backend,
     report: &mut Report,
-) -> (Vec<Arc<Module>>, Vec<(Code, Error)>) {
-    if codes.is_empty() {
+) -> (Vec<Arc<Module>>, Vec<(Source, Error)>) {
+    if sources.is_empty() {
         return Default::default();
     }
 
     assert!(
         // ModuleId(0) must be builtin
-        codes[0].path == Path::builtin() &&
+        sources[0].path == Path::builtin() &&
         // Every other module must depend on builtin
-        codes
+        sources
             .iter()
             .skip(1)
-            .all(|code| code.dependencies.contains_key(&Path::builtin().to_string())) &&
+            .all(|source| source.dependencies.contains_key(&Path::builtin().to_string())) &&
         // Every implicit_std enabled module must depend on std
-        codes
+        sources
             .iter()
-            .all(|code|
-                !code.implicit_std ||
-                code.dependencies.contains_key(&Path::std().to_string())
+            .all(|source|
+                !source.implicit_std ||
+                source.dependencies.contains_key(&Path::std().to_string())
             )
     );
 
     let mut path_to_module = HashMap::<Path, ModuleId>::new();
-    let mut modules = Vec::<BuildingModule>::with_capacity(codes.len());
+    let mut modules = Vec::<BuildingModule>::with_capacity(sources.len());
 
-    for code in codes {
+    for source in sources {
         let mid = ModuleId::from_index(modules.len());
-        let module = BuildingModule::new(mid, code);
+        let module = BuildingModule::new(mid, source);
 
-        for dep in module.code.dependencies.values() {
+        for dep in module.source.dependencies.values() {
             if let Some(dep_id) = path_to_module.get(dep) {
                 module.leader_count.fetch_add(1, Ordering::SeqCst);
                 modules[dep_id.as_index()].followers.push(module.mid);
             }
         }
 
-        path_to_module.insert(module.code.path.clone(), mid);
+        path_to_module.insert(module.source.path.clone(), mid);
         modules.push(module);
     }
 
@@ -91,24 +91,24 @@ pub fn build(
                 report.merge(module.report());
                 Left(module)
             }
-            Err(error) => Right((module.code, error)),
+            Err(error) => Right((module.source, error)),
         })
 }
 
 #[derive(Debug)]
 struct BuildingModule {
     mid: ModuleId,
-    code: Code,
+    source: Source,
     leader_count: AtomicU32,
     followers: Vec<ModuleId>,
     result: RwLock<Result<Arc<Module>, Error>>,
 }
 
 impl BuildingModule {
-    fn new(mid: ModuleId, code: Code) -> Self {
+    fn new(mid: ModuleId, source: Source) -> Self {
         Self {
             mid,
-            code,
+            source,
             leader_count: AtomicU32::new(1),
             followers: Vec::new(),
             result: RwLock::new(Err(Error::DependentModuleBuildFailed)),
@@ -161,7 +161,7 @@ impl<'a, B: Backend> BuildingContext<'a, B> {
         scope.spawn(move |scope| {
             let deps_arena = Arena::new();
             let external = ModuleBuildingContext::new(self, &deps_arena);
-            match Module::build(module.mid, &module.code, &external) {
+            match Module::build(module.mid, &module.source, &external) {
                 Ok(built_module) => {
                     let built_module = Arc::new(built_module);
                     let is_entry_point = self.entry_points.contains(built_module.path());

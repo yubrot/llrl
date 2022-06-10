@@ -22,7 +22,7 @@ pub fn run(module: &Module, external: &impl External) -> Result<()> {
 
     // TODO: Here we should validate that all value types can be sized, but this validation is
     // complicated by the inclusion of higher-order type parameters, so we are delaying it
-    // until code generation. Here is an example of a program which is difficult to validate:
+    // until code generation. Here is an example of a program which is difficult to implement validation:
     // (value-data (Foo F)
     //   (foo (Bar F)))
     // (value-data (Bar F)

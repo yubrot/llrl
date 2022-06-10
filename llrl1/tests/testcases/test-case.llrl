@@ -16,12 +16,12 @@
 (function (test-case/run! slt report test-case)
   {(-> SourceLocationTable Report TestCase (Result unit String))}
   (with1 (test-case: (let sources) (let target) (let condition)) test-case
-    (let1 code-set (code-set/build! (array path/current) (test-target/prepare-loader sources target) slt report)
-      (for (: (let path) (let error)) (code-set/errors code-set)
-        (err (string "Failed to create a code " path ": " error))!)
-      (match (code-set/resolve-dependencies-order code-set)
-        [(ok (let codes))
-          (test-target/run! slt report (vector/buffer codes) condition target)]
+    (let1 source-set (source-set/build! (array path/current) (test-target/prepare-loader sources target) slt report)
+      (for (: (let path) (let error)) (source-set/errors source-set)
+        (err (string "Failed to create a source " path ": " error))!)
+      (match (source-set/resolve-dependencies-order source-set)
+        [(ok (let sources))
+          (test-target/run! slt report (vector/buffer sources) condition target)]
         [(err (let cyclic-paths))
           (err (string "Circular dependencies: " (it/format ", " cyclic-paths)))]))))
 
@@ -62,11 +62,11 @@
   test-target:std)
 
 (function (test-target/prepare-loader sources target)
-  {(-> (HashMap String (Ss ast/Construct)) TestTarget (CodeLoader ast/Construct))}
-  (let1 loader (code-loader/new)
-    (code-loader/add-embedded-builtin! loader)
+  {(-> (HashMap String (Ss ast/Construct)) TestTarget (SourceLoader ast/Construct))}
+  (let1 loader (source-loader/new)
+    (source-loader/add-embedded-builtin! loader)
     (for (: (let path) (let source)) (hash-map/elems sources)
-      (assert (code-loader/add-source!
+      (assert (source-loader/add-source!
         (match (path/from-string path)
           [(ok (let path)) path]
           [(err (let e)) (assert #f (string "Invalid path: \"" path "\": " e))])
@@ -74,30 +74,30 @@
         loader)))
     (match target
       [test-target:module
-        (assert (code-loader/add-source!
+        (assert (source-loader/add-source!
           path/std
           (embed-text-file-as-string! "../llrl0/src/tests/test-std/prelude-for-module-test.llrl")
           loader))]
       [test-target:backend
-        (assert (code-loader/add-source!
+        (assert (source-loader/add-source!
           path/std
           (embed-text-file-as-string! "../llrl0/src/tests/test-std/prelude-for-backend-test.llrl")
           loader))]
       [test-target:std
-        ; (assert (code-loader/add-embedded-std! loader)) ; embedded-std does not contain tests
-        (assert (code-loader/add-package-filepath! package-name/std "../std" loader))])
+        ; (assert (source-loader/add-embedded-std! loader)) ; embedded-std does not contain tests
+        (assert (source-loader/add-package-filepath! package-name/std "../std" loader))])
     loader))
 
-(function (test-target/run! slt report codes condition target)
-  {(-> SourceLocationTable Report (Array (Code ast/Construct)) TestCondition TestTarget (Result unit String))}
+(function (test-target/run! slt report sources condition target)
+  {(-> SourceLocationTable Report (Array (Source ast/Construct)) TestCondition TestTarget (Result unit String))}
   (match target
     [test-target:module
-      (test-condition/run! slt (module/build! codes default unit report) condition)]
+      (test-condition/run! slt (module/build! sources default unit report) condition)]
     [_
       (with-llvm-backend #t #f (lambda (backend)
         (let ([emitter (emitter/new backend)]
               [entry-points (hash-set path/current)])
-          (test-condition/run! slt (module/build! codes entry-points emitter report) condition)!
+          (test-condition/run! slt (module/build! sources entry-points emitter report) condition)!
           (emitter/complete! report emitter)
           (when-match1 (test-condition:pass _) condition
             (match (backend/execute-main! backend)

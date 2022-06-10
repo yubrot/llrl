@@ -6,10 +6,10 @@ use crate::syntax;
 use either::*;
 use std::borrow::Cow;
 
-pub fn run(module: &mut Module, source: &Ss, external: &impl External) -> Result<()> {
+pub fn run(module: &mut Module, code: &Ss, external: &impl External) -> Result<()> {
     let mut ctx = ContextImpl { module, external };
 
-    for s in source.ss.iter() {
+    for s in code.ss.iter() {
         define(s, &mut ctx)?;
     }
 
@@ -173,35 +173,35 @@ trait Context: Sized {
         Ok(s.matches::<T>()?)
     }
 
-    fn build<T: Build<S>, S>(&mut self, source: S) -> Result<T> {
-        T::build(self, source)
+    fn build<T: Build<S>, S>(&mut self, src: S) -> Result<T> {
+        T::build(self, src)
     }
 }
 
 trait Build<S>: Sized {
-    fn build(ctx: &mut impl Context, source: S) -> Result<Self>;
+    fn build(ctx: &mut impl Context, src: S) -> Result<Self>;
 }
 
 impl<T: Build<S>, S> Build<Option<S>> for Option<T> {
-    fn build(ctx: &mut impl Context, source: Option<S>) -> Result<Self> {
-        source.map(|source| T::build(ctx, source)).transpose()
+    fn build(ctx: &mut impl Context, src: Option<S>) -> Result<Self> {
+        src.map(|src| T::build(ctx, src)).transpose()
     }
 }
 
 impl<T: Build<IntoIter::Item>, IntoIter: IntoIterator> Build<IntoIter> for Vec<T> {
-    fn build(ctx: &mut impl Context, source: IntoIter) -> Result<Self> {
-        source.into_iter().map(|s| T::build(ctx, s)).collect()
+    fn build(ctx: &mut impl Context, src: IntoIter) -> Result<Self> {
+        src.into_iter().map(|src| T::build(ctx, src)).collect()
     }
 }
 
 impl Build<syntax::Function<'_>> for Function {
-    fn build(ctx: &mut impl Context, source: syntax::Function) -> Result<Self> {
-        let params = ctx.build(source.params)?;
-        let scheme = ctx.build(source.scheme)?;
-        let body = ctx.build((source.loc, source.body))?;
+    fn build(ctx: &mut impl Context, src: syntax::Function) -> Result<Self> {
+        let params = ctx.build(src.params)?;
+        let scheme = ctx.build(src.scheme)?;
+        let body = ctx.build((src.loc, src.body))?;
         Ok(Function {
-            id: ctx.next_id(source.name.loc, source.name.sym),
-            transparent: source.transparent,
+            id: ctx.next_id(src.name.loc, src.name.sym),
+            transparent: src.transparent,
             params,
             ann: scheme,
             body,
@@ -210,39 +210,39 @@ impl Build<syntax::Function<'_>> for Function {
 }
 
 impl Build<syntax::CFunction<'_>> for CFunction {
-    fn build(ctx: &mut impl Context, source: syntax::CFunction) -> Result<Self> {
-        let scheme: Annotation<Scheme> = ctx.build(source.scheme)?;
+    fn build(ctx: &mut impl Context, src: syntax::CFunction) -> Result<Self> {
+        let scheme: Annotation<Scheme> = ctx.build(src.scheme)?;
         let ty = if scheme.body.is_monomorphic() {
             Annotation::new(ctx.reinterpret_id(scheme.id), scheme.body.body)
         } else {
-            Err(Error::CannotGeneralize(source.loc))?
+            Err(Error::CannotGeneralize(src.loc))?
         };
 
         Ok(CFunction {
-            id: ctx.next_id(source.name.loc, source.name.sym),
+            id: ctx.next_id(src.name.loc, src.name.sym),
             ann: ty,
-            c_name: source.c_name.to_string(),
+            c_name: src.c_name.to_string(),
         })
     }
 }
 
 impl Build<syntax::BuiltinOp<'_>> for BuiltinOp {
-    fn build(ctx: &mut impl Context, source: syntax::BuiltinOp) -> Result<Self> {
-        let scheme = ctx.build(source.scheme)?;
+    fn build(ctx: &mut impl Context, src: syntax::BuiltinOp) -> Result<Self> {
+        let scheme = ctx.build(src.scheme)?;
         Ok(BuiltinOp {
-            id: ctx.next_id(source.name.loc, source.name.sym),
+            id: ctx.next_id(src.name.loc, src.name.sym),
             ann: scheme,
-            builtin_name: source.builtin_name.to_string(),
+            builtin_name: src.builtin_name.to_string(),
         })
     }
 }
 
 impl Build<syntax::Macro<'_>> for Macro {
-    fn build(ctx: &mut impl Context, source: syntax::Macro) -> Result<Self> {
-        let param = ctx.build(source.param)?;
-        let body = ctx.build((source.loc, source.body))?;
+    fn build(ctx: &mut impl Context, src: syntax::Macro) -> Result<Self> {
+        let param = ctx.build(src.param)?;
+        let body = ctx.build((src.loc, src.body))?;
         Ok(Macro {
-            id: ctx.next_id(source.name.loc, source.name.sym),
+            id: ctx.next_id(src.name.loc, src.name.sym),
             param,
             body,
         })
@@ -250,30 +250,30 @@ impl Build<syntax::Macro<'_>> for Macro {
 }
 
 impl Build<syntax::Data<'_>> for (DataTypeCon, Vec<DataValueCon>) {
-    fn build(ctx: &mut impl Context, source: syntax::Data) -> Result<Self> {
+    fn build(ctx: &mut impl Context, src: syntax::Data) -> Result<Self> {
         let mut type_con = {
-            let ty_params = ctx.build(source.ty_params.unwrap_or_default())?;
-            let repr = match source.repr {
+            let ty_params = ctx.build(src.ty_params.unwrap_or_default())?;
+            let repr = match src.repr {
                 syntax::DataRepr::Default => DataRepr::Default,
                 syntax::DataRepr::Value => DataRepr::Value,
                 syntax::DataRepr::C => DataRepr::C,
             };
             DataTypeCon {
-                id: ctx.next_id(source.name.loc, source.name.sym),
+                id: ctx.next_id(src.name.loc, src.name.sym),
                 repr,
                 ty_params,
                 value_cons: Vec::new(),
             }
         };
 
-        let value_cons = source
+        let value_cons = src
             .value_cons
             .into_iter()
-            .map(|source| {
-                let source = ctx.matches::<syntax::DataValueConstructor>(&source)?;
-                let fields = ctx.build(source.fields)?;
+            .map(|src| {
+                let src = ctx.matches::<syntax::DataValueConstructor>(&src)?;
+                let fields = ctx.build(src.fields)?;
                 let value_con = DataValueCon {
-                    id: ctx.next_id(source.name.loc, source.name.sym),
+                    id: ctx.next_id(src.name.loc, src.name.sym),
                     fields,
                     type_con: type_con.id,
                 };
@@ -287,26 +287,26 @@ impl Build<syntax::Data<'_>> for (DataTypeCon, Vec<DataValueCon>) {
 }
 
 impl Build<syntax::BuiltinType<'_>> for (BuiltinTypeCon, Vec<BuiltinValueCon>) {
-    fn build(ctx: &mut impl Context, source: syntax::BuiltinType) -> Result<Self> {
+    fn build(ctx: &mut impl Context, src: syntax::BuiltinType) -> Result<Self> {
         let mut type_con = {
-            let ty_params = ctx.build(source.ty_params.unwrap_or_default())?;
+            let ty_params = ctx.build(src.ty_params.unwrap_or_default())?;
             BuiltinTypeCon {
-                id: ctx.next_id(source.name.loc, source.name.sym),
+                id: ctx.next_id(src.name.loc, src.name.sym),
                 ty_params,
-                builtin_name: source.builtin_name.to_string(),
+                builtin_name: src.builtin_name.to_string(),
                 value_cons: Vec::new(),
             }
         };
 
-        let value_cons = source
+        let value_cons = src
             .value_cons
             .into_iter()
-            .map(|source| {
-                let source = ctx.matches::<syntax::BuiltinValueConstructor>(&source)?;
-                let fields = ctx.build(source.fields)?;
+            .map(|src| {
+                let src = ctx.matches::<syntax::BuiltinValueConstructor>(&src)?;
+                let fields = ctx.build(src.fields)?;
                 let value_con = BuiltinValueCon {
-                    id: ctx.next_id(source.name.loc, source.name.sym),
-                    builtin_name: source.builtin_name.to_string(),
+                    id: ctx.next_id(src.name.loc, src.name.sym),
+                    builtin_name: src.builtin_name.to_string(),
                     fields,
                     type_con: type_con.id,
                 };
@@ -320,48 +320,48 @@ impl Build<syntax::BuiltinType<'_>> for (BuiltinTypeCon, Vec<BuiltinValueCon>) {
 }
 
 impl Build<&'_ Sexp> for ValueConField {
-    fn build(ctx: &mut impl Context, source: &'_ Sexp) -> Result<Self> {
-        let ty = ctx.build(source)?;
+    fn build(ctx: &mut impl Context, src: &'_ Sexp) -> Result<Self> {
+        let ty = ctx.build(src)?;
         Ok(ValueConField {
-            id: ctx.next_id(source.loc, ""),
+            id: ctx.next_id(src.loc, ""),
             ty,
         })
     }
 }
 
 impl Build<syntax::Class<'_>> for (ClassCon, Vec<ClassMethod>) {
-    fn build(ctx: &mut impl Context, source: syntax::Class<'_>) -> Result<Self> {
+    fn build(ctx: &mut impl Context, src: syntax::Class<'_>) -> Result<Self> {
         let mut class_con = {
-            let ty_params = ctx.build(source.ty_params.unwrap_or_default())?;
-            let superclasses = ctx.build(source.superclasses)?;
-            let constraint_id = ctx.next_id(source.name.loc, source.name.sym);
+            let ty_params = ctx.build(src.ty_params.unwrap_or_default())?;
+            let superclasses = ctx.build(src.superclasses)?;
+            let constraint_id = ctx.next_id(src.name.loc, src.name.sym);
             ClassCon {
-                id: ctx.next_id(source.name.loc, source.name.sym),
+                id: ctx.next_id(src.name.loc, src.name.sym),
                 constraint_id,
                 ty_params,
                 superclasses,
                 methods: Vec::new(),
-                is_sealed: source.is_sealed,
+                is_sealed: src.is_sealed,
             }
         };
 
-        let class_methods = source
+        let class_methods = src
             .methods
             .into_iter()
-            .map(|source| {
-                let source = ctx.matches::<syntax::Function>(&source)?;
-                let scheme = match source.scheme {
+            .map(|src| {
+                let src = ctx.matches::<syntax::Function>(&src)?;
+                let scheme = match src.scheme {
                     Some(ann) => ctx.build(ann)?,
-                    None => Err(Error::ClassMethodTypeSchemeUnspecified(source.loc))?,
+                    None => Err(Error::ClassMethodTypeSchemeUnspecified(src.loc))?,
                 };
-                let params = ctx.build(source.params)?;
-                let default_body = if source.body.is_empty() {
+                let params = ctx.build(src.params)?;
+                let default_body = if src.body.is_empty() {
                     None
                 } else {
-                    Some(ctx.build((source.loc, source.body))?)
+                    Some(ctx.build((src.loc, src.body))?)
                 };
                 let class_method = ClassMethod {
-                    id: ctx.next_id(source.name.loc, source.name.sym),
+                    id: ctx.next_id(src.name.loc, src.name.sym),
                     ann: scheme,
                     params,
                     default_body,
@@ -377,13 +377,13 @@ impl Build<syntax::Class<'_>> for (ClassCon, Vec<ClassMethod>) {
 }
 
 impl Build<syntax::Instance<'_>> for (InstanceCon, Vec<InstanceMethod>) {
-    fn build(ctx: &mut impl Context, source: syntax::Instance<'_>) -> Result<Self> {
+    fn build(ctx: &mut impl Context, src: syntax::Instance<'_>) -> Result<Self> {
         let mut instance_con = {
-            let ty_params = ctx.build(source.ty_params)?;
-            let s_params = ctx.build(source.s_params)?;
-            let target = ctx.build(source.target)?;
+            let ty_params = ctx.build(src.ty_params)?;
+            let s_params = ctx.build(src.s_params)?;
+            let target = ctx.build(src.target)?;
             InstanceCon {
-                id: ctx.next_id(source.name.loc, source.name.sym),
+                id: ctx.next_id(src.name.loc, src.name.sym),
                 ty_params,
                 s_params,
                 target,
@@ -391,18 +391,18 @@ impl Build<syntax::Instance<'_>> for (InstanceCon, Vec<InstanceMethod>) {
             }
         };
 
-        let instance_methods = source
+        let instance_methods = src
             .method_impls
             .into_iter()
-            .map(|source| {
-                let source = ctx.matches::<syntax::Function>(&source)?;
-                let params = ctx.build(source.params)?;
-                let scheme = ctx.build(source.scheme)?;
-                let body = ctx.build((source.loc, source.body))?;
-                let class_method = Use::Unresolved(ctx.next_id(source.name.loc, source.name.sym));
+            .map(|src| {
+                let src = ctx.matches::<syntax::Function>(&src)?;
+                let params = ctx.build(src.params)?;
+                let scheme = ctx.build(src.scheme)?;
+                let body = ctx.build((src.loc, src.body))?;
+                let class_method = Use::Unresolved(ctx.next_id(src.name.loc, src.name.sym));
                 let instance_method = InstanceMethod {
-                    id: ctx.next_id(source.name.loc, source.name.sym),
-                    transparent: source.transparent,
+                    id: ctx.next_id(src.name.loc, src.name.sym),
+                    transparent: src.transparent,
                     params,
                     ann: scheme,
                     body,
@@ -419,9 +419,9 @@ impl Build<syntax::Instance<'_>> for (InstanceCon, Vec<InstanceMethod>) {
 }
 
 impl Build<syntax::Parameter<'_>> for Parameter {
-    fn build(ctx: &mut impl Context, source: syntax::Parameter) -> Result<Self> {
+    fn build(ctx: &mut impl Context, src: syntax::Parameter) -> Result<Self> {
         Ok(Parameter {
-            id: ctx.next_id(source.name.loc, source.name.sym),
+            id: ctx.next_id(src.name.loc, src.name.sym),
         })
     }
 }
@@ -434,8 +434,8 @@ impl Build<(SourceLocation, &'_ [Sexp])> for Expr {
 }
 
 impl Build<&'_ [Sexp]> for ExprRep {
-    fn build(ctx: &mut impl Context, source: &'_ [Sexp]) -> Result<Self> {
-        match source {
+    fn build(ctx: &mut impl Context, src: &'_ [Sexp]) -> Result<Self> {
+        match src {
             [] => Ok(ExprRep::unit()),
             [s] => {
                 let expr: Expr = ctx.build(s)?;
@@ -451,18 +451,18 @@ impl Build<&'_ [Sexp]> for ExprRep {
 }
 
 impl Build<&'_ Sexp> for Expr {
-    fn build(ctx: &mut impl Context, source: &'_ Sexp) -> Result<Self> {
-        let loc = source.loc;
-        let source = ctx.expand_macro(source)?;
-        let source = ctx.matches::<syntax::Expr>(&source)?;
-        let rep = ctx.build(source)?;
+    fn build(ctx: &mut impl Context, src: &'_ Sexp) -> Result<Self> {
+        let loc = src.loc;
+        let src = ctx.expand_macro(src)?;
+        let src = ctx.matches::<syntax::Expr>(&src)?;
+        let rep = ctx.build(src)?;
         Ok(ctx.new_expr(loc, rep))
     }
 }
 
 impl Build<syntax::Expr<'_>> for ExprRep {
-    fn build(ctx: &mut impl Context, source: syntax::Expr<'_>) -> Result<Self> {
-        match source {
+    fn build(ctx: &mut impl Context, src: syntax::Expr<'_>) -> Result<Self> {
+        match src {
             syntax::Expr::Begin(ss) => ctx.build(ss.body),
             syntax::Expr::Let(let_) => {
                 let vars = ctx.build(let_.defs)?;
@@ -550,20 +550,20 @@ impl Build<syntax::Expr<'_>> for ExprRep {
 }
 
 impl Build<&'_ Sexp> for Either<LocalVar, LocalFun> {
-    fn build(ctx: &mut impl Context, source: &'_ Sexp) -> Result<Self> {
-        let source = ctx.matches::<syntax::LocalDef>(&source)?;
-        ctx.build(source)
+    fn build(ctx: &mut impl Context, src: &'_ Sexp) -> Result<Self> {
+        let src = ctx.matches::<syntax::LocalDef>(&src)?;
+        ctx.build(src)
     }
 }
 
 impl Build<syntax::LocalDef<'_>> for Either<LocalVar, LocalFun> {
-    fn build(ctx: &mut impl Context, source: syntax::LocalDef<'_>) -> Result<Self> {
-        let params = ctx.build(source.params)?;
-        let scheme = ctx.build(source.scheme)?;
-        let body = ctx.build((source.loc, source.body))?;
+    fn build(ctx: &mut impl Context, src: syntax::LocalDef<'_>) -> Result<Self> {
+        let params = ctx.build(src.params)?;
+        let scheme = ctx.build(src.scheme)?;
+        let body = ctx.build((src.loc, src.body))?;
         match params {
             Some(params) => Ok(Right(LocalFun {
-                id: ctx.next_id(source.name.loc, source.name.sym),
+                id: ctx.next_id(src.name.loc, src.name.sym),
                 params,
                 ann: scheme,
                 body,
@@ -574,12 +574,12 @@ impl Build<syntax::LocalDef<'_>> for Either<LocalVar, LocalFun> {
                         ctx.reinterpret_id(scheme.id),
                         scheme.body.body,
                     )),
-                    Some(_) => Err(Error::CannotGeneralize(source.loc))?,
+                    Some(_) => Err(Error::CannotGeneralize(src.loc))?,
                     None => None,
                 };
 
                 Ok(Left(LocalVar {
-                    id: ctx.next_id(source.name.loc, source.name.sym),
+                    id: ctx.next_id(src.name.loc, src.name.sym),
                     ann: ty,
                     init: body,
                 }))
@@ -601,18 +601,18 @@ impl Build<&'_ Sexp> for Const {
 }
 
 impl Build<&'_ Sexp> for Pattern {
-    fn build(ctx: &mut impl Context, source: &'_ Sexp) -> Result<Self> {
-        let loc = source.loc;
-        let source = ctx.expand_macro(source)?;
-        let source = ctx.matches::<syntax::Pattern>(&source)?;
-        let rep = ctx.build(source)?;
+    fn build(ctx: &mut impl Context, src: &'_ Sexp) -> Result<Self> {
+        let loc = src.loc;
+        let src = ctx.expand_macro(src)?;
+        let src = ctx.matches::<syntax::Pattern>(&src)?;
+        let rep = ctx.build(src)?;
         Ok(ctx.new_pattern(loc, rep))
     }
 }
 
 impl Build<syntax::Pattern<'_>> for PatternRep {
-    fn build(ctx: &mut impl Context, source: syntax::Pattern<'_>) -> Result<Self> {
-        match source {
+    fn build(ctx: &mut impl Context, src: syntax::Pattern<'_>) -> Result<Self> {
+        match src {
             syntax::Pattern::Const(s) => match s.rep {
                 SexpRep::Bool(v) => Ok(PatternRep::decon(ValueCon::bool(v), None)),
                 _ => Ok(PatternRep::Const(ctx.build(s)?)),
@@ -655,25 +655,25 @@ impl Build<syntax::Pattern<'_>> for PatternRep {
 }
 
 impl Build<&'_ Sexp> for (Pattern, Expr) {
-    fn build(ctx: &mut impl Context, source: &'_ Sexp) -> Result<Self> {
-        let source = ctx.matches::<syntax::MatchClause>(&source)?;
-        let pat = ctx.build(source.pat)?;
-        let body = ctx.build((source.loc, source.body))?;
+    fn build(ctx: &mut impl Context, src: &'_ Sexp) -> Result<Self> {
+        let src = ctx.matches::<syntax::MatchClause>(&src)?;
+        let pat = ctx.build(src.pat)?;
+        let body = ctx.build((src.loc, src.body))?;
         Ok((pat, body))
     }
 }
 
 impl Build<&'_ Sexp> for Type {
-    fn build(ctx: &mut impl Context, source: &'_ Sexp) -> Result<Self> {
-        let source = ctx.expand_macro(source)?;
-        let source = ctx.matches::<syntax::Type>(&source)?;
-        ctx.build(source)
+    fn build(ctx: &mut impl Context, src: &'_ Sexp) -> Result<Self> {
+        let src = ctx.expand_macro(src)?;
+        let src = ctx.matches::<syntax::Type>(&src)?;
+        ctx.build(src)
     }
 }
 
 impl Build<syntax::Type<'_>> for Type {
-    fn build(ctx: &mut impl Context, source: syntax::Type<'_>) -> Result<Self> {
-        match source {
+    fn build(ctx: &mut impl Context, src: syntax::Type<'_>) -> Result<Self> {
+        match src {
             syntax::Type::Fun(function) => {
                 let args = ctx.build(function.args)?;
                 let ret = ctx.build(function.ret)?;
@@ -708,8 +708,8 @@ impl Build<syntax::Type<'_>> for Type {
 }
 
 impl Build<syntax::Constraint<'_>> for Constraint {
-    fn build(ctx: &mut impl Context, source: syntax::Constraint<'_>) -> Result<Self> {
-        let class = match source.target {
+    fn build(ctx: &mut impl Context, src: syntax::Constraint<'_>) -> Result<Self> {
+        let class = match src.target {
             syntax::Use::Name(name) => Use::Unresolved(ctx.next_id(name.loc, name.sym)),
             syntax::Use::Native(native) => {
                 if let Some(&construct) = native.rep.downcast_ref::<Construct>() {
@@ -723,9 +723,9 @@ impl Build<syntax::Constraint<'_>> for Constraint {
                 }
             }
         };
-        let class_args = ctx.build(source.args.unwrap_or_default())?;
+        let class_args = ctx.build(src.args.unwrap_or_default())?;
         Ok(Constraint::class(
-            ctx.next_id(source.loc, ""),
+            ctx.next_id(src.loc, ""),
             class,
             class_args,
         ))
@@ -733,45 +733,45 @@ impl Build<syntax::Constraint<'_>> for Constraint {
 }
 
 impl Build<syntax::TypeParameter<'_>> for TypeParameter {
-    fn build(ctx: &mut impl Context, source: syntax::TypeParameter<'_>) -> Result<Self> {
-        let kind = ctx.build(source.kind_ann)?;
+    fn build(ctx: &mut impl Context, src: syntax::TypeParameter<'_>) -> Result<Self> {
+        let kind = ctx.build(src.kind_ann)?;
         Ok(TypeParameter {
-            id: ctx.next_id(source.name.loc, source.name.sym),
+            id: ctx.next_id(src.name.loc, src.name.sym),
             ann: kind,
         })
     }
 }
 
 impl Build<syntax::Scheme<'_>> for Annotation<Scheme> {
-    fn build(ctx: &mut impl Context, source: syntax::Scheme<'_>) -> Result<Self> {
-        let ty_params = ctx.build(source.ty_params)?;
-        let s_params = ctx.build(source.s_params)?;
-        let body = ctx.build(source.body)?;
+    fn build(ctx: &mut impl Context, src: syntax::Scheme<'_>) -> Result<Self> {
+        let ty_params = ctx.build(src.ty_params)?;
+        let s_params = ctx.build(src.s_params)?;
+        let body = ctx.build(src.body)?;
         Ok(Annotation::new(
-            ctx.next_id(source.loc, ""),
+            ctx.next_id(src.loc, ""),
             Scheme::new(ty_params, s_params, body),
         ))
     }
 }
 
 impl Build<&'_ Sexp> for Annotation<Kind> {
-    fn build(ctx: &mut impl Context, source: &'_ Sexp) -> Result<Self> {
-        let kind = ctx.build(source)?;
-        Ok(Annotation::new(ctx.next_id(source.loc, ""), kind))
+    fn build(ctx: &mut impl Context, src: &'_ Sexp) -> Result<Self> {
+        let kind = ctx.build(src)?;
+        Ok(Annotation::new(ctx.next_id(src.loc, ""), kind))
     }
 }
 
 impl Build<&'_ Sexp> for Kind {
-    fn build(ctx: &mut impl Context, source: &'_ Sexp) -> Result<Self> {
-        let source = ctx.expand_macro(source)?;
-        let source = ctx.matches::<syntax::Kind>(&source)?;
-        ctx.build(source)
+    fn build(ctx: &mut impl Context, src: &'_ Sexp) -> Result<Self> {
+        let src = ctx.expand_macro(src)?;
+        let src = ctx.matches::<syntax::Kind>(&src)?;
+        ctx.build(src)
     }
 }
 
 impl Build<syntax::Kind<'_>> for Kind {
-    fn build(ctx: &mut impl Context, source: syntax::Kind<'_>) -> Result<Self> {
-        match source {
+    fn build(ctx: &mut impl Context, src: syntax::Kind<'_>) -> Result<Self> {
+        match src {
             syntax::Kind::Fun(function) => {
                 let args = ctx.build(function.args)?;
                 let ret = ctx.build(function.ret)?;

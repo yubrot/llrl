@@ -5,7 +5,7 @@
 (export Report _.Report report/_)
 
 (derive (Eq Ord DebugDisplay Hash) value-data Phase
-  phase:collect-code
+  phase:collect-source
   phase:build-module
   phase:import
   phase:build-ast

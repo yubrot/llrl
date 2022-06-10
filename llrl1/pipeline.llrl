@@ -7,14 +7,14 @@
 (import "~/source-location" SourceLocationTable source-location-table/_)
 (import "~/ast" [ast/_ _])
 (import "~/report" _.Report report/_)
-(import "~/code" [code/_ _] code-set/_)
+(import "~/source" [source/_ _] source-set/_)
 (import "~/module" [module/_ _] module/_)
 (import "~/emitter" _.Emitter backend/_ emitter/_)
 (import "~/backend/llvm" _.LLVMBackend llvm-backend/_ with-llvm-backend)
 (export Error _.Error error:_ Pipeline _.Pipeline pipeline/_)
 
 (value-data Error
-  (error:code (Array (: Path code/Error)))
+  (error:source (Array (: Path source/Error)))
   (error:circular-dependencies (Array Path))
   (error:module SourceLocationTable (OrdMap module/ModuleId module/Module) Path module/Error)
   (error:clang String))
@@ -22,8 +22,8 @@
 (instance Display.Error (Display Error)
   (function (display! w a)
     (match a
-      [(error:code (let code-errors))
-        (for (: (let path) (let e)) code-errors
+      [(error:source (let source-errors))
+        (for (: (let path) (let e)) source-errors
           (display-all! w path ": " e "\n")!)
         (ok unit)]
       [(error:circular-dependencies (let paths))
@@ -38,31 +38,31 @@
 
 (derive (DebugDisplay) data Pipeline
   (pipeline:
-    (code/Loader ast/Construct)
+    (source/Loader ast/Construct)
     (Vector Path)
     (Vector String)
     (Ref Bool)
     (Ref Bool)))
 
 (getter pipeline:
-  code-loader
-  entry-code-paths
+  source-loader
+  entry-source-paths
   clang-options
   optimize?
   verbose?)
 
 (function (pipeline/new current-path) {(-> String Pipeline)}
-  (let1 loader (code/loader/new)
-    (code/loader/add-embedded-builtin! loader)
-    (code/loader/add-embedded-std! loader)
-    (code/loader/add-package-filepath! package-name/current current-path loader)
+  (let1 loader (source/loader/new)
+    (source/loader/add-embedded-builtin! loader)
+    (source/loader/add-embedded-std! loader)
+    (source/loader/add-package-filepath! package-name/current current-path loader)
     (pipeline: loader vector/empty vector/empty (ref #f) (ref #f))))
 
 (function (pipeline/register-package! name filepath p) {(-> PackageName String Pipeline Bool)}
-  (code/loader/add-package-filepath! name filepath (code-loader p)))
+  (source/loader/add-package-filepath! name filepath (source-loader p)))
 
 (function (pipeline/add-entry-path! path p) {(-> Path Pipeline unit)}
-  (vector/push! path (entry-code-paths p)))
+  (vector/push! path (entry-source-paths p)))
 
 (function (pipeline/set-optimize! enabled p) {(-> Bool Pipeline unit)}
   (set! (optimize? p) enabled))
@@ -78,14 +78,14 @@
   (let* ([output (io/path "." output)]
          [slt (source-location-table/new)]
          [report (report/new)]
-         [code-set (code-set/build! (entry-code-paths p) (code-loader p) slt report)]
-         [code-errors (collect (code-set/errors code-set))]
-         [_ (when (not (array/empty? code-errors)) (err (error:code code-errors))!)]
-         [codes (result/map-err error:circular-dependencies (code-set/resolve-dependencies-order code-set))!])
+         [source-set (source-set/build! (entry-source-paths p) (source-loader p) slt report)]
+         [source-errors (collect (source-set/errors source-set))]
+         [_ (when (not (array/empty? source-errors)) (err (error:source source-errors))!)]
+         [sources (result/map-err error:circular-dependencies (source-set/resolve-dependencies-order source-set))!])
     (with-llvm-backend ~(optimize? p) ~(verbose? p) (lambda (backend)
       (let ([emitter (emitter/new backend)]
-            [entry-points (hash-set/collect (entry-code-paths p))])
-        (match (module/build! (vector/buffer codes) entry-points emitter report)
+            [entry-points (hash-set/collect (entry-source-paths p))])
+        (match (module/build! (vector/buffer sources) entry-points emitter report)
           [(: (let module-set) none)
             (emitter/complete! report emitter)
             (result/map-err error:clang (llvm-backend/produce-executable! output (vector/buffer (clang-options p)) backend))!

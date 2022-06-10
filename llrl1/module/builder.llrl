@@ -6,7 +6,7 @@
 (import "~/sexp" S _.S)
 (import "~/ast" _)
 (import "~/report" Report report/_ phase:_)
-(import "~/code" Code _.Code code/_ code-rep:_)
+(import "~/source" Source _.Source source/_ source-rep:_)
 (import "~/module/error" _)
 (import "~/module/meaning" imports/add!)
 (import "~/module/unit" _)
@@ -28,30 +28,30 @@
   (function (backend/add-module! module entry-point? b))
   (function (backend/execute-macro! id s e) (err "Unsupported")))
 
-; Build a set of modules from the codes. The codes must be sorted by dependency order.
-(function (module/build! codes entry-points backend report)
+; Build a set of modules from the sources. The sources must be sorted by dependency order.
+(function (module/build! sources entry-points backend report)
   {(forall B)
-   (-> (Array (Code Construct)) (HashSet Path) B Report (: (OrdMap ModuleId Module) (Option (: Path Error))))
+   (-> (Array (Source Construct)) (HashSet Path) B Report (: (OrdMap ModuleId Module) (Option (: Path Error))))
    (where (Backend B))}
-  (when (array/empty? codes) (return (: ord-map/empty none)))
+  (when (array/empty? sources) (return (: ord-map/empty none)))
 
   ; (module-id 0) must be builtin
-  (assert-eq? (code/path (get codes[0])) path/builtin)
+  (assert-eq? (source/path (get sources[0])) path/builtin)
   ; Every other module must depend on builtin
-  (assert (it/all? [^1 (ord-map/has? (string path/builtin) (code/dependencies %1))] (it/skip 1 codes)))
+  (assert (it/all? [^1 (ord-map/has? (string path/builtin) (source/dependencies %1))] (it/skip 1 sources)))
     ; Every implicit-std? enabled module must depend on std
-  (assert (it/all? [^1 (or (not (code/implicit-std? %1))
-                           (ord-map/has? (string path/std) (code/dependencies %1)))] codes))
+  (assert (it/all? [^1 (or (not (source/implicit-std? %1))
+                           (ord-map/has? (string path/std) (source/dependencies %1)))] sources))
 
   (let* ([modules ord-map/empty]
          [path-to-module hash-map/empty]
          [external (module-build-context: modules path-to-module backend)])
     (report/on report phase:build-module
-      (for (: (let index) (let code)) (it/with-index codes)
-        (let* ([path (code/path code)]
+      (for (: (let index) (let source)) (it/with-index sources)
+        (let* ([path (source/path source)]
                [mid (module-id/from-index (conv index))]
                [module (module/new-uninitialized mid path)]
-               [result (semantic-analysis! module code external report)])
+               [result (semantic-analysis! module source external report)])
           (report/merge! (module/report module) report)
           (ord-map/insert! mid module modules)
           (when-match1 (err (let e)) result (return (: modules (some (: path e)))))
@@ -75,26 +75,26 @@
     (with1 (module-build-context: _ _ (let backend)) e
       (backend/execute-macro! id s backend))))
 
-(function (semantic-analysis! module code external report)
-  {(forall E) (-> Module (Code Construct) E Report (Result unit Error)) (where (External E))}
+(function (semantic-analysis! module source external report)
+  {(forall E) (-> Module (Source Construct) E Report (Result unit Error)) (where (External E))}
 
-  ; code/dependencies (Path) -> module/imports (ModuleId)
-  (for (let path) (|> code code/dependencies ord-map/values)
+  ; source/dependencies (Path) -> module/imports (ModuleId)
+  (for (let path) (|> source source/dependencies ord-map/values)
     (match (external/module-by-path? path external)
       [(some (let module))
         (imports/add! (module/id module) (module/imports module))]
       [none
         (err (error:cannot-find-module path))!]))
 
-  (match (code/rep code)
-    [code-rep:empty]
-    [(code-rep:source (let source))
-      (report/on report phase:import (importer/run! module source code external))!
-      (report/on report phase:build-ast (ast-builder/run! module source external))!
+  (match (source/rep source)
+    [source-rep:empty]
+    [(source-rep:code (let code))
+      (report/on report phase:import (importer/run! module code source external))!
+      (report/on report phase:build-ast (ast-builder/run! module code external))!
       (report/on report phase:resolve (resolver/run! module external))!
       (report/on report phase:kind-inference (kind-inference/run! module external))!
       (report/on report phase:type-inference (type-inference/run! module external))!
       (report/on report phase:validate (validator/run! module external))!
-      (report/on report phase:export (exporter/run! module source))!
+      (report/on report phase:export (exporter/run! module code))!
       ])
   (ok unit))

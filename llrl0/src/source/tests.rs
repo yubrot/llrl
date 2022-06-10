@@ -4,18 +4,18 @@ use crate::source_loc::{SourceLocationTable, SourceLocator};
 use std::collections::{HashMap, HashSet};
 
 #[test]
-fn test_from_source_code() {
-    let code = Code::from_source_text(
+fn test_from_code_text() {
+    let source = Source::from_code_text(
         "~/foo".parse::<Path>().unwrap(),
         &mut SourceLocator::temporary(),
         ")",
     );
 
-    assert_eq!(code.path, "~/foo".parse::<Path>().unwrap());
-    assert!(code.dependencies.is_empty());
-    assert!(matches!(code.errors.as_slice(), [Error::ParseFailed(_)]));
+    assert_eq!(source.path, "~/foo".parse::<Path>().unwrap());
+    assert!(source.dependencies.is_empty());
+    assert!(matches!(source.errors.as_slice(), [Error::ParseFailed(_)]));
 
-    let code = Code::from_source_text(
+    let source = Source::from_code_text(
         "~/foo".parse::<Path>().unwrap(),
         &mut SourceLocator::temporary(),
         r#"
@@ -24,9 +24,9 @@ fn test_from_source_code() {
     "#,
     );
 
-    assert_eq!(code.path, "~/foo".parse::<Path>().unwrap());
+    assert_eq!(source.path, "~/foo".parse::<Path>().unwrap());
     assert_eq!(
-        code.dependencies,
+        source.dependencies,
         vec![
             ("builtin".to_string(), Path::builtin()),
             ("std".to_string(), Path::std()),
@@ -39,9 +39,9 @@ fn test_from_source_code() {
         .into_iter()
         .collect::<HashMap<_, _>>()
     );
-    assert!(code.errors.is_empty());
+    assert!(source.errors.is_empty());
 
-    let code = Code::from_source_text(
+    let source = Source::from_code_text(
         "hello/world".parse::<Path>().unwrap(),
         &mut SourceLocator::temporary(),
         r#"
@@ -52,9 +52,9 @@ fn test_from_source_code() {
     "#,
     );
 
-    assert_eq!(code.path, "hello/world".parse::<Path>().unwrap());
+    assert_eq!(source.path, "hello/world".parse::<Path>().unwrap());
     assert_eq!(
-        code.dependencies,
+        source.dependencies,
         vec![
             ("builtin".to_string(), Path::builtin()),
             ("std/io".to_string(), "std/io".parse::<Path>().unwrap()),
@@ -68,7 +68,7 @@ fn test_from_source_code() {
         .collect::<HashMap<_, _>>()
     );
     assert!(matches!(
-        code.errors.as_slice(),
+        source.errors.as_slice(),
         [
             Error::InvalidImportPath(sym, _),
             Error::CannotImportModuleItself,
@@ -122,8 +122,8 @@ fn test_collect() {
 
     assert_eq!(
         result
-            .codes()
-            .map(|code| code.path.to_string())
+            .sources()
+            .map(|source| source.path.to_string())
             .collect::<HashSet<_>>(),
         vec!["~", "~/foo", "~/bar", "~/baz", "std", "std/a", "std/b", "std/c", "std", "builtin"]
             .into_iter()
@@ -131,11 +131,11 @@ fn test_collect() {
             .collect()
     );
 
-    for code in result.codes() {
-        match code.path.to_string().as_str() {
-            "~/baz" => assert!(matches!(code.errors.as_slice(), [Error::ModuleNotFound])),
-            "std/c" => assert!(matches!(code.errors.as_slice(), [Error::ParseFailed(_)])),
-            _ => assert!(code.errors.is_empty()),
+    for source in result.sources() {
+        match source.path.to_string().as_str() {
+            "~/baz" => assert!(matches!(source.errors.as_slice(), [Error::ModuleNotFound])),
+            "std/c" => assert!(matches!(source.errors.as_slice(), [Error::ParseFailed(_)])),
+            _ => assert!(source.errors.is_empty()),
         }
     }
 }

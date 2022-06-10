@@ -2,7 +2,7 @@
 (import "~/sexp/parser" [ParseError Error] [_.ParseError _.Error])
 (export Error _.Error error:_)
 
-; The error that occurred during the construction of the `Code`.
+; The error that occurred during the construction of the `Source`.
 (derive (Eq Ord DebugDisplay) value-data Error
   error:package-not-found
   error:module-not-found

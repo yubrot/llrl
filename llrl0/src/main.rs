@@ -214,7 +214,7 @@ impl<'a> CliOptions<'a> {
             .unwrap()
             .map(|value| {
                 let module_name = value
-                    .strip_suffix(&format!(".{}", llrl::code::SOURCE_CODE_EXTENSION))
+                    .strip_suffix(&format!(".{}", llrl::source::SOURCE_CODE_EXTENSION))
                     .unwrap_or(value);
 
                 let module_name = module_name

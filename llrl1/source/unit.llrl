@@ -6,28 +6,29 @@
 (import "~/sexp" Ss _.Ss ss/_)
 (import "~/sexp/lexer" lex)
 (import "~/sexp/parser" parser/_)
-(import "~/code/error" _)
-(export Code _.Code code/_)
-(export CodeRep code-rep:_)
+(import "~/source/error" _)
+(export Source _.Source source/_)
+(export SourceRep source-rep:_)
 
-; `Code` is a representation to describe a llrl module.
-(derive (DebugDisplay) data (Code A)
-  (code:
+; A source of a llrl module.
+(derive (DebugDisplay) data (Source A)
+  (source:
     Path                  ; path
     Bool                  ; implicit-std?
     (OrdMap String Path)  ; dependencies
-    (CodeRep A)           ; rep
+    (SourceRep A)         ; rep
     (Array Error)))       ; errors
 
-(getter code: code/path code/implicit-std? code/dependencies code/rep code/errors)
+(getter source: source/path source/implicit-std? source/dependencies source/rep source/errors)
 
-(function (code/from-error path error) {(forall A) (-> Path Error (Code A))}
-  (code: path #f ord-map/empty code-rep:empty (array error)))
+(function (source/from-error path error) {(forall A) (-> Path Error (Source A))}
+  (source: path #f ord-map/empty source-rep:empty (array error)))
 
-(function (code/from-source path source) {(forall A) (-> Path (Ss A) (Code A))}
+(function (source/from-code path source) {(forall A) (-> Path (Ss A) (Source A))}
   (let ([dependencies ord-map/empty]
         [errors vector/empty]
         [implicit-std? (ref #t)])
+    ; Collect the dependencies from (import ..) and (no-implicit-std) declarations.
     (for (let s) (ss/elems source)
       (cond
         [when-match1 (ok unit) (syntax/no-implicit-std s)
@@ -38,6 +39,7 @@
               (let1
                 import-path
                 (if (|> import-path path/package path/package-name/current?)
+                  ; relative to the (path/package path)
                   (path/new (path/package path) (path/module import-path))
                   import-path)
                 (if (eq? import-path path)
@@ -54,16 +56,16 @@
       (if (eq? path path/std)
         (vector/push! error:cannot-import-module-itself errors)
         (ignore (ord-map/insert! (string path/std) path/std dependencies))))
-    (code: path ~implicit-std? dependencies (code-rep:source source) (vector/buffer errors))))
+    (source: path ~implicit-std? dependencies (source-rep:code source) (vector/buffer errors))))
 
-(function (code/from-source-text path locator source-text) {(forall A) (-> Path SourceLocator String (Code A))}
+(function (source/from-code-text path locator source-text) {(forall A) (-> Path SourceLocator String (Source A))}
   (match (parser/parse-ss! (parser/new locator (lex source-text)))
-    [(ok (let source)) (code/from-source path source)]
-    [(err (let e)) (code/from-error path (error:parse-failed e))]))
+    [(ok (let source)) (source/from-code path source)]
+    [(err (let e)) (source/from-error path (error:parse-failed e))]))
 
-(function code/source-file-extension {String}
+(function source/source-file-extension {String}
   "llrl")
 
-(derive (DebugDisplay) value-data (CodeRep A)
-  code-rep:empty
-  (code-rep:source (Ss A)))
+(derive (DebugDisplay) value-data (SourceRep A)
+  source-rep:empty
+  (source-rep:code (Ss A)))
