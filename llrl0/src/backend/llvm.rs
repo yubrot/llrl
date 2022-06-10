@@ -322,7 +322,7 @@ impl native::BackendBuilder for BackendBuilder {
     }
 
     fn verbose(self, verbose: bool) -> Self {
-        Self(self.0.optimize(verbose))
+        Self(self.0.verbose(verbose))
     }
 
     fn build(self) -> Self::Backend {
