@@ -10,7 +10,7 @@
 (import "~/module/set" _)
 (import "~/module/meaning" _)
 (import "~/module/scope" _)
-(import "~/module/builder/external" _)
+(import "~/module/external" _)
 (export WildcardPortTarget _.WildcardPortTarget wildcard-port-target/_)
 (export run!)
 

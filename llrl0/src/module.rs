@@ -1,18 +1,19 @@
 use crate::ast;
+use crate::sexp::Sexp;
 use crate::path::Path;
 use crate::report::Report;
 use crate::source::Source;
 use crate::topological_sort;
 
-mod builder;
 mod error;
 mod formatter;
 mod meaning;
 mod parallel;
 mod scope;
+mod sema;
 mod set;
 
-pub use error::{BuilderErrorContext, Error, TextualErrorContext};
+pub use error::{Error, SemaErrorContext, TextualErrorContext};
 pub use formatter::Formatter;
 pub use meaning::*;
 pub use parallel::{build as parallel_build, Backend};
@@ -42,12 +43,8 @@ pub struct Module {
 }
 
 impl Module {
-    /// Build the module from `Source`.
-    pub fn build(
-        mid: ModuleId,
-        source: &Source,
-        external: &impl builder::External,
-    ) -> Result<Self> {
+    /// Build a module from `Source`.
+    pub fn build(mid: ModuleId, source: &Source, external: &impl External) -> Result<Self> {
         use once_cell::sync::Lazy;
         use std::sync::Mutex;
 
@@ -63,7 +60,7 @@ impl Module {
         }
 
         let mut module = Module::new(mid, source.path.clone());
-        match builder::run(&mut module, source, external) {
+        match sema::run(&mut module, source, external) {
             Ok(()) => {
                 if mid == ModuleId::builtin() {
                     let mut module = module.clone();
@@ -134,7 +131,7 @@ impl Module {
         }
     }
 
-    fn define_function(&mut self, function: ast::Function) -> builder::Result<()> {
+    fn define_function(&mut self, function: ast::Function) -> sema::Result<()> {
         let symbol = self.symbol_map.get(function.id).unwrap();
         self.top_level
             .define(&symbol.name, LocatedConstruct::new(symbol.loc, function.id))?;
@@ -142,7 +139,7 @@ impl Module {
         Ok(())
     }
 
-    fn define_c_function(&mut self, c_function: ast::CFunction) -> builder::Result<()> {
+    fn define_c_function(&mut self, c_function: ast::CFunction) -> sema::Result<()> {
         let symbol = self.symbol_map.get(c_function.id).unwrap();
         self.top_level.define(
             &symbol.name,
@@ -152,7 +149,7 @@ impl Module {
         Ok(())
     }
 
-    fn define_builtin_op(&mut self, builtin_op: ast::BuiltinOp) -> builder::Result<()> {
+    fn define_builtin_op(&mut self, builtin_op: ast::BuiltinOp) -> sema::Result<()> {
         let symbol = self.symbol_map.get(builtin_op.id).unwrap();
         self.top_level.define(
             &symbol.name,
@@ -162,7 +159,7 @@ impl Module {
         Ok(())
     }
 
-    fn define_macro(&mut self, macro_: ast::Macro) -> builder::Result<()> {
+    fn define_macro(&mut self, macro_: ast::Macro) -> sema::Result<()> {
         let symbol = self.symbol_map.get(macro_.id).unwrap();
         self.top_level
             .define(&symbol.name, LocatedConstruct::new(symbol.loc, macro_.id))?;
@@ -170,7 +167,7 @@ impl Module {
         Ok(())
     }
 
-    fn define_data_type_con(&mut self, con: ast::DataTypeCon) -> builder::Result<()> {
+    fn define_data_type_con(&mut self, con: ast::DataTypeCon) -> sema::Result<()> {
         let symbol = self.symbol_map.get(con.id).unwrap();
         self.top_level
             .define(&symbol.name, LocatedConstruct::new(symbol.loc, con.id))?;
@@ -178,7 +175,7 @@ impl Module {
         Ok(())
     }
 
-    fn define_data_value_con(&mut self, con: ast::DataValueCon) -> builder::Result<()> {
+    fn define_data_value_con(&mut self, con: ast::DataValueCon) -> sema::Result<()> {
         let symbol = self.symbol_map.get(con.id).unwrap();
         self.top_level
             .define(&symbol.name, LocatedConstruct::new(symbol.loc, con.id))?;
@@ -186,7 +183,7 @@ impl Module {
         Ok(())
     }
 
-    fn define_builtin_type_con(&mut self, con: ast::BuiltinTypeCon) -> builder::Result<()> {
+    fn define_builtin_type_con(&mut self, con: ast::BuiltinTypeCon) -> sema::Result<()> {
         let symbol = self.symbol_map.get(con.id).unwrap();
         self.top_level
             .define(&symbol.name, LocatedConstruct::new(symbol.loc, con.id))?;
@@ -194,7 +191,7 @@ impl Module {
         Ok(())
     }
 
-    fn define_builtin_value_con(&mut self, con: ast::BuiltinValueCon) -> builder::Result<()> {
+    fn define_builtin_value_con(&mut self, con: ast::BuiltinValueCon) -> sema::Result<()> {
         let symbol = self.symbol_map.get(con.id).unwrap();
         self.top_level
             .define(&symbol.name, LocatedConstruct::new(symbol.loc, con.id))?;
@@ -202,7 +199,7 @@ impl Module {
         Ok(())
     }
 
-    fn define_class_con(&mut self, con: ast::ClassCon) -> builder::Result<()> {
+    fn define_class_con(&mut self, con: ast::ClassCon) -> sema::Result<()> {
         let symbol = self.symbol_map.get(con.id).unwrap();
         self.top_level
             .define(&symbol.name, LocatedConstruct::new(symbol.loc, con.id))?;
@@ -210,7 +207,7 @@ impl Module {
         Ok(())
     }
 
-    fn define_class_method(&mut self, method: ast::ClassMethod) -> builder::Result<()> {
+    fn define_class_method(&mut self, method: ast::ClassMethod) -> sema::Result<()> {
         let symbol = self.symbol_map.get(method.id).unwrap();
         self.top_level
             .define(&symbol.name, LocatedConstruct::new(symbol.loc, method.id))?;
@@ -218,7 +215,7 @@ impl Module {
         Ok(())
     }
 
-    fn define_instance_con(&mut self, con: ast::InstanceCon) -> builder::Result<()> {
+    fn define_instance_con(&mut self, con: ast::InstanceCon) -> sema::Result<()> {
         let symbol = self.symbol_map.get(con.id).unwrap();
         self.top_level
             .define(&symbol.name, LocatedConstruct::new(symbol.loc, con.id))?;
@@ -226,7 +223,7 @@ impl Module {
         Ok(())
     }
 
-    fn add_instance_method(&mut self, method: ast::InstanceMethod) -> builder::Result<()> {
+    fn add_instance_method(&mut self, method: ast::InstanceMethod) -> sema::Result<()> {
         self.ast_root.instance_methods.insert(method.id, method);
         Ok(())
     }
@@ -240,4 +237,17 @@ impl topological_sort::DependencyList<ModuleId> for Module {
     fn traverse_dependencies(&self, f: &mut impl FnMut(&ModuleId)) {
         self.imports.iter().for_each(f);
     }
+}
+
+/// An abstract representation of the outside of the module.
+pub trait External {
+    fn module(&self, mid: ModuleId) -> &Module;
+
+    fn find_module(&self, path: &Path) -> Option<&Module>;
+
+    fn execute_macro(
+        &self,
+        id: ast::NodeId<ast::Macro>,
+        s: &Sexp,
+    ) -> std::result::Result<Sexp, String>;
 }

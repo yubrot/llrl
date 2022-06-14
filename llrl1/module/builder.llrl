@@ -6,22 +6,18 @@
 (import "~/sexp" S _.S)
 (import "~/ast" _)
 (import "~/report" Report report/_ phase:_)
-(import "~/source" Source _.Source source/_ source-rep:_)
+(import "~/source" Source _.Source source/_)
 (import "~/module/error" _)
-(import "~/module/meaning" imports/add!)
 (import "~/module/unit" _)
-(import "~/module/builder/external" External external/_)
-(import "~/module/builder/importer" [importer/run! run!])
-(import "~/module/builder/ast-builder" [ast-builder/run! run!])
-(import "~/module/builder/resolver" [resolver/run! run!])
-(import "~/module/builder/kind-inference" [kind-inference/run! run!])
-(import "~/module/builder/type-inference" [type-inference/run! run!])
-(import "~/module/builder/validator" [validator/run! run!])
-(import "~/module/builder/exporter" [exporter/run! run!])
+(import "~/module/external" External external/_)
+(import "~/module/sema" semantic-analysis!)
 (export Backend Backend.unit backend/_ module/build!)
 
+; Compiler backend used by `module/build!`.
 (class (Backend B)
+  ; Add a built module. Built modules are added from this method without omission.
   (function (backend/add-module! module entry-point? b) {(-> Module Bool B unit)})
+  ; Execute the macro. The macro to be executed always resides in the module added with `backend/add-module!`.
   (function (backend/execute-macro! id s e) {(-> (NodeId Macro) (S Construct) B (Result (S Construct) String))}))
 
 (instance Backend.unit (Backend unit)
@@ -29,6 +25,7 @@
   (function (backend/execute-macro! id s e) (err "Unsupported")))
 
 ; Build a set of modules from the sources. The sources must be sorted by dependency order.
+; Returns a set of modules that were successfully built and a set of source paths and errors in case of build failure.
 (function (module/build! sources entry-points backend report)
   {(forall B)
    (-> (Array (Source Construct)) (HashSet Path) B Report (: (OrdMap ModuleId Module) (Option (: Path Error))))
@@ -74,27 +71,3 @@
   (function (external/execute-macro! id s e)
     (with1 (module-build-context: _ _ (let backend)) e
       (backend/execute-macro! id s backend))))
-
-(function (semantic-analysis! module source external report)
-  {(forall E) (-> Module (Source Construct) E Report (Result unit Error)) (where (External E))}
-
-  ; source/dependencies (Path) -> module/imports (ModuleId)
-  (for (let path) (|> source source/dependencies ord-map/values)
-    (match (external/module-by-path? path external)
-      [(some (let module))
-        (imports/add! (module/id module) (module/imports module))]
-      [none
-        (err (error:cannot-find-module path))!]))
-
-  (match (source/rep source)
-    [source-rep:empty]
-    [(source-rep:code (let code))
-      (report/on report phase:import (importer/run! module code source external))!
-      (report/on report phase:build-ast (ast-builder/run! module code external))!
-      (report/on report phase:resolve (resolver/run! module external))!
-      (report/on report phase:kind-inference (kind-inference/run! module external))!
-      (report/on report phase:type-inference (type-inference/run! module external))!
-      (report/on report phase:validate (validator/run! module external))!
-      (report/on report phase:export (exporter/run! module code))!
-      ])
-  (ok unit))

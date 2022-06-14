@@ -6,7 +6,7 @@
 (import "~/module/unit" _)
 (import "~/module/meaning" _)
 (import "~/module/scope" _)
-(import "~/module/builder/importer" wildcard-port-target/_)
+(import "~/module/sema/importer" wildcard-port-target/_)
 (export run!)
 
 (function (run! module code) {(-> Module (Ss Construct) (Result unit Error))}

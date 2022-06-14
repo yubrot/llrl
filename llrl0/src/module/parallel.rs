@@ -1,4 +1,4 @@
-use super::{builder, Error, Module, ModuleId};
+use super::{Error, Module, ModuleId, External};
 use crate::ast::{self, builtin};
 use crate::path::Path;
 use crate::report::{Phase, Report};
@@ -11,9 +11,12 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, RwLock};
 use typed_arena::Arena;
 
+/// Compiler backend used by `build`.
 pub trait Backend: Sync {
+    /// Add a built module. Built modules are added from this method without omission.
     fn add_module(&self, module: Arc<Module>, is_entry_point: bool);
 
+    /// Execute the macro. The macro to be executed always resides in the module added with `add_module`.
     fn execute_macro(
         &self,
         id: ast::NodeId<ast::Macro>,
@@ -34,6 +37,8 @@ impl Backend for () {
 }
 
 /// Build a set of modules from the sources sorted by dependency.
+///
+/// Returns a set of modules that were successfully built and a set of sources and errors in case of build failure.
 pub fn build(
     sources: Vec<Source>,
     entry_points: HashSet<Path>,
@@ -196,7 +201,7 @@ impl<'a, B: Backend> ModuleBuildingContext<'a, B> {
     }
 }
 
-impl<'a, B: Backend> builder::External for ModuleBuildingContext<'a, B> {
+impl<'a, B: Backend> External for ModuleBuildingContext<'a, B> {
     fn module(&self, mid: ModuleId) -> &Module {
         let ctx = self.ctx;
         let arena = self.deps_arena;

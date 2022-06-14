@@ -3,6 +3,7 @@
 (import "~/ast" _)
 (import "~/module/meaning" _)
 (import "~/module/unit" ModuleId _.ModuleId Module module/_)
+(import "~/module/external" External external/_)
 (export ModuleSet ModuleSet._ module-set/_)
 
 (class (ModuleSet S)
@@ -59,3 +60,10 @@
 (instance ModuleSet.OrdMap (ModuleSet (OrdMap ModuleId Module))
   (function (module-set/get? mid map)
     (ord-map/get? mid map)))
+
+(instance ModuleSet.ModuleWithExternal (forall E) (ModuleSet (: Module E)) (where (External E))
+  (function (module-set/get? mid set)
+    (with1 (: (let module) (let external)) set
+      (if (eq? mid (module/id module))
+        (some module)
+        (external/module? mid external)))))

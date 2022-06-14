@@ -6,7 +6,7 @@
 (import "~/module/unit" _)
 (import "~/module/meaning" _)
 (import "~/module/set" _)
-(import "~/module/builder/external" _)
+(import "~/module/external" _)
 (export run!)
 
 (function (run! module external)

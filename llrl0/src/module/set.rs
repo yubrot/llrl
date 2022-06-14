@@ -1,4 +1,4 @@
-use super::{Module, ModuleId, Symbol};
+use super::{External, Module, ModuleId, Symbol};
 use crate::ast;
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -63,5 +63,15 @@ impl ModuleSet for HashMap<ModuleId, Module> {
 impl ModuleSet for HashMap<ModuleId, Arc<Module>> {
     fn module_of(&self, mid: ModuleId) -> &Module {
         &self[&mid]
+    }
+}
+
+impl<'a, E: External> ModuleSet for (&'a Module, &'a E) {
+    fn module_of(&self, mid: ModuleId) -> &Module {
+        if mid == self.0.id() {
+            self.0
+        } else {
+            self.1.module(mid)
+        }
     }
 }

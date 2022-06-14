@@ -1,0 +1,11 @@
+(import "~/path" Path)
+(import "~/sexp" S)
+(import "~/ast" _)
+(import "~/module/unit" _)
+(export External external/_)
+
+; An abstract representation of the outside of the module.
+(class (External E)
+  (function (external/module? mid e) {(-> ModuleId E (Option Module))})
+  (function (external/module-by-path? path e) {(-> Path E (Option Module))})
+  (function (external/execute-macro! id s e) {(-> (NodeId Macro) (S Construct) E (Result (S Construct) String))}))

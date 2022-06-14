@@ -21,9 +21,9 @@ pub trait ErrorContext {
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy, Hash)]
-pub enum BuilderErrorContext {}
+pub enum SemaErrorContext {}
 
-impl ErrorContext for BuilderErrorContext {
+impl ErrorContext for SemaErrorContext {
     type Def = LocatedConstruct;
     type Use = ast::Construct;
     type ClassUse = ast::NodeId<ast::ClassCon>;
@@ -121,7 +121,7 @@ impl<Ctx: ErrorContext> Error<Ctx> {
     }
 }
 
-impl Error<BuilderErrorContext> {
+impl Error<SemaErrorContext> {
     pub fn into_result_error<M: ModuleSet>(self, formatter: Formatter<M>) -> Error {
         PassToResult { formatter }.error(self)
     }
@@ -319,7 +319,7 @@ struct PassToResult<M> {
 }
 
 impl<M: ModuleSet> PassToResult<M> {
-    fn error(&self, error: Error<BuilderErrorContext>) -> Error {
+    fn error(&self, error: Error<SemaErrorContext>) -> Error {
         match error {
             Error::DependentModuleBuildFailed => Error::DependentModuleBuildFailed,
             Error::Syntax(e) => Error::Syntax(e),

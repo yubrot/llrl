@@ -3,7 +3,7 @@
 (import "~/module/unit" _)
 (import "~/module/meaning" _)
 (import "~/module/set" _)
-(import "~/module/builder/external" _)
+(import "~/module/external" _)
 (import "~/unification/type" KindEnvironment)
 (export KindEnv _.KindEnv kind-env/_)
 

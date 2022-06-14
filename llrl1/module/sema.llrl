@@ -1,0 +1,40 @@
+(import "std/ord-map" _)
+(import "~/ast" _)
+(import "~/report" Report report/_ phase:_)
+(import "~/source" Source _.Source source/_ source-rep:_)
+(import "~/module/error" _)
+(import "~/module/unit" _)
+(import "~/module/external" External external/_)
+(import "~/module/meaning" imports/add!)
+(import "~/module/sema/importer" [importer/run! run!])
+(import "~/module/sema/ast-builder" [ast-builder/run! run!])
+(import "~/module/sema/resolver" [resolver/run! run!])
+(import "~/module/sema/kind-inference" [kind-inference/run! run!])
+(import "~/module/sema/type-inference" [type-inference/run! run!])
+(import "~/module/sema/validator" [validator/run! run!])
+(import "~/module/sema/exporter" [exporter/run! run!])
+(export semantic-analysis!)
+
+(function (semantic-analysis! module source external report)
+  {(forall E) (-> Module (Source Construct) E Report (Result unit Error)) (where (External E))}
+
+  ; source/dependencies (Path) -> module/imports (ModuleId)
+  (for (let path) (|> source source/dependencies ord-map/values)
+    (match (external/module-by-path? path external)
+      [(some (let module))
+        (imports/add! (module/id module) (module/imports module))]
+      [none
+        (err (error:cannot-find-module path))!]))
+
+  (match (source/rep source)
+    [source-rep:empty]
+    [(source-rep:code (let code))
+      (report/on report phase:import (importer/run! module code source external))!
+      (report/on report phase:build-ast (ast-builder/run! module code external))!
+      (report/on report phase:resolve (resolver/run! module external))!
+      (report/on report phase:kind-inference (kind-inference/run! module external))!
+      (report/on report phase:type-inference (type-inference/run! module external))!
+      (report/on report phase:validate (validator/run! module external))!
+      (report/on report phase:export (exporter/run! module code))!
+      ])
+  (ok unit))

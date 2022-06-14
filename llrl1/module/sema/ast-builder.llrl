@@ -9,7 +9,7 @@
 (import "~/module/unit" _)
 (import "~/module/meaning" _)
 (import "~/module/scope" _)
-(import "~/module/builder/external" External external/_)
+(import "~/module/external" External external/_)
 (export run!)
 
 (function (run! module code external)
