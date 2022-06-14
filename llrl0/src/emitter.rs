@@ -4,7 +4,6 @@ use crate::report::{Phase, Report};
 use crossbeam_channel::{bounded, unbounded, Receiver, RecvError, Sender, TryRecvError};
 use derive_new::new;
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::fmt;
 use std::sync::Arc;
 use std::thread;
 
@@ -18,40 +17,29 @@ mod normalizer;
 mod rewriter;
 mod simplifier;
 mod traverser;
-mod value;
 
 pub use context::Context;
-pub use value::Value;
 
+/// Low-level compiler backend used by the emitter backend.
 pub trait Backend: Send + 'static {
-    type Value: BackendValue;
-
     fn put_def(&mut self, id: ir::CtId, def: Arc<ir::CtDef>);
 
     fn put_main(&mut self, init: ir::Init);
 
-    fn execute_main(&mut self) -> Result<Self::Value, String>;
+    fn execute_main(&mut self) -> Result<bool, String>;
 
-    fn execute_function(
+    fn execute_macro(
         &mut self,
         id: ir::CtId,
-        args: Vec<Self::Value>,
-    ) -> Result<Self::Value, String>;
+        s: ir::Syntax<ir::Sexp>,
+    ) -> Result<ir::Syntax<ir::Sexp>, String>;
 
     fn complete(self, report: &mut Report);
 }
 
-pub trait BackendValue: Sized + Send + fmt::Display {
-    fn as_bool(&self) -> Option<bool>;
-
-    fn from_macro_src(sexp: &ir::Syntax<ir::Sexp>) -> Self;
-
-    fn into_macro_dest(self) -> Result<ir::Syntax<ir::Sexp>, String>;
-}
-
 #[derive(Debug)]
 pub struct Emitter<B: Backend> {
-    sender: Sender<Request<B>>,
+    sender: Sender<Request>,
     handle: thread::JoinHandle<(B, Report)>,
 }
 
@@ -82,24 +70,23 @@ impl<B: Backend> ModuleBackend for Emitter<B> {
         s: &ir::Syntax<ir::Sexp>,
     ) -> Result<ir::Syntax<ir::Sexp>, String> {
         let (sender, receiver) = bounded(0);
-        let request = Request::ExecuteMacro(id, B::Value::from_macro_src(s), sender);
+        let request = Request::ExecuteMacro(id, s.clone(), sender);
         self.sender.send(request).unwrap();
-        let response = receiver.recv().unwrap();
-        response.and_then(|value| value.into_macro_dest())
+        receiver.recv().unwrap()
     }
 }
 
 #[derive(Debug)]
-enum Request<B: Backend> {
+enum Request {
     AddModule(Arc<Module>, bool),
     ExecuteMacro(
         ast::NodeId<ast::Macro>,
-        B::Value,
-        Sender<Result<B::Value, String>>,
+        ir::Syntax<ir::Sexp>,
+        Sender<Result<ir::Syntax<ir::Sexp>, String>>,
     ),
 }
 
-fn process_requests<B: Backend>(mut backend: B, receiver: Receiver<Request<B>>) -> (B, Report) {
+fn process_requests<B: Backend>(mut backend: B, receiver: Receiver<Request>) -> (B, Report) {
     let mut ctx = Context::new();
     let mut modules = HashMap::new();
     let mut main = MainStatements::new(HashSet::new(), VecDeque::new());
@@ -153,7 +140,7 @@ fn process_requests<B: Backend>(mut backend: B, receiver: Receiver<Request<B>>) 
             }
             Request::ExecuteMacro(macro_id, s, response_sender) => {
                 let f = populate(&mut ctx, &mut report, &mut backend, &macro_id, &modules);
-                let result = backend.execute_function(f.id(), vec![s]);
+                let result = backend.execute_macro(f.id(), s);
                 let _ = response_sender.send(result);
                 true
             }

@@ -17,7 +17,7 @@
   (error:source (Array (: Path source/Error)))
   (error:circular-dependencies (Array Path))
   (error:module SourceLocationTable (OrdMap module/ModuleId module/Module) Path module/Error)
-  (error:clang String))
+  (error:produce-executable String))
 
 (instance Display.Error (Display Error)
   (function (display! w a)
@@ -33,8 +33,8 @@
         (display! w "Modules cannot import each other.\n")]
       [(error:module (let slt) (let module-set) (let path) (let error))
         (display-all! w (contextual: error (module/display-context module-set slt)) " (while building " path ")\n")]
-      [(error:clang (let e))
-        (display-all! w "Failed to compile with clang: " e "\n")])))
+      [(error:produce-executable (let e))
+        (display-all! w "Failed to produce executable: " e "\n")])))
 
 (derive (DebugDisplay) data Pipeline
   (pipeline:
@@ -88,7 +88,9 @@
         (match (module/build! (vector/buffer sources) entry-points emitter report)
           [(: (let module-set) none)
             (emitter/complete! report emitter)
-            (result/map-err error:clang (llvm-backend/produce-executable! output (vector/buffer (clang-options p)) backend))!
+            (result/map-err
+              error:produce-executable
+              (llvm-backend/produce-executable! output (vector/buffer (clang-options p)) backend))!
             (backend/complete! report backend)
             (ok unit)]
           [(: (let module-set) (some (: (let path) (let error))))

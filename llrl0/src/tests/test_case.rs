@@ -155,11 +155,11 @@ impl TestTarget {
             Self::Backend => {
                 let backend = InterpreterBackend::new();
                 self.run_backend(sources.clone(), cond, backend, ctx);
-                let backend = DefaultNativeBackendBuilder::new().build();
+                let backend = DefaultBackendBuilder::new().build();
                 self.run_backend(sources, cond, backend, ctx);
             }
             Self::Std => {
-                let backend = DefaultNativeBackendBuilder::new().build();
+                let backend = DefaultBackendBuilder::new().build();
                 self.run_backend(sources, cond, backend, ctx);
             }
         }
@@ -180,10 +180,8 @@ impl TestTarget {
         if matches!(cond, TestCondition::Pass(_)) {
             let mut backend = emitter.complete(&mut ctx.report);
             match backend.execute_main() {
-                Ok(value) => match value.as_bool() {
-                    Some(true) => {}
-                    _ => panic!("{}: Expected #t but got {}", ctx.header(), value),
-                },
+                Ok(true) => {}
+                Ok(false) => panic!("{}: Expected #t but got #f", ctx.header()),
                 Err(error) => panic!("{}: Execution error:\n{}", ctx.header(), error),
             }
             backend.complete(&mut ctx.report);

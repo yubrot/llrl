@@ -3,7 +3,7 @@
 (import "llvm" [llvm/_ _])
 (import "~/util" _)
 (import "~/emitter/ir" [ir/_ _])
-(import "~/emitter/value" Value DynamicCall dynamic-call)
+(import "~/backend/llvm/artifact" FunctionSymbol function-symbol/_ function-symbol-kind:_)
 (export Executor _.Executor executor/_)
 
 ; NOTE: Only native targets are supported. For more details, see
@@ -45,14 +45,20 @@
 (function (executor/remove-modules! executor) {(-> Executor (Array llvm/Module))}
   (llvm/execution-engine/remove-modules! (engine executor)))
 
-; Caller must ensure that the function named `name` exists and it is compatible with the llrl closure typed `F`.
-(function (executor/unsafe-call! name sig args executor)
-  {(forall F) (-> String (Phantom F) (Array Value) Executor (Result Value String)) (where (DynamicCall F))}
+; Caller must ensure that the function named `name` exists and it is compatible with the type F.
+(function (executor/unsafe-get-closure! name sig executor) {(forall F) (-> String (Phantom F) Executor F)}
   (let1 address (llvm/execution-engine/get-function-address name (engine executor))
     (assert (ne? 0 address) (string "Function not found: " name))
-    (let* ([closure {(: U64 (Ptr U8))} (: address ptr:null)]
-           [closure {F} (reinterpret closure)])
-      (dynamic-call closure args))))
+    (let1 closure-rep {(: U64 (Ptr U8))} (: address ptr:null)
+      (reinterpret closure-rep))))
+
+(function (executor/call-main! symbol executor) {(-> FunctionSymbol Executor Bool)}
+  (assert-is? (function-symbol-kind:main (ir/ct:u 1)) (function-symbol/kind symbol))
+  ((executor/unsafe-get-closure! (function-symbol/name symbol) (phantom (-> Bool)) executor)))
+
+(function (executor/call-macro! symbol s executor) {(-> FunctionSymbol (ir/S ir/CapturedUse) Executor (Result (ir/S ir/CapturedUse) String))}
+  (assert-is? function-symbol-kind:macro (function-symbol/kind symbol))
+  ((executor/unsafe-get-closure! (function-symbol/name symbol) (phantom (-> (ir/S ir/CapturedUse) (Result (ir/S ir/CapturedUse) String))) executor) s))
 
 (function (assert-data-layout-matches-native-environment dl)
   ; NOTE: llrl assumes that the native environment (i.e., at the time of executing

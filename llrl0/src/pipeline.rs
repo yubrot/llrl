@@ -10,7 +10,7 @@ pub enum Error {
     Source(Vec<(Path, SourceError)>),
     CircularDependencies(Vec<Path>),
     Module(SourceLocationTable, Vec<(Source, ModuleError)>),
-    Clang(String),
+    ProduceExecutable(String),
 }
 
 impl fmt::Display for Error {
@@ -38,8 +38,8 @@ impl fmt::Display for Error {
                     )?;
                 }
             }
-            Self::Clang(ref error) => {
-                writeln!(f, "Failed to compile with clang: {}", error)?;
+            Self::ProduceExecutable(ref error) => {
+                writeln!(f, "Failed to produce executable: {}", error)?;
             }
         }
         Ok(())
@@ -93,11 +93,15 @@ impl Pipeline {
         self.clang_options.push(clang_option.to_string());
     }
 
-    pub fn run(
+    pub fn run<B>(
         self,
         output: &path::Path,
         run_args: Option<Vec<&str>>,
-    ) -> Result<Option<ExitStatus>> {
+    ) -> Result<Option<ExitStatus>>
+    where
+        B: BackendBuilder,
+        B::Dest: Backend + ProduceExecutable,
+    {
         let output = path::Path::new(".").join(output);
         let mut source_location_table = SourceLocationTable::new();
         let mut report = Report::new();
@@ -138,7 +142,7 @@ impl Pipeline {
         }
 
         let emitter = Emitter::new(
-            DefaultNativeBackendBuilder::new()
+            B::new()
                 .optimize(self.optimize)
                 .verbose(self.verbose)
                 .build(),
@@ -152,17 +156,14 @@ impl Pipeline {
         }
 
         let backend = emitter.complete(&mut report);
-        let produce_result = backend.produce_executable(output.to_owned(), self.clang_options);
-
-        if self.verbose {
-            let stdout = String::from_utf8_lossy(&produce_result.stdout);
-            eprintln!("### clang output");
-            eprintln!("{}", stdout);
-        }
-
-        if !produce_result.status.success() {
-            let stderr = String::from_utf8_lossy(&produce_result.stderr);
-            Err(Error::Clang(stderr.into_owned()))?;
+        match backend.produce_executable(output.to_owned(), self.clang_options) {
+            Ok(out) => {
+                if self.verbose {
+                    eprintln!("### produce executable output");
+                    eprintln!("{}", out);
+                }
+            }
+            Err(err) => Err(Error::ProduceExecutable(err))?,
         }
 
         backend.complete(&mut report);

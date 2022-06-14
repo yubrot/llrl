@@ -156,13 +156,13 @@ impl<'ctx> ContextArtifact<'ctx> {
             }
             Ct::F32 => TypeSize::new(4, 4),
             Ct::F64 => TypeSize::new(8, 8),
-            Ct::String => TypeSize::of::<runtime::EeString>(),
-            Ct::Char => TypeSize::of::<runtime::EeChar>(),
-            Ct::Array(_) => TypeSize::of::<runtime::EeArray<u8>>(),
-            Ct::CapturedUse => TypeSize::of::<runtime::EeCapturedUse>(),
+            Ct::String => TypeSize::of::<runtime::NativeString>(),
+            Ct::Char => TypeSize::of::<runtime::NativeChar>(),
+            Ct::Array(_) => TypeSize::of::<runtime::NativeArray<u8>>(),
+            Ct::CapturedUse => TypeSize::of::<runtime::NativeCapturedUse>(),
             Ct::Unit => TypeSize::new(0, 0),
             Ct::Env => TypeSize::pointer(),
-            Ct::Syntax(_) => TypeSize::of::<runtime::EeSyntax<u8>>(),
+            Ct::Syntax(_) => TypeSize::of::<runtime::NativeSyntax<u8>>(),
             Ct::Hole => panic!("Found Ct::Hole on TypeSizeCache::type_size"),
         }
     }

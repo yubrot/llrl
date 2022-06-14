@@ -4,7 +4,7 @@ use once_cell::unsync::OnceCell;
 use std::mem::size_of;
 use std::sync::Once;
 
-pub use crate::backend::ee::*;
+pub use crate::backend::native::*;
 
 #[derive(Debug)]
 pub struct Library<'ctx: 'm, 'm> {
@@ -124,7 +124,7 @@ impl<'ctx: 'm, 'm> LLVMTypeBuilder<'ctx> for Library<'ctx, 'm> {
     }
 }
 
-pub fn data_as_llvm_constant<'ctx: 'm, 'm, T: EeData>(
+pub fn data_as_llvm_constant<'ctx: 'm, 'm, T: NativeData>(
     value: T,
     module: &'m LLVMModule<'ctx>,
 ) -> LLVMConstant<'ctx, 'm> {
@@ -370,7 +370,7 @@ pub fn captured_use_constant<'ctx: 'm, 'm>(
     src: &CapturedUse,
     module: &'m LLVMModule<'ctx>,
 ) -> LLVMConstant<'ctx, 'm> {
-    let data = EeCapturedUse::from_host(*src);
+    let data = NativeCapturedUse::from_host(*src);
     llvm_constant!(*module, (struct (u64 {data.tag}) (u64 {data.node_id}))).as_constant()
 }
 
@@ -378,7 +378,7 @@ pub fn syntax_type<'ctx>(ctx: &'ctx LLVMContext) -> LLVMType<'ctx> {
     llvm_type!(ctx, (ptr u8)).as_type()
 }
 
-pub fn syntax_constant<'ctx: 'm, 'm, T: EeValue + EeData>(
+pub fn syntax_constant<'ctx: 'm, 'm, T: NativeValue + NativeData>(
     src: &Syntax<T::HostValue>,
     module: &'m LLVMModule<'ctx>,
 ) -> LLVMConstant<'ctx, 'm>
@@ -386,8 +386,8 @@ where
     T::HostValue: SyntaxBody,
     Syntax<T::HostValue>: Clone,
 {
-    // TODO: Reduce allocation (We don't need to allocate memories for temporary EeSyntax)
-    data_as_llvm_constant(EeSyntaxBuffer::<T>::from_host(src.clone()), module)
+    // TODO: Reduce allocation (We don't need to allocate memories for temporary NativeSyntax)
+    data_as_llvm_constant(NativeSyntaxBuffer::<T>::from_host(src.clone()), module)
 }
 
 pub fn build_syntax_construct<'ctx: 'm, 'm>(
@@ -427,6 +427,6 @@ pub fn syntax_metadata_constant<'ctx: 'm, 'm>(
     src: &SyntaxMetadata,
     module: &'m LLVMModule<'ctx>,
 ) -> LLVMConstant<'ctx, 'm> {
-    let EeSyntaxMetadata { ip, ir } = EeSyntaxMetadata::from_host(*src);
+    let NativeSyntaxMetadata { ip, ir } = NativeSyntaxMetadata::from_host(*src);
     llvm_constant!(*module, [(u32 ip) (u32 ir)]).as_constant()
 }

@@ -61,15 +61,13 @@ pub mod prelude {
         parallel_build as build_modules, Error as ModuleError, Module, ModuleId,
     };
 
-    pub use super::emitter::{Backend, BackendValue, Emitter};
+    pub use super::emitter::{Backend, Emitter};
 
+    pub use super::backend::default::{
+        Backend as DefaultBackend, Builder as DefaultBackendBuilder,
+    };
     pub use super::backend::interpreter::Backend as InterpreterBackend;
-    pub use super::backend::native::default::{
-        Backend as DefaultNativeBackend, BackendBuilder as DefaultNativeBackendBuilder,
-    };
-    pub use super::backend::native::{
-        Backend as NativeBackend, BackendBuilder as NativeBackendBuilder,
-    };
+    pub use super::backend::{Builder as BackendBuilder, ProduceExecutable};
 
     pub use super::pipeline::{Error as PipelineError, Pipeline};
 }

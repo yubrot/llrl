@@ -1,6 +1,6 @@
 use super::{FunctionSymbol, FunctionSymbolKind, Options};
-use crate::backend::ee::ffi;
-use crate::emitter::{ir::*, Value};
+use crate::backend::native::{native_macro, native_main};
+use crate::emitter::ir::*;
 use llvm::prelude::*;
 use std::sync::Once;
 
@@ -53,17 +53,28 @@ impl<'ctx> Executor<'ctx> {
         self.engine.remove_modules()
     }
 
-    pub fn call(&self, f: &FunctionSymbol, args: Vec<Value>) -> Result<Value, String> {
-        let bind_function = match f.kind {
-            FunctionSymbolKind::Standard(_, _) => Err("Unsupported".to_string())?,
-            FunctionSymbolKind::Macro => ffi::bind_macro,
-            FunctionSymbolKind::Main(Ct::U(1)) => ffi::bind_main,
-            FunctionSymbolKind::Main(_) => Err("Unsupported".to_string())?,
-        };
+    pub fn call_macro(&self, f: &FunctionSymbol, s: Syntax<Sexp>) -> Result<Syntax<Sexp>, String> {
+        assert!(
+            matches!(f.kind, FunctionSymbolKind::Macro),
+            "Function kind mismatch: expected macro but got {:?}",
+            f.kind
+        );
         let address = self.engine.get_function_address(&f.name) as usize;
         assert!(address != 0, "Function not found: {}", f.name);
-        let handler = unsafe { bind_function(address as _) };
-        handler(args)
+        let handler = unsafe { native_macro(address as _) };
+        handler(s)
+    }
+
+    pub fn call_main(&self, f: &FunctionSymbol) -> bool {
+        assert!(
+            matches!(f.kind, FunctionSymbolKind::Main(Ct::U(1))),
+            "Function kind mismatch: expected main(U1) but got {:?}",
+            f.kind
+        );
+        let address = self.engine.get_function_address(&f.name) as usize;
+        assert!(address != 0, "Function not found: {}", f.name);
+        let handler = unsafe { native_main(address as _) };
+        handler()
     }
 }
 

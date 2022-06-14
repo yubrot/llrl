@@ -1,5 +1,4 @@
-use crate::backend::native;
-use crate::emitter::{self, ir, Value};
+use crate::emitter::{self, ir};
 use crate::report::{Phase, Report};
 use crossbeam_channel::{bounded, unbounded, Receiver, Sender};
 use itertools::Itertools;
@@ -43,8 +42,6 @@ impl Backend {
 }
 
 impl emitter::Backend for Backend {
-    type Value = Value;
-
     fn put_def(&mut self, id: ir::CtId, def: Arc<ir::CtDef>) {
         self.sender.send(Request::PutDef(id, def)).unwrap();
     }
@@ -53,16 +50,20 @@ impl emitter::Backend for Backend {
         self.sender.send(Request::PutMain(init)).unwrap();
     }
 
-    fn execute_main(&mut self) -> Result<Value, String> {
+    fn execute_main(&mut self) -> Result<bool, String> {
         let (sender, receiver) = bounded(0);
         self.sender.send(Request::ExecuteMain(sender)).unwrap();
         receiver.recv().unwrap()
     }
 
-    fn execute_function(&mut self, id: ir::CtId, args: Vec<Value>) -> Result<Value, String> {
+    fn execute_macro(
+        &mut self,
+        id: ir::CtId,
+        s: ir::Syntax<ir::Sexp>,
+    ) -> Result<ir::Syntax<ir::Sexp>, String> {
         let (sender, receiver) = bounded(0);
         self.sender
-            .send(Request::ExecuteFunction(id, args, sender))
+            .send(Request::ExecuteMacro(id, s, sender))
             .unwrap();
         receiver.recv().unwrap()
     }
@@ -73,12 +74,12 @@ impl emitter::Backend for Backend {
     }
 }
 
-impl native::Backend for Backend {
+impl super::ProduceExecutable for Backend {
     fn produce_executable(
         &self,
         dest: path::PathBuf,
         clang_options: Vec<String>,
-    ) -> process::Output {
+    ) -> Result<String, String> {
         let (sender, receiver) = bounded(0);
         self.sender
             .send(Request::ProduceExecutable(dest, clang_options, sender))
@@ -91,9 +92,13 @@ impl native::Backend for Backend {
 enum Request {
     PutDef(ir::CtId, Arc<ir::CtDef>),
     PutMain(ir::Init),
-    ExecuteFunction(ir::CtId, Vec<Value>, Sender<Result<Value, String>>),
-    ExecuteMain(Sender<Result<Value, String>>),
-    ProduceExecutable(path::PathBuf, Vec<String>, Sender<process::Output>),
+    ExecuteMacro(
+        ir::CtId,
+        ir::Syntax<ir::Sexp>,
+        Sender<Result<ir::Syntax<ir::Sexp>, String>>,
+    ),
+    ExecuteMain(Sender<Result<bool, String>>),
+    ProduceExecutable(path::PathBuf, Vec<String>, Sender<Result<String, String>>),
 }
 
 fn process_requests(options: Options, receiver: Receiver<Request>) -> Report {
@@ -116,7 +121,7 @@ fn process_requests(options: Options, receiver: Receiver<Request>) -> Report {
             Request::PutMain(init) => {
                 main.push(init);
             }
-            Request::ExecuteFunction(id, args, sender) => {
+            Request::ExecuteMacro(id, sexp, sender) => {
                 generation += 1;
 
                 if !defs.is_empty() {
@@ -135,12 +140,11 @@ fn process_requests(options: Options, receiver: Receiver<Request>) -> Report {
                 let ret = match artifact.function_symbol(id) {
                     Some(f) => {
                         report.enter_phase(Phase::JIT);
-                        let ret =
-                            executor.call(f, std::iter::once(Value::Null).chain(args).collect());
+                        let ret = executor.call_macro(f, sexp);
                         report.leave_phase(Phase::JIT);
                         ret
                     }
-                    None => Err(format!("Undefined function: {}", id)),
+                    None => Err(format!("macro not found: {}", id)),
                 };
 
                 let _ = sender.send(ret);
@@ -160,8 +164,10 @@ fn process_requests(options: Options, receiver: Receiver<Request>) -> Report {
                 }
 
                 report.enter_phase(Phase::JIT);
-                let main = artifact.main_function_symbol().unwrap();
-                let ret = executor.call(main, vec![Value::I(0), Value::EmptyArgv]);
+                let ret = match artifact.main_function_symbol() {
+                    Some(f) => Ok(executor.call_main(f)),
+                    None => Err("main not found".to_string()),
+                };
                 report.leave_phase(Phase::JIT);
 
                 let _ = sender.send(ret);
@@ -231,7 +237,12 @@ fn process_requests(options: Options, receiver: Receiver<Request>) -> Report {
                 let output = clang_command.output().expect("Failed to execute clang");
                 report.leave_phase(Phase::Finalize);
 
-                let _ = sender.send(output);
+                let result = if output.status.success() {
+                    Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+                } else {
+                    Err(String::from_utf8_lossy(&output.stderr).into_owned())
+                };
+                let _ = sender.send(result);
             }
         }
     }
@@ -308,10 +319,10 @@ impl ModuleBuilder {
 }
 
 #[derive(Debug)]
-pub struct BackendBuilder(Options);
+pub struct Builder(Options);
 
-impl native::BackendBuilder for BackendBuilder {
-    type Backend = Backend;
+impl super::Builder for Builder {
+    type Dest = Backend;
 
     fn new() -> Self {
         Self(Options::new())
@@ -325,7 +336,7 @@ impl native::BackendBuilder for BackendBuilder {
         Self(self.0.verbose(verbose))
     }
 
-    fn build(self) -> Self::Backend {
+    fn build(self) -> Self::Dest {
         Backend::new(self.0)
     }
 }

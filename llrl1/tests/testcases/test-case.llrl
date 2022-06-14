@@ -101,11 +101,9 @@
           (emitter/complete! report emitter)
           (when-match1 (test-condition:pass _) condition
             (match (backend/execute-main! backend)
-              [(ok (value:bool #t))]
-              [(ok (let value))
-                (err (string "Expected #t but got " value))!]
-              [(err (let error))
-                (err (string "Execution error:\n" error))!])))
+              [(ok #t)]
+              [(ok #f) (err "Expected #t but got #f")!]
+              [(err (let error)) (err (string "Execution error:\n" error))!])))
         (backend/complete! report backend)
         (ok unit)))]))
 

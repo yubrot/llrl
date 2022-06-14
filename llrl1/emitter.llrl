@@ -5,20 +5,20 @@
 (import "~/ast" [ast/_ _])
 (import "~/module" [m/_ _])
 (import "~/emitter/ir" _)
-(import "~/emitter/value" Value _.Value value:_)
 (import "~/emitter/transformer" _)
 (import "~/emitter/simplifier" [simplifier/_ _])
 (import "~/emitter/normalizer" [normalizer/_ _])
 (import "~/emitter/data-expander" [data-expander/_ _])
 (import "~/emitter/branch-expander" [branch-expander/_ _])
 (import "~/emitter/heap2stack" [heap2stack/_ _])
-(export Value _.Value value:_ Backend backend/_ Emitter _.Emitter emitter/_)
+(export Backend backend/_ Emitter _.Emitter emitter/_)
 
+; Low-level compiler backend used by the emitter backend.
 (class (Backend B)
   (function (backend/put-def! id def b) {(-> CtId CtDef B unit)})
   (function (backend/put-main! init b) {(-> Init B unit)})
-  (function (backend/execute-main! b) {(-> B (Result Value String))})
-  (function (backend/execute-function! id args b) {(-> CtId (Array Value) B (Result Value String))})
+  (function (backend/execute-main! b) {(-> B (Result Bool String))})
+  (function (backend/execute-macro! id s b) {(-> CtId (S CapturedUse) B (Result (S CapturedUse) String))})
   (function (backend/complete! report b) {(-> Report B unit)}))
 
 (data (Emitter B)
@@ -41,13 +41,8 @@
     (when entry-point? (emitter/entry-module! (m/module/id module) e)))
 
   (function (backend/execute-macro! macro-id s e)
-    (let ([macro-fun (ct/force-id (emitter/populate! macro-id e))]
-          [args (array (value:sexp s))])
-      (match (backend/execute-function! macro-fun args (emitter/backend e))!
-        [(value:result-sexp-string (let result))
-          result]
-        [(let value)
-          (err (string "Cannot treat " (debug value) " as (Result Sexp String)"))]))))
+    (let1 macro-fun (ct/force-id (emitter/populate! macro-id e))
+      (backend/execute-macro! macro-fun s (emitter/backend e)))))
 
 (instance m/ModuleSet.Emitter (forall B) (m/ModuleSet (Emitter B))
   (function (module-set/get? mid e) (m/module-set/get? mid (modules e))))

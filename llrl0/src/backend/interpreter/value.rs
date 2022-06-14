@@ -1,5 +1,5 @@
 use super::{Error, Result};
-use crate::emitter::{self, ir::*};
+use crate::emitter::ir::*;
 use crate::string;
 use if_chain::if_chain;
 use itertools::Itertools;
@@ -344,6 +344,29 @@ impl Value {
             else { Err(Error::Internal("Value::into_syntax_sexp(...)".to_string())) }
         }
     }
+
+    pub fn into_result_syntax_sexp_string(
+        self,
+    ) -> Result<std::result::Result<Syntax<Sexp>, String>> {
+        if_chain! {
+            if let Self::Struct(_, mut fields) = self;
+            if let [tag, body] = fields.as_mut_slice();
+
+            if let Self::U(Ct::U(1), tag) = std::mem::take(tag);
+
+            if let Self::Reinterpret(_, _, body) = std::mem::take(body);
+            if let Self::Struct(_, mut body) = *body;
+
+            if let Some(result) = match (tag, body.as_mut_slice()) {
+                (0, [Self::String(error)]) => Some(Err(std::mem::take(error))),
+                (1, [syntax]) => std::mem::take(syntax).into_syntax_sexp().ok().map(Ok),
+                _ => None,
+            };
+
+            then { Ok(result) }
+            else { Err(Error::Internal("Value::into_result_syntax_sexp_string".to_string())) }
+        }
+    }
 }
 
 impl Default for Value {
@@ -373,37 +396,6 @@ impl fmt::Display for Value {
             Self::Struct(_, fields) => write!(f, "{{{}}}", fields.iter().format(", ")),
             Self::Reinterpret(_, to, body) => write!(f, "[{} {}]", to, body),
             Self::Box(v) => write!(f, "box({})", v.lock().unwrap()),
-        }
-    }
-}
-
-impl emitter::BackendValue for Value {
-    fn as_bool(&self) -> Option<bool> {
-        self.as_bool()
-    }
-
-    fn from_macro_src(sexp: &Syntax<Sexp>) -> Self {
-        Self::from_syntax_sexp(sexp.clone())
-    }
-
-    fn into_macro_dest(self) -> std::result::Result<Syntax<Sexp>, String> {
-        if_chain! {
-            if let Self::Struct(_, mut fields) = self;
-            if let [tag, body] = fields.as_mut_slice();
-
-            if let Self::U(Ct::U(1), tag) = std::mem::take(tag);
-
-            if let Self::Reinterpret(_, _, body) = std::mem::take(body);
-            if let Self::Struct(_, mut body) = *body;
-
-            if let Some(result) = match (tag, body.as_mut_slice()) {
-                (0, [Self::String(error)]) => Some(Err(std::mem::take(error))),
-                (1, [syntax]) => std::mem::take(syntax).into_syntax_sexp().ok().map(Ok),
-                _ => None,
-            };
-
-            then { result }
-            else { Err("Internal error: Value::into_macro_dest".to_string()) }
         }
     }
 }

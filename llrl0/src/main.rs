@@ -66,10 +66,10 @@ fn run_pipeline() -> Result<Option<ExitStatus>> {
         } else {
             None
         };
-        pipeline.run(path::Path::new(output), run_args)?
+        pipeline.run::<DefaultBackendBuilder>(path::Path::new(output), run_args)?
     } else {
         let tmp_path = tempfile::NamedTempFile::new()?.into_temp_path();
-        pipeline.run(&tmp_path, Some(run_args))?
+        pipeline.run::<DefaultBackendBuilder>(&tmp_path, Some(run_args))?
     })
 }
 
