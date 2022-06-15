@@ -5,6 +5,7 @@ use crate::source_loc::SourceLocationTable;
 use std::collections::HashSet;
 use std::sync::Mutex;
 
+/// Collects all necessary sources by loading the source and tracing dependencies.
 pub fn collect<'a>(
     inputs: impl IntoIterator<Item = &'a Path> + Send,
     loader: &Loader,

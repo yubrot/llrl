@@ -1,5 +1,5 @@
 use super::{Backend, Error, Result, Value};
-use crate::emitter::ir::*;
+use crate::lowering::ir::*;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 
@@ -26,7 +26,7 @@ impl<'a> Evaluator<'a> {
                 None => Err(Error::Internal(format!("Undefined variable: {}", id))),
             },
             Rt::LocalFun(_, _) => Err(Error::Internal(
-                "Found Rt::LocalFun at Evaluator, this should be erased by emitter".to_string(),
+                "Found Rt::LocalFun at Evaluator, this should be erased by lowerizer".to_string(),
             )),
             Rt::StaticFun(Ct::Id(id), env) => {
                 let env = match env {
@@ -36,7 +36,7 @@ impl<'a> Evaluator<'a> {
                 Ok(Value::Clos(*id, env.map(Box::new)))
             }
             Rt::StaticFun(ct, _) => Err(Error::Internal(format!(
-                "Unresolved Ct: {}, this should be resolved by emitter",
+                "Unresolved Ct: {}, this should be resolved by lowerizer",
                 ct
             ))),
             Rt::Call(call) => {
@@ -112,7 +112,7 @@ impl<'a> Evaluator<'a> {
             Rt::AllocArray(_) => Err(Error::Internal("AllocArray is unsupported".to_string())),
             Rt::ConstructEnv(con) => Ok(Value::construct_env(con.0, self.eval_all(&con.1)?)),
             Rt::ConstructData(_) => Err(Error::Internal(
-                "Found Rt::ConstructData at Evaluator, this should be erased by emitter"
+                "Found Rt::ConstructData at Evaluator, this should be erased by lowerizer"
                     .to_string(),
             )),
             Rt::ConstructStruct(con) => {
@@ -143,19 +143,19 @@ impl<'a> Evaluator<'a> {
                 Ok(Value::Unit)
             }
             Rt::And(_) => Err(Error::Internal(
-                "Found Binary::And at Evaluator, this should be erased by emitter".to_string(),
+                "Found Binary::And at Evaluator, this should be erased by lowerizer".to_string(),
             )),
             Rt::Or(_) => Err(Error::Internal(
-                "Found Binary::Or at Evaluator, this should be erased by emitter".to_string(),
+                "Found Binary::Or at Evaluator, this should be erased by lowerizer".to_string(),
             )),
             Rt::Match(_) => Err(Error::Internal(
-                "Found Rt::Match at Evaluator, this should be erased by emitter".to_string(),
+                "Found Rt::Match at Evaluator, this should be erased by lowerizer".to_string(),
             )),
             Rt::Return(ret) => Err(Error::ReturnRequest(self.eval(ret)?)),
             Rt::Cont(id, args) => Err(Error::ContRequest(*id, self.eval_all(args)?)),
             Rt::Never => Err(Error::UndefinedBehavior("Reached Rt::Never".to_string())),
             Rt::LetFunction(_) => Err(Error::Internal(
-                "Found Rt::LetFunction at Evaluator, this should be erased by emitter".to_string(),
+                "Found Rt::LetFunction at Evaluator, this should be erased by lowerizer".to_string(),
             )),
             Rt::LetVar(let_) => self.eval_let_var(&let_.0, &let_.1),
             Rt::LetCont(let_) => self.eval_let_cont(&let_.0, &let_.1),

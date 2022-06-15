@@ -9,8 +9,8 @@
 (import "~/report" _.Report report/_)
 (import "~/source" [source/_ _] source-set/_)
 (import "~/module" [module/_ _] module/_)
-(import "~/emitter" _.Emitter backend/_ emitter/_)
-(import "~/backend/llvm" _.LLVMBackend llvm-backend/_ with-llvm-backend)
+(import "~/lowering" _.Lowerizer backend/_ lowerizer/_)
+(import "~/backend" _.DefaultBackend default-backend/_)
 (export Error _.Error error:_ Pipeline _.Pipeline pipeline/_)
 
 (value-data Error
@@ -78,19 +78,19 @@
   (let* ([output (io/path "." output)]
          [slt (source-location-table/new)]
          [report (report/new)]
-         [source-set (source-set/build! (entry-source-paths p) (source-loader p) slt report)]
+         [source-set (source-set/collect! (entry-source-paths p) (source-loader p) slt report)]
          [source-errors (collect (source-set/errors source-set))]
          [_ (when (not (array/empty? source-errors)) (err (error:source source-errors))!)]
          [sources (result/map-err error:circular-dependencies (source-set/resolve-dependencies-order source-set))!])
-    (with-llvm-backend ~(optimize? p) ~(verbose? p) (lambda (backend)
-      (let ([emitter (emitter/new backend)]
+    (default-backend/with ~(optimize? p) ~(verbose? p) (lambda (backend)
+      (let ([lowerizer (lowerizer/new backend)]
             [entry-points (hash-set/collect (entry-source-paths p))])
-        (match (module/build! (vector/buffer sources) entry-points emitter report)
+        (match (module/build! (vector/buffer sources) entry-points lowerizer report)
           [(: (let module-set) none)
-            (emitter/complete! report emitter)
+            (lowerizer/complete! report lowerizer)
             (result/map-err
               error:produce-executable
-              (llvm-backend/produce-executable! output (vector/buffer (clang-options p)) backend))!
+              (default-backend/produce-executable! output (vector/buffer (clang-options p)) backend))!
             (backend/complete! report backend)
             (ok unit)]
           [(: (let module-set) (some (: (let path) (let error))))

@@ -1,4 +1,4 @@
-use crate::emitter::{self, ir};
+use crate::lowering::{self, ir};
 use crate::report::{Phase, Report};
 use crossbeam_channel::{bounded, unbounded, Receiver, Sender};
 use itertools::Itertools;
@@ -41,7 +41,7 @@ impl Backend {
     }
 }
 
-impl emitter::Backend for Backend {
+impl lowering::Backend for Backend {
     fn put_def(&mut self, id: ir::CtId, def: Arc<ir::CtDef>) {
         self.sender.send(Request::PutDef(id, def)).unwrap();
     }

@@ -3,7 +3,7 @@
 // NOTE: Can we use utilities like libffi to support a wider variety of functions?
 
 use super::{NativeResult, NativeSexp, NativeString, NativeSyntax, NativeValue};
-use crate::emitter::ir::*;
+use crate::lowering::ir::*;
 
 pub unsafe fn native_macro(f: *const ()) -> impl Fn(Syntax<Sexp>) -> Result<Syntax<Sexp>, String> {
     type NativeMacro = extern "C" fn(

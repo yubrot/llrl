@@ -1,7 +1,7 @@
 (import "std/ord-set" _)
 (import "~/util" _)
-(import "~/emitter/ir" _)
-(import "~/emitter/transformer" _)
+(import "~/lowering/ir" _)
+(import "~/lowering/transformer" _)
 (export run!)
 
 (function (run! t) {(forall T) (-> T T) (where (Transform T))}

@@ -1,3 +1,5 @@
+; An abstract syntax tree.
+
 (no-implicit-std)
 (import "~/ast/node-id" _)
 (import "~/ast/data" _)

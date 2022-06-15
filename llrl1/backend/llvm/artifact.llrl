@@ -2,7 +2,7 @@
 (import "std/hash-map" _)
 (import "llvm" [llvm/_ _])
 (import "~/util" _)
-(import "~/emitter/ir" [ir/_ _])
+(import "~/lowering/ir" [ir/_ _])
 (import "~/backend/llvm/runtime" RuntimeBuildEnv)
 (import "~/backend/llvm/codegen" TypeSize _.TypeSize TypeEnv type-env/_ BuildEnv codegen/_)
 (export ContextArtifact _.ContextArtifact context-artifact/_)

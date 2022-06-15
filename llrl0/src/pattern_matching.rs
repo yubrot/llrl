@@ -1,3 +1,5 @@
+// http://moscova.inria.fr/~maranget/papers/warn/warn.pdf
+
 mod matrix;
 mod pattern;
 mod row;

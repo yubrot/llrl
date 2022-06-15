@@ -1,3 +1,5 @@
+//! An abstract syntax tree.
+
 use derive_new::new;
 use std::collections::HashMap;
 use std::fmt;

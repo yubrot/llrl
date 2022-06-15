@@ -1,8 +1,10 @@
-use crate::emitter::{self, ir::*};
+//! Temporary backend implementation that does nothing.
+
+use crate::lowering::{self, ir::*};
 use crate::report::Report;
 use std::sync::Arc;
 
-impl emitter::Backend for () {
+impl lowering::Backend for () {
     fn put_def(&mut self, _: CtId, _: Arc<CtDef>) {}
 
     fn put_main(&mut self, _: Init) {}

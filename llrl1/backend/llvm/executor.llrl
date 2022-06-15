@@ -2,7 +2,7 @@
 (import "std/phantom" _)
 (import "llvm" [llvm/_ _])
 (import "~/util" _)
-(import "~/emitter/ir" [ir/_ _])
+(import "~/lowering/ir" [ir/_ _])
 (import "~/backend/llvm/artifact" FunctionSymbol function-symbol/_ function-symbol-kind:_)
 (export Executor _.Executor executor/_)
 

@@ -1,6 +1,6 @@
 use super::runtime;
 use super::{CFunctionArtifact, ContextArtifact, FunctionArtifact, ModuleArtifact};
-use crate::emitter::ir::*;
+use crate::lowering::ir::*;
 use derive_new::new;
 use llvm::prelude::*;
 use std::collections::HashMap;
@@ -85,7 +85,7 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
                 None => panic!("Undefined variable: {}", id),
             },
             Rt::LocalFun(_, _) => {
-                panic!("Found Rt::LocalFun at Codegen, this should be erased by emitter")
+                panic!("Found Rt::LocalFun at Codegen, this should be erased by lowerizer")
             }
             Rt::StaticFun(Ct::Id(id), env) => {
                 let fp = self.module.capture_function(*id, self.ctx).value;
@@ -102,7 +102,7 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
                 Some(value)
             }
             Rt::StaticFun(ct, _) => {
-                panic!("Unresolved Ct: {}, this should be resolved by emitter", ct)
+                panic!("Unresolved Ct: {}, this should be resolved by lowerizer", ct)
             }
             Rt::Const(c) => Some(self.llvm_constant(c).as_value()),
             Rt::Call(call) => {
@@ -407,7 +407,7 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
                 Some(self.builder.build_bit_cast(ptr, env_ty))
             }
             Rt::ConstructData(_) => {
-                panic!("Found Rt::ConstructData at Codegen, this should be erased by emitter")
+                panic!("Found Rt::ConstructData at Codegen, this should be erased by lowerizer")
             }
             Rt::ConstructStruct(con) => {
                 let mut result = LLVMConstant::undef(self.ctx.llvm_type(&con.0)).as_value();
@@ -431,13 +431,13 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
             Rt::If(if_) => self.eval_if(&if_.0, &if_.1, &if_.2),
             Rt::While(while_) => self.eval_while(&while_.0, &while_.1),
             Rt::And(_) => {
-                panic!("Found Rt::And at Codegen, this should be erased by emitter")
+                panic!("Found Rt::And at Codegen, this should be erased by lowerizer")
             }
             Rt::Or(_) => {
-                panic!("Found Rt::Or at Codegen, this should be erased by emitter")
+                panic!("Found Rt::Or at Codegen, this should be erased by lowerizer")
             }
             Rt::Match(_) => {
-                panic!("Found Rt::Match at Codegen, this should be erased by emitter")
+                panic!("Found Rt::Match at Codegen, this should be erased by lowerizer")
             }
             Rt::Return(ret) => {
                 let ret = self.eval(ret)?;
@@ -461,7 +461,7 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
                 None
             }
             Rt::LetFunction(_) => {
-                panic!("Found Rt::LetFunction at Codegen, this should be erased by emitter")
+                panic!("Found Rt::LetFunction at Codegen, this should be erased by lowerizer")
             }
             Rt::LetVar(let_) => self.eval_let_var(&let_.0, &let_.1),
             Rt::LetCont(let_) => self.eval_let_cont(&let_.0, &let_.1),

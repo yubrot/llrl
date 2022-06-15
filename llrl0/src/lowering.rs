@@ -1,3 +1,6 @@
+//! Lowering implementation.
+//! Converting high-level module constructs to low-level representations.
+
 use crate::ast;
 use crate::module::{Backend as ModuleBackend, Module, ModuleId};
 use crate::report::{Phase, Report};
@@ -15,12 +18,12 @@ mod heap2stack;
 pub mod ir;
 mod normalizer;
 mod rewriter;
-mod simplifier;
+mod translator;
 mod traverser;
 
 pub use context::Context;
 
-/// Low-level compiler backend used by the emitter backend.
+/// Low-level compiler backend used by the `Lowerizer`.
 pub trait Backend: Send + 'static {
     fn put_def(&mut self, id: ir::CtId, def: Arc<ir::CtDef>);
 
@@ -38,12 +41,12 @@ pub trait Backend: Send + 'static {
 }
 
 #[derive(Debug)]
-pub struct Emitter<B: Backend> {
+pub struct Lowerizer<B: Backend> {
     sender: Sender<Request>,
     handle: thread::JoinHandle<(B, Report)>,
 }
 
-impl<B: Backend> Emitter<B> {
+impl<B: Backend> Lowerizer<B> {
     pub fn new(backend: B) -> Self {
         let (sender, receiver) = unbounded();
         let handle = thread::spawn(move || process_requests(backend, receiver));
@@ -52,13 +55,13 @@ impl<B: Backend> Emitter<B> {
 
     pub fn complete(self, report: &mut Report) -> B {
         drop(self.sender);
-        let (result, emitter_report) = self.handle.join().unwrap();
-        report.merge(&emitter_report);
+        let (result, lowerizer_report) = self.handle.join().unwrap();
+        report.merge(&lowerizer_report);
         result
     }
 }
 
-impl<B: Backend> ModuleBackend for Emitter<B> {
+impl<B: Backend> ModuleBackend for Lowerizer<B> {
     fn add_module(&self, module: Arc<Module>, is_entry_point: bool) {
         let request = Request::AddModule(module, is_entry_point);
         self.sender.send(request).unwrap();
@@ -100,13 +103,13 @@ fn process_requests<B: Backend>(mut backend: B, receiver: Receiver<Request>) -> 
         modules: &HashMap<ModuleId, Arc<Module>>,
     ) -> T::Dest
     where
-        T: simplifier::Simplify,
+        T: translator::Translate,
         T::Dest: traverser::Traverse + rewriter::Rewrite,
         B: Backend,
     {
-        report.enter_phase(Phase::Emit);
+        report.enter_phase(Phase::Lowerize);
         let (result, defs) = ctx.populate(&src, &modules);
-        report.leave_phase(Phase::Emit);
+        report.leave_phase(Phase::Lowerize);
 
         for (id, def) in defs {
             backend.put_def(id, Arc::clone(def));

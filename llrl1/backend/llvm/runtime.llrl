@@ -2,7 +2,7 @@
 (import "llvm" [llvm/_ _])
 (import "~/util" _)
 (import "~/sexp" [sexp/_ _])
-(import "~/emitter/ir" [ir/_ _])
+(import "~/lowering/ir" [ir/_ _])
 (import "~/backend/data" [data/_ _])
 (export RuntimeBuildEnv runtime-build-env/_ runtime/_ RuntimeConst RuntimeConst._)
 

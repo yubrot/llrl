@@ -50,7 +50,8 @@
           (ok (get sources[0]))
           (err (|> sources (it/map source/path) collect)))))))
 
-(function (source-set/build! inputs loader slt report)
+; Collects all necessary sources by loading the source and tracing dependencies.
+(function (source-set/collect! inputs loader slt report)
   {(forall T A) (-> (T Path) (Loader A) SourceLocationTable Report (SourceSet A)) (where (Iterate T))}
   (let* ([result (source-set/new)]
          [visit-log ord-set/empty]

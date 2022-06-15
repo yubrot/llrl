@@ -1,4 +1,4 @@
-use crate::emitter::ir::{CapturedUse, Syntax, SyntaxBody, SyntaxMetadata};
+use crate::lowering::ir::{CapturedUse, Syntax, SyntaxBody, SyntaxMetadata};
 use llvm::prelude::*;
 use once_cell::unsync::OnceCell;
 use std::mem::size_of;

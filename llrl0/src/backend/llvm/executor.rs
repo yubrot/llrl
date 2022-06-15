@@ -1,6 +1,6 @@
 use super::{FunctionSymbol, FunctionSymbolKind, Options};
 use crate::backend::native::{native_macro, native_main};
-use crate::emitter::ir::*;
+use crate::lowering::ir::*;
 use llvm::prelude::*;
 use std::sync::Once;
 

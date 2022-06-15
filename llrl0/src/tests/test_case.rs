@@ -172,13 +172,13 @@ impl TestTarget {
         backend: B,
         ctx: &mut TestContext,
     ) {
-        let emitter = Emitter::new(backend);
+        let lowerizer = Lowerizer::new(backend);
         let entry_points = vec![Path::current()].into_iter().collect();
-        let (modules, errors) = build_modules(sources, entry_points, &emitter, &mut ctx.report);
+        let (modules, errors) = build_modules(sources, entry_points, &lowerizer, &mut ctx.report);
         cond.run(&modules, &errors, ctx);
 
         if matches!(cond, TestCondition::Pass(_)) {
-            let mut backend = emitter.complete(&mut ctx.report);
+            let mut backend = lowerizer.complete(&mut ctx.report);
             match backend.execute_main() {
                 Ok(true) => {}
                 Ok(false) => panic!("{}: Expected #t but got #f", ctx.header()),

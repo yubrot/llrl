@@ -1,7 +1,7 @@
 (import "std/memory" size-of align-of ptr/_)
 (import "~/util" _)
 (import "~/sexp" [sexp/_ _])
-(import "~/emitter/ir" [ir/_ _])
+(import "~/lowering/ir" [ir/_ _])
 (export Data Data._ direct-data indirect-data data-rep DataRep)
 
 (function (plain-data value) {(forall A) (-> A (Array U8))}

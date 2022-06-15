@@ -1,6 +1,6 @@
 use super::codegen;
 use super::runtime;
-use crate::emitter::ir::*;
+use crate::lowering::ir::*;
 use derive_new::new;
 use llvm::prelude::*;
 use std::collections::HashMap;

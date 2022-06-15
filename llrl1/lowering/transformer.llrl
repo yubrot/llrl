@@ -1,7 +1,7 @@
 (import "std/ord-map" _)
 (import "std/ord-set" _)
 (import "~/util" _)
-(import "~/emitter/ir" _)
+(import "~/lowering/ir" _)
 (export Cut cut:_ Rewrite _.Rewrite rewrite: rewrite/_)
 (export Transformer transformer/_ Transform Transform._ transform)
 (export captured-vars visit-ct-uses replace-ct replace-rt)

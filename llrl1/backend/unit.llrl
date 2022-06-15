@@ -1,5 +1,7 @@
-(import "~/emitter/ir" [ir/_ _])
-(import "~/emitter" Backend value:_)
+; Temporary backend implementation that does nothing.
+
+(import "~/lowering/ir" [ir/_ _])
+(import "~/lowering" Backend)
 (export Backend.unit)
 
 (instance Backend.unit (Backend unit)

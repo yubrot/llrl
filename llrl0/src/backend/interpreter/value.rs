@@ -1,5 +1,5 @@
 use super::{Error, Result};
-use crate::emitter::ir::*;
+use crate::lowering::ir::*;
 use crate::string;
 use if_chain::if_chain;
 use itertools::Itertools;

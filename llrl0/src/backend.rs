@@ -1,3 +1,5 @@
+//! Backends responsible for executable code generation and JIT execution.
+
 use std::path;
 
 pub mod interpreter;
@@ -21,12 +23,8 @@ pub trait ProduceExecutable {
 /// Common backend builder trait.
 pub trait Builder: Sized {
     type Dest;
-
     fn new() -> Self;
-
     fn optimize(self, optimize: bool) -> Self;
-
     fn verbose(self, verbose: bool) -> Self;
-
     fn build(self) -> Self::Dest;
 }

@@ -1,6 +1,6 @@
 //! A set of definitions ABI-compatible with the native targeting backend's data layout.
 
-use crate::emitter::ir::{CapturedUse, Syntax, SyntaxBody, SyntaxMetadata};
+use crate::lowering::ir::{CapturedUse, Syntax, SyntaxBody, SyntaxMetadata};
 use derive_new::new;
 use memoffset::offset_of;
 use std::mem::{size_of, ManuallyDrop};

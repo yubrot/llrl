@@ -1,7 +1,7 @@
 (import "std/persistent/ord-map" _)
 (import "~/util" _)
-(import "~/emitter/ir" _)
-(import "~/emitter/transformer" _)
+(import "~/lowering/ir" _)
+(import "~/lowering/transformer" _)
 (export Env expand!)
 
 (class (Env E)

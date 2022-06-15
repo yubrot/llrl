@@ -1,10 +1,12 @@
+; Translates module constructs into the lowering IR.
+
 (import "~/util" _)
 (import "~/sexp" S _.S s: s-rep:pure)
 (import "~/ast" [ast/_ _])
 (import "~/module" [m/_ _])
-(import "~/emitter/ir" _)
-(import "~/emitter/transformer" Transform._)
-(export Env Simplify Simplify._ simplify! simplify-def!)
+(import "~/lowering/ir" _)
+(import "~/lowering/transformer" Transform._)
+(export Env Translate Translate._ translate! translate-def!)
 
 (class (Env E) (where (m/ModuleSet E))
   (function (alloc-ct! e) {(-> E CtId)})
@@ -12,56 +14,56 @@
   (function (alloc-rt! e) {(-> E RtId)})
   (function (issue-rt! c e) {(forall C) (-> C E RtId) (where (Conv C ast/Construct))}))
 
-(function (simplify-def! e c) {(forall E) (-> E ast/Construct (Option CtDef)) (where (Env E))}
+(function (translate-def! e c) {(forall E) (-> E ast/Construct (Option CtDef)) (where (Env E))}
   (cond?
     [when-match1 (some (let id)) (conv c)
-      (simplify! e (option/force (m/module-set/ast? ast/root/function? id e)))]
+      (translate! e (option/force (m/module-set/ast? ast/root/function? id e)))]
     [when-match1 (some (let id)) (conv c)
-      (simplify! e (option/force (m/module-set/ast? ast/root/c-function? id e)))]
+      (translate! e (option/force (m/module-set/ast? ast/root/c-function? id e)))]
     [when-match1 (some (let id)) (conv c)
-      (simplify! e (option/force (m/module-set/ast? ast/root/builtin-op? id e)))]
+      (translate! e (option/force (m/module-set/ast? ast/root/builtin-op? id e)))]
     [when-match1 (some (let id)) (conv c)
-      (simplify! e (option/force (m/module-set/ast? ast/root/macro? id e)))]
+      (translate! e (option/force (m/module-set/ast? ast/root/macro? id e)))]
     [when-match1 (some (let id)) (conv c)
-      (simplify! e (option/force (m/module-set/ast? ast/root/data-type? id e)))]
+      (translate! e (option/force (m/module-set/ast? ast/root/data-type? id e)))]
     [when-match1 (some (let id)) (conv c)
-      (simplify! e (option/force (m/module-set/ast? ast/root/data-value-con? id e)))]
+      (translate! e (option/force (m/module-set/ast? ast/root/data-value-con? id e)))]
     [when-match1 (some (let id)) (conv c)
-      (simplify! e (option/force (m/module-set/ast? ast/root/builtin-type-con? id e)))]
+      (translate! e (option/force (m/module-set/ast? ast/root/builtin-type-con? id e)))]
     [when-match1 (some (let id)) (conv c)
-      (simplify! e (option/force (m/module-set/ast? ast/root/builtin-value-con? id e)))]
+      (translate! e (option/force (m/module-set/ast? ast/root/builtin-value-con? id e)))]
     [when-match ([(some (let id)) (conv c)]
-                 [(some (let def)) (simplify! e (option/force (m/module-set/ast? ast/root/class-method? id e)))])
+                 [(some (let def)) (translate! e (option/force (m/module-set/ast? ast/root/class-method? id e)))])
       def]
     [when-match1 (some (let id)) (conv c)
-      (simplify! e (option/force (m/module-set/ast? ast/root/instance-method? id e)))]
+      (translate! e (option/force (m/module-set/ast? ast/root/instance-method? id e)))]
     [when-match1 (some (let id)) (conv c)
-      (simplify! e (option/force (m/module-set/ast? ast/root/instance? id e)))]))
+      (translate! e (option/force (m/module-set/ast? ast/root/instance? id e)))]))
 
-(class (Simplify S D)
-  (function (simplify! e src) {(forall E) (-> E S D) (where (Env E))}))
+(class (Translate S D)
+  (function (translate! e src) {(forall E) (-> E S D) (where (Env E))}))
 
-(instance Simplify.Option (forall S D) (Simplify (Option S) (Option D)) (where (Simplify S D))
-  (function (simplify! e src)
-    (option/map [^1 (simplify! e %1)] src)))
+(instance Translate.Option (forall S D) (Translate (Option S) (Option D)) (where (Translate S D))
+  (function (translate! e src)
+    (option/map [^1 (translate! e %1)] src)))
 
-(instance Simplify.Array (forall S D) (Simplify (Array S) (Array D)) (where (Simplify S D))
-  (function (simplify! e src)
-    (simplify! e (iterate src))))
+(instance Translate.Array (forall S D) (Translate (Array S) (Array D)) (where (Translate S D))
+  (function (translate! e src)
+    (translate! e (iterate src))))
 
-(instance Simplify.Iterator (forall S D) (Simplify (Iterator S) (Array D)) (where (Simplify S D))
-  (function (simplify! e src)
-    (|> src (it/map [^1 (simplify! e %1)]) collect)))
+(instance Translate.Iterator (forall S D) (Translate (Iterator S) (Array D)) (where (Translate S D))
+  (function (translate! e src)
+    (|> src (it/map [^1 (translate! e %1)]) collect)))
 
-(instance Simplify.FunctionId (Simplify (ast/NodeId ast/Function) Ct)
-  (function (simplify! e src)
+(instance Translate.FunctionId (Translate (ast/NodeId ast/Function) Ct)
+  (function (translate! e src)
     (ct:id (issue-ct! src e))))
 
-(instance Simplify.Function (Simplify ast/Function CtDef)
-  (function (simplify! e src)
+(instance Translate.Function (Translate ast/Function CtDef)
+  (function (translate! e src)
     (with ([(ast/function: (let id) (let transparent?) (let params) _ (let body)) src]
            [(: (let ct-params) (let params) (let ret))
-             (simplify! e (: (signature: params) (option/force (m/module-set/scheme? id e))))])
+             (translate! e (: (signature: params) (option/force (m/module-set/scheme? id e))))])
       (ct-def/generic
         ct-params
         (ct-def:function (function:
@@ -69,19 +71,19 @@
           none
           params
           ret
-          (simplify! e body)))))))
+          (translate! e body)))))))
 
-(instance Simplify.Parameter (Simplify ast/Parameter RtId)
-  (function (simplify! e src)
+(instance Translate.Parameter (Translate ast/Parameter RtId)
+  (function (translate! e src)
     (issue-rt! (ast/parameter/id src) e)))
 
-(instance Simplify.CFunction (Simplify ast/CFunction CtDef)
-  (function (simplify! e src)
+(instance Translate.CFunction (Translate ast/CFunction CtDef)
+  (function (translate! e src)
     (with ([(ast/c-function: (let id) (ast/annotation: _ (let ty)) (let c-name)) src]
            [(: (let params) (let ret))
              (if-match1 (some (: (let params) (let ret))) (ast/type/fun? ty)
-               (: (simplify! e params) (simplify! e ret))
-               (: array/empty (simplify! e ty)))])
+               (: (translate! e params) (translate! e ret))
+               (: array/empty (translate! e ty)))])
       (ct-def:function (function:
         function-kind:standard
         none
@@ -92,11 +94,11 @@
           (ct:clos (|> params (it/map function-param/ty) collect) ret)
           (|> params (it/map [^1 (rt:local (function-param/id %1))]) collect)))))))
 
-(instance Simplify.BuiltinOp (Simplify ast/BuiltinOp CtDef)
-  (function (simplify! e src)
+(instance Translate.BuiltinOp (Translate ast/BuiltinOp CtDef)
+  (function (translate! e src)
     (with ([(ast/builtin-op: (let id) (ast/annotation: _ (let scheme)) (let builtin-name)) src]
            [(: (let ct-params) (let params) (let ret))
-             (simplify! e (: signature:unspecified scheme))])
+             (translate! e (: signature:unspecified scheme))])
       (ct-def/generic
         ct-params
         (ct-def:function (function:
@@ -110,43 +112,43 @@
             (|> ct-params (it/map ct:id) collect)
             (|> params (it/map [^1 (rt:local (function-param/id %1))]) collect))))))))
 
-(instance Simplify.MacroId (Simplify (ast/NodeId ast/Macro) Ct)
-  (function (simplify! e src)
+(instance Translate.MacroId (Translate (ast/NodeId ast/Macro) Ct)
+  (function (translate! e src)
     (ct:id (issue-ct! src e))))
 
-(instance Simplify.Macro (Simplify ast/Macro CtDef)
-  (function (simplify! e src)
+(instance Translate.Macro (Translate ast/Macro CtDef)
+  (function (translate! e src)
     (with1 (ast/macro: (let id) (let param) (let body)) src
       (ct-def:function (function:
         function-kind:macro
         none
-        (array (simplify! e (: param ast/macro/src-ty)))
-        (simplify! e ast/macro/dest-ty)
-        (simplify! e body))))))
+        (array (translate! e (: param ast/macro/src-ty)))
+        (translate! e ast/macro/dest-ty)
+        (translate! e body))))))
 
-(instance Simplify.DataType (Simplify ast/DataType CtDef)
-  (function (simplify! e src)
+(instance Translate.DataType (Translate ast/DataType CtDef)
+  (function (translate! e src)
     (with1 (ast/data-type: (ast/data-type-con: (let id) (let repr) (let ty-params) _) (let value-cons)) src
       (ct-def/generic
-        (simplify! e ty-params)
+        (translate! e ty-params)
         (ct-def:data (data:
-          (simplify! e repr)
+          (translate! e repr)
           (|> (value-cons)
-              (it/map [^1 (option/unwrap array/empty (simplify! e (ast/data-value-con/fields %1)))])
+              (it/map [^1 (option/unwrap array/empty (translate! e (ast/data-value-con/fields %1)))])
               collect)))))))
 
-(instance Simplify.DataRepr (Simplify ast/DataRepr DataRepr)
-  (function (simplify! e src)
+(instance Translate.DataRepr (Translate ast/DataRepr DataRepr)
+  (function (translate! e src)
     (match src
       [ast/data-repr:default data-repr:boxed]
       [ast/data-repr:value data-repr:value]
       [ast/data-repr:c data-repr:c])))
 
-(instance Simplify.DataValueCon (Simplify ast/DataValueCon CtDef)
-  (function (simplify! e src)
+(instance Translate.DataValueCon (Translate ast/DataValueCon CtDef)
+  (function (translate! e src)
     (with ([(ast/data-value-con: (let id) (let fields) (let type-con)) src]
            [(: (let ct-params) (let params) (let ret))
-             (simplify! e (: signature:unspecified (option/force (m/module-set/scheme? id e))))])
+             (translate! e (: signature:unspecified (option/force (m/module-set/scheme? id e))))])
       (ct-def/generic
         ct-params
         (ct-def:function (function:
@@ -160,19 +162,19 @@
               (option/force (ast/data-type-con/index-of? id type-con)))
             (|> params (it/map [^1 (rt:local (function-param/id %1))]) collect))))))))
 
-(instance Simplify.BuiltinTypeCon (Simplify ast/BuiltinTypeCon CtDef)
-  (function (simplify! e src)
+(instance Translate.BuiltinTypeCon (Translate ast/BuiltinTypeCon CtDef)
+  (function (translate! e src)
     (with1 (ast/builtin-type-con: (let id) (let ty-params) (let builtin-name) _) src
-      (let1 params (simplify! e ty-params)
+      (let1 params (translate! e ty-params)
         (ct-def/generic
           params
           (ct-def:alias (builtin-ct builtin-name params)))))))
 
-(instance Simplify.BuiltinValueCon (Simplify ast/BuiltinValueCon CtDef)
-  (function (simplify! e src)
+(instance Translate.BuiltinValueCon (Translate ast/BuiltinValueCon CtDef)
+  (function (translate! e src)
     (with ([(ast/builtin-value-con: (let id) (let builtin-name) (let fields) (let type-con)) src]
            [(: (let ct-params) (let params) (let ret))
-             (simplify! e (: signature:unspecified (option/force (m/module-set/scheme? id e))))])
+             (translate! e (: signature:unspecified (option/force (m/module-set/scheme? id e))))])
       (ct-def/generic
         ct-params
         (ct-def:function (function:
@@ -186,24 +188,24 @@
             (|> ct-params (it/map ct:id) collect)
             (|> params (it/map [^1 (rt:local (function-param/id %1))]) collect))))))))
 
-(instance Simplify.ValueConField (Simplify ast/ValueConField Ct)
-  (function (simplify! e src)
-    (simplify! e (ast/value-con-field/ty src))))
+(instance Translate.ValueConField (Translate ast/ValueConField Ct)
+  (function (translate! e src)
+    (translate! e (ast/value-con-field/ty src))))
 
-(instance Simplify.Instance (Simplify ast/Instance CtDef)
-  (function (simplify! e src)
+(instance Translate.Instance (Translate ast/Instance CtDef)
+  (function (translate! e src)
     (with1 (ast/instance-con: (let id) (let ty-params) (let s-params) (let target) _) (ast/instance/con src)
       (match (ast/constraint/rep target)
         [(ast/constraint-rep:unresolved _ _)
-          (assert #f "Found constraint-rep:unresolved at simplifier")]
+          (assert #f "Found constraint-rep:unresolved at translator")]
         [(ast/constraint-rep:class (let class-id) (let class-args))
           (let* ([class (option/force (m/module-set/ast? ast/root/class? class-id e))]
-                 [params (array/concat (simplify! e ty-params) (simplify! e s-params))]
+                 [params (array/concat (translate! e ty-params) (translate! e s-params))]
                  [inst-args (|> params (it/map ct:id) collect)]
                  [default-impl-args
                    (array/push
                      (ct/generic-inst (ct:id (issue-ct! id e)) inst-args)
-                     (simplify! e class-args))]
+                     (translate! e class-args))]
                  [table (alias-table/new)])
             (for (ast/class-method: (let id) _ _ _ _) (ast/class/methods class)
               (alias-table/put!
@@ -217,18 +219,18 @@
               (it/zip
                 (|> class ast/class/con ast/class-con/superclasses)
                 (|> (m/module-set/instantiation? id e) option/force ast/instantiation/s-args))
-              (alias-table/put! (simplify! e c) (simplify! e s) table))
+              (alias-table/put! (translate! e c) (translate! e s) table))
             (ct-def/generic params (ct-def:alias-table table)))]))))
 
-(instance Simplify.ClassMethod (Simplify ast/ClassMethod (Option CtDef))
-  (function (simplify! e src)
+(instance Translate.ClassMethod (Translate ast/ClassMethod (Option CtDef))
+  (function (translate! e src)
     (with1? (ast/class-method: (let id) (ast/annotation: _ (let scheme)) (let params) (some (let body)) (let class-id)) src
-      (with1 (: (let ct-params) (let params) (let ret)) (simplify! e (: (signature: params) scheme))
+      (with1 (: (let ct-params) (let params) (let ret)) (translate! e (: (signature: params) scheme))
         (let1 class-con (option/force (m/module-set/ast? ast/root/class-con? class-id e))
           (ct-def/generic
             (array/push
-              (simplify! e (ast/class-con/constraint class-con))
-              (simplify! e (ast/class-con/ty-params class-con)))
+              (translate! e (ast/class-con/constraint class-con))
+              (translate! e (ast/class-con/ty-params class-con)))
             (ct-def/generic
               ct-params
               (ct-def:function (function:
@@ -236,18 +238,18 @@
                 none
                 params
                 ret
-                (simplify! e body))))))))))
+                (translate! e body))))))))))
 
-(instance Simplify.InstanceMethod (Simplify ast/InstanceMethod CtDef)
-  (function (simplify! e src)
+(instance Translate.InstanceMethod (Translate ast/InstanceMethod CtDef)
+  (function (translate! e src)
     (with ([(ast/instance-method: (let id) (let transparent?) _ (let params) (let body) _ (let inst-id)) src]
            [(: (let ct-params) (let params) (let ret))
-             (simplify! e (: (signature: params) (option/force (m/module-set/scheme? id e))))])
+             (translate! e (: (signature: params) (option/force (m/module-set/scheme? id e))))])
       (let1 inst-con (option/force (m/module-set/ast? ast/root/instance-con? inst-id e))
         (ct-def/generic
           (array/concat
-            (simplify! e (ast/instance-con/ty-params inst-con))
-            (simplify! e (ast/instance-con/s-params inst-con)))
+            (translate! e (ast/instance-con/ty-params inst-con))
+            (translate! e (ast/instance-con/s-params inst-con)))
           (ct-def/generic
             ct-params
             (ct-def:function (function:
@@ -255,27 +257,27 @@
               none
               params
               ret
-              (simplify! e body)))))))))
+              (translate! e body)))))))))
 
-(instance Simplify.Init (Simplify ast/Expr Init)
-  (function (simplify! e src)
-    (let ([ty (simplify! e (option/force (m/module-set/type? (ast/expr/id src) e)))]
-          [expr (simplify! e src)])
+(instance Translate.Init (Translate ast/Expr Init)
+  (function (translate! e src)
+    (let ([ty (translate! e (option/force (m/module-set/type? (ast/expr/id src) e)))]
+          [expr (translate! e src)])
       (init: ty expr))))
 
-(instance Simplify.Expr (Simplify ast/Expr Rt)
-  (function (simplify! e src)
+(instance Translate.Expr (Translate ast/Expr Rt)
+  (function (translate! e src)
     (with1 (ast/expr: (let id) (let rep)) src
       (match rep
         [(ast/expr-rep:unresolved _)
-          (assert #f "Found expr-rep:unresolved at simplifier")]
+          (assert #f "Found expr-rep:unresolved at translator")]
         [(ast/expr-rep:value (ast/value:function (let function-id)))
           (let1 function (option/force (m/module-set/ast? ast/root/function? function-id e))
             (rt/autocall
               (rt:static-fun
                 (ct/generic-inst
                   (ct:id (issue-ct! function-id e))
-                  (simplify! e (option/force (m/module-set/instantiation? id e))))
+                  (translate! e (option/force (m/module-set/instantiation? id e))))
                 none)
               (is? none (ast/function/params function))))]
         [(ast/expr-rep:value (ast/value:c-function (let c-function-id)))
@@ -289,7 +291,7 @@
               (rt:static-fun
                 (ct/generic-inst
                   (ct:id (issue-ct! builtin-op-id e))
-                  (simplify! e (option/force (m/module-set/instantiation? id e))))
+                  (translate! e (option/force (m/module-set/instantiation? id e))))
                 none)
               (is? none (ast/type/fun? (ast/scheme/body (ast/annotation/body (ast/builtin-op/ann builtin-op)))))))]
         [(ast/expr-rep:value (ast/value:class-method (let class-method-id)))
@@ -300,8 +302,8 @@
               (rt/autocall
                 (rt:static-fun
                   (ct/generic-inst
-                    (ct:table-get (simplify! e (get instance-sas[0])) (issue-ct! class-method-id e))
-                    (simplify! e method-inst))
+                    (ct:table-get (translate! e (get instance-sas[0])) (issue-ct! class-method-id e))
+                    (translate! e method-inst))
                   none)
                 (is? none (ast/class-method/params class-method)))))]
         [(ast/expr-rep:value (ast/value:parameter (let parameter-id)))
@@ -311,7 +313,7 @@
         [(ast/expr-rep:value (ast/value:local-fun (let local-fun-id)))
           (rt:local-fun
             (issue-rt! local-fun-id e)
-            (simplify! e (option/force (m/module-set/instantiation? id e))))]
+            (translate! e (option/force (m/module-set/instantiation? id e))))]
         [(ast/expr-rep:value (ast/value:pattern-var (let pattern-var-id)))
           (rt:local (issue-rt! pattern-var-id e))]
         [(ast/expr-rep:con (ast/value-con:data (let data-value-con-id)))
@@ -320,7 +322,7 @@
               (rt:static-fun
                 (ct/generic-inst
                   (ct:id (issue-ct! data-value-con-id e))
-                  (simplify! e (option/force (m/module-set/instantiation? id e))))
+                  (translate! e (option/force (m/module-set/instantiation? id e))))
                 none)
               (is? none (ast/data-value-con/fields data-value-con))))]
         [(ast/expr-rep:con (ast/value-con:builtin (let builtin-value-con-id)))
@@ -329,79 +331,79 @@
               (rt:static-fun
                 (ct/generic-inst
                   (ct:id (issue-ct! builtin-value-con-id e))
-                  (simplify! e (option/force (m/module-set/instantiation? id e))))
+                  (translate! e (option/force (m/module-set/instantiation? id e))))
                 none)
               (is? none (ast/builtin-value-con/fields builtin-value-con))))]
         [(ast/expr-rep:const (let c))
-          (rt:const (simplify! e (: (option/force (m/module-set/type? id e)) c)))]
+          (rt:const (translate! e (: (option/force (m/module-set/type? id e)) c)))]
         [(ast/expr-rep:app (let callee) (let args))
           (if-match ([(ast/expr: (let callee-id) (ast/expr-rep:con (let con))) callee]
                      [#t (and (eq? con ast/value-con/syntax) (eq? (array/length args) 1))])
             (rt:construct-syntax
               (m/symbol/loc (option/force (m/module-set/symbol? id e)))
-              (simplify! e (get args[0])))
-            (rt:call (simplify! e callee) (simplify! e args)))]
+              (translate! e (get args[0])))
+            (rt:call (translate! e callee) (translate! e args)))]
         [(ast/expr-rep:unresolved-capture _)
-          (assert #f "Found expr-rep:unresolved-capture at simplifier")]
+          (assert #f "Found expr-rep:unresolved-capture at translator")]
         [(ast/expr-rep:capture (let construct))
           (let1 sexp (s: (m/symbol/loc (option/force (m/module-set/symbol? id e))) (s-rep:pure construct))
-            (rt:const (simplify! e sexp)))]
+            (rt:const (translate! e sexp)))]
         [(ast/expr-rep:annotate (let body) _)
-          (simplify! e body)]
+          (translate! e body)]
         [(ast/expr-rep:let (let defs) (let body))
-          (let ([funs (simplify! e (it/filter-map (case1? (right (let f)) f) defs))]
-                [vars (simplify! e (it/filter-map (case1? (left (let v)) v) defs))])
-            (rt/let-function funs (rt/let-var vars (simplify! e body))))]
+          (let ([funs (translate! e (it/filter-map (case1? (right (let f)) f) defs))]
+                [vars (translate! e (it/filter-map (case1? (left (let v)) v) defs))])
+            (rt/let-function funs (rt/let-var vars (translate! e body))))]
         [(ast/expr-rep:seq (let stmts) (let ret))
-          (rt/seq (simplify! e stmts) (simplify! e ret))]
+          (rt/seq (translate! e stmts) (translate! e ret))]
         [(ast/expr-rep:if (let cond) (let then) (let else))
-          (rt:if (simplify! e cond) (simplify! e then) (simplify! e else))]
+          (rt:if (translate! e cond) (translate! e then) (translate! e else))]
         [(ast/expr-rep:while (let cond) (let body))
-          (rt:while (simplify! e cond) (simplify! e body))]
+          (rt:while (translate! e cond) (translate! e body))]
         [(ast/expr-rep:match (let target) (let clauses))
-          (rt:match (simplify! e target) (simplify! e clauses))]
+          (rt:match (translate! e target) (translate! e clauses))]
         [(ast/expr-rep:return (let ret))
-          (rt:return (option/unwrap* [^0 (rt:const const:unit)] (simplify! e ret)))]))))
+          (rt:return (option/unwrap* [^0 (rt:const const:unit)] (translate! e ret)))]))))
 
-(instance Simplify.Clause (Simplify (: ast/Pattern ast/Expr) RtClause)
-  (function (simplify! e src)
+(instance Translate.Clause (Translate (: ast/Pattern ast/Expr) RtClause)
+  (function (translate! e src)
     (with1 (: (let pat) (let expr)) src
-      (let ([pat (simplify! e pat)]
-            [expr (simplify! e expr)])
+      (let ([pat (translate! e pat)]
+            [expr (translate! e expr)])
         (rt-clause: pat expr)))))
 
-(instance Simplify.LocalFun (Simplify ast/LocalFun RtFunction)
-  (function (simplify! e src)
+(instance Translate.LocalFun (Translate ast/LocalFun RtFunction)
+  (function (translate! e src)
     (with1 (ast/local-fun: (let id) (let params) _ (let body)) src
       (with1
         (: (let ct-params) (let params) (let ret))
-        (simplify! e (: (signature: (some params)) (option/force (m/module-set/scheme? id e))))
+        (translate! e (: (signature: (some params)) (option/force (m/module-set/scheme? id e))))
         (rt-function:
           (issue-rt! id e)
           ct-params
           params
           ret
-          (simplify! e body))))))
+          (translate! e body))))))
 
-(instance Simplify.LocalVar (Simplify ast/LocalVar RtVar)
-  (function (simplify! e src)
+(instance Translate.LocalVar (Translate ast/LocalVar RtVar)
+  (function (translate! e src)
     (with1 (ast/local-var: (let id) _ (let init)) src
       (rt-var:
         (issue-rt! id e)
-        (simplify! e (option/force (m/module-set/type? id e)))
-        (simplify! e init)))))
+        (translate! e (option/force (m/module-set/type? id e)))
+        (translate! e init)))))
 
-(instance Simplify.Pattern (Simplify ast/Pattern RtPat)
-  (function (simplify! e src)
+(instance Translate.Pattern (Translate ast/Pattern RtPat)
+  (function (translate! e src)
     (with1 (ast/pattern: (let id) (let rep)) src
       (match rep
         [(ast/pattern-rep:unresolved _ _)
-          (assert #f "Found pattern-rep:unresolved at simplifier")]
+          (assert #f "Found pattern-rep:unresolved at translator")]
         [(ast/pattern-rep:var (ast/pattern-var: (let id) (let as-pat)))
           (rt-pat:var
             (issue-rt! id e)
-            (simplify! e (option/force (m/module-set/type? id e)))
-            (simplify! e as-pat))]
+            (translate! e (option/force (m/module-set/type? id e)))
+            (translate! e as-pat))]
         [ast/pattern-rep:wildcard
           rt-pat:wildcard]
         [(ast/pattern-rep:decon (ast/value-con:data (let con-id)) (let fields))
@@ -410,77 +412,77 @@
             (rt-pat:data
               (ct/generic-inst
                 (ct:id (issue-ct! (ast/data-type-con/id type-con) e))
-                (simplify! e (option/force (m/module-set/instantiation? id e))))
+                (translate! e (option/force (m/module-set/instantiation? id e))))
               (option/force (ast/data-type-con/index-of? con-id type-con))
-              (option/unwrap array/empty (simplify! e fields))))]
+              (option/unwrap array/empty (translate! e fields))))]
         [(ast/pattern-rep:decon (ast/value-con:builtin (let con-id)) (let fields))
           (let1 con (option/force (m/module-set/ast? ast/root/builtin-value-con? con-id e))
             (builtin-rt-pat
               (ast/builtin-value-con/builtin-name con)
-              (simplify! e (option/force (m/module-set/instantiation? id e)))
-              (option/unwrap array/empty (simplify! e fields))))]
+              (translate! e (option/force (m/module-set/instantiation? id e)))
+              (option/unwrap array/empty (translate! e fields))))]
         [(ast/pattern-rep:const (let c))
-          (rt-pat:const (simplify! e (: (option/force (m/module-set/type? id e)) c)))]))))
+          (rt-pat:const (translate! e (: (option/force (m/module-set/type? id e)) c)))]))))
 
-(instance Simplify.Type (Simplify ast/Type Ct)
-  (function (simplify! e src)
+(instance Translate.Type (Translate ast/Type Ct)
+  (function (translate! e src)
     (match src
       [(ast/type:unresolved _)
-        (assert #f "Found type:unresolved at simplifier")]
+        (assert #f "Found type:unresolved at translator")]
       [(ast/type:con (let con))
-        (ct:id (simplify! e con))]
+        (ct:id (translate! e con))]
       [(ast/type:app (let callee) (let args))
-        (ct/generic-inst (simplify! e callee) (simplify! e args))]
+        (ct/generic-inst (translate! e callee) (translate! e args))]
       [(ast/type:gen (let id))
         (ct:id (issue-ct! id e))]
       [(ast/type:error (let e))
-        (assert #f (string "Found type:error at simplifier: " e))])))
+        (assert #f (string "Found type:error at translator: " e))])))
 
-(instance Simplify.TypeCon (Simplify ast/TypeCon CtId)
-  (function (simplify! e src)
+(instance Translate.TypeCon (Translate ast/TypeCon CtId)
+  (function (translate! e src)
     (match src
       [(ast/type-con:data (let id)) (issue-ct! id e)]
       [(ast/type-con:builtin (let id)) (issue-ct! id e)])))
 
-(instance Simplify.TypeParameter (Simplify ast/TypeParameter CtId)
-  (function (simplify! e src)
+(instance Translate.TypeParameter (Translate ast/TypeParameter CtId)
+  (function (translate! e src)
     (issue-ct! (ast/type-parameter/id src) e)))
 
-(instance Simplify.Constraint (Simplify ast/Constraint CtId)
-  (function (simplify! e src)
+(instance Translate.Constraint (Translate ast/Constraint CtId)
+  (function (translate! e src)
     (issue-ct! (ast/constraint/id src) e)))
 
 (value-data Signature
   (signature: (Option (Array ast/Parameter)))
   signature:unspecified)
 
-(instance Simplify.Scheme (Simplify (: Signature ast/Scheme) (: (Array CtId) (Array FunctionParam) Ct))
-  (function (simplify! e src)
+(instance Translate.Scheme (Translate (: Signature ast/Scheme) (: (Array CtId) (Array FunctionParam) Ct))
+  (function (translate! e src)
     (with1 (: (let sig) (ast/scheme: (let ty-params) (let s-params) (let body))) src
-      (let1 ct-params (array/concat (simplify! e ty-params) (simplify! e s-params))
+      (let1 ct-params (array/concat (translate! e ty-params) (translate! e s-params))
         (match (: (ast/type/fun? body) sig)
           [(: _ (signature: none))
-            (: ct-params array/empty (simplify! e body))]
+            (: ct-params array/empty (translate! e body))]
           [(: none signature:unspecified)
-            (: ct-params array/empty (simplify! e body))]
+            (: ct-params array/empty (translate! e body))]
           [(: (some (: (let param-tys) (let ret-ty))) (signature: (some (let params))))
-            (: ct-params (simplify! e (it/zip params param-tys)) (simplify! e ret-ty))]
+            (: ct-params (translate! e (it/zip params param-tys)) (translate! e ret-ty))]
           [(: (some (: (let param-tys) (let ret-ty))) signature:unspecified)
-            (: ct-params (simplify! e param-tys) (simplify! e ret-ty))]
+            (: ct-params (translate! e param-tys) (translate! e ret-ty))]
           [(: none (signature: (some _)))
             (assert #f "The provided scheme does not match the signature")])))))
 
-(instance Simplify.NamedParam (Simplify (: ast/Parameter ast/Type) FunctionParam)
-  (function (simplify! e src)
+(instance Translate.NamedParam (Translate (: ast/Parameter ast/Type) FunctionParam)
+  (function (translate! e src)
     (with1 (: (let param) (let ty)) src
-      (function-param: (simplify! e param) (simplify! e ty)))))
+      (function-param: (translate! e param) (translate! e ty)))))
 
-(instance Simplify.AnonParam (Simplify ast/Type FunctionParam)
-  (function (simplify! e src)
-    (function-param: (alloc-rt! e) (simplify! e src))))
+(instance Translate.AnonParam (Translate ast/Type FunctionParam)
+  (function (translate! e src)
+    (function-param: (alloc-rt! e) (translate! e src))))
 
-(instance Simplify.Satisfaction (Simplify ast/Satisfaction Ct)
-  (function (simplify! e src)
+(instance Translate.Satisfaction (Translate ast/Satisfaction Ct)
+  (function (translate! e src)
     (match src
       [(ast/satisfaction:by-premise (let id) (let path))
         (it/fold
@@ -488,32 +490,32 @@
           (ct:id (issue-ct! id e))
           path)]
       [(ast/satisfaction:by-instance (let id) (let inst))
-        (ct/generic-inst (ct:id (issue-ct! id e)) (simplify! e inst))]
+        (ct/generic-inst (ct:id (issue-ct! id e)) (translate! e inst))]
       [(ast/satisfaction:error (let e))
-        (assert #f (string "Found satisfaction:error at simplifier: " e))])))
+        (assert #f (string "Found satisfaction:error at translator: " e))])))
 
-(instance Simplify.Instantiation (Simplify ast/Instantiation (Array Ct))
-  (function (simplify! e src)
+(instance Translate.Instantiation (Translate ast/Instantiation (Array Ct))
+  (function (translate! e src)
     (with1 (ast/instantiation: (let ty-args) (let s-args)) src
-      (array/concat (simplify! e ty-args) (simplify! e s-args)))))
+      (array/concat (translate! e ty-args) (translate! e s-args)))))
 
-(instance Simplify.Const (Simplify (: ast/Type ast/Const) Const)
-  (function (simplify! e src)
+(instance Translate.Const (Translate (: ast/Type ast/Const) Const)
+  (function (translate! e src)
     (with1 (: (let ty) (let src)) src
       (match src
         [(ast/const:integer (let signed?) (let value))
-          (const:integer (simplify! e ty) signed? value)]
+          (const:integer (translate! e ty) signed? value)]
         [(ast/const:fp-number (let value))
-          (const:fp-number (simplify! e ty) value)]
+          (const:fp-number (translate! e ty) value)]
         [(ast/const:string (let value))
           (const:string value)]
         [(ast/const:char (let value))
           (const:char value)]
         [(ast/const:sexp (let value))
-          (simplify! e value)]))))
+          (translate! e value)]))))
 
-(instance Simplify.Sexp (Simplify (S ast/Construct) Const)
-  (function (simplify! e src)
+(instance Translate.Sexp (Translate (S ast/Construct) Const)
+  (function (translate! e src)
     (let1 ty (issue-ct! ast/builtin/sexp e)
       (const:sexp (ct:id ty) src))))
 

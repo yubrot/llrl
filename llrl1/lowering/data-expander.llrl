@@ -4,8 +4,8 @@
 (import "std/math" Math._ log)
 (import "std/real" Real._ ceil)
 (import "~/util" _)
-(import "~/emitter/ir" _)
-(import "~/emitter/transformer" _)
+(import "~/lowering/ir" _)
+(import "~/lowering/transformer" _)
 (export Env DataExpansion _.DataExpansion compute! expand!)
 
 (class (Env E)

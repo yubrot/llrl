@@ -1,11 +1,11 @@
-//! Translates module constructs into the emitter IR.
+//! Translates module constructs into the lowering IR.
 
 use super::ir::*;
 use crate::ast;
 use crate::module::{ModuleSet, Symbol};
 
-pub fn simplify<'m, T: Simplify>(src: &T, env: &mut impl Env<'m>) -> T::Dest {
-    Simplify::simplify(src, env)
+pub fn translate<'m, T: Translate>(src: &T, env: &mut impl Env<'m>) -> T::Dest {
+    Translate::translate(src, env)
 }
 
 pub trait Env<'m>: Sized {
@@ -21,58 +21,58 @@ pub trait Env<'m>: Sized {
 
     fn issue_rt(&mut self, construct: impl Into<ast::Construct>) -> RtId;
 
-    fn simplify<T: Simplify + ?Sized>(&mut self, src: &T) -> T::Dest {
-        src.simplify(self)
+    fn translate<T: Translate + ?Sized>(&mut self, src: &T) -> T::Dest {
+        src.translate(self)
     }
 
-    fn simplify_def(&mut self, src: ast::Construct) -> Option<CtDef> {
+    fn translate_def(&mut self, src: ast::Construct) -> Option<CtDef> {
         let set = self.module_set();
         match src {
-            ast::Construct::Function(id) => Some(self.simplify(set.ast(id).unwrap())),
-            ast::Construct::CFunction(id) => Some(self.simplify(set.ast(id).unwrap())),
-            ast::Construct::BuiltinOp(id) => Some(self.simplify(set.ast(id).unwrap())),
-            ast::Construct::Macro(id) => Some(self.simplify(set.ast(id).unwrap())),
-            ast::Construct::DataTypeCon(id) => Some(self.simplify(&set.ast(id).unwrap())),
-            ast::Construct::DataValueCon(id) => Some(self.simplify(set.ast(id).unwrap())),
-            ast::Construct::BuiltinTypeCon(id) => Some(self.simplify(set.ast(id).unwrap().con)),
-            ast::Construct::BuiltinValueCon(id) => Some(self.simplify(set.ast(id).unwrap())),
-            ast::Construct::ClassMethod(id) => self.simplify(set.ast(id).unwrap()),
-            ast::Construct::InstanceMethod(id) => Some(self.simplify(set.ast(id).unwrap())),
-            ast::Construct::InstanceCon(id) => Some(self.simplify(&set.ast(id).unwrap())),
+            ast::Construct::Function(id) => Some(self.translate(set.ast(id).unwrap())),
+            ast::Construct::CFunction(id) => Some(self.translate(set.ast(id).unwrap())),
+            ast::Construct::BuiltinOp(id) => Some(self.translate(set.ast(id).unwrap())),
+            ast::Construct::Macro(id) => Some(self.translate(set.ast(id).unwrap())),
+            ast::Construct::DataTypeCon(id) => Some(self.translate(&set.ast(id).unwrap())),
+            ast::Construct::DataValueCon(id) => Some(self.translate(set.ast(id).unwrap())),
+            ast::Construct::BuiltinTypeCon(id) => Some(self.translate(set.ast(id).unwrap().con)),
+            ast::Construct::BuiltinValueCon(id) => Some(self.translate(set.ast(id).unwrap())),
+            ast::Construct::ClassMethod(id) => self.translate(set.ast(id).unwrap()),
+            ast::Construct::InstanceMethod(id) => Some(self.translate(set.ast(id).unwrap())),
+            ast::Construct::InstanceCon(id) => Some(self.translate(&set.ast(id).unwrap())),
             _ => None,
         }
     }
 
-    fn simplify_scheme(
+    fn translate_scheme(
         &mut self,
         signature: Option<Option<&Vec<ast::Parameter>>>,
         scheme: &ast::Scheme,
     ) -> (Vec<CtId>, Vec<FunctionParam>, Ct) {
-        let mut ct_params = self.simplify(&scheme.ty_params);
-        ct_params.append(&mut self.simplify(&scheme.s_params));
+        let mut ct_params = self.translate(&scheme.ty_params);
+        ct_params.append(&mut self.translate(&scheme.s_params));
 
         let (params, ret_ty) = match (scheme.body.matches_fun(), signature) {
-            (_, Some(None)) | (None, None) => (Vec::new(), self.simplify(&scheme.body)),
+            (_, Some(None)) | (None, None) => (Vec::new(), self.translate(&scheme.body)),
             (Some((param_tys, ret_ty)), Some(Some(params))) => {
                 let params = params
                     .iter()
                     .zip(param_tys)
                     .map(|(param, ty)| {
-                        let id = self.simplify(param);
-                        let ty = self.simplify(ty);
+                        let id = self.translate(param);
+                        let ty = self.translate(ty);
                         FunctionParam::new(id, ty)
                     })
                     .collect();
-                let ret_ty = self.simplify(ret_ty);
+                let ret_ty = self.translate(ret_ty);
                 (params, ret_ty)
             }
             (Some((param_tys, ret_ty)), None) => {
                 let params = self
-                    .simplify(param_tys)
+                    .translate(param_tys)
                     .into_iter()
                     .map(|ty| FunctionParam::new(self.alloc_rt(), ty))
                     .collect();
-                let ret_ty = self.simplify(ret_ty);
+                let ret_ty = self.translate(ret_ty);
                 (params, ret_ty)
             }
             (None, Some(Some(_))) => panic!("scheme does not match signature"),
@@ -81,76 +81,76 @@ pub trait Env<'m>: Sized {
         (ct_params, params, ret_ty)
     }
 
-    fn simplify_const(&mut self, ty: Ct, const_: &ast::Const) -> Const {
+    fn translate_const(&mut self, ty: Ct, const_: &ast::Const) -> Const {
         match const_ {
             ast::Const::Integer(signed, v) => Const::Integer(ty, *signed, *v),
             ast::Const::FPNumber(v) => Const::FPNumber(ty, *v),
             ast::Const::String(s) => Const::String(s.clone()),
             ast::Const::Char(c) => Const::Char(*c),
-            ast::Const::SyntaxSexp(s) => self.simplify_const_sexp(s.as_ref().clone()),
+            ast::Const::SyntaxSexp(s) => self.translate_const_sexp(s.as_ref().clone()),
         }
     }
 
-    fn simplify_const_sexp(&mut self, syntax_sexp: Syntax<Sexp>) -> Const {
+    fn translate_const_sexp(&mut self, syntax_sexp: Syntax<Sexp>) -> Const {
         let ty = self.issue_ct(ast::builtin::SEXP);
         Const::SyntaxSexp(Ct::Id(ty), Box::new(syntax_sexp))
     }
 }
 
-pub trait Simplify {
+pub trait Translate {
     type Dest;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest;
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest;
 }
 
-impl<T: Simplify> Simplify for [T] {
+impl<T: Translate> Translate for [T] {
     type Dest = Vec<T::Dest>;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
-        self.iter().map(|a| env.simplify(a)).collect()
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+        self.iter().map(|a| env.translate(a)).collect()
     }
 }
 
-impl<T: Simplify> Simplify for &'_ T {
+impl<T: Translate> Translate for &'_ T {
     type Dest = T::Dest;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
-        env.simplify(&**self)
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+        env.translate(&**self)
     }
 }
 
-impl<T: Simplify> Simplify for Vec<T> {
+impl<T: Translate> Translate for Vec<T> {
     type Dest = Vec<T::Dest>;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
-        self.iter().map(|a| env.simplify(a)).collect()
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+        self.iter().map(|a| env.translate(a)).collect()
     }
 }
 
-impl<T: Simplify> Simplify for Option<T> {
+impl<T: Translate> Translate for Option<T> {
     type Dest = Option<T::Dest>;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
-        self.as_ref().map(|a| env.simplify(a))
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+        self.as_ref().map(|a| env.translate(a))
     }
 }
 
-impl Simplify for ast::NodeId<ast::Function> {
+impl Translate for ast::NodeId<ast::Function> {
     type Dest = Ct;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         Ct::Id(env.issue_ct(*self))
     }
 }
 
-impl Simplify for ast::Function {
+impl Translate for ast::Function {
     type Dest = CtDef;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         let scheme = env.module_set().scheme_of(self.id).unwrap();
 
-        let (ct_params, params, ret_ty) = env.simplify_scheme(Some(self.params.as_ref()), scheme);
-        let body = env.simplify(&self.body);
+        let (ct_params, params, ret_ty) = env.translate_scheme(Some(self.params.as_ref()), scheme);
+        let body = env.translate(&self.body);
         let kind = if self.transparent {
             FunctionKind::Transparent
         } else {
@@ -164,29 +164,29 @@ impl Simplify for ast::Function {
     }
 }
 
-impl Simplify for ast::Parameter {
+impl Translate for ast::Parameter {
     type Dest = RtId;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         env.issue_rt(self.id)
     }
 }
 
-impl Simplify for ast::CFunction {
+impl Translate for ast::CFunction {
     type Dest = CtDef;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         let (params, ret_ty) = match self.ann.body.matches_fun() {
             Some((param_tys, ret_ty)) => {
                 let params = env
-                    .simplify(param_tys)
+                    .translate(param_tys)
                     .into_iter()
                     .map(|ty| FunctionParam::new(env.alloc_rt(), ty))
                     .collect();
-                let ret_ty = env.simplify(ret_ty);
+                let ret_ty = env.translate(ret_ty);
                 (params, ret_ty)
             }
-            None => (Vec::new(), env.simplify(&self.ann.body)),
+            None => (Vec::new(), env.translate(&self.ann.body)),
         };
 
         let rt = Rt::c_call(
@@ -208,12 +208,12 @@ impl Simplify for ast::CFunction {
     }
 }
 
-impl Simplify for ast::BuiltinOp {
+impl Translate for ast::BuiltinOp {
     type Dest = CtDef;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         let symbol = env.module_set().symbol_of(self.id).unwrap();
-        let (ct_params, params, ret_ty) = env.simplify_scheme(None, &self.ann.body);
+        let (ct_params, params, ret_ty) = env.translate_scheme(None, &self.ann.body);
 
         let ct_args = ct_params.iter().map(|p| Ct::Id(*p)).collect();
         let args = params.iter().map(|p| Rt::Local(p.id)).collect();
@@ -232,23 +232,23 @@ impl Simplify for ast::BuiltinOp {
     }
 }
 
-impl Simplify for ast::NodeId<ast::Macro> {
+impl Translate for ast::NodeId<ast::Macro> {
     type Dest = Ct;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         Ct::Id(env.issue_ct(*self))
     }
 }
 
-impl Simplify for ast::Macro {
+impl Translate for ast::Macro {
     type Dest = CtDef;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
-        let src_ty = env.simplify(&ast::Macro::src_ty());
-        let dest_ty = env.simplify(&ast::Macro::dest_ty());
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+        let src_ty = env.translate(&ast::Macro::src_ty());
+        let dest_ty = env.translate(&ast::Macro::dest_ty());
 
-        let param = FunctionParam::new(env.simplify(&self.param), src_ty);
-        let rt = env.simplify(&self.body);
+        let param = FunctionParam::new(env.translate(&self.param), src_ty);
+        let rt = env.translate(&self.body);
 
         CtDef::Function(Function::new(
             None,
@@ -260,25 +260,25 @@ impl Simplify for ast::Macro {
     }
 }
 
-impl<'a> Simplify for ast::DataType<'a> {
+impl<'a> Translate for ast::DataType<'a> {
     type Dest = CtDef;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
-        let repr = env.simplify(&self.con.repr);
-        let params = env.simplify(&self.con.ty_params);
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+        let repr = env.translate(&self.con.repr);
+        let params = env.translate(&self.con.ty_params);
         let cons = self
             .value_cons()
-            .map(|value_con| env.simplify(&value_con.fields).unwrap_or_default())
+            .map(|value_con| env.translate(&value_con.fields).unwrap_or_default())
             .collect();
 
         CtDef::generic(params, CtDef::Data(Data::new(repr, cons)))
     }
 }
 
-impl Simplify for ast::DataRepr {
+impl Translate for ast::DataRepr {
     type Dest = DataRepr;
 
-    fn simplify<'m>(&self, _env: &mut impl Env<'m>) -> Self::Dest {
+    fn translate<'m>(&self, _env: &mut impl Env<'m>) -> Self::Dest {
         match self {
             Self::Default => DataRepr::Boxed,
             Self::Value => DataRepr::Value,
@@ -287,10 +287,10 @@ impl Simplify for ast::DataRepr {
     }
 }
 
-impl<'a> Simplify for ast::DataValueCon {
+impl<'a> Translate for ast::DataValueCon {
     type Dest = CtDef;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         let index = {
             let type_con = env.module_set().ast(self.type_con).unwrap();
             type_con.con.index_of(self.id).unwrap()
@@ -298,7 +298,7 @@ impl<'a> Simplify for ast::DataValueCon {
 
         let scheme = env.module_set().scheme_of(self.id).unwrap();
 
-        let (ct_params, params, ret_ty) = env.simplify_scheme(None, scheme);
+        let (ct_params, params, ret_ty) = env.translate_scheme(None, scheme);
 
         let rt = Rt::construct_data(
             ret_ty.clone(),
@@ -319,24 +319,24 @@ impl<'a> Simplify for ast::DataValueCon {
     }
 }
 
-impl Simplify for ast::BuiltinTypeCon {
+impl Translate for ast::BuiltinTypeCon {
     type Dest = CtDef;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
-        let params = env.simplify(&self.ty_params);
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+        let params = env.translate(&self.ty_params);
         let ty = builtin_ct(&self.builtin_name, &params);
         CtDef::generic(params, CtDef::Alias(ty))
     }
 }
 
-impl Simplify for ast::BuiltinValueCon {
+impl Translate for ast::BuiltinValueCon {
     type Dest = CtDef;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         let symbol = env.module_set().symbol_of(self.id).unwrap();
         let scheme = env.module_set().scheme_of(self.id).unwrap();
 
-        let (ct_params, params, ty) = env.simplify_scheme(None, scheme);
+        let (ct_params, params, ty) = env.translate_scheme(None, scheme);
 
         let ct_args = ct_params.iter().map(|p| Ct::Id(*p)).collect();
         let args = params.iter().map(|p| Rt::Local(p.id)).collect();
@@ -355,29 +355,29 @@ impl Simplify for ast::BuiltinValueCon {
     }
 }
 
-impl Simplify for ast::ValueConField {
+impl Translate for ast::ValueConField {
     type Dest = Ct;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
-        env.simplify(&self.ty)
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+        env.translate(&self.ty)
     }
 }
 
-impl<'a> Simplify for ast::Instance<'a> {
+impl<'a> Translate for ast::Instance<'a> {
     type Dest = CtDef;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         let ast::ConstraintRep::Class(ref class_id, ref class_args) = self.con.target.rep;
         let class = env.module_set().ast(*class_id.get_resolved()).unwrap();
 
-        let mut params = env.simplify(&self.con.ty_params);
-        params.append(&mut env.simplify(&self.con.s_params));
+        let mut params = env.translate(&self.con.ty_params);
+        params.append(&mut env.translate(&self.con.s_params));
 
         let inst_args = params.iter().copied().map(Ct::Id).collect::<Vec<_>>();
 
         let default_impl_args = {
             let this = Ct::generic_inst(Ct::Id(env.issue_ct(self.con.id)), inst_args.clone());
-            let mut args = env.simplify(class_args);
+            let mut args = env.translate(class_args);
             args.push(this);
             args
         };
@@ -398,8 +398,8 @@ impl<'a> Simplify for ast::Instance<'a> {
         let superclass_cs = &class.con.superclasses;
         let instance_inst = env.module_set().instantiation_of(self.con.id).unwrap();
         for (c, s) in superclass_cs.iter().zip(instance_inst.s_args.iter()) {
-            let c = env.simplify(c);
-            let s = env.simplify(s);
+            let c = env.translate(c);
+            let s = env.translate(s);
             table.insert(c, s);
         }
 
@@ -407,20 +407,20 @@ impl<'a> Simplify for ast::Instance<'a> {
     }
 }
 
-impl<'a> Simplify for ast::ClassMethod {
+impl<'a> Translate for ast::ClassMethod {
     type Dest = Option<CtDef>;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         if let Some(ref body) = self.default_body {
             let class = env.module_set().ast(self.class_con).unwrap();
 
-            let mut class_ct_params = env.simplify(&class.con.ty_params);
-            class_ct_params.push(env.simplify(&class.con.constraint()));
+            let mut class_ct_params = env.translate(&class.con.ty_params);
+            class_ct_params.push(env.translate(&class.con.constraint()));
 
             let (method_ct_params, params, ret_ty) =
-                env.simplify_scheme(Some(self.params.as_ref()), &self.ann.body);
+                env.translate_scheme(Some(self.params.as_ref()), &self.ann.body);
 
-            let body = env.simplify(body);
+            let body = env.translate(body);
 
             Some(CtDef::generic(
                 class_ct_params,
@@ -441,20 +441,20 @@ impl<'a> Simplify for ast::ClassMethod {
     }
 }
 
-impl<'a> Simplify for ast::InstanceMethod {
+impl<'a> Translate for ast::InstanceMethod {
     type Dest = CtDef;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         let inst = env.module_set().ast(self.instance_con).unwrap();
         let scheme = env.module_set().scheme_of(self.id).unwrap();
 
-        let mut inst_ct_params = env.simplify(&inst.con.ty_params);
-        inst_ct_params.append(&mut env.simplify(&inst.con.s_params));
+        let mut inst_ct_params = env.translate(&inst.con.ty_params);
+        inst_ct_params.append(&mut env.translate(&inst.con.s_params));
 
         let (method_ct_params, params, ret_ty) =
-            env.simplify_scheme(Some(self.params.as_ref()), scheme);
+            env.translate_scheme(Some(self.params.as_ref()), scheme);
 
-        let body = env.simplify(&self.body);
+        let body = env.translate(&self.body);
         let kind = if self.transparent {
             FunctionKind::Transparent
         } else {
@@ -471,14 +471,14 @@ impl<'a> Simplify for ast::InstanceMethod {
     }
 }
 
-impl Simplify for ast::InitExpr {
+impl Translate for ast::InitExpr {
     type Dest = Option<Init>;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         match self {
             ast::InitExpr::Eval(expr) => {
-                let ty = env.simplify(env.module_set().type_of(expr.id).unwrap());
-                let expr = env.simplify(expr);
+                let ty = env.translate(env.module_set().type_of(expr.id).unwrap());
+                let expr = env.translate(expr);
                 Some(Init::new(ty, expr))
             }
             ast::InitExpr::EnsureInitialized(_) => None,
@@ -486,16 +486,16 @@ impl Simplify for ast::InitExpr {
     }
 }
 
-impl Simplify for ast::Expr {
+impl Translate for ast::Expr {
     type Dest = Rt;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         let set = env.module_set();
         match self.rep {
             ast::ExprRep::Use(ref use_) => match *use_.get_resolved() {
                 ast::Value::Function(id) => {
                     let f = Ct::Id(env.issue_ct(id));
-                    let ct_args = env.simplify(set.instantiation_of(self.id).unwrap());
+                    let ct_args = env.translate(set.instantiation_of(self.id).unwrap());
                     let autocall = set.ast(id).unwrap().params.is_none();
                     Rt::autocall(Rt::StaticFun(Ct::generic_inst(f, ct_args), None), autocall)
                 }
@@ -506,7 +506,7 @@ impl Simplify for ast::Expr {
                 }
                 ast::Value::BuiltinOp(id) => {
                     let f = Ct::Id(env.issue_ct(id));
-                    let ct_args = env.simplify(set.instantiation_of(self.id).unwrap());
+                    let ct_args = env.translate(set.instantiation_of(self.id).unwrap());
                     let autocall = !set.ast(id).unwrap().ann.body.body.is_fun();
                     Rt::autocall(Rt::StaticFun(Ct::generic_inst(f, ct_args), None), autocall)
                 }
@@ -517,9 +517,9 @@ impl Simplify for ast::Expr {
                     );
                     debug_assert_eq!(instance_inst.s_args.len(), 1);
 
-                    let instance = env.simplify(&instance_inst.s_args[0]);
+                    let instance = env.translate(&instance_inst.s_args[0]);
                     let f = Ct::table_get(instance, env.issue_ct(id));
-                    let args = env.simplify(&method_inst);
+                    let args = env.translate(&method_inst);
                     let autocall = method.params.is_none();
                     Rt::autocall(Rt::StaticFun(Ct::generic_inst(f, args), None), autocall)
                 }
@@ -527,7 +527,7 @@ impl Simplify for ast::Expr {
                 ast::Value::LocalVar(id) => Rt::Local(env.issue_rt(id)),
                 ast::Value::LocalFun(id) => {
                     let id = env.issue_rt(id);
-                    let ct_args = env.simplify(set.instantiation_of(self.id).unwrap());
+                    let ct_args = env.translate(set.instantiation_of(self.id).unwrap());
                     Rt::LocalFun(id, ct_args)
                 }
                 ast::Value::PatternVar(id) => Rt::Local(env.issue_rt(id)),
@@ -543,15 +543,15 @@ impl Simplify for ast::Expr {
                         set.ast(id).unwrap().fields.is_none(),
                     ),
                 };
-                let ct_args = env.simplify(set.instantiation_of(self.id).unwrap());
+                let ct_args = env.translate(set.instantiation_of(self.id).unwrap());
                 Rt::autocall(Rt::StaticFun(Ct::generic_inst(f, ct_args), None), autocall)
             }
             ast::ExprRep::Const(ref lit) => {
-                let ty = env.simplify(set.type_of(self.id).unwrap());
-                Rt::Const(env.simplify_const(ty, lit))
+                let ty = env.translate(set.type_of(self.id).unwrap());
+                Rt::Const(env.translate_const(ty, lit))
             }
             ast::ExprRep::App(ref apply) => {
-                let args = env.simplify(&apply.args);
+                let args = env.translate(&apply.args);
                 if let ast::ExprRep::Con(con) = apply.callee.rep {
                     if con == ast::ValueCon::SYNTAX && args.len() == 1 {
                         let symbol = set.symbol_of(self.id).unwrap();
@@ -559,134 +559,134 @@ impl Simplify for ast::Expr {
                         return Rt::construct_syntax(symbol.loc, body);
                     }
                 }
-                let callee = env.simplify(&apply.callee);
+                let callee = env.translate(&apply.callee);
                 Rt::call(callee, args)
             }
             ast::ExprRep::Capture(ref use_) => {
                 let construct = *use_.get_resolved();
                 let symbol = set.symbol_of(self.id).unwrap();
-                Rt::Const(env.simplify_const_sexp(Sexp::Use(construct).pack(symbol.loc)))
+                Rt::Const(env.translate_const_sexp(Sexp::Use(construct).pack(symbol.loc)))
             }
-            ast::ExprRep::Annotate(ref annotate) => env.simplify(&annotate.body),
+            ast::ExprRep::Annotate(ref annotate) => env.translate(&annotate.body),
             ast::ExprRep::Let(ref let_) => {
-                let funs = let_.local_functions().map(|f| env.simplify(f)).collect();
-                let vars = let_.local_vars().map(|v| env.simplify(v)).collect();
-                let body = env.simplify(&let_.body);
+                let funs = let_.local_functions().map(|f| env.translate(f)).collect();
+                let vars = let_.local_vars().map(|v| env.translate(v)).collect();
+                let body = env.translate(&let_.body);
                 Rt::let_function(funs, Rt::let_var(vars, body))
             }
             ast::ExprRep::Seq(ref seq) => {
-                let stmts = env.simplify(&seq.stmts);
-                let ret = env.simplify(&seq.ret);
+                let stmts = env.translate(&seq.stmts);
+                let ret = env.translate(&seq.ret);
                 Rt::seq(stmts, ret)
             }
             ast::ExprRep::If(ref if_) => {
-                let cond = env.simplify(&if_.cond);
-                let then = env.simplify(&if_.then);
-                let else_ = env.simplify(&if_.else_);
+                let cond = env.translate(&if_.cond);
+                let then = env.translate(&if_.then);
+                let else_ = env.translate(&if_.else_);
                 Rt::if_(cond, then, else_)
             }
             ast::ExprRep::While(ref while_) => {
-                let cond = env.simplify(&while_.cond);
-                let body = env.simplify(&while_.body);
+                let cond = env.translate(&while_.cond);
+                let body = env.translate(&while_.body);
                 Rt::while_(cond, body)
             }
             ast::ExprRep::Match(ref match_) => {
-                let target = env.simplify(&match_.target);
-                let clauses = env.simplify(&match_.clauses);
+                let target = env.translate(&match_.target);
+                let clauses = env.translate(&match_.clauses);
                 Rt::match_(target, clauses)
             }
             ast::ExprRep::Return(ref ret) => {
-                let ret = env.simplify(&**ret).unwrap_or(Rt::Const(Const::Unit));
+                let ret = env.translate(&**ret).unwrap_or(Rt::Const(Const::Unit));
                 Rt::return_(ret)
             }
         }
     }
 }
 
-impl Simplify for (ast::Pattern, ast::Expr) {
+impl Translate for (ast::Pattern, ast::Expr) {
     type Dest = RtClause;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
-        let pat = env.simplify(&self.0);
-        let body = env.simplify(&self.1);
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+        let pat = env.translate(&self.0);
+        let body = env.translate(&self.1);
         RtClause::new(pat, body)
     }
 }
 
-impl Simplify for ast::LocalFun {
+impl Translate for ast::LocalFun {
     type Dest = RtFunction;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         let id = env.issue_rt(self.id);
         let scheme = env.module_set().scheme_of(self.id).unwrap();
 
-        let (ct_params, params, ret_ty) = env.simplify_scheme(Some(Some(&self.params)), scheme);
+        let (ct_params, params, ret_ty) = env.translate_scheme(Some(Some(&self.params)), scheme);
 
-        let body = env.simplify(&self.body);
+        let body = env.translate(&self.body);
 
         RtFunction::new(id, ct_params, params, ret_ty, body)
     }
 }
 
-impl Simplify for ast::LocalVar {
+impl Translate for ast::LocalVar {
     type Dest = RtVar;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         let id = env.issue_rt(self.id);
-        let ty = env.simplify(env.module_set().type_of(self.id).unwrap());
-        let init = env.simplify(&self.init);
+        let ty = env.translate(env.module_set().type_of(self.id).unwrap());
+        let init = env.translate(&self.init);
         RtVar::new(id, ty, init)
     }
 }
 
-impl Simplify for ast::Pattern {
+impl Translate for ast::Pattern {
     type Dest = RtPat;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         let set = env.module_set();
         match self.rep {
             ast::PatternRep::Var(ref var) => {
                 let id = env.issue_rt(var.id);
-                let ty = env.simplify(env.module_set().type_of(var.id).unwrap());
-                let as_pat = env.simplify(&var.as_pat);
+                let ty = env.translate(env.module_set().type_of(var.id).unwrap());
+                let as_pat = env.translate(&var.as_pat);
                 RtPat::Var(id, ty, as_pat.map(Box::new))
             }
             ast::PatternRep::Wildcard => RtPat::Wildcard,
             ast::PatternRep::Decon(ref decon) => {
-                let args = env.simplify(&decon.fields).unwrap_or_default();
+                let args = env.translate(&decon.fields).unwrap_or_default();
                 match *decon.use_.get_resolved() {
                     ast::ValueCon::Data(id) => {
                         let type_con = set.ast(set.ast(id).unwrap().type_con).unwrap();
                         let con = Ct::Id(env.issue_ct(type_con.con.id));
-                        let ct_args = env.simplify(set.instantiation_of(self.id).unwrap());
+                        let ct_args = env.translate(set.instantiation_of(self.id).unwrap());
                         let index = type_con.con.index_of(id).unwrap_or_default();
                         RtPat::Data(Ct::generic_inst(con, ct_args), index, args)
                     }
                     ast::ValueCon::Builtin(id) => {
                         let con = set.ast(id).unwrap();
-                        let ct_args = env.simplify(set.instantiation_of(self.id).unwrap());
+                        let ct_args = env.translate(set.instantiation_of(self.id).unwrap());
                         builtin_rt_pat(&con.builtin_name, ct_args, args)
                     }
                 }
             }
             ast::PatternRep::Const(ref lit) => {
-                let ty = env.simplify(set.type_of(self.id).unwrap());
-                RtPat::Const(env.simplify_const(ty, lit))
+                let ty = env.translate(set.type_of(self.id).unwrap());
+                RtPat::Const(env.translate_const(ty, lit))
             }
         }
     }
 }
 
-impl Simplify for ast::Type {
+impl Translate for ast::Type {
     type Dest = Ct;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         match self {
             Self::Use(use_) => match *use_.get_resolved() {},
-            Self::Con(con) => Ct::Id(env.simplify(con)),
+            Self::Con(con) => Ct::Id(env.translate(con)),
             Self::App(callee, args) => {
-                let callee = env.simplify(&**callee);
-                let args = env.simplify(args);
+                let callee = env.translate(&**callee);
+                let args = env.translate(args);
                 Ct::generic_inst(callee, args)
             }
             Self::Gen(id) => Ct::Id(env.issue_ct(*id)),
@@ -695,10 +695,10 @@ impl Simplify for ast::Type {
     }
 }
 
-impl Simplify for ast::TypeCon {
+impl Translate for ast::TypeCon {
     type Dest = CtId;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         match self {
             Self::Data(id) => env.issue_ct(*id),
             Self::Builtin(id) => env.issue_ct(*id),
@@ -706,38 +706,38 @@ impl Simplify for ast::TypeCon {
     }
 }
 
-impl Simplify for ast::TypeParameter {
+impl Translate for ast::TypeParameter {
     type Dest = CtId;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         env.issue_ct(self.id)
     }
 }
 
-impl Simplify for ast::Constraint {
+impl Translate for ast::Constraint {
     type Dest = CtId;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         env.issue_ct(self.id)
     }
 }
 
-impl Simplify for ast::Satisfaction {
+impl Translate for ast::Satisfaction {
     type Dest = Ct;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         match self {
-            Self::ByPremise(by_premise) => env.simplify(by_premise),
-            Self::ByInstance(by_inst) => env.simplify(by_inst),
+            Self::ByPremise(by_premise) => env.translate(by_premise),
+            Self::ByInstance(by_inst) => env.translate(by_inst),
             Self::Error(e) => panic!("Found Satisfaction::Error at translator: {}", e),
         }
     }
 }
 
-impl Simplify for ast::SatisfactionByPremise {
+impl Translate for ast::SatisfactionByPremise {
     type Dest = Ct;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         let s = Ct::Id(env.issue_ct(self.id));
         self.path
             .iter()
@@ -745,22 +745,22 @@ impl Simplify for ast::SatisfactionByPremise {
     }
 }
 
-impl Simplify for ast::SatisfactionByInstance {
+impl Translate for ast::SatisfactionByInstance {
     type Dest = Ct;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         let s = Ct::Id(env.issue_ct(*self.use_.get_resolved()));
-        let args = env.simplify(&self.instantiation);
+        let args = env.translate(&self.instantiation);
         Ct::generic_inst(s, args)
     }
 }
 
-impl Simplify for ast::Instantiation {
+impl Translate for ast::Instantiation {
     type Dest = Vec<Ct>;
 
-    fn simplify<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
-        let mut args = env.simplify(&self.ty_args);
-        args.append(&mut env.simplify(&self.s_args));
+    fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
+        let mut args = env.translate(&self.ty_args);
+        args.append(&mut env.translate(&self.s_args));
         args
     }
 }

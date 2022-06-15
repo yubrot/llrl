@@ -71,7 +71,7 @@
   (for (: (let path) (let text)) test-sources
     (loader/add-source! path text loader))
 
-  (let1 result (source-set/build! test-inputs loader source-location-table (report/new))
+  (let1 result (source-set/collect! test-inputs loader source-location-table (report/new))
     (assert-eq? (ord-set "~" "std" "builtin")
                 (|> result source-set/packages ord-map/keys (it/map [^1 (string %1)]) ord-set/collect))
     (assert-eq? (ord-set "~" "~/foo" "~/bar" "~/baz" "std" "std/a" "std/b" "std/c" "std" "builtin")

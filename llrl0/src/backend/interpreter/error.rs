@@ -1,5 +1,5 @@
 use super::Value;
-use crate::emitter::ir::RtId;
+use crate::lowering::ir::RtId;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {

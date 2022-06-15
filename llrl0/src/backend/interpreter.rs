@@ -1,4 +1,6 @@
-use crate::emitter::{self, ir::*};
+//! Interpreter backend. It is mainly used in tests.
+
+use crate::lowering::{self, ir::*};
 use crate::report::Report;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -29,7 +31,7 @@ impl Backend {
     }
 }
 
-impl emitter::Backend for Backend {
+impl lowering::Backend for Backend {
     fn put_def(&mut self, id: CtId, def: Arc<CtDef>) {
         self.defs.insert(id, def);
     }

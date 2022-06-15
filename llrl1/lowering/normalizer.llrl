@@ -3,8 +3,8 @@
 (import "std/ord-set" _)
 (import "std/ord-map" _)
 (import "~/util" _)
-(import "~/emitter/ir" _)
-(import "~/emitter/transformer" _)
+(import "~/lowering/ir" _)
+(import "~/lowering/transformer" _)
 (export Env ProcessingCtDef processing-ct-def: normalize!)
 
 (function (normalize! env t) {(forall E T) (-> E T T) (where (Env E) (Transform T))}

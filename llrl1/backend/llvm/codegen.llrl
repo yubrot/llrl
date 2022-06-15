@@ -3,7 +3,7 @@
 (import "std/hash-map" next-power-of-two) ; NOTE: This should be moved to the appropriate module
 (import "llvm" [llvm/_ _])
 (import "~/util" _)
-(import "~/emitter/ir" [ir/_ _])
+(import "~/lowering/ir" [ir/_ _])
 (import "~/backend/llvm/runtime" _)
 (export TypeSize _.TypeSize type-size/_)
 (export TypeEnv type-env/_ BuildEnv build-env/_ codegen/_)
@@ -273,7 +273,7 @@
         (some value)
         (assert #f (string "Undefined variable: " (debug id))))]
     [(ir/rt:local-fun _ _)
-      (assert #f "Found rt:local-fun at codegen, this should be erased by emitter")]
+      (assert #f "Found rt:local-fun at codegen, this should be erased by lowerizer")]
     [(ir/rt:static-fun (ir/ct:id (let id)) (let env))
       (let ([fp (build-env/capture-function! id ctx)]
             [env
@@ -283,7 +283,7 @@
         (some (llvm/build! (conv ctx)
           (insert-value (insert-value (undef (: ,(llvm/value/type fp) ,(llvm/value/type env))) 0 ,fp) 1 ,env))))]
     [(ir/rt:static-fun (let ct) _)
-      (assert #f (string "Unresolved Ct: " (debug ct) ", this should be resolved by emitter"))]
+      (assert #f (string "Unresolved Ct: " (debug ct) ", this should be resolved by lowerizer"))]
     [(ir/rt:const (let c))
       (some (codegen/const! ctx c))]
     [(ir/rt:call (let callee) (let args))
@@ -538,7 +538,7 @@
           (llvm/build! (conv ctx) (store ,elem (struct-gep ,ptr ,(conv i)))))
         (some (llvm/build! (conv ctx) (bit-cast ,ptr ,(codegen/type ctx ir/ct:env)))))]
     [(ir/rt:construct-data _ _ _)
-      (assert #f "Found rt:construct-data at codegen, this should be erased by emitter")]
+      (assert #f "Found rt:construct-data at codegen, this should be erased by lowerizer")]
     [(ir/rt:construct-struct (let ty) (let fields))
       (let1 result (ref (llvm/build! (conv ctx) (undef ,(codegen/type ctx ty))))
         (for (: (let i) (let field)) (it/with-index fields)
@@ -584,11 +584,11 @@
         (llvm/builder/set-insert-point! else-bb #t (conv ctx)))
       (some (codegen/const! ctx ir/const:unit))]
     [(ir/rt:and _ _)
-      (assert #f "Found rt:and at codegen, this should be erased by emitter")]
+      (assert #f "Found rt:and at codegen, this should be erased by lowerizer")]
     [(ir/rt:or _ _)
-      (assert #f "Found rt:or at codegen, this should be erased by emitter")]
+      (assert #f "Found rt:or at codegen, this should be erased by lowerizer")]
     [(ir/rt:match _ _)
-      (assert #f "Found rt:match at codegen, this should be erased by emitter")]
+      (assert #f "Found rt:match at codegen, this should be erased by lowerizer")]
     [(ir/rt:return (let ret))
       (llvm/build! (conv ctx) (ret ,(codegen/expr! ctx ret)?))
       none]
@@ -601,7 +601,7 @@
       (llvm/build! (conv ctx) unreachable)
       none]
     [(ir/rt:let-function _ _)
-      (assert #f "Found rt:let-function at codegen, this should be erased by emitter")]
+      (assert #f "Found rt:let-function at codegen, this should be erased by lowerizer")]
     [(ir/rt:let-var (let vars) (let body))
       (for (ir/rt-var: (let id) _ (let init)) vars
         (let1 value (codegen/expr! ctx init)?

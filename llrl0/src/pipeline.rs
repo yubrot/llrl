@@ -93,14 +93,14 @@ impl Pipeline {
         self.clang_options.push(clang_option.to_string());
     }
 
-    pub fn run<B>(
+    pub fn run<BB>(
         self,
         output: &path::Path,
         run_args: Option<Vec<&str>>,
     ) -> Result<Option<ExitStatus>>
     where
-        B: BackendBuilder,
-        B::Dest: Backend + ProduceExecutable,
+        BB: BackendBuilder,
+        BB::Dest: Backend + ProduceExecutable,
     {
         let output = path::Path::new(".").join(output);
         let mut source_location_table = SourceLocationTable::new();
@@ -141,21 +141,21 @@ impl Pipeline {
             }
         }
 
-        let emitter = Emitter::new(
-            B::new()
+        let lowerizer = Lowerizer::new(
+            BB::new()
                 .optimize(self.optimize)
                 .verbose(self.verbose)
                 .build(),
         );
 
         let entry_points = self.entry_source_paths.into_iter().collect();
-        let (_, module_errors) = build_modules(sources, entry_points, &emitter, &mut report);
+        let (_, module_errors) = build_modules(sources, entry_points, &lowerizer, &mut report);
 
         if !module_errors.is_empty() {
             return Err(Error::Module(source_location_table, module_errors));
         }
 
-        let backend = emitter.complete(&mut report);
+        let backend = lowerizer.complete(&mut report);
         match backend.produce_executable(output.to_owned(), self.clang_options) {
             Ok(out) => {
                 if self.verbose {

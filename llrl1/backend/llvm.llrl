@@ -6,13 +6,13 @@
 (import "~/util" _)
 (import "~/resources" resources/llrt-archive)
 (import "~/report" Report _.Report report/_ phase:_)
-(import "~/emitter" Backend)
-(import "~/emitter/ir" [ir/_ _])
+(import "~/lowering" [lowering/Backend Backend])
+(import "~/lowering/ir" [ir/_ _])
 (import "~/backend/llvm/artifact" _)
 (import "~/backend/llvm/executor" _)
-(export LLVMBackend _.LLVMBackend llvm-backend/_ with-llvm-backend)
+(export Backend _.Backend backend/_)
 
-(derive (DebugDisplay) data LLVMBackend
+(derive (DebugDisplay) data Backend
   (backend:
     Bool
     Report
@@ -24,7 +24,7 @@
     Executor
     (Ref U32)))
 
-(instance Backend.LLVMBackend (Backend LLVMBackend)
+(instance lowering/Backend.Backend (lowering/Backend Backend)
   (function (backend/put-def! id def b)
     (ignore (ord-map/insert! id def (queued-defs b))))
 
@@ -37,7 +37,7 @@
       (let1 generation ~(next-generation b)
         (set! (next-generation b) (+ generation 1))
         (executor/add-module!
-          (report/on (llvm-backend/report b) phase:codegen (llvm-backend/build! (string "gen" generation) #f b))
+          (report/on (backend/report b) phase:codegen (backend/build! (string "gen" generation) #f b))
           (executor b))))
 
       (if-match1 (some (let symbol)) (context-artifact/function-symbol? id (context-artifact b))
@@ -47,20 +47,20 @@
   (function (backend/execute-main! b)
     (when-match1 none (|> b context-artifact context-artifact/main-function-symbol?)
       (executor/add-module!
-        (report/on (llvm-backend/report b) phase:codegen (llvm-backend/build! "entry" #t b))
+        (report/on (backend/report b) phase:codegen (backend/build! "entry" #t b))
         (executor b)))
 
-    (report/on (llvm-backend/report b) phase:jit
+    (report/on (backend/report b) phase:jit
       (if-match1 (some (let symbol)) (|> b context-artifact context-artifact/main-function-symbol?)
         (ok (executor/call-main! symbol (executor b)))
         (err "main not found"))))
 
   (function (backend/complete! report b)
-    (report/merge! (llvm-backend/report b) report)))
+    (report/merge! (backend/report b) report)))
 
 (getter backend:
-  llvm-backend/verbose?
-  llvm-backend/report
+  backend/verbose?
+  backend/report
   llvm-ctx
   llvm-pm
   queued-defs
@@ -69,7 +69,7 @@
   executor
   next-generation)
 
-(function (llvm-backend/new optimize? verbose?) {(-> Bool Bool LLVMBackend)}
+(function (backend/new optimize? verbose?) {(-> Bool Bool Backend)}
   (let* ([ctx (llvm/context/new)]
          [pm (llvm/pass-manager/new)]
          [executor (executor/new ctx optimize?)]
@@ -79,22 +79,22 @@
       (llvm/pass-manager-builder/populate-module-pass-manager! pm pmb)))
     (backend: verbose? (report/new) ctx pm ord-map/empty vector/empty ca executor (ref 0))))
 
-(function (llvm-backend/dispose! b) {(-> LLVMBackend unit)}
+(function (backend/dispose! b) {(-> Backend unit)}
   (llvm/pass-manager/dispose! (llvm-pm b))
   (executor/dispose! (executor b))
   (llvm/context/dispose! (llvm-ctx b)))
 
-(function (with-llvm-backend optimize? verbose? f) {(forall A) (-> Bool Bool (-> LLVMBackend A) A)}
-  (let* ([backend (llvm-backend/new optimize? verbose?)]
+(function (backend/with optimize? verbose? f) {(forall A) (-> Bool Bool (-> Backend A) A)}
+  (let* ([backend (backend/new optimize? verbose?)]
          [ret (f backend)])
-    (llvm-backend/dispose! backend)
+    (backend/dispose! backend)
     ret))
 
-(function (llvm-backend/build! name build-main? b) {(-> String Bool LLVMBackend llvm/Module)}
+(function (backend/build! name build-main? b) {(-> String Bool Backend llvm/Module)}
   (context-artifact/add-types! (queued-defs b) (context-artifact b))
   (let1 artifact (module-artifact/new name (context-artifact b))
 
-    (when (llvm-backend/verbose? b)
+    (when (backend/verbose? b)
       (eprintln! "### adding defs")
       (for (: (let id) (let def)) (ord-map/elems (queued-defs b))
         (eprintln! (debug id) " = " (debug def))))
@@ -102,18 +102,18 @@
     (module-artifact/add-functions! (queued-defs b) artifact)
     (ord-map/clear! (queued-defs b))
 
-    (when (llvm-backend/verbose? b)
+    (when (backend/verbose? b)
       (eprintln! "### added defs")
       (eprintln! (module-artifact/llvm-module artifact)))
 
     (when build-main?
-      (when (llvm-backend/verbose? b)
+      (when (backend/verbose? b)
         (eprintln! "### adding main")
         (for (let init) (queued-main b) (eprintln! (debug init))))
 
       (module-artifact/add-main! (vector/consume-all! (queued-main b)) artifact)
 
-      (when (llvm-backend/verbose? b)
+      (when (backend/verbose? b)
         (eprintln! "### added main")
         (eprintln! (|> artifact module-artifact/main-function? option/force function-artifact/value))))
 
@@ -122,24 +122,24 @@
 
     (llvm/pass-manager/run! (module-artifact/llvm-module artifact) (llvm-pm b))
 
-    (when (llvm-backend/verbose? b)
+    (when (backend/verbose? b)
       (eprintln! "### optimized")
       (eprintln! (module-artifact/llvm-module artifact)))
 
     (module-artifact/complete! artifact)))
 
-(function (llvm-backend/produce-executable! dest clang-options b)
-  {(-> String (Array String) LLVMBackend (Result unit String))}
+(function (backend/produce-executable! dest clang-options b)
+  {(-> String (Array String) Backend (Result unit String))}
   (when-match1 none (|> b context-artifact context-artifact/main-function-symbol?)
     (executor/add-module!
-      (report/on (llvm-backend/report b) phase:codegen (llvm-backend/build! "entry" #t b))
+      (report/on (backend/report b) phase:codegen (backend/build! "entry" #t b))
       (executor b)))
 
   (let1 artifact (module-artifact/new "c-main-adapter" (context-artifact b))
     (module-artifact/add-c-main-adapter! artifact)
     (executor/add-module! (module-artifact/complete! artifact) (executor b)))
 
-  (report/on (llvm-backend/report b) phase:finalize
+  (report/on (backend/report b) phase:finalize
     (with-tempdir! (lambda (tempdir)
       (let* ([modules (executor/remove-modules! (executor b))]
              [objects
@@ -154,12 +154,12 @@
                  (it/with-index modules))])
         (enforce-io-success! (expand-libllrt! tempdir))
         (let1 args {(Array String)} (collect (it/concat (array "-o" dest) objects (array "-lgc" "-lm" (string "-L" tempdir) "-lllrt") clang-options))
-          (when (llvm-backend/verbose? b)
+          (when (backend/verbose? b)
             (eprintln! "### link")
             (eprintln! "clang " (it/format " " args)))
           (let* ([proc (enforce-io-success! (process/spawn! "clang" args))]
                  [status (process/wait! proc)])
-            (when (llvm-backend/verbose? b)
+            (when (backend/verbose? b)
               (eprintln! "### clang output")
               (eprintln! (enforce-io-success! (|> proc process/out read-string-to-end!))))
             (if-match1 (some 0) status

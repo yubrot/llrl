@@ -16,7 +16,7 @@
 (function (test-case/run! slt report test-case)
   {(-> SourceLocationTable Report TestCase (Result unit String))}
   (with1 (test-case: (let sources) (let target) (let condition)) test-case
-    (let1 source-set (source-set/build! (array path/current) (test-target/prepare-loader sources target) slt report)
+    (let1 source-set (source-set/collect! (array path/current) (test-target/prepare-loader sources target) slt report)
       (for (: (let path) (let error)) (source-set/errors source-set)
         (err (string "Failed to create a source " path ": " error))!)
       (match (source-set/resolve-dependencies-order source-set)
@@ -94,11 +94,11 @@
     [test-target:module
       (test-condition/run! slt (module/build! sources default unit report) condition)]
     [_
-      (with-llvm-backend #t #f (lambda (backend)
-        (let ([emitter (emitter/new backend)]
+      (default-backend/with #t #f (lambda (backend)
+        (let ([lowerizer (lowerizer/new backend)]
               [entry-points (hash-set path/current)])
-          (test-condition/run! slt (module/build! sources entry-points emitter report) condition)!
-          (emitter/complete! report emitter)
+          (test-condition/run! slt (module/build! sources entry-points lowerizer report) condition)!
+          (lowerizer/complete! report lowerizer)
           (when-match1 (test-condition:pass _) condition
             (match (backend/execute-main! backend)
               [(ok #t)]

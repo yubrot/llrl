@@ -1,19 +1,22 @@
+; Lowering implementation.
+; Converting high-level module constructs to low-level representations.
+
 (import "std/ord-map" _)
 (import "std/ord-set" _)
 (import "~/util" _)
 (import "~/report" Report _.Report report/_ phase:_)
 (import "~/ast" [ast/_ _])
 (import "~/module" [m/_ _])
-(import "~/emitter/ir" _)
-(import "~/emitter/transformer" _)
-(import "~/emitter/simplifier" [simplifier/_ _])
-(import "~/emitter/normalizer" [normalizer/_ _])
-(import "~/emitter/data-expander" [data-expander/_ _])
-(import "~/emitter/branch-expander" [branch-expander/_ _])
-(import "~/emitter/heap2stack" [heap2stack/_ _])
-(export Backend backend/_ Emitter _.Emitter emitter/_)
+(import "~/lowering/ir" _)
+(import "~/lowering/transformer" _)
+(import "~/lowering/translator" [translator/_ _])
+(import "~/lowering/normalizer" [normalizer/_ _])
+(import "~/lowering/data-expander" [data-expander/_ _])
+(import "~/lowering/branch-expander" [branch-expander/_ _])
+(import "~/lowering/heap2stack" [heap2stack/_ _])
+(export Backend backend/_ Lowerizer _.Lowerizer lowerizer/_)
 
-; Low-level compiler backend used by the emitter backend.
+; Low-level compiler backend used by the `Lowerizer`.
 (class (Backend B)
   (function (backend/put-def! id def b) {(-> CtId CtDef B unit)})
   (function (backend/put-main! init b) {(-> Init B unit)})
@@ -21,8 +24,8 @@
   (function (backend/execute-macro! id s b) {(-> CtId (S CapturedUse) B (Result (S CapturedUse) String))})
   (function (backend/complete! report b) {(-> Report B unit)}))
 
-(data (Emitter B)
-  (emitter:
+(data (Lowerizer B)
+  (lowerizer:
     B
     Report
     (OrdMap m/ModuleId m/Module)
@@ -35,25 +38,25 @@
     (OrdMap CtId data-expander/DataExpansion)
     (Ref Generation)))
 
-(instance m/Backend.Emitter (forall B) (m/Backend (Emitter B)) (where (Backend B))
+(instance m/Backend.Lowerizer (forall B) (m/Backend (Lowerizer B)) (where (Backend B))
   (function (backend/add-module! module entry-point? e)
-    (emitter/register-module! module e)
-    (when entry-point? (emitter/entry-module! (m/module/id module) e)))
+    (lowerizer/register-module! module e)
+    (when entry-point? (lowerizer/entry-module! (m/module/id module) e)))
 
   (function (backend/execute-macro! macro-id s e)
-    (let1 macro-fun (ct/force-id (emitter/populate! macro-id e))
-      (backend/execute-macro! macro-fun s (emitter/backend e)))))
+    (let1 macro-fun (ct/force-id (lowerizer/populate! macro-id e))
+      (backend/execute-macro! macro-fun s (lowerizer/backend e)))))
 
-(instance m/ModuleSet.Emitter (forall B) (m/ModuleSet (Emitter B))
+(instance m/ModuleSet.Lowerizer (forall B) (m/ModuleSet (Lowerizer B))
   (function (module-set/get? mid e) (m/module-set/get? mid (modules e))))
 
-(instance simplifier/Env.Emitter (forall B) (simplifier/Env (Emitter B))
+(instance translator/Env.Lowerizer (forall B) (translator/Env (Lowerizer B))
   (function (alloc-ct! e)
     (ct-id-gen/next! (ct-id-gen e)))
 
   (function (issue-ct! c e)
     (let1 construct (conv c)
-      (bind-ct! (ct-key:construct construct) [^0 (simplifier/simplify-def! e construct)] e)))
+      (bind-ct! (ct-key:construct construct) [^0 (translator/translate-def! e construct)] e)))
 
   (function (alloc-rt! e)
     (rt-id-gen/next! (rt-id-gen e)))
@@ -61,7 +64,7 @@
   (function (issue-rt! c e)
     (bind-rt! (rt-key:construct (conv c)) e)))
 
-(instance normalizer/Env.Emitter (forall B) (normalizer/Env (Emitter B))
+(instance normalizer/Env.Lowerizer (forall B) (normalizer/Env (Lowerizer B))
   (function (instantiate! id args e)
     (bind-ct!
       (ct-key:inst id args)
@@ -109,7 +112,7 @@
   (function (alloc-rt! e)
     (rt-id-gen/next! (rt-id-gen e))))
 
-(instance data-expander/Env.Emitter (forall B) (data-expander/Env (Emitter B))
+(instance data-expander/Env.Lowerizer (forall B) (data-expander/Env (Lowerizer B))
   (function (add-ct-def! def e)
     (let1 id (ct-id-gen/next! (ct-id-gen e))
       (ord-map/insert! id (processing-ct-def: phase:normalized (some ~(current-gen e)) def) (ct-defs e))
@@ -118,13 +121,13 @@
   (function (data-expansions e)
     (data-expansions e)))
 
-(instance branch-expander/Env.Emitter (forall B) (branch-expander/Env (Emitter B))
+(instance branch-expander/Env.Lowerizer (forall B) (branch-expander/Env (Lowerizer B))
   (function (alloc-rt! e)
     (rt-id-gen/next! (rt-id-gen e))))
 
-(getter emitter:
-  emitter/backend
-  emitter/report
+(getter lowerizer:
+  lowerizer/backend
+  lowerizer/report
   modules
   initialized-modules
   ct-id-gen
@@ -135,8 +138,8 @@
   data-expansions
   current-gen)
 
-(function (emitter/new backend) {(forall B) (-> B (Emitter B)) (where (Backend B))}
-  (emitter:
+(function (lowerizer/new backend) {(forall B) (-> B (Lowerizer B)) (where (Backend B))}
+  (lowerizer:
     backend
     (report/new)
     ord-map/empty
@@ -149,40 +152,40 @@
     ord-map/empty
     (ref (generation: 0))))
 
-(function (emitter/def? id e) {(forall B) (-> CtId (Emitter B) (Option CtDef))}
+(function (lowerizer/def? id e) {(forall B) (-> CtId (Lowerizer B) (Option CtDef))}
   (let1 d (|> e ct-defs (ord-map/get? id))?
     (when? (processing-ct-def/populated? d) (conv d))))
 
-(function (emitter/defs e) {(forall B) (-> (Emitter B) (Iterator (: CtId CtDef)))}
+(function (lowerizer/defs e) {(forall B) (-> (Lowerizer B) (Iterator (: CtId CtDef)))}
   (|> e
       ct-defs
       ord-map/elems
       (it/filter (case1 (: _ (let d)) (processing-ct-def/populated? d)))
       (it/map (case1 (: (let id) (let d)) (: id (conv d))))))
 
-(function (emitter/register-module! module e) {(forall B) (-> m/Module (Emitter B) unit)}
+(function (lowerizer/register-module! module e) {(forall B) (-> m/Module (Lowerizer B) unit)}
   (ignore (ord-map/insert! (m/module/id module) module (modules e))))
 
-(function (emitter/entry-module! mid e) {(forall B) (-> m/ModuleId (Emitter B) unit) (where (Backend B))}
+(function (lowerizer/entry-module! mid e) {(forall B) (-> m/ModuleId (Lowerizer B) unit) (where (Backend B))}
   (when (not (ord-set/insert! mid (initialized-modules e))) (return))
   (for (let expr) (|> e modules (ord-map/get? mid) option/force m/module/ast-root ast/root/init-expressions)
     (match expr
       [(ast/init-expr:ensure-initialized (let mid))
-        (emitter/entry-module! mid e)]
+        (lowerizer/entry-module! mid e)]
       [(ast/init-expr:eval (let expr))
-        (backend/put-main! (emitter/populate! expr e) (emitter/backend e))])))
+        (backend/put-main! (lowerizer/populate! expr e) (lowerizer/backend e))])))
 
-(function (emitter/populate! src e) {(forall B S D) (-> S (Emitter B) D) (where (Backend B) (simplifier/Simplify S D) (Transform D))}
-  (with1 (: (let dest) (let defs)) (report/on (emitter/report e) phase:emit (populate! src e))
-    (for (: (let id) (let def)) defs (backend/put-def! id def (emitter/backend e)))
+(function (lowerizer/populate! src e) {(forall B S D) (-> S (Lowerizer B) D) (where (Backend B) (translator/Translate S D) (Transform D))}
+  (with1 (: (let dest) (let defs)) (report/on (lowerizer/report e) phase:lowerize (populate! src e))
+    (for (: (let id) (let def)) defs (backend/put-def! id def (lowerizer/backend e)))
     dest))
 
-(function (emitter/complete! report e) {(forall B) (-> Report (Emitter B) unit)}
-  (report/merge! (emitter/report e) report))
+(function (lowerizer/complete! report e) {(forall B) (-> Report (Lowerizer B) unit)}
+  (report/merge! (lowerizer/report e) report))
 
 (function (populate! src e)
-  {(forall B S D) (-> S (Emitter B) (: D (Iterator (: CtId CtDef)))) (where (Backend B) (simplifier/Simplify S D) (Transform D))}
-  (let* ([dest (simplifier/simplify! e src)]
+  {(forall B S D) (-> S (Lowerizer B) (: D (Iterator (: CtId CtDef)))) (where (Backend B) (translator/Translate S D) (Transform D))}
+  (let* ([dest (translator/translate! e src)]
          [dest (ref (normalizer/normalize! e dest))]
          [gen (generation/next ~(current-gen e))])
     (set! (current-gen e) gen)
@@ -215,7 +218,7 @@
                (when? (processing-ct-def/populated? d) (: id (processing-ct-def/def d)))))
            generation-defs)))))
 
-(function (bind-ct! key build e) {(forall B) (-> CtKey (-> (Option CtDef)) (Emitter B) CtId)}
+(function (bind-ct! key build e) {(forall B) (-> CtKey (-> (Option CtDef)) (Lowerizer B) CtId)}
   (if-match1 (some (let id)) (ord-map/get? key (ct-mapping e))
     id
     (let1 id (ct-id-gen/next! (ct-id-gen e))
@@ -227,7 +230,7 @@
           (ct-defs e)))
       id)))
 
-(function (bind-rt! key e) {(forall B) (-> RtKey (Emitter B) RtId)}
+(function (bind-rt! key e) {(forall B) (-> RtKey (Lowerizer B) RtId)}
   (if-match1 (some (let id)) (ord-map/get? key (rt-mapping e))
     id
     (let1 id (rt-id-gen/next! (rt-id-gen e))
@@ -276,18 +279,18 @@
     (generation: (+ n 1))))
 
 (value-data (GenerationCollector B)
-  (generation-collector: (OrdSet CtId) (Emitter B))) ; generation-defs emitter
+  (generation-collector: (OrdSet CtId) (Lowerizer B))) ; generation-defs lowerizer
 
-(function (collect-generation-defs emitter t)
+(function (collect-generation-defs lowerizer t)
   (let1 set ord-set/empty
-    (result/unwrap* never (transform (generation-collector: set emitter) t))
+    (result/unwrap* never (transform (generation-collector: set lowerizer) t))
     set))
 
 (instance Transformer.GenerationCollector (forall B Error) (Transformer (GenerationCollector B) Error)
   (function (transformer/after-ct ct collector)
-    (with1 (generation-collector: (let generation-defs) (let emitter)) collector
+    (with1 (generation-collector: (let generation-defs) (let lowerizer)) collector
       (when-match ([(ct:id (let id)) ct]
-                   [(some (processing-ct-def: _ none (let def))) (ord-map/get? id (ct-defs emitter))]
+                   [(some (processing-ct-def: _ none (let def))) (ord-map/get? id (ct-defs lowerizer))]
                    [#t (ord-set/insert! id generation-defs)])
         (transform collector def)!))
     (ok (rewrite/unchanged ct))))

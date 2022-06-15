@@ -14,7 +14,7 @@
   phase:type-inference
   phase:validate
   phase:export
-  phase:emit
+  phase:lowerize
   phase:codegen
   phase:jit
   phase:finalize)

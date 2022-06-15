@@ -1,4 +1,4 @@
-//! Provides an intermediate representation for emitter.
+//! Provides an intermediate representation for lowering.
 
 use derive_new::new;
 use ordered_float::OrderedFloat;

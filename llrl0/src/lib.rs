@@ -28,7 +28,7 @@ pub mod source;
 
 pub mod module;
 
-pub mod emitter;
+pub mod lowering;
 
 pub mod backend;
 
@@ -61,7 +61,7 @@ pub mod prelude {
         parallel_build as build_modules, Error as ModuleError, Module, ModuleId,
     };
 
-    pub use super::emitter::{Backend, Emitter};
+    pub use super::lowering::{Backend, Lowerizer};
 
     pub use super::backend::default::{
         Backend as DefaultBackend, Builder as DefaultBackendBuilder,

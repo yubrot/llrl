@@ -1,5 +1,5 @@
 use super::*;
-use crate::emitter::ir::Sexp;
+use crate::lowering::ir::Sexp;
 
 #[derive(Clone, Copy)]
 #[repr(C)]
