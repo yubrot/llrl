@@ -29,7 +29,7 @@ llrl is not a highly carefully designed programming language, but it mainly borr
 
 llrl was originally started by learning [LLVM Kaleidoscope Tutorial](https://llvm.org/docs/tutorial/index.html) in Rust. This tutorial is great for learning LLVM frontend basics, but as [the tutorial conclusion suggests](https://llvm.org/docs/tutorial/OCamlLangImpl8.html), there are a lot of things to do to make our compiler more practical.
 
-The goal of llrl is not to create a modern, practical programming language. Instead, llrl focuses to make a compiler [self-hosted](<https://en.wikipedia.org/wiki/Self-hosting_(compilers)>). To achieve this with [LLVM-C API](https://llvm.org/doxygen/group__LLVMC.html), we need to implement more language features like strings, pointers, etc. On the other hand, Implementing self-hosting compiler does not require a rich runtime system including garbage collections, exception handling, etc.
+The goal of llrl is **not** to create a modern, practical programming language. Instead, llrl focuses to make a compiler [self-hosted](<https://en.wikipedia.org/wiki/Self-hosting_(compilers)>). To achieve this with [LLVM-C API](https://llvm.org/doxygen/group__LLVMC.html), we need to implement more language features like strings, pointers, etc. On the other hand, Implementing self-hosting compiler does not require a rich runtime system including garbage collections, exception handling, etc. llrl uses [Boehm garbage collector](https://en.wikipedia.org/wiki/Boehm_garbage_collector) and does not support any exception mechanism (error handling is mainly done with the `Result` type).
 
 This goal has been achieved and can be tested by `make self-hosting` in `llrl1/`.
 
@@ -113,7 +113,7 @@ cargo run -- -O examples/fibonacci-numbers
 - Linux x64
   - llrl does not take into account support for other platforms
 - glibc
-  - Not tested other C libraries but llrl depends a few implementation-details of glibc (plase see [rt/rt.c](./rt/rt.c))
+  - Not tested other C libraries but llrl depends a few implementation-details of glibc (check at [rt/rt.c](./rt/rt.c))
 - clang
 - LLVM 11.0
   - I use [llvmenv](https://github.com/llvmenv/llvmenv) for building LLVM

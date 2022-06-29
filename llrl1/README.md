@@ -1,4 +1,4 @@
-# llrl1
+# llrl1: llrl compiler in llrl
 
 llrl compiler implementation written in llrl.
 
@@ -6,7 +6,7 @@ llrl compiler implementation written in llrl.
 make self-hosting
 ```
 
-## Diagram
+## Complete self-hosting sequence
 
 ![](../examples/images/2.png)
 
