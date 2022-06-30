@@ -31,6 +31,7 @@ pub struct SourceLocationTable {
 }
 
 impl SourceLocationTable {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {
             path_table: InternTable::new(),

@@ -6,7 +6,7 @@ use crate::source::Source;
 use crate::syntax;
 use std::borrow::Cow;
 
-static WILDCARD: &'static str = "_";
+static WILDCARD: &str = "_";
 
 #[derive(Debug, Clone, Copy)]
 pub enum WildcardPortTarget<'a> {
@@ -16,14 +16,14 @@ pub enum WildcardPortTarget<'a> {
 }
 
 impl<'a> WildcardPortTarget<'a> {
+    #[allow(clippy::manual_map)]
     pub fn from_pattern(input: &'a str) -> Option<Self> {
         if input == WILDCARD {
             Some(Self::Everything)
-        } else if input.starts_with(WILDCARD) {
-            Some(Self::EndsWith(&input[WILDCARD.len()..]))
-        } else if input.ends_with(WILDCARD) {
-            let l = input.len() - WILDCARD.len();
-            Some(Self::StartsWith(&input[0..l]))
+        } else if let Some(pat) = input.strip_prefix(WILDCARD) {
+            Some(Self::EndsWith(pat))
+        } else if let Some(pat) = input.strip_suffix(WILDCARD) {
+            Some(Self::StartsWith(pat))
         } else {
             None
         }

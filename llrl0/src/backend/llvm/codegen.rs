@@ -102,7 +102,10 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
                 Some(value)
             }
             Rt::StaticFun(ct, _) => {
-                panic!("Unresolved Ct: {}, this should be resolved by lowerizer", ct)
+                panic!(
+                    "Unresolved Ct: {}, this should be resolved by lowerizer",
+                    ct
+                )
             }
             Rt::Const(c) => Some(self.llvm_constant(c).as_value()),
             Rt::Call(call) => {
@@ -552,7 +555,7 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
         self.builder.build_cond_br(cond, then_bb, else_bb);
 
         self.builder.set_insert_point(then_bb, true);
-        if let Some(_) = self.eval(body) {
+        if self.eval(body).is_some() {
             self.builder.build_br(cond_bb);
         }
 

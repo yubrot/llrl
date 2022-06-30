@@ -394,7 +394,7 @@ impl<'a> ExpandingData<'a> {
                     DataExpansion::Alias(field.clone())
                 }
                 fields => {
-                    let fields = fields.into_iter().cloned().collect();
+                    let fields = fields.to_vec();
                     match self.data.repr {
                         DataRepr::Boxed => DataExpansion::boxed_struct_on(env, fields),
                         DataRepr::Value => DataExpansion::struct_on(env, fields),
@@ -417,15 +417,13 @@ impl<'a> ExpandingData<'a> {
                         match fields.as_slice() {
                             [field] => TaggedDataBody::Alias(index, field.clone()),
                             fields => {
-                                let fields = fields.into_iter().cloned().collect();
+                                let fields = fields.to_vec();
                                 TaggedDataBody::struct_on(env, index, fields)
                             }
                         }
                     }
                     _ => {
-                        let cons = cons
-                            .into_iter()
-                            .map(|fields| fields.into_iter().cloned().collect());
+                        let cons = cons.iter().map(|fields| fields.to_vec());
                         TaggedDataBody::union_on(env, cons)
                     }
                 };

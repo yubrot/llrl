@@ -19,10 +19,12 @@ impl CtId {
 pub struct CtIdGen(CtId);
 
 impl CtIdGen {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self(CtId(0))
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> CtId {
         let id = self.0;
         self.0 = CtId(id.0 + 1);
@@ -138,6 +140,7 @@ pub struct AliasTable {
 }
 
 impl AliasTable {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {
             map: BTreeMap::new(),
@@ -234,18 +237,20 @@ impl RtId {
         self.0
     }
 
-    pub const ARGC: Self = Self(-1 as i32 as u32);
-    pub const ARGV: Self = Self(-2 as i32 as u32);
+    pub const ARGC: Self = Self(-1i32 as u32);
+    pub const ARGV: Self = Self(-2i32 as u32);
 }
 
 #[derive(Debug, Clone)]
 pub struct RtIdGen(RtId);
 
 impl RtIdGen {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self(RtId(0))
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> RtId {
         let id = self.0;
         self.0 = RtId(id.0 + 1);

@@ -15,7 +15,7 @@ pub struct TypeEnv<'a, E> {
 impl<'a, E: External> TypeEnv<'a, E> {
     fn ast_of(&self, mid: ModuleId) -> &'a ast::Root {
         if mid == self.local_ast_root.id.module() {
-            &self.local_ast_root
+            self.local_ast_root
         } else {
             &self.external.module(mid).ast_root
         }

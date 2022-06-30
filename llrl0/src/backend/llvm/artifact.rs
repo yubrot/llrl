@@ -54,13 +54,13 @@ impl<'ctx> ContextArtifact<'ctx> {
         for (id, def) in defs {
             match **def {
                 CtDef::Struct(_) => {
-                    let _ = self.type_size(&Ct::Id(*id), &defs);
+                    let _ = self.type_size(&Ct::Id(*id), defs);
                     let ty = LLVMStructType::new(&id.index().to_string(), self.context);
                     self.structs.insert(*id, ty);
                     self.types.insert(*id, ty.as_type());
                 }
                 CtDef::Union(_) => {
-                    let type_size = self.type_size(&Ct::Id(*id), &defs);
+                    let type_size = self.type_size(&Ct::Id(*id), defs);
                     let ty = if type_size.align != 0 {
                         let bw = type_size.align * 8;
                         let len = (type_size.size / type_size.align) as usize;
@@ -128,7 +128,7 @@ impl<'ctx> ContextArtifact<'ctx> {
                 Some(Some(size)) => *size,
                 None => {
                     self.type_sizes.insert(*id, None);
-                    let ts = match defs.get(&id).map(|def| &**def) {
+                    let ts = match defs.get(id).map(|def| &**def) {
                         Some(CtDef::Struct(ty)) => {
                             TypeSize::struct_(self.type_size_all(&ty.fields, defs))
                         }
@@ -294,10 +294,7 @@ impl FunctionSymbolKind {
     }
 
     pub fn takes_env_as_argument(&self) -> bool {
-        match self {
-            Self::Main(_) => false,
-            _ => true,
-        }
+        !matches!(self, Self::Main(_))
     }
 
     pub fn returns_by_pointer_store(&self) -> bool {
@@ -305,10 +302,7 @@ impl FunctionSymbolKind {
         // must be returned through pointers. The main function is also called from Rust in tests,
         // but the type of the return value used in tests is bool (i8), which can be returned
         // directly as C-compatible form.
-        match self {
-            Self::Macro => true,
-            _ => false,
-        }
+        matches!(self, Self::Macro)
     }
 }
 
@@ -384,7 +378,7 @@ impl<'ctx: 'm, 'm> ModuleArtifact<'ctx, 'm> {
         for (id, def) in defs {
             if let CtDef::Function(ref def) = **def {
                 let function = self.capture_function(*id, ctx).clone();
-                codegen::run(&function, def, self, &ctx);
+                codegen::run(&function, def, self, ctx);
             }
         }
     }
@@ -393,7 +387,7 @@ impl<'ctx: 'm, 'm> ModuleArtifact<'ctx, 'm> {
         let def = {
             let ret = main
                 .pop()
-                .unwrap_or(Init::new(Ct::Unit, Rt::Const(Const::Unit)));
+                .unwrap_or_else(|| Init::new(Ct::Unit, Rt::Const(Const::Unit)));
             let stmts = main.into_iter().map(|init| init.expr).collect();
 
             Function::new(
@@ -411,7 +405,7 @@ impl<'ctx: 'm, 'm> ModuleArtifact<'ctx, 'm> {
         let symbol = FunctionSymbol::new("main".to_string(), &def, ctx);
         let value = self.module.add_function("main", symbol.ty);
         let function = FunctionArtifact::new(symbol, value);
-        codegen::run(&function, &def, self, &ctx);
+        codegen::run(&function, &def, self, ctx);
 
         assert!(ctx.main_function_symbol.is_none());
         ctx.main_function_symbol = Some(function.symbol.clone());
@@ -447,10 +441,9 @@ impl<'ctx: 'm, 'm> ModuleArtifact<'ctx, 'm> {
         let function_ty = function_ty();
 
         // TODO: This adjustment is not enough. We need to follow the System V ABI.
-        let (function_ty, return_by_pointer_store) = if {
-            function_ty.return_type().is_sized()
-                && 2 * 8 < ctx.data_layout().type_alloc_size(function_ty.return_type())
-        } {
+        let (function_ty, return_by_pointer_store) = if function_ty.return_type().is_sized()
+            && 2 * 8 < ctx.data_layout().type_alloc_size(function_ty.return_type())
+        {
             let mut params = function_ty.param_types();
             let ret = function_ty.return_type();
             params.insert(0, llvm_type!(*ctx, (ptr { ret })).as_type());

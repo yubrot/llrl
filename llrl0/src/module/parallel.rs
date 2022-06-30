@@ -1,4 +1,4 @@
-use super::{Error, Module, ModuleId, External};
+use super::{Error, External, Module, ModuleId};
 use crate::ast::{self, builtin};
 use crate::path::Path;
 use crate::report::{Phase, Report};
@@ -207,7 +207,7 @@ impl<'a, B: Backend> External for ModuleBuildingContext<'a, B> {
         let arena = self.deps_arena;
         *self.deps_cache.borrow_mut().entry(mid).or_insert_with(|| {
             let module = ctx.modules.get(mid.as_index()).unwrap();
-            arena.alloc(Arc::clone(&module.result.read().unwrap().as_ref().unwrap()))
+            arena.alloc(Arc::clone(module.result.read().unwrap().as_ref().unwrap()))
         })
     }
 

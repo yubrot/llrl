@@ -78,6 +78,10 @@ impl<T> Vars<T> {
         self.0..self.1
     }
 
+    pub fn is_empty(self) -> bool {
+        self.0 == self.1
+    }
+
     pub fn len(self) -> u32 {
         self.1 - self.0
     }

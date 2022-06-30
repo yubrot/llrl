@@ -147,7 +147,7 @@ impl Root {
             .chain(self.init_expressions.iter().filter_map(|e| e.expr()))
     }
 
-    pub fn constructs<'a>(&'a self) -> impl Iterator<Item = Construct> + 'a {
+    pub fn constructs(&self) -> impl Iterator<Item = Construct> + '_ {
         (self.functions.keys().copied().map(Construct::from))
             .chain(self.c_functions.keys().copied().map(Construct::from))
             .chain(self.builtin_ops.keys().copied().map(Construct::from))

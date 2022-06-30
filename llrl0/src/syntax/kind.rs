@@ -1,5 +1,5 @@
-use crate::source_loc::SourceLocation;
 use crate::sexp::{matcher as m, Sexp, SexpRep};
+use crate::source_loc::SourceLocation;
 use derive_new::new;
 use std::borrow::Cow;
 
@@ -17,9 +17,8 @@ impl<'a> m::Match<'a> for Kind<'a> {
     type Result = Self;
 
     fn match_sexp(s: &'a Sexp) -> m::Result<Self> {
-        match s.matches::<(m::Symbol, m::Rest<m::Any>)>() {
-            Ok(("->", _)) => return Ok(Kind::Fun(s.matches::<KindFun>()?)),
-            _ => {}
+        if let Ok(("->", _)) = s.matches::<(m::Symbol, m::Rest<m::Any>)>() {
+            return Ok(Kind::Fun(s.matches::<KindFun>()?));
         }
 
         match s.rep {

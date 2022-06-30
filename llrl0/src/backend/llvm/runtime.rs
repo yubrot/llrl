@@ -203,7 +203,7 @@ pub fn build_heap_array_alloc<'ctx: 'm, 'm>(
     builder.build_bit_cast(ptr, LLVMPointerType::get(ty, 0))
 }
 
-pub fn string_type<'ctx>(ctx: &'ctx LLVMContext) -> LLVMType<'ctx> {
+pub fn string_type(ctx: &LLVMContext) -> LLVMType {
     llvm_type!(ctx, (struct (ptr u8) u64)).as_type()
 }
 
@@ -291,7 +291,7 @@ pub fn build_string_concat<'ctx: 'm, 'm>(
     builder.build_call(string_concat, &[a.as_value(), b.as_value()])
 }
 
-pub fn char_type<'ctx>(ctx: &'ctx LLVMContext) -> LLVMType<'ctx> {
+pub fn char_type(ctx: &LLVMContext) -> LLVMType {
     llvm_type!(ctx, u32).as_type()
 }
 
@@ -362,7 +362,7 @@ pub fn build_array_store<'ctx: 'm, 'm>(
     builder.build_store(value, ptr);
 }
 
-pub fn captured_use_type<'ctx>(ctx: &'ctx LLVMContext) -> LLVMType<'ctx> {
+pub fn captured_use_type(ctx: &LLVMContext) -> LLVMType {
     llvm_type!(ctx, (struct u64 u64)).as_type()
 }
 
@@ -374,7 +374,7 @@ pub fn captured_use_constant<'ctx: 'm, 'm>(
     llvm_constant!(*module, (struct (u64 {data.tag}) (u64 {data.node_id}))).as_constant()
 }
 
-pub fn syntax_type<'ctx>(ctx: &'ctx LLVMContext) -> LLVMType<'ctx> {
+pub fn syntax_type(ctx: &LLVMContext) -> LLVMType {
     llvm_type!(ctx, (ptr u8)).as_type()
 }
 
@@ -419,7 +419,7 @@ pub fn build_syntax_body<'ctx: 'm, 'm>(
     builder.build_load(value)
 }
 
-pub fn syntax_metadata_type<'ctx>(ctx: &'ctx LLVMContext) -> LLVMType<'ctx> {
+pub fn syntax_metadata_type(ctx: &LLVMContext) -> LLVMType {
     llvm_type!(ctx, [u32; 2]).as_type()
 }
 

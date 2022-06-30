@@ -56,6 +56,7 @@ pub struct InternTable<T: Hash + Eq> {
 }
 
 impl<T: Hash + Eq> InternTable<T> {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         InternTable {
             ids: Vec::new(),

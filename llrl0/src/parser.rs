@@ -163,10 +163,9 @@ where
     }
 
     pub fn error_expected(&mut self, expected: impl Into<String>) -> Error {
-        let unexpected = self.peek_token().cloned().unwrap_or(Token::new(
-            LocationRange::empty(self.latest_token_end),
-            TokenRep::Eof,
-        ));
+        let unexpected = self.peek_token().cloned().unwrap_or_else(|| {
+            Token::new(LocationRange::empty(self.latest_token_end), TokenRep::Eof)
+        });
 
         Error::new(unexpected, expected)
     }

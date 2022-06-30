@@ -1,3 +1,5 @@
+#![allow(clippy::missing_safety_doc)]
+
 //! Provides bindings to call native targeting backend's functions.
 
 // NOTE: Can we use utilities like libffi to support a wider variety of functions?

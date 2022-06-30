@@ -28,13 +28,14 @@ pub struct TopLevel {
 }
 
 impl TopLevel {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {
             map: HashMap::new(),
         }
     }
 
-    pub fn iter<'a>(&'a self) -> impl Iterator<Item = (&'a str, LocatedConstruct)> + 'a {
+    pub fn iter(&self) -> impl Iterator<Item = (&str, LocatedConstruct)> + '_ {
         self.map.iter().map(|(name, c)| (name.as_str(), *c))
     }
 }
@@ -89,7 +90,7 @@ impl<'a> Scope for LocalScope<'a> {
     }
 
     fn enter_scope(&mut self) -> LocalScope {
-        LocalScope::new(&mut self.map)
+        LocalScope::new(self.map)
     }
 
     fn define(&mut self, name: &str, c: LocatedConstruct) -> sema::Result<()> {

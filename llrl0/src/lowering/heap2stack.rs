@@ -21,17 +21,17 @@ impl rewriter::Rewriter for Heap2Stack {
             Rt::Local(id) => {
                 self.load_only_vars.remove(id);
             }
-            Rt::Unary(unary) => match **unary {
-                (Unary::Load, Rt::Local(_)) => return Ok(false),
-                _ => {}
-            },
-            Rt::Binary(binary) => match **binary {
-                (Binary::Store, ref mut val, Rt::Local(_)) => {
+            Rt::Unary(unary) => {
+                if let (Unary::Load, Rt::Local(_)) = **unary {
+                    return Ok(false);
+                }
+            }
+            Rt::Binary(binary) => {
+                if let (Binary::Store, ref mut val, Rt::Local(_)) = **binary {
                     self.rewrite(val)?;
                     return Ok(false);
                 }
-                _ => {}
-            },
+            }
             Rt::LetVar(let_) => {
                 for var in let_.0.iter() {
                     if matches!(var.init, Rt::Alloc(_)) {
@@ -45,20 +45,14 @@ impl rewriter::Rewriter for Heap2Stack {
     }
 
     fn after_rt(&mut self, rt: &mut Rt) -> Result<(), Self::Error> {
-        match rt {
-            Rt::LetVar(let_) => {
-                for var in let_.0.iter_mut() {
-                    if self.load_only_vars.contains(&var.id) {
-                        match var.init {
-                            Rt::Alloc(ref mut alloc) => {
-                                alloc.0 = Location::StackStatic;
-                            }
-                            _ => {}
-                        }
+        if let Rt::LetVar(let_) = rt {
+            for var in let_.0.iter_mut() {
+                if self.load_only_vars.contains(&var.id) {
+                    if let Rt::Alloc(ref mut alloc) = var.init {
+                        alloc.0 = Location::StackStatic;
                     }
                 }
             }
-            _ => {}
         }
         Ok(())
     }

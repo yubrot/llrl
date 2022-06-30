@@ -104,9 +104,8 @@ impl<'a> Evaluator<'a> {
                 let _a = self.eval(&ternary.1)?;
                 let _b = self.eval(&ternary.2)?;
                 let _c = self.eval(&ternary.3)?;
-                match &ternary.0 {
-                    op => Err(Error::Internal(format!("Unsupported Ternary op: {}", op))),
-                }
+                let op = &ternary.0;
+                Err(Error::Internal(format!("Unsupported Ternary op: {}", op)))
             }
             Rt::Alloc(alloc) => Ok(Value::alloc(alloc.0, self.eval(&alloc.1)?)),
             Rt::AllocArray(_) => Err(Error::Internal("AllocArray is unsupported".to_string())),
@@ -155,7 +154,8 @@ impl<'a> Evaluator<'a> {
             Rt::Cont(id, args) => Err(Error::ContRequest(*id, self.eval_all(args)?)),
             Rt::Never => Err(Error::UndefinedBehavior("Reached Rt::Never".to_string())),
             Rt::LetFunction(_) => Err(Error::Internal(
-                "Found Rt::LetFunction at Evaluator, this should be erased by lowerizer".to_string(),
+                "Found Rt::LetFunction at Evaluator, this should be erased by lowerizer"
+                    .to_string(),
             )),
             Rt::LetVar(let_) => self.eval_let_var(&let_.0, &let_.1),
             Rt::LetCont(let_) => self.eval_let_cont(&let_.0, &let_.1),
@@ -181,7 +181,7 @@ impl<'a> Evaluator<'a> {
             Err(Error::ContRequest(id, args)) => (id, args),
             result => return result,
         };
-        let cont = match conts.into_iter().find(|cont| cont.id == id) {
+        let cont = match conts.iter().find(|cont| cont.id == id) {
             Some(cont) => cont,
             None => return Err(Error::ContRequest(id, args)),
         };

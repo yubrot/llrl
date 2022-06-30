@@ -51,9 +51,9 @@ impl<T: ?Sized> NodeId<T> {
     }
 }
 
-impl<T: ?Sized> Into<u64> for NodeId<T> {
-    fn into(self) -> u64 {
-        self.0
+impl<T: ?Sized> From<NodeId<T>> for u64 {
+    fn from(node_id: NodeId<T>) -> Self {
+        node_id.0
     }
 }
 

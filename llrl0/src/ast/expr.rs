@@ -132,18 +132,20 @@ impl<'a> Dfs for ExprDfsSameLevel<'a> {
 
 impl<'a> topological_sort::DependencyList<NodeId<Function>> for Expr {
     fn traverse_dependencies(&self, f: &mut impl FnMut(&NodeId<Function>)) {
-        self.dfs_do(|e| match e.rep {
-            ExprRep::Use(Use::Resolved(Value::Function(id), _)) => f(&id),
-            _ => {}
+        self.dfs_do(|e| {
+            if let ExprRep::Use(Use::Resolved(Value::Function(id), _)) = e.rep {
+                f(&id)
+            }
         });
     }
 }
 
 impl<'a> topological_sort::DependencyList<NodeId<LocalFun>> for Expr {
     fn traverse_dependencies(&self, f: &mut impl FnMut(&NodeId<LocalFun>)) {
-        self.dfs_do(|e| match e.rep {
-            ExprRep::Use(Use::Resolved(Value::LocalFun(id), _)) => f(&id),
-            _ => {}
+        self.dfs_do(|e| {
+            if let ExprRep::Use(Use::Resolved(Value::LocalFun(id), _)) = e.rep {
+                f(&id)
+            }
         });
     }
 }

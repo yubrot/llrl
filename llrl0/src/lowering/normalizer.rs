@@ -89,13 +89,10 @@ impl<'e, E: Env> rewriter::Rewriter for Normalizer<'e, E> {
     }
 
     fn before_rt(&mut self, rt: &mut Rt) -> Result<bool, ()> {
-        match rt {
-            Rt::LetFunction(let_) => {
-                let funs = std::mem::take(&mut let_.0);
-                let body = std::mem::take(&mut let_.1);
-                *rt = ClosureConversion::run(funs, body, self)?;
-            }
-            _ => {}
+        if let Rt::LetFunction(let_) = rt {
+            let funs = std::mem::take(&mut let_.0);
+            let body = std::mem::take(&mut let_.1);
+            *rt = ClosureConversion::run(funs, body, self)?;
         }
         Ok(true)
     }

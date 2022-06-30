@@ -473,7 +473,11 @@ impl<'a, E: External> Context<'a, E> {
                     .flat_map(|(c, instantiation)| instantiation.types().map(move |ty| (*c, ty))),
             )
         {
-            if let Err(_) = self.u_ctx.default_vars(ty, u::Type::Con(u::Con::unit())) {
+            if self
+                .u_ctx
+                .default_vars(ty, u::Type::Con(u::Con::unit()))
+                .is_err()
+            {
                 let ty = self.u_ctx.export(&ty);
                 Err(Error::CannotResolveAmbiguity(ty, Vec::new()).on(construct))?;
             }
@@ -541,7 +545,7 @@ impl<'a, E: External> Context<'a, E> {
         }
 
         for f in functions.values().filter(|f| f.ann.is_some()) {
-            self.infer_expl_function(&f)?;
+            self.infer_expl_function(f)?;
         }
 
         Ok(())

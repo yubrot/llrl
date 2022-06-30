@@ -33,6 +33,7 @@ pub struct Exports {
 }
 
 impl Exports {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {
             map: HashMap::new(),
@@ -46,7 +47,7 @@ impl Exports {
         }
     }
 
-    pub fn iter<'a>(&'a self) -> impl Iterator<Item = (&'a str, LocatedConstruct)> + 'a {
+    pub fn iter(&self) -> impl Iterator<Item = (&str, LocatedConstruct)> + '_ {
         self.map.iter().map(|(name, def)| (name.as_str(), *def))
     }
 
@@ -61,6 +62,7 @@ pub struct SymbolMap {
 }
 
 impl SymbolMap {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {
             map: HashMap::new(),
@@ -109,9 +111,10 @@ pub struct AvailableInstances {
     map: HashMap<NodeId<ClassCon>, HashSet<NodeId<InstanceCon>>>,
 }
 
-static DUMMY_INSTANCES: Lazy<HashSet<NodeId<InstanceCon>>> = Lazy::new(|| HashSet::new());
+static DUMMY_INSTANCES: Lazy<HashSet<NodeId<InstanceCon>>> = Lazy::new(HashSet::new);
 
 impl AvailableInstances {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {
             map: HashMap::new(),
@@ -141,6 +144,7 @@ pub struct InferredKinds {
 }
 
 impl InferredKinds {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {
             map: HashMap::new(),
@@ -204,6 +208,7 @@ pub struct InferredTypes {
 }
 
 impl InferredTypes {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {
             schemes: HashMap::new(),

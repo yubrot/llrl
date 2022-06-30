@@ -99,7 +99,7 @@ impl NativeString {
     pub fn as_str(&self) -> &str {
         unsafe {
             if self.len == 0 {
-                &""
+                ""
             } else {
                 let slice = std::slice::from_raw_parts(self.ptr, self.len as usize);
                 std::str::from_utf8_unchecked(slice)
@@ -107,6 +107,7 @@ impl NativeString {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Self {
         if s.is_empty() {
             Self {

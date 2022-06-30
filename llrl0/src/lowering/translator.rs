@@ -768,7 +768,7 @@ impl Translate for ast::Instantiation {
 fn builtin_ct(name: &str, args: &[CtId]) -> Ct {
     match (name, args) {
         ("fun", [args @ .., ret]) => {
-            let args = args.into_iter().copied().map(Ct::Id).collect::<Vec<_>>();
+            let args = args.iter().copied().map(Ct::Id).collect::<Vec<_>>();
             let ret = Ct::Id(*ret);
             Ct::clos(args, ret)
         }

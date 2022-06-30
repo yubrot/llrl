@@ -83,7 +83,7 @@ impl Constraint {
         }
     }
 
-    pub fn types<'a>(&'a self) -> impl Iterator<Item = Type> + 'a {
+    pub fn types(&self) -> impl Iterator<Item = Type> + '_ {
         let ConstraintRep::Class(_, ref class_args) = self.rep;
         class_args.iter().copied()
     }
@@ -217,7 +217,7 @@ pub struct Scheme {
 }
 
 impl Scheme {
-    pub fn types<'a>(&'a self) -> impl Iterator<Item = Type> + 'a {
+    pub fn types(&self) -> impl Iterator<Item = Type> + '_ {
         std::iter::once(self.body).chain(self.s_params.iter().flat_map(|c| c.types()))
     }
 
@@ -359,7 +359,7 @@ pub struct SatisfactionByInstance {
 }
 
 impl SatisfactionByInstance {
-    pub fn types<'a>(&'a self) -> impl Iterator<Item = Type> + 'a {
+    pub fn types(&self) -> impl Iterator<Item = Type> + '_ {
         self.instantiation.types()
     }
 }
@@ -383,7 +383,7 @@ pub struct Instantiation {
 }
 
 impl Instantiation {
-    pub fn types<'a>(&'a self) -> impl Iterator<Item = Type> + 'a {
+    pub fn types(&self) -> impl Iterator<Item = Type> + '_ {
         self.ty_args
             .iter()
             .copied()
@@ -584,6 +584,7 @@ pub struct Premise {
 }
 
 impl Premise {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {
             class_constraints: HashMap::new(),

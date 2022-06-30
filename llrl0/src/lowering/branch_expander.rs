@@ -282,7 +282,7 @@ impl FlattenPat {
                     visit(*pat, path.child(0), pats, params);
                 }
                 RtPat::Null(ty) => {
-                    pats.push_back(FlattenPat::new(path.clone(), Condition::Null(ty)));
+                    pats.push_back(FlattenPat::new(path, Condition::Null(ty)));
                 }
                 RtPat::Data(_, _, _) => panic!("Found RtPat::Data at branch_expander"),
                 RtPat::Struct(ty, args) => {

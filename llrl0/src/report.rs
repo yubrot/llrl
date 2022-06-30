@@ -50,7 +50,7 @@ impl Report {
         Self::default()
     }
 
-    pub fn durations<'a>(&'a self) -> impl Iterator<Item = (Phase, Duration)> + 'a {
+    pub fn durations(&self) -> impl Iterator<Item = (Phase, Duration)> + '_ {
         self.map
             .iter()
             .sorted()

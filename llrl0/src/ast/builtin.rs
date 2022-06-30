@@ -19,7 +19,7 @@ macro_rules! define_builtin_reserved {
     ($( [$index:literal] $id:tt: $ty:ty = $name:literal; )*) => {
         $( pub const $id: NodeId<$ty> = NodeId::new_unchecked(ModuleId::builtin(), $index); )*
 
-        pub const RESERVED_CONSTRUCTS: Lazy<HashMap<String, Construct>> = Lazy::new(|| {
+        pub static RESERVED_CONSTRUCTS: Lazy<HashMap<String, Construct>> = Lazy::new(|| {
             let mut map = HashMap::new();
 
             $( map.insert($name.to_string(), $id.into()); )*

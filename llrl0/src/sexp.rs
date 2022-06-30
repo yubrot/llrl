@@ -27,7 +27,7 @@ impl fmt::Display for Ss {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (i, s) in self.ss.iter().enumerate() {
             if i != 0 {
-                write!(f, "\n")?;
+                writeln!(f)?;
             }
             write!(f, "{}", s)?;
         }

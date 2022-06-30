@@ -268,9 +268,9 @@ impl Build<syntax::Data<'_>> for (DataTypeCon, Vec<DataValueCon>) {
 
         let value_cons = src
             .value_cons
-            .into_iter()
+            .iter()
             .map(|src| {
-                let src = ctx.matches::<syntax::DataValueConstructor>(&src)?;
+                let src = ctx.matches::<syntax::DataValueConstructor>(src)?;
                 let fields = ctx.build(src.fields)?;
                 let value_con = DataValueCon {
                     id: ctx.next_id(src.name.loc, src.name.sym),
@@ -300,9 +300,9 @@ impl Build<syntax::BuiltinType<'_>> for (BuiltinTypeCon, Vec<BuiltinValueCon>) {
 
         let value_cons = src
             .value_cons
-            .into_iter()
+            .iter()
             .map(|src| {
-                let src = ctx.matches::<syntax::BuiltinValueConstructor>(&src)?;
+                let src = ctx.matches::<syntax::BuiltinValueConstructor>(src)?;
                 let fields = ctx.build(src.fields)?;
                 let value_con = BuiltinValueCon {
                     id: ctx.next_id(src.name.loc, src.name.sym),
@@ -347,9 +347,9 @@ impl Build<syntax::Class<'_>> for (ClassCon, Vec<ClassMethod>) {
 
         let class_methods = src
             .methods
-            .into_iter()
+            .iter()
             .map(|src| {
-                let src = ctx.matches::<syntax::Function>(&src)?;
+                let src = ctx.matches::<syntax::Function>(src)?;
                 let scheme = match src.scheme {
                     Some(ann) => ctx.build(ann)?,
                     None => Err(Error::ClassMethodTypeSchemeUnspecified(src.loc))?,
@@ -393,9 +393,9 @@ impl Build<syntax::Instance<'_>> for (InstanceCon, Vec<InstanceMethod>) {
 
         let instance_methods = src
             .method_impls
-            .into_iter()
+            .iter()
             .map(|src| {
-                let src = ctx.matches::<syntax::Function>(&src)?;
+                let src = ctx.matches::<syntax::Function>(src)?;
                 let params = ctx.build(src.params)?;
                 let scheme = ctx.build(src.scheme)?;
                 let body = ctx.build((src.loc, src.body))?;
@@ -551,7 +551,7 @@ impl Build<syntax::Expr<'_>> for ExprRep {
 
 impl Build<&'_ Sexp> for Either<LocalVar, LocalFun> {
     fn build(ctx: &mut impl Context, src: &'_ Sexp) -> Result<Self> {
-        let src = ctx.matches::<syntax::LocalDef>(&src)?;
+        let src = ctx.matches::<syntax::LocalDef>(src)?;
         ctx.build(src)
     }
 }
@@ -656,7 +656,7 @@ impl Build<syntax::Pattern<'_>> for PatternRep {
 
 impl Build<&'_ Sexp> for (Pattern, Expr) {
     fn build(ctx: &mut impl Context, src: &'_ Sexp) -> Result<Self> {
-        let src = ctx.matches::<syntax::MatchClause>(&src)?;
+        let src = ctx.matches::<syntax::MatchClause>(src)?;
         let pat = ctx.build(src.pat)?;
         let body = ctx.build((src.loc, src.body))?;
         Ok((pat, body))

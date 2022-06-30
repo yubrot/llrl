@@ -10,6 +10,7 @@ pub struct SourceSet {
 }
 
 impl SourceSet {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {
             map: HashMap::new(),
@@ -20,7 +21,7 @@ impl SourceSet {
         let path = source.path.clone();
         self.map
             .entry(path.package)
-            .or_insert(HashMap::new())
+            .or_insert_with(HashMap::new)
             .insert(path.module, source);
     }
 

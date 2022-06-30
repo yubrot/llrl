@@ -92,7 +92,7 @@ impl PatternDecon {
         if let Use::Resolved(ValueCon::Data(id), _) = self.use_ {
             match (builtin::matches_tuple(id), self.fields.as_ref()) {
                 (Some(0), None) => Some(&[]),
-                (Some(n), Some(ref ps)) if ps.len() == n => Some(ps.as_slice()),
+                (Some(n), Some(ps)) if ps.len() == n => Some(ps.as_slice()),
                 _ => None,
             }
         } else {

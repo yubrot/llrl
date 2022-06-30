@@ -198,6 +198,7 @@ impl Value {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn add(self, other: Self) -> Result<Self> {
         self.exclude_uninitialized_as_ub("Value::add")?;
         other.exclude_uninitialized_as_ub("Value::add")?;
@@ -212,6 +213,7 @@ impl Value {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn sub(self, other: Self) -> Result<Self> {
         self.exclude_uninitialized_as_ub("Value::sub")?;
         other.exclude_uninitialized_as_ub("Value::sub")?;
@@ -226,6 +228,7 @@ impl Value {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn mul(self, other: Self) -> Result<Self> {
         self.exclude_uninitialized_as_ub("Value::mul")?;
         other.exclude_uninitialized_as_ub("Value::mul")?;
@@ -240,6 +243,7 @@ impl Value {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn div(self, other: Self) -> Result<Self> {
         self.exclude_uninitialized_as_ub("Value::div")?;
         other.exclude_uninitialized_as_ub("Value::div")?;
@@ -254,6 +258,7 @@ impl Value {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn rem(self, other: Self) -> Result<Self> {
         self.exclude_uninitialized_as_ub("Value::rem")?;
         other.exclude_uninitialized_as_ub("Value::rem")?;
@@ -280,13 +285,13 @@ impl Value {
     }
 
     pub fn from_syntax_sexp(sexp: Syntax<Sexp>) -> Self {
-        let (meta, body) = SyntaxBody::unpack(sexp.clone());
+        let (meta, body) = SyntaxBody::unpack(sexp);
         let (tag, body) = match body {
             Sexp::Integer(s, v) => (0, vec![Self::bool(s), Self::unsigned(64, v)]),
             Sexp::FPNumber(value) => (1, vec![Self::F64(value)]),
             Sexp::Bool(value) => (2, vec![Self::bool(value)]),
-            Sexp::Symbol(s) => (3, vec![Self::String(s.to_string())]),
-            Sexp::String(s) => (4, vec![Self::String(s.to_string())]),
+            Sexp::Symbol(s) => (3, vec![Self::String(s)]),
+            Sexp::String(s) => (4, vec![Self::String(s)]),
             Sexp::Char(c) => (5, vec![Self::Char(c)]),
             Sexp::Cons(car, cdr) => (
                 6,

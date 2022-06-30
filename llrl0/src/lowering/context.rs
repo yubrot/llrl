@@ -20,6 +20,7 @@ pub struct Context {
 }
 
 impl Context {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {
             ct_id_gen: CtIdGen::new(),

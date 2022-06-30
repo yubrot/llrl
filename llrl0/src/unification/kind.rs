@@ -22,6 +22,7 @@ pub struct Context {
 }
 
 impl Context {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         let mut pool = vec![
             Kind::Type,         // 0

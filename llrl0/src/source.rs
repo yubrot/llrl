@@ -20,7 +20,7 @@ pub use set::SourceSet;
 #[cfg(test)]
 mod tests;
 
-pub const SOURCE_CODE_EXTENSION: &'static str = "llrl";
+pub const SOURCE_CODE_EXTENSION: &str = "llrl";
 
 /// A source of a llrl module.
 #[derive(Debug, Clone)]

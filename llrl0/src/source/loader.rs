@@ -13,6 +13,7 @@ pub struct Loader {
 }
 
 impl Loader {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {
             loadable_packages: HashMap::new(),

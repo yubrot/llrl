@@ -95,9 +95,10 @@ impl Dfs for Type {
 
 impl<'a> topological_sort::DependencyList<NodeId<DataTypeCon>> for Type {
     fn traverse_dependencies(&self, f: &mut impl FnMut(&NodeId<DataTypeCon>)) {
-        self.dfs_do(|ty| match ty {
-            Type::Con(TypeCon::Data(id)) => f(id),
-            _ => {}
+        self.dfs_do(|ty| {
+            if let Type::Con(TypeCon::Data(id)) = ty {
+                f(id)
+            }
         });
     }
 }
@@ -124,7 +125,7 @@ pub trait TypeBuilder {
     }
 
     fn new_tuple(&mut self, tys: Vec<Self::Result>) -> Self::Result {
-        if tys.len() == 0 {
+        if tys.is_empty() {
             self.new_con(TypeCon::tuple(0))
         } else {
             let callee = self.new_con(TypeCon::tuple(tys.len()));

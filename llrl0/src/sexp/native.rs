@@ -100,10 +100,7 @@ impl<T: Any + Send + Sync + fmt::Debug + fmt::Display + Clone + Hash + Eq + Ord>
     }
 
     fn ord_dyn(&self, other: &dyn Any) -> Option<Ordering> {
-        match other.downcast_ref() {
-            Some(other) => Some(self.cmp(other)),
-            None => None,
-        }
+        other.downcast_ref().map(|other| self.cmp(other))
     }
 }
 
