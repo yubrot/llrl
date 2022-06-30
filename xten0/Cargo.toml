@@ -1,0 +1,18 @@
+[package]
+authors = ["yubrot <yubrot@gmail.com>"]
+description = "A library for x64 machine-code generation and JIT compilation"
+edition = "2021"
+license = "BSD-3-Clause"
+name = "xten0"
+repository = "https://github.com/yubrot/llrl"
+version = "0.1.0"
+
+[lib]
+name = "xten"
+
+[dependencies]
+byteorder = "1"
+either = "1"
+
+[dev-dependencies]
+tempfile = "3"
