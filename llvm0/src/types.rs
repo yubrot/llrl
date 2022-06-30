@@ -50,6 +50,8 @@ pub trait AnyType<'ctx>: Copy {
     }
 }
 
+/// # Safety
+/// Implementor must ensure that the type is a derived type of LLVM Sequential Types.
 pub unsafe trait AnySequentialType<'ctx>: AnyType<'ctx> {
     fn element_type(self) -> Type<'ctx> {
         unsafe { Type::from_ptr(LLVMGetElementType(self.as_ptr())) }

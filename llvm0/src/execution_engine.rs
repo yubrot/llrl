@@ -23,6 +23,7 @@ impl<'ctx> ExecutionEngine<'ctx> {
         LLVMLinkInInterpreter();
     }
 
+    #[allow(clippy::missing_safety_doc)]
     pub unsafe fn from_ptr(ptr: LLVMExecutionEngineRef) -> Self {
         Self {
             inner: ptr,
@@ -149,7 +150,7 @@ impl<'ctx> ExecutionEngine<'ctx> {
         Oo::from_ptr(result)
     }
 
-    pub fn get_function_address<'e>(&self, name: &str) -> u64 {
+    pub fn get_function_address(&self, name: &str) -> u64 {
         let name = CString::new(name).unwrap();
         unsafe { LLVMGetFunctionAddress(self.as_ptr(), name.as_ptr()) }
     }

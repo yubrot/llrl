@@ -1,4 +1,5 @@
 #![allow(clippy::missing_safety_doc)]
+#![allow(clippy::result_unit_err)]
 
 use llvm_sys::prelude::*;
 use llvm_sys::support::*;

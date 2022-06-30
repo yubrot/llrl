@@ -5,6 +5,7 @@ use std::ops::{Deref, DerefMut};
 
 /// An opaque pointer association.
 ///
+/// # Safety
 /// This trait is unsafe because the trait implementer must ensure that
 /// `Self` is not instantiatable since `Self` must be used only for type checking.
 pub unsafe trait Opaque {

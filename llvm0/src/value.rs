@@ -95,6 +95,8 @@ macro_rules! impl_debug_and_display_for_value {
     };
 }
 
+/// # Safety
+/// Implementor must ensure that the value is a derived type of LLVM Constant Values.
 pub unsafe trait AnyConstant<'ctx: 'p, 'p>: AnyValue<'ctx, 'p> {
     fn as_constant(self) -> Constant<'ctx, 'p> {
         unsafe { Constant::from_ptr(self.as_ptr()) }
@@ -117,6 +119,8 @@ pub unsafe trait AnyConstant<'ctx: 'p, 'p>: AnyValue<'ctx, 'p> {
     }
 }
 
+/// # Safety
+/// Implementor must ensure that the value is a derived type of LLVM Global Values.
 pub unsafe trait AnyGlobalValue<'ctx: 'p, 'p>: AnyConstant<'ctx, 'p> {
     fn is_declaration(self) -> bool {
         (unsafe { LLVMIsDeclaration(self.as_ptr()) }) != 0
@@ -590,6 +594,7 @@ impl<'ctx: 'p, 'p> Function<'ctx, 'p> {
         }
     }
 
+    #[allow(clippy::result_unit_err)]
     pub fn verify(self) -> Result<(), ()> {
         match unsafe {
             LLVMVerifyFunction(

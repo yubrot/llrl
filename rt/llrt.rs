@@ -1,3 +1,5 @@
+#![allow(clippy::missing_safety_doc)]
+
 use std::cmp::Ordering;
 use std::ffi::c_void;
 

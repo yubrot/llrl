@@ -11,6 +11,7 @@ pub struct Error {
 }
 
 impl Error {
+    #[allow(clippy::missing_safety_doc)]
     pub unsafe fn from_ptr(ptr: LLVMErrorRef) -> Option<Oo<Self>> {
         if ptr.is_null() {
             None
@@ -35,6 +36,7 @@ impl OpaqueOwn for Error {
 pub struct ErrorMessage(*mut c_char);
 
 impl ErrorMessage {
+    #[allow(clippy::missing_safety_doc)]
     pub unsafe fn from_ptr(p: *mut c_char) -> Self {
         Self(p)
     }

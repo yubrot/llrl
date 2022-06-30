@@ -17,9 +17,9 @@ macro_rules! enum_association {
             }
         }
 
-        impl Into<$rel> for $name {
-            fn into(self) -> $rel {
-                match self {
+        impl From<$name> for $rel {
+            fn from(r: $name) -> Self {
+                match r {
                     $( $name::$n => $rel::$r ),*
                 }
             }
@@ -104,9 +104,9 @@ impl Default for OptLevel {
     }
 }
 
-impl Into<u32> for OptLevel {
-    fn into(self) -> u32 {
-        match self {
+impl From<OptLevel> for u32 {
+    fn from(level: OptLevel) -> Self {
+        match level {
             OptLevel::None => 0,
             OptLevel::Less => 1,
             OptLevel::Default => 2,
