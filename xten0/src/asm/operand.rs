@@ -65,6 +65,64 @@ pub use Gpr64::*;
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
 pub struct Rip;
 
+// XMM register.
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
+pub enum Xmm {
+    Xmm0,
+    Xmm1,
+    Xmm2,
+    Xmm3,
+    Xmm4,
+    Xmm5,
+    Xmm6,
+    Xmm7,
+    Xmm8,
+    Xmm9,
+    Xmm10,
+    Xmm11,
+    Xmm12,
+    Xmm13,
+    Xmm14,
+    Xmm15,
+}
+
+impl Xmm {
+    pub fn encoding_index(self) -> u8 {
+        match self {
+            Xmm0 => 0,
+            Xmm1 => 1,
+            Xmm2 => 2,
+            Xmm3 => 3,
+            Xmm4 => 4,
+            Xmm5 => 5,
+            Xmm6 => 6,
+            Xmm7 => 7,
+            Xmm8 => 8,
+            Xmm9 => 9,
+            Xmm10 => 10,
+            Xmm11 => 11,
+            Xmm12 => 12,
+            Xmm13 => 13,
+            Xmm14 => 14,
+            Xmm15 => 15,
+        }
+    }
+}
+
+impl From<Xmm> for Reg {
+    fn from(xmm: Xmm) -> Self {
+        Self::new(xmm.encoding_index())
+    }
+}
+
+impl From<Xmm> for Rm {
+    fn from(xmm: Xmm) -> Self {
+        Self::new(0b11, xmm.encoding_index())
+    }
+}
+
+pub use Xmm::*;
+
 /// For `/digit` opcode.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
 pub struct PartOfOpcode(pub u8);
@@ -441,6 +499,18 @@ mod tests {
             .collect()
     }
 
+    fn movsd(src: impl Into<Reg>, dest: impl Into<Rm>) -> Vec<u8> {
+        // F2 0F 10 /r
+        let modrm = ModRM::new(src, dest);
+        std::iter::empty()
+            .chain([0xf2]) // Mandatory prefix
+            .chain(modrm.rex_byte(false)) // REX prefix
+            .chain([0x0f, 0x10, modrm.byte()]) // Opcode, ModR/M
+            .chain(modrm.sib_byte()) // SIB
+            .chain(modrm.disp_bytes().into_iter().flatten()) // Displacement
+            .collect()
+    }
+
     fn general_purpose_registers() -> Vec<(Gpr64, &'static str)> {
         vec![
             (Rax, "rax"),
@@ -470,6 +540,16 @@ mod tests {
     fn part_of_opcode() {
         assert_dump!(negq(Rax), "negq rax");
         assert_dump!(negq(Rcx), "negq rcx");
+    }
+
+    #[test]
+    fn xmm() {
+        assert_dump!(movsd(Xmm1, Xmm3), "movsd xmm1, xmm3");
+        assert_dump!(movsd(Xmm10, Memory(Rdx)), "movsd xmm10, [rdx]");
+        assert_dump!(
+            movsd(Xmm4, Memory(Rax + Rcx * 8 - 8i8)),
+            "movsd xmm4, [rax + rcx * 8 - 8]"
+        );
     }
 
     #[test]
