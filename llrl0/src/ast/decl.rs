@@ -11,7 +11,7 @@ pub struct Function {
     pub body: Expr,
 }
 
-impl<'a> topological_sort::DependencyList<NodeId<Function>> for Function {
+impl topological_sort::DependencyList<NodeId<Function>> for Function {
     fn traverse_dependencies(&self, f: &mut impl FnMut(&NodeId<Function>)) {
         self.body.traverse_dependencies(f);
     }
@@ -245,7 +245,7 @@ impl Generic for ClassCon {
     }
 }
 
-impl<'a> topological_sort::DependencyList<NodeId<ClassCon>> for ClassCon {
+impl topological_sort::DependencyList<NodeId<ClassCon>> for ClassCon {
     fn traverse_dependencies(&self, f: &mut impl FnMut(&NodeId<ClassCon>)) {
         for c in self.superclasses.iter() {
             c.traverse_dependencies(f);

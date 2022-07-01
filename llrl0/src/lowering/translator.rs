@@ -287,7 +287,7 @@ impl Translate for ast::DataRepr {
     }
 }
 
-impl<'a> Translate for ast::DataValueCon {
+impl Translate for ast::DataValueCon {
     type Dest = CtDef;
 
     fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
@@ -407,7 +407,7 @@ impl<'a> Translate for ast::Instance<'a> {
     }
 }
 
-impl<'a> Translate for ast::ClassMethod {
+impl Translate for ast::ClassMethod {
     type Dest = Option<CtDef>;
 
     fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
@@ -441,7 +441,7 @@ impl<'a> Translate for ast::ClassMethod {
     }
 }
 
-impl<'a> Translate for ast::InstanceMethod {
+impl Translate for ast::InstanceMethod {
     type Dest = CtDef;
 
     fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {

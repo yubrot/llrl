@@ -93,7 +93,7 @@ impl Dfs for Type {
     }
 }
 
-impl<'a> topological_sort::DependencyList<NodeId<DataTypeCon>> for Type {
+impl topological_sort::DependencyList<NodeId<DataTypeCon>> for Type {
     fn traverse_dependencies(&self, f: &mut impl FnMut(&NodeId<DataTypeCon>)) {
         self.dfs_do(|ty| {
             if let Type::Con(TypeCon::Data(id)) = ty {
@@ -393,7 +393,7 @@ impl Constraint {
     }
 }
 
-impl<'a> topological_sort::DependencyList<NodeId<ClassCon>> for Constraint {
+impl topological_sort::DependencyList<NodeId<ClassCon>> for Constraint {
     fn traverse_dependencies(&self, f: &mut impl FnMut(&NodeId<ClassCon>)) {
         let ConstraintRep::Class(ref class, _) = self.rep;
         f(class.get_resolved())
