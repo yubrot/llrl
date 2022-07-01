@@ -1,0 +1,12 @@
+[package]
+authors = ["yubrot <yubrot@gmail.com>"]
+description = "x86 assembler code generator for xten"
+edition = "2021"
+license = "BSD-3-Clause"
+name = "xtencg"
+repository = "https://github.com/yubrot/llrl"
+version = "0.1.0"
+
+[dependencies]
+once_cell = "1"
+regex = "1"

@@ -3,6 +3,7 @@ members = [
   "llvm0",
   "llrl0",
   "xten0",
+  "xtencg",
   "rt",
   "std",
 ]
