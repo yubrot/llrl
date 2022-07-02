@@ -824,6 +824,7 @@ dependencies = [
 name = "xtencg"
 version = "0.1.0"
 dependencies = [
+ "heapless",
  "once_cell",
  "regex",
 ]

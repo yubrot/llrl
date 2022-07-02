@@ -31,7 +31,7 @@ impl Spec {
 
         let opcode = cols[0].trim();
         let instr = cols[1].trim();
-        let op_en = cols[2].trim();
+        let op_en = cols[2];
         let x64compat = cols[9].trim();
         let flags = cols[11].trim();
         let mnemonic = cols[12].trim();

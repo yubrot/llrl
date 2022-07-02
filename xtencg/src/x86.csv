@@ -194,7 +194,7 @@ REX.W+ 0F BC	BSF r64, r/m64	RM	uw, R		E.ZF	E.CF E.OF E.SF E.AF E.PF			V	NE		bsfq
 REX.W+ 0F BD	BSR r64, r/m64	RM	uw, R		E.ZF	E.CF E.OF E.SF E.AF E.PF			V	NE		bsrq		Bit scan reverse on r/m64.
 														
 0F C8 +rd	BSWAP r32	O	RW						V	V		bswap		Reverses the byte order of a 32-bit register.
-REX.W+ 0F C8 +rd	BSWAP r64	O	RW						V	NE		bswap		Reverses the byte order of a 64-bit register.
+REX.W+ 0F C8 +ro	BSWAP r64	O	RW						V	NE		bswap		Reverses the byte order of a 64-bit register.
 														
 0F A3	BT r/m16, r16	MR	R, R		E.CF	E.OF E.SF E.AF E.PF			V	V		btw		Store selected bit in CF flag.
 0F A3	BT r/m32, r32	MR	R, R		E.CF	E.OF E.SF E.AF E.PF			V	V		btl		Store selected bit in CF flag.
@@ -724,7 +724,7 @@ D8 /5 	FSUBR m32fp 	M	R	ST(0)	ST(0) S.C1	S.C0 S.C2 S.C3			V	V	FPU	fsubrs		Subtra
 DC /5 	FSUBR m64fp 	M	R	ST(0)	ST(0) S.C1	S.C0 S.C2 S.C3			V	V	FPU	fsubrl		Subtract ST(0) from m64fp and store result in ST(0).
 D8 E8 +i 	FSUBR ST(0), ST(i) 	TO	RW, R		S.C1	S.C0 S.C2 S.C3			V	V	FPU	fsubr		Subtract ST(0) from ST(i) and store result in ST(0).
 DC E8 +i 	FSUBR ST(i), ST(0) 	OT	RW, R		S.C1	S.C0 S.C2 S.C3			V	V	FPU	fsubr		Subtract ST(i) from ST(0) and store result in ST(i).
-DE E8 +i 	FSUBRP ST(i), ST(0) 	OT	RW, R		S.C1	S.C0 S.C2 S.C3			V	V		fsubrp		Subtract ST(i) from ST(0), store result in ST(i), and pop register stack.
+DE E8 +i 	FSUBRP ST(i), ST(0) 	OT	RW, R		S.C1	S.C0 S.C2 S.C3			V	V	FPU	fsubrp		Subtract ST(i) from ST(0), store result in ST(i), and pop register stack.
 DE E9	FSUBRP 			ST(0) ST(1)	ST(1) S.C1	S.C0 S.C2 S.C3			V	V	FPU	fsubrp		Subtract ST(1) from ST(0), store result in ST(1), and pop register stack.
 DA /5 	FISUBR m32int 	M	R	ST(0)	ST(0) S.C1	S.C0 S.C2 S.C3			V	V	FPU	fisubrl		Subtract ST(0) from m32int and store result in ST(0).
 DE /5 	FISUBR m16int 	M	R	ST(0)	ST(0) S.C1	S.C0 S.C2 S.C3			V	V	FPU	fisubr		Subtract ST(0) from m16int and store result in ST(0).
@@ -1075,24 +1075,24 @@ B0 +rb 	MOV r8, imm8 	OI	W, R						V	V		movb	YES	Move imm8 to r8.
 REX+ B0 +rb	MOV r8, imm8 	OI	W, R						V	NE		movb	YES	Move imm8 to r8.
 B8 +rw 	MOV r16, imm16 	OI	W, R						V	V		movw	YES	Move imm16 to r16.
 B8 +rd 	MOV r32, imm32 	OI	W, R						V	V		movl	YES	Move imm32 to r32.
-REX.W+ B8 +rd 	MOV r64, imm64 	OI	W, R						V	NE		movq		Move imm64 to r64.
+REX.W+ B8 +ro 	MOV r64, imm64 	OI	W, R						V	NE		movq		Move imm64 to r64.
 C6 /0 	MOV r/m8, imm8 	MI	W, R						V	V		movb		Move imm8 to r/m8.
 REX+ C6 /0 	MOV r/m8, imm8 	MI	W, R						V	NE		movb		Move imm8 to r/m8.
 C7 /0 	MOV r/m16, imm16 	MI	W, R						V	V		movw		Move imm16 to r/m16.
 C7 /0 	MOV r/m32, imm32 	MI	W, R						V	V		movl		Move imm32 to r/m32.
 REX.W+ C7 /0 	MOV r/m64, imm32 	MI	W, R						V	NE		movq	YES	Move imm32 sign extended to 64-bits to r/m64.
 														
-0F 20 /r 	MOV r32, CR0-CR7						NO	YES	NE	V				Move control register to r32.
-0F 20 /r	MOV r64, CR0-CR7						NO	YES	V	NE				Move extended control register to r64.
-REX.R+ 0F 20	MOV r64, CR8						NO	YES	V	NE				Move extended CR8 to r64.1
-0F 22 /r	MOV CR0-CR7, r32						NO	YES	NE	V				Move r32 to control register.
-0F 22 /r	MOV CR0-CR7, r64						NO	YES	V	NE				Move r64 to extended control register.
-REX.R+ 0F 22	MOV CR8, r64						NO	YES	V	NE				Move r64 to extended CR8.1
+0F 20 /r 	MOV r32, CR0-CR7	MR					NO	YES	NE	V				Move control register to r32.
+0F 20 /r	MOV r64, CR0-CR7	MR					NO	YES	V	NE				Move extended control register to r64.
+REX.R+ 0F 20	MOV r64, CR8	MR					NO	YES	V	NE				Move extended CR8 to r64.1
+0F 22 /r	MOV CR0-CR7, r32	RM					NO	YES	NE	V				Move r32 to control register.
+0F 22 /r	MOV CR0-CR7, r64	RM					NO	YES	V	NE				Move r64 to extended control register.
+REX.R+ 0F 22	MOV CR8, r64	RM					NO	YES	V	NE				Move r64 to extended CR8.1
 														
-0F 21 /r 	MOV r32, DR0-DR7						NO	YES	NE	V				Move debug register to r32.
-0F 21 /r	MOV r64, DR0-DR7						NO	YES	V	NE				Move extended debug register to r64.
-0F 23 /r	MOV DR0-DR7, r32						NO	YES	NE	V				Move r32 to debug register.
-0F 23 /r	MOV DR0-DR7, r64						NO	YES	V	NE				Move r64 to extended debug register.
+0F 21 /r 	MOV r32, DR0-DR7	MR					NO	YES	NE	V				Move debug register to r32.
+0F 21 /r	MOV r64, DR0-DR7	MR					NO	YES	V	NE				Move extended debug register to r64.
+0F 23 /r	MOV DR0-DR7, r32	RM					NO	YES	NE	V				Move r32 to debug register.
+0F 23 /r	MOV DR0-DR7, r64	RM					NO	YES	V	NE				Move r64 to extended debug register.
 														
 66 0F 28 /r 	MOVAPD xmm1, xmm2/m128	RM	W, R						V	V	SSE2	movapd		Move packed double-precision floating-point values from xmm2/m128 to xmm1.
 66 0F 29 /r	MOVAPD xmm2/m128, xmm1	MR	W, R						V	V	SSE2	movapd	YES	Move packed double-precision floating-point values from xmm1 to xmm2/m128.
@@ -1718,7 +1718,7 @@ VEX.NDS.256.66.0F.WIG F4 /r	VPMULUDQ ymm1, ymm2, ymm3/m256	RVM	W, R, R						V	V	
 8F /0 	POP r/m64 	M	W	RSP	RSP				V	NE		popq		Pop top of stack into m64; increment stack pointer. Cannot encode 32-bit operand size.
 58 +rw 	POP r16 	O	W	RSP	RSP				V	V		popw	YES	Pop top of stack into r16; increment stack pointer.
 58 +rd 	POP r32 			RSP	RSP				NE	V				Pop top of stack into r32; increment stack pointer.
-58 +rd 	POP r64 	O	W	RSP	RSP				V	NE		popq	YES	Pop top of stack into r64; increment stack pointer. Cannot encode 32-bit operand size.
+58 +ro 	POP r64 	O	W	RSP	RSP				V	NE		popq	YES	Pop top of stack into r64; increment stack pointer. Cannot encode 32-bit operand size.
 1F 	POP DS 			RSP	RSP				I	V				Pop top of stack into DS; increment stack pointer.
 07	POP ES 			RSP	RSP				I	V				Pop top of stack into ES; increment stack pointer.
 17	POP SS 			RSP	RSP				I	V				Pop top of stack into SS; increment stack pointer.
@@ -1936,11 +1936,9 @@ FF /6	PUSH r/m32			RSP	RSP				NE	V				Push r/m32.
 FF /6	PUSH r/m64	M	R	RSP	RSP				V	NE		pushq		Push r/m64.
 50 +rw	PUSH r16	O	R	RSP	RSP				V	V		pushw	YES	Push r16.
 50 +rd	PUSH r32			RSP	RSP				NE	V				Push r32.
-50 +rd	PUSH r64	O	R	RSP	RSP				V	NE		pushq	YES	Push r64.
+50 +ro	PUSH r64	O	R	RSP	RSP				V	NE		pushq	YES	Push r64.
 6A	PUSHQ imm8	I	R	RSP	RSP				V	V		pushq		Push imm8 (sign-extended to 64-bits).
-66 6A	PUSHW imm8	I	R	RSP	RSP				V	V		pushw		Push imm8 (sign-extended to 16-bits).
 68	PUSHQ imm16	I	R	RSP	RSP				V	V		pushq		Push imm16 (sign-extended to 64-bits).
-66 68	PUSHW imm16	I	R	RSP	RSP				V	V		pushw		Push imm16 (sign-extended to 16-bits).
 68	PUSHQ imm32	I	R	RSP	RSP				V	V		pushq		Push imm32 (sign-extended to 64-bits).
 0E	PUSH CS			RSP	RSP				I	V				Push CS.
 16	PUSH SS			RSP	RSP				I	V				Push SS.
@@ -2712,9 +2710,9 @@ C7 F8	XBEGIN rel32	A	R						V	V	RTM	xbegin		Specifies the start of an RTM region
 90 +rw	XCHG AX, r16	 O	RW, RW						V	V		xchgw		Exchange r16 with AX.
 90 +rw	XCHG r16, AX	O	RW, RW						V	V		xchgw		Exchange AX with r16.
 90 +rd	XCHG EAX, r32	 O	RW, RW						V	V		xchgl		Exchange r32 with EAX.
-REX.W+ 90 +rd	XCHG RAX, r64	 O	RW, RW						V	NE		xchgq		Exchange r64 with RAX.
+REX.W+ 90 +ro	XCHG RAX, r64	 O	RW, RW						V	NE		xchgq		Exchange r64 with RAX.
 90 +rd	XCHG r32, EAX	O	RW, RW						V	V		xchgl		Exchange EAX with r32.
-REX.W+ 90 +rd	XCHG r64, RAX	O	RW, RW						V	NE		xchgq		Exchange RAX with r64.
+REX.W+ 90 +ro	XCHG r64, RAX	O	RW, RW						V	NE		xchgq		Exchange RAX with r64.
 86 /r	XCHG r/m8, r8	MR	RW, RW						V	V		xchgb	YES	Exchange r8 (byte register) with byte from r/m8.
 REX+ 86 /r	XCHG r/m8, r8	MR	RW, RW						V	NE		xchgb		Exchange r8 (byte register) with byte from r/m8.
 86 /r	XCHG r8, r/m8	RM	RW, RW						V	V		xchgb		Exchange byte from r/m8 with r8 (byte register).
