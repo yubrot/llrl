@@ -607,6 +607,26 @@ where
     }
 }
 
+// Some fixed operands:
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
+pub struct _Al;
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
+pub struct _Ax;
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
+pub struct _Eax;
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
+pub struct _Rax;
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
+pub struct _Cl;
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
+pub struct _Dx;
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
+pub struct _Xmm0;
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
+pub struct _1;
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
+pub struct _3;
+
 #[cfg(test)]
 mod tests {
     use super::super::encoding::{ModRM, PartOfOpcode, RegInOpcode};
