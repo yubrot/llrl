@@ -1,6 +1,5 @@
 //! x64 assembler.
 
-pub mod modrm;
+pub mod encoding;
+pub mod inst;
 pub mod operand;
-pub mod rex;
-// TODO: instructions

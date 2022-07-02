@@ -1,8 +1,24 @@
 // https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html
 
-use super::rex;
 use crate::bits::BitExt;
 use heapless::Vec as HVec;
+
+/// Obtain an REX prefix by encoding W, R, X, B.
+///
+/// The REX prefix must follow the Legacy prefixes and precede the Opcode.
+pub fn rex_byte(force: bool, w: bool, r: bool, x: bool, b: bool) -> Option<u8> {
+    if force || w || r || x || b {
+        Some(
+            0u8.set_bits(0b0100, 4..8)
+                .set_bits(w, 3..4)
+                .set_bits(r, 2..3)
+                .set_bits(x, 1..2)
+                .set_bits(b, 0..1),
+        )
+    } else {
+        None // REX prefix is unnecessary
+    }
+}
 
 /// ModR/M and some subsequent bytes of x64 instruction encoding.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
@@ -21,7 +37,13 @@ impl ModRM {
 
     /// Obtain a REX prefix if required.
     pub fn rex_byte(&self, rex_w: bool) -> Option<u8> {
-        rex::encode(rex_w, self.reg.rex_r, self.rm.rex_x, self.rm.rex_b)
+        rex_byte(
+            self.reg.force_rex_prefix || self.rm.force_rex_prefix,
+            rex_w,
+            self.reg.rex_r,
+            self.rm.rex_x,
+            self.rm.rex_b,
+        )
     }
 
     /// Obtain a ModR/M byte.
@@ -49,6 +71,7 @@ impl ModRM {
 pub struct Reg {
     pub modrm_reg: u8, // 3 bits, extended by rex_r
     pub rex_r: bool,
+    pub force_rex_prefix: bool, // REX prefix is required (for SPL, BPL, SIL, DIL)
 }
 
 impl Reg {
@@ -57,6 +80,14 @@ impl Reg {
         Self {
             modrm_reg: reg & 0b111,
             rex_r: (reg & 0b1000) != 0,
+            force_rex_prefix: false,
+        }
+    }
+
+    pub fn force_rex_prefix(self, force_rex_prefix: bool) -> Self {
+        Self {
+            force_rex_prefix,
+            ..self
         }
     }
 }
@@ -64,6 +95,48 @@ impl Reg {
 impl Default for Reg {
     fn default() -> Self {
         Self::new(0)
+    }
+}
+
+/// For `/digit` opcode.
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
+pub struct PartOfOpcode(pub u8);
+
+impl From<PartOfOpcode> for Reg {
+    fn from(PartOfOpcode(value): PartOfOpcode) -> Self {
+        assert!(value <= 0b111); // /0../7
+        Self::new(value)
+    }
+}
+
+/// Register code embedded in the lower 3 bits of the opcode.
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
+pub struct RegInOpcode {
+    pub byte_added_to_opcode: u8, // 3 bits, extended by rex_b
+    pub rex_b: bool,
+    pub force_rex_prefix: bool, // REX prefix is required (for SPL, BPL, SIL, DIL)
+}
+
+impl RegInOpcode {
+    /// Obtain a REX prefix if required.
+    pub fn rex_byte(self, rex_w: bool) -> Option<u8> {
+        rex_byte(self.force_rex_prefix, rex_w, false, false, self.rex_b)
+    }
+}
+
+// Probably not a good idea, but the information for encoding is compatible.
+impl<T: Into<Reg>> From<T> for RegInOpcode {
+    fn from(operand: T) -> Self {
+        let Reg {
+            modrm_reg,
+            rex_r,
+            force_rex_prefix,
+        } = operand.into();
+        Self {
+            byte_added_to_opcode: modrm_reg,
+            rex_b: rex_r,
+            force_rex_prefix,
+        }
     }
 }
 
@@ -80,6 +153,7 @@ pub struct Rm {
     pub sib_index: Option<u8>, // 3 bits, extended by rex_x
     pub sib_base: Option<u8>,  // 3 bits, extended by rex_b
     pub disp: Option<Displacement>,
+    pub force_rex_prefix: bool, // REX prefix is required (for SPL, BPL, SIL, DIL)
 }
 
 impl Rm {
@@ -95,6 +169,7 @@ impl Rm {
             sib_index: None,
             sib_base: None,
             disp: None,
+            force_rex_prefix: false,
         }
     }
 
@@ -181,6 +256,13 @@ impl Rm {
     pub fn disp_bytes(&self) -> Option<HVec<u8, 4>> {
         assert!(self.disp_size() == self.disp.map(|d| d.size()));
         self.disp.map(|d| d.bytes())
+    }
+
+    pub fn force_rex_prefix(self, force_rex_prefix: bool) -> Self {
+        Self {
+            force_rex_prefix,
+            ..self
+        }
     }
 }
 

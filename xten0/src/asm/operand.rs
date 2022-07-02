@@ -1,6 +1,6 @@
 // https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html
 
-use super::modrm::{Displacement, Reg, Rm, Scale};
+use super::encoding::{Displacement, Reg, Rm, Scale};
 use std::ops::{Add, Mul, Sub};
 
 // 64-bit general-purpose (GP) register.
@@ -25,7 +25,7 @@ pub enum Gpr64 {
 }
 
 impl Gpr64 {
-    pub fn encoding_index(self) -> u8 {
+    pub fn register_code(self) -> u8 {
         match self {
             Rax => 0,
             Rcx => 1,
@@ -49,17 +49,196 @@ impl Gpr64 {
 
 impl From<Gpr64> for Reg {
     fn from(gpr: Gpr64) -> Self {
-        Self::new(gpr.encoding_index())
+        Self::new(gpr.register_code())
     }
 }
 
 impl From<Gpr64> for Rm {
     fn from(gpr: Gpr64) -> Self {
-        Self::new(0b11, gpr.encoding_index())
+        Self::new(0b11, gpr.register_code())
     }
 }
 
 pub use Gpr64::*;
+
+// 32-bit general-purpose (GP) register.
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
+pub enum Gpr32 {
+    Eax,
+    Ecx,
+    Edx,
+    Ebx,
+    Esp,
+    Ebp,
+    Esi,
+    Edi,
+    R8D,
+    R9D,
+    R10D,
+    R11D,
+    R12D,
+    R13D,
+    R14D,
+    R15D,
+}
+
+impl Gpr32 {
+    pub fn register_code(self) -> u8 {
+        match self {
+            Eax => 0,
+            Ecx => 1,
+            Edx => 2,
+            Ebx => 3,
+            Esp => 4,
+            Ebp => 5,
+            Esi => 6,
+            Edi => 7,
+            R8D => 8,
+            R9D => 9,
+            R10D => 10,
+            R11D => 11,
+            R12D => 12,
+            R13D => 13,
+            R14D => 14,
+            R15D => 15,
+        }
+    }
+}
+
+impl From<Gpr32> for Reg {
+    fn from(gpr: Gpr32) -> Self {
+        Self::new(gpr.register_code())
+    }
+}
+
+impl From<Gpr32> for Rm {
+    fn from(gpr: Gpr32) -> Self {
+        Self::new(0b11, gpr.register_code())
+    }
+}
+
+pub use Gpr32::*;
+
+// 16-bit general-purpose (GP) register.
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
+pub enum Gpr16 {
+    Ax,
+    Cx,
+    Dx,
+    Bx,
+    Sp,
+    Bp,
+    Si,
+    Di,
+    R8W,
+    R9W,
+    R10W,
+    R11W,
+    R12W,
+    R13W,
+    R14W,
+    R15W,
+}
+
+impl Gpr16 {
+    pub fn register_code(self) -> u8 {
+        match self {
+            Ax => 0,
+            Cx => 1,
+            Dx => 2,
+            Bx => 3,
+            Sp => 4,
+            Bp => 5,
+            Si => 6,
+            Di => 7,
+            R8W => 8,
+            R9W => 9,
+            R10W => 10,
+            R11W => 11,
+            R12W => 12,
+            R13W => 13,
+            R14W => 14,
+            R15W => 15,
+        }
+    }
+}
+
+impl From<Gpr16> for Reg {
+    fn from(gpr: Gpr16) -> Self {
+        Self::new(gpr.register_code())
+    }
+}
+
+impl From<Gpr16> for Rm {
+    fn from(gpr: Gpr16) -> Self {
+        Self::new(0b11, gpr.register_code())
+    }
+}
+
+pub use Gpr16::*;
+
+// 8-bit general-purpose (GP) register.
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
+pub enum Gpr8 {
+    Al,
+    Cl,
+    Dl,
+    Bl,
+    // Ah, Ch, Dh, Bh are unsupported
+    Spl,
+    Bpl,
+    Sil,
+    Dil,
+    R8B,
+    R9B,
+    R10B,
+    R11B,
+    R12B,
+    R13B,
+    R14B,
+    R15B,
+}
+
+impl Gpr8 {
+    pub fn register_code(self) -> u8 {
+        match self {
+            Al => 0,
+            Cl => 1,
+            Dl => 2,
+            Bl => 3,
+            Spl => 4,
+            Bpl => 5,
+            Sil => 6,
+            Dil => 7,
+            R8B => 8,
+            R9B => 9,
+            R10B => 10,
+            R11B => 11,
+            R12B => 12,
+            R13B => 13,
+            R14B => 14,
+            R15B => 15,
+        }
+    }
+
+    pub fn requires_rex(self) -> bool {
+        matches!(self, Spl | Bpl | Sil | Dil)
+    }
+}
+
+impl From<Gpr8> for Reg {
+    fn from(gpr: Gpr8) -> Self {
+        Self::new(gpr.register_code()).force_rex_prefix(gpr.requires_rex())
+    }
+}
+
+impl From<Gpr8> for Rm {
+    fn from(gpr: Gpr8) -> Self {
+        Self::new(0b11, gpr.register_code()).force_rex_prefix(gpr.requires_rex())
+    }
+}
+
+pub use Gpr8::*;
 
 // 64-bit instruction pointer register.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
@@ -122,17 +301,6 @@ impl From<Xmm> for Rm {
 }
 
 pub use Xmm::*;
-
-/// For `/digit` opcode.
-#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
-pub struct PartOfOpcode(pub u8);
-
-impl From<PartOfOpcode> for Reg {
-    fn from(PartOfOpcode(value): PartOfOpcode) -> Self {
-        assert!(value <= 0b111); // /0../7
-        Self::new(value)
-    }
-}
 
 /// Pair of SIB.scale and SIB.index.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
@@ -288,7 +456,21 @@ impl_add_idxs!(Gpr64, i32); // GP + disp32 + IndexScale
 
 /// A memory operand. Semantically equivalent to `[..]` in Intel assembler syntax.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
-pub struct Memory<T>(pub T);
+pub struct Memory<T = Rm>(pub T);
+
+/// A type-erased memory operand.
+pub fn memory<Address>(address: Address) -> Memory
+where
+    Rm: From<Memory<Address>>,
+{
+    Memory(Memory(address).into())
+}
+
+impl From<Memory> for Rm {
+    fn from(Memory(rm): Memory) -> Self {
+        rm
+    }
+}
 
 // i32 -> Address<(), i32, ()>
 impl From<Memory<i32>> for Rm {
@@ -327,7 +509,7 @@ impl From<Memory<Address<(), i32, IndexScale>>> for Rm {
     fn from(Memory(Address { disp, idxs, .. }): Memory<Address<(), i32, IndexScale>>) -> Self {
         Self::new(0b00, 0b100) // Use SIB
             .sib_base(0b0101) // No base register is encoded and use disp32
-            .sib_index(idxs.index.encoding_index())
+            .sib_index(idxs.index.register_code())
             .sib_scale(idxs.scale)
             .disp(disp)
     }
@@ -355,15 +537,15 @@ impl From<Memory<Address<Gpr64, (), ()>>> for Rm {
             // SIB-byte required for RSP-based or R12-based addressing.
             Rsp | R12 => {
                 Self::new(0b00, 0b100) // Use SIB
-                    .sib_base(base.encoding_index())
+                    .sib_base(base.register_code())
                     .sib_index(0b0100) // No index register is encoded
             }
             // Using RBP or R13 without displacement must be done using mod=01 with a displacement of 0.
             Rbp | R13 => {
-                Self::new(0b01, base.encoding_index()) // Use disp8
+                Self::new(0b01, base.register_code()) // Use disp8
                     .disp(0i8)
             }
-            _ => Self::new(0b00, base.encoding_index()),
+            _ => Self::new(0b00, base.register_code()),
         }
     }
 }
@@ -379,11 +561,11 @@ where
             // SIB-byte required for RSP-based or R12-based addressing.
             Rsp | R12 => {
                 Self::new(disp.modrm_mod(), 0b100) // Use SIB and use dispN
-                    .sib_base(base.encoding_index())
+                    .sib_base(base.register_code())
                     .sib_index(0b0100) // No index register is encoded
                     .disp(disp)
             }
-            _ => Self::new(disp.modrm_mod(), base.encoding_index()).disp(disp),
+            _ => Self::new(disp.modrm_mod(), base.register_code()).disp(disp),
         }
     }
 }
@@ -395,14 +577,14 @@ impl From<Memory<Address<Gpr64, (), IndexScale>>> for Rm {
             // Explicit displacement is required to be used with RBP or R13.
             Rbp | R13 => {
                 Self::new(0b01, 0b100) // Use SIB and disp8
-                    .sib_base(base.encoding_index())
-                    .sib_index(idxs.index.encoding_index())
+                    .sib_base(base.register_code())
+                    .sib_index(idxs.index.register_code())
                     .sib_scale(idxs.scale)
                     .disp(0i8)
             }
             _ => Self::new(0b00, 0b100) // Use SIB
-                .sib_base(base.encoding_index())
-                .sib_index(idxs.index.encoding_index())
+                .sib_base(base.register_code())
+                .sib_index(idxs.index.register_code())
                 .sib_scale(idxs.scale),
         }
     }
@@ -418,8 +600,8 @@ where
     ) -> Self {
         let disp = disp.into();
         Self::new(disp.modrm_mod(), 0b100) // Use SIB and dispN
-            .sib_base(base.encoding_index())
-            .sib_index(idxs.index.encoding_index())
+            .sib_base(base.register_code())
+            .sib_index(idxs.index.register_code())
             .sib_scale(idxs.scale)
             .disp(disp)
     }
@@ -427,7 +609,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::super::modrm::ModRM;
+    use super::super::encoding::{ModRM, PartOfOpcode, RegInOpcode};
     use super::*;
     use std::fs::File;
     use std::io::{Read, Write};
@@ -475,7 +657,7 @@ mod tests {
         };
     }
 
-    // MOV r/m64 r64: Move r64 to r/m64.
+    // movq r/m64 r64: Move r64 to r/m64.
     fn movq(dest: impl Into<Rm>, src: impl Into<Reg>) -> Vec<u8> {
         // REX.W+ 89 /r
         let modrm = ModRM::new(src, dest);
@@ -487,13 +669,37 @@ mod tests {
             .collect()
     }
 
-    // NEG r/m64: Two's complement negate r/m64.
-    fn negq(operand: impl Into<Rm>) -> Vec<u8> {
-        // REX.W+ F7 /3
+    // negl r/m32: Two's complement negate r/m32.
+    fn negl(operand: impl Into<Rm>) -> Vec<u8> {
+        // F7 /3
         let modrm = ModRM::new(PartOfOpcode(3), operand);
         std::iter::empty()
-            .chain(modrm.rex_byte(true)) // REX prefix
+            .chain(modrm.rex_byte(false)) // REX prefix
             .chain([0xF7, modrm.byte()]) // Opcode, ModR/M
+            .chain(modrm.sib_byte()) // SIB
+            .chain(modrm.disp_bytes().into_iter().flatten()) // Displacement
+            .collect()
+    }
+
+    // movw r16, imm16: Move imm16 to r16.
+    fn movw(dest: impl Into<RegInOpcode>, src: i16) -> Vec<u8> {
+        // B8 +rw +iw
+        let rio = dest.into();
+        std::iter::empty()
+            .chain([0x66]) // Mandatory prefix
+            .chain(rio.rex_byte(false)) // REX prefix
+            .chain([0xB8 + rio.byte_added_to_opcode]) // Opcode, ModR/M
+            .chain(src.to_le_bytes()) // Immediate
+            .collect()
+    }
+
+    // movb r/m8 r8: Move r8 to r/m8.
+    fn movb(dest: impl Into<Rm>, src: impl Into<Reg>) -> Vec<u8> {
+        // 88 /r
+        let modrm = ModRM::new(src, dest);
+        std::iter::empty()
+            .chain(modrm.rex_byte(false)) // REX prefix
+            .chain([0x88, modrm.byte()]) // Opcode, ModR/M
             .chain(modrm.sib_byte()) // SIB
             .chain(modrm.disp_bytes().into_iter().flatten()) // Displacement
             .collect()
@@ -537,39 +743,57 @@ mod tests {
     }
 
     #[test]
-    fn part_of_opcode() {
-        assert_dump!(negq(Rax), "negq rax");
-        assert_dump!(negq(Rcx), "negq rcx");
+    fn gpr32() {
+        // It also tests with PartOfOpcode
+        assert_dump!(negl(Eax), "neg eax");
+        assert_dump!(negl(Ecx), "neg ecx");
+        assert_dump!(negl(R13D), "neg r13d");
+    }
+
+    #[test]
+    fn gpr16() {
+        // It also tests with RegInOpcode
+        assert_dump!(movw(Ax, 30000), "movw ax, 30000");
+        assert_dump!(movw(R8W, -1234), "movw r8w, -1234");
+    }
+
+    #[test]
+    fn gpr8() {
+        // It also tests force_rex_prefix
+        assert_dump!(movb(Al, Cl), "movb al, cl");
+        assert_dump!(movb(memory(Rax + Rcx * 2), Dl), "movb [rax + rcx * 2], dl");
+        assert_dump!(movb(Spl, Bl), "movb spl, bl");
+        assert_dump!(movb(Al, Dil), "movb al, dil");
     }
 
     #[test]
     fn xmm() {
         assert_dump!(movsd(Xmm1, Xmm3), "movsd xmm1, xmm3");
-        assert_dump!(movsd(Xmm10, Memory(Rdx)), "movsd xmm10, [rdx]");
+        assert_dump!(movsd(Xmm10, memory(Rdx)), "movsd xmm10, [rdx]");
         assert_dump!(
-            movsd(Xmm4, Memory(Rax + Rcx * 8 - 8i8)),
+            movsd(Xmm4, memory(Rax + Rcx * 8 - 8i8)),
             "movsd xmm4, [rax + rcx * 8 - 8]"
         );
     }
 
     #[test]
-    fn memory() {
+    fn memory_address() {
         // absolute addressing
-        assert_dump!(movq(Memory(124), Rax), "mov [124], rax");
-        assert_dump!(movq(Memory(124 + Rcx * 2), Rax), "mov [124 + rcx * 2], rax");
+        assert_dump!(movq(memory(124), Rax), "mov [124], rax");
+        assert_dump!(movq(memory(124 + Rcx * 2), Rax), "mov [124 + rcx * 2], rax");
         assert_dump!(
-            movq(Memory(1024 + Rdx * 4), Rax),
+            movq(memory(1024 + Rdx * 4), Rax),
             "mov [1024 + rdx * 4], rax"
         );
         assert_dump!(
-            movq(Memory(4096 + R14 * 8), Rax),
+            movq(memory(4096 + R14 * 8), Rax),
             "mov [4096 + r14 * 8], rax"
         );
 
         // RIP-relative addressing
-        assert_dump!(movq(Memory(Rip), Rcx), "mov [rip], rcx");
-        assert_dump!(movq(Memory(Rip + 16), Rcx), "mov [rip + 16], rcx");
-        assert_dump!(movq(Memory(Rip - 64), Rcx), "mov [rip - 64], rcx");
+        assert_dump!(movq(memory(Rip), Rcx), "mov [rip], rcx");
+        assert_dump!(movq(memory(Rip + 16), Rcx), "mov [rip + 16], rcx");
+        assert_dump!(movq(memory(Rip - 64), Rcx), "mov [rip - 64], rcx");
 
         for (ra, sa) in general_purpose_registers() {
             for (rb, sb) in general_purpose_registers() {
@@ -578,32 +802,32 @@ mod tests {
                 }
 
                 // [Base]
-                assert_dump!(movq(Memory(ra), rb), "mov [{}], {}", sa, sb);
+                assert_dump!(movq(memory(ra), rb), "mov [{}], {}", sa, sb);
                 // [Base + disp8]
-                assert_dump!(movq(Memory(ra + 12i8), rb), "mov [{} + 12], {}", sa, sb);
+                assert_dump!(movq(memory(ra + 12i8), rb), "mov [{} + 12], {}", sa, sb);
                 // [Base + disp32]
-                assert_dump!(movq(Memory(ra + 1024), rb), "mov [{} + 1024], {}", sa, sb);
+                assert_dump!(movq(memory(ra + 1024), rb), "mov [{} + 1024], {}", sa, sb);
 
                 // Cannot use RSP as an index register
                 if rb != Rsp {
                     // [Base + Index]
-                    assert_dump!(movq(Memory(ra + rb), Rcx), "mov [{} + {}], rcx", sa, sb);
+                    assert_dump!(movq(memory(ra + rb), Rcx), "mov [{} + {}], rcx", sa, sb);
                     assert_dump!(
-                        movq(Memory(ra + rb * 4), Rcx),
+                        movq(memory(ra + rb * 4), Rcx),
                         "mov [{} + {} * 4], rcx",
                         sa,
                         sb
                     );
                     // [Base + disp8 + Index]
                     assert_dump!(
-                        movq(Memory(ra - 8i8 + rb), Rcx),
+                        movq(memory(ra - 8i8 + rb), Rcx),
                         "mov [{} - 8 + {}], rcx",
                         sa,
                         sb
                     );
                     // [Base + disp32 + Index]
                     assert_dump!(
-                        movq(Memory(ra - 512 + rb * 4), Rcx),
+                        movq(memory(ra - 512 + rb * 4), Rcx),
                         "mov [{} - 512 + {} * 4], rcx",
                         sa,
                         sb
