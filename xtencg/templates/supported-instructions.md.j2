@@ -1,0 +1,10 @@
+{% for (mnemonic, insts) in inst_set -%}
+# {{ mnemonic }}
+| Instruction | Encoding | Description |
+| ----------- | -------- | ----------- |
+{% for inst in insts -%}
+| {{ inst }} | `{{ inst.encoding() }} [{{ inst.operand_map() }}]` | {{inst.description()|mdtableescape }} |
+{% endfor %}
+{% endfor -%}
+---
+Total {{ inst_set.len() }} mnemonics.

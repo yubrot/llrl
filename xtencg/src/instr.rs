@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fmt;
 
 mod encoding;
@@ -9,6 +10,8 @@ pub use encoding::{Component, Encoding};
 pub use operand::{Operand, OperandMap};
 pub use size::Size;
 pub use spec::Spec;
+
+pub type InstructionSet = BTreeMap<Mnemonic, Vec<Instruction>>;
 
 /// A mnemonic of the instruction. (ex. "movq")
 pub type Mnemonic = String;
@@ -214,7 +217,7 @@ mod tests {
                     rm: Some(1),
                     code_offset: None,
                     imm: None,
-                    reg_in_opcode: None
+                    reg_in_opcode: None,
                 },
                 encoding,
                 description: "Move r/m64 to r64.".to_string(),

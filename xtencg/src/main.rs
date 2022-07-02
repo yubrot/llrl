@@ -1,24 +1,49 @@
 use instr::*;
 use std::collections::{btree_map::Entry as BTreeEntry, BTreeMap};
+use std::env;
+use std::io;
+use std::process::exit;
 
 pub mod instr;
+pub mod render;
 
 static CSV: &str = include_str!("./x86.csv");
 
-fn main() -> Result<(), String> {
+fn main() -> io::Result<()> {
     let specs = CSV
         .lines()
         .filter_map(Spec::from_csv_line)
         .collect::<Vec<_>>();
 
-    let inst_set = build_instruction_set(specs)?;
-    validate_instruction_set(&inst_set)?;
-    document_in_markdown(&inst_set);
+    let inst_set = build_instruction_set(specs).map_err(to_io_error)?;
+    validate_instruction_set(&inst_set).map_err(to_io_error)?;
+
+    for arg in env::args().skip(1) {
+        match arg.as_str() {
+            "-d" => {
+                println!("{}", render::supported_instructions(&inst_set));
+                exit(0);
+            }
+            "-h" => {
+                usage();
+                exit(0);
+            }
+            _ => {
+                println!("Unknown option: {}", arg);
+                usage();
+                exit(1);
+            }
+        }
+    }
 
     Ok(())
 }
 
-type InstructionSet = BTreeMap<Mnemonic, Vec<Instruction>>;
+fn usage() {
+    println!("Usage:");
+    println!("    xtencg -d      Show list of supported instructions in markdown");
+    println!("    xtencg -h      Show help");
+}
 
 fn build_instruction_set(specs: Vec<Spec>) -> Result<InstructionSet, String> {
     let mut accum = BTreeMap::<Mnemonic, BTreeMap<Vec<Operand>, Instruction>>::new();
@@ -56,24 +81,8 @@ fn validate_instruction_set(inst_set: &InstructionSet) -> Result<(), String> {
     Ok(())
 }
 
-fn document_in_markdown(inst_set: &InstructionSet) {
-    for (mnemonic, insts) in inst_set.iter() {
-        println!("# {}", mnemonic);
-        println!("| Instruction | Encoding | Description |");
-        println!("| ----------- | -------- | ----------- |");
-        for inst in insts {
-            println!(
-                "| {} | `{} [{}]` | {} |",
-                inst,
-                inst.encoding(),
-                inst.operand_map(),
-                inst.description().replace('|', "\\|")
-            );
-        }
-        println!();
-    }
-    println!("---");
-    println!("Total {} mnemonics.", inst_set.len());
+fn to_io_error(e: impl AsRef<str>) -> io::Error {
+    io::Error::new(io::ErrorKind::Other, e.as_ref())
 }
 
 fn discard<T>(_: T) {}
