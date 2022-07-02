@@ -1,4 +1,5 @@
 use super::Size::{self, *};
+use heapless::Vec as HVec;
 use std::fmt;
 use Operand::*;
 
@@ -21,8 +22,26 @@ impl Operand {
         // r16 | r/m16 | AX | imm16
         matches!(
             self,
-            R(Some(W)) | Rm(Some(W), Some(W)) | Fixed("AX") | Imm(W)
+            R(Some(W)) | Rm(Some(W), Some(W)) | Fixed("_Ax") | Imm(W)
         )
+    }
+
+    pub fn monomorphise(self) -> HVec<Self, 2> {
+        let mut vec = HVec::new();
+        match self {
+            Rm(r, m) => {
+                let _ = vec.push(R(r));
+                let _ = vec.push(M(m));
+            }
+            Xmmm(m) => {
+                let _ = vec.push(Xmm);
+                let _ = vec.push(M(m));
+            }
+            _ => {
+                let _ = vec.push(self);
+            }
+        }
+        vec
     }
 }
 
@@ -56,16 +75,15 @@ impl TryFrom<&str> for Operand {
             "m32" => M(Some(D)),
             "m64" => M(Some(O)),
             "m128" => M(Some(O2)),
-            "AL" => Fixed("AL"),
-            "AX" => Fixed("AX"),
-            "EAX" => Fixed("EAX"),
-            "RAX" => Fixed("RAX"),
-            "CL" => Fixed("CL"),
-            "DX" => Fixed("DX"),
-            "<XMM0>" => Fixed("<XMM0>"),
-            "p66" => Fixed("p66"),
-            "1" => Fixed("1"),
-            "3" => Fixed("3"),
+            "AL" => Fixed("_Al"),
+            "AX" => Fixed("_Ax"),
+            "EAX" => Fixed("_Eax"),
+            "RAX" => Fixed("_Rax"),
+            "CL" => Fixed("_Cl"),
+            "DX" => Fixed("_Dx"),
+            "<XMM0>" => Fixed("_Xmm0"),
+            "1" => Fixed("_1"),
+            "3" => Fixed("_3"),
             "xmm" | "xmm1" | "xmm2" => Xmm,
             "xmm/m16" | "xmm1/m16" | "xmm2/m16" => Xmmm(Some(W)),
             "xmm/m32" | "xmm1/m32" | "xmm2/m32" => Xmmm(Some(D)),
@@ -192,7 +210,7 @@ mod tests {
     fn operand_parse_display() {
         for (src, dest) in [
             ("r/m16", "r/m16"),
-            ("AX", "AX"),
+            ("AX", "_Ax"),
             ("rel32", "rel32"),
             ("reg/m32", "reg/m32"),
             ("imm64", "imm64"),

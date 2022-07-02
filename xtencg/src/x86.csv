@@ -970,7 +970,7 @@ REX.W+ 0F B5 /r 	LGS r64, m16:64 	RM	W, R		GS				V	NE		lgs		Load GS:r64 with far
 8D /r 	LEA r32, m 	RM	W, I						V	V		leal		Store effective address for m in register r32.
 REX.W+ 8D /r 	LEA r64, m 	RM	W, I						V	NE		leaq		Store effective address for m in register r64.
 														
-PREF.66+ C9 	LEAVE p66	NP	I						V	V		leavew		Set SP to BP, then pop BP.
+PREF.66+ C9 	LEAVE	NP	I						V	V		leavew		Set SP to BP, then pop BP.
 C9 	LEAVE 								NE	V				Set ESP to EBP, then pop EBP.
 C9 	LEAVE 	NP							V	NE		leaveq		Set RSP to RBP, then pop RBP.
 														

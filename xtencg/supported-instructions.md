@@ -4,7 +4,7 @@
 | adcb r8 r/m8 | `12 /r [reg=0, rm=1]` | Add with carry r/m8 to byte register. |
 | adcb r/m8 r8 | `10 /r [reg=1, rm=0]` | Add with carry byte register to r/m8. |
 | adcb r/m8 imm8 | `80 /2 ib [rm=0, i=1]` | Add with carry imm8 to r/m8. |
-| adcb AL imm8 | `14 ib [i=1]` | Add with carry imm8 to AL |
+| adcb _Al imm8 | `14 ib [i=1]` | Add with carry imm8 to AL |
 
 # adcl
 | Instruction | Encoding | Description |
@@ -13,7 +13,7 @@
 | adcl r/m32 r32 | `11 /r [reg=1, rm=0]` | Add with CF r32 to r/m32. |
 | adcl r/m32 imm8 | `83 /2 ib [rm=0, i=1]` | Add with CF sign-extended imm8 into r/m32. |
 | adcl r/m32 imm32 | `81 /2 id [rm=0, i=1]` | Add with CF imm32 to r/m32. |
-| adcl EAX imm32 | `15 id [i=1]` | Add with carry imm32 to EAX. |
+| adcl _Eax imm32 | `15 id [i=1]` | Add with carry imm32 to EAX. |
 
 # adcq
 | Instruction | Encoding | Description |
@@ -22,7 +22,7 @@
 | adcq r/m64 r64 | `REX.W+ 11 /r [reg=1, rm=0]` | Add with CF r64 to r/m64. |
 | adcq r/m64 imm8 | `REX.W+ 83 /2 ib [rm=0, i=1]` | Add with CF sign-extended imm8 into r/m64. |
 | adcq r/m64 imm32 | `REX.W+ 81 /2 id [rm=0, i=1]` | Add with CF imm32 sign extended to 64-bits to r/m64. |
-| adcq RAX imm32 | `REX.W+ 15 id [i=1]` | Add with carry imm32 sign extended to 64- bits to RAX. |
+| adcq _Rax imm32 | `REX.W+ 15 id [i=1]` | Add with carry imm32 sign extended to 64- bits to RAX. |
 
 # adcw
 | Instruction | Encoding | Description |
@@ -31,7 +31,7 @@
 | adcw r/m16 r16 | `66 11 /r [reg=1, rm=0]` | Add with carry r16 to r/m16. |
 | adcw r/m16 imm8 | `66 83 /2 ib [rm=0, i=1]` | Add with CF sign-extended imm8 to r/m16. |
 | adcw r/m16 imm16 | `66 81 /2 iw [rm=0, i=1]` | Add with carry imm16 to r/m16. |
-| adcw AX imm16 | `66 15 iw [i=1]` | Add with carry imm16 to AX. |
+| adcw _Ax imm16 | `66 15 iw [i=1]` | Add with carry imm16 to AX. |
 
 # addb
 | Instruction | Encoding | Description |
@@ -39,7 +39,7 @@
 | addb r8 r/m8 | `02 /r [reg=0, rm=1]` | Add r/m8 to r8. |
 | addb r/m8 r8 | `00 /r [reg=1, rm=0]` | Add r8 to r/m8. |
 | addb r/m8 imm8 | `80 /0 ib [rm=0, i=1]` | Add imm8 to r/m8. |
-| addb AL imm8 | `04 ib [i=1]` | Add imm8 to AL. |
+| addb _Al imm8 | `04 ib [i=1]` | Add imm8 to AL. |
 
 # addl
 | Instruction | Encoding | Description |
@@ -48,7 +48,7 @@
 | addl r/m32 r32 | `01 /r [reg=1, rm=0]` | Add r32 to r/m32. |
 | addl r/m32 imm8 | `83 /0 ib [rm=0, i=1]` | Add sign-extended imm8 to r/m32. |
 | addl r/m32 imm32 | `81 /0 id [rm=0, i=1]` | Add imm32 to r/m32. |
-| addl EAX imm32 | `05 id [i=1]` | Add imm32 to EAX. |
+| addl _Eax imm32 | `05 id [i=1]` | Add imm32 to EAX. |
 
 # addpd
 | Instruction | Encoding | Description |
@@ -67,7 +67,7 @@
 | addq r/m64 r64 | `REX.W+ 01 /r [reg=1, rm=0]` | Add r64 to r/m64. |
 | addq r/m64 imm8 | `REX.W+ 83 /0 ib [rm=0, i=1]` | Add sign-extended imm8 to r/m64. |
 | addq r/m64 imm32 | `REX.W+ 81 /0 id [rm=0, i=1]` | Add imm32 sign-extended to 64-bits to r/m64. |
-| addq RAX imm32 | `REX.W+ 05 id [i=1]` | Add imm32 sign-extended to 64-bits to RAX. |
+| addq _Rax imm32 | `REX.W+ 05 id [i=1]` | Add imm32 sign-extended to 64-bits to RAX. |
 
 # addsd
 | Instruction | Encoding | Description |
@@ -86,7 +86,7 @@
 | addw r/m16 r16 | `66 01 /r [reg=1, rm=0]` | Add r16 to r/m16. |
 | addw r/m16 imm8 | `66 83 /0 ib [rm=0, i=1]` | Add sign-extended imm8 to r/m16. |
 | addw r/m16 imm16 | `66 81 /0 iw [rm=0, i=1]` | Add imm16 to r/m16. |
-| addw AX imm16 | `66 05 iw [i=1]` | Add imm16 to AX. |
+| addw _Ax imm16 | `66 05 iw [i=1]` | Add imm16 to AX. |
 
 # andb
 | Instruction | Encoding | Description |
@@ -94,7 +94,7 @@
 | andb r8 r/m8 | `22 /r [reg=0, rm=1]` | r8 AND r/m8. |
 | andb r/m8 r8 | `20 /r [reg=1, rm=0]` | r/m8 AND r8. |
 | andb r/m8 imm8 | `80 /4 ib [rm=0, i=1]` | r/m8 AND imm8. |
-| andb AL imm8 | `24 ib [i=1]` | AL AND imm8. |
+| andb _Al imm8 | `24 ib [i=1]` | AL AND imm8. |
 
 # andl
 | Instruction | Encoding | Description |
@@ -103,7 +103,7 @@
 | andl r/m32 r32 | `21 /r [reg=1, rm=0]` | r/m32 AND r32. |
 | andl r/m32 imm8 | `83 /4 ib [rm=0, i=1]` | r/m32 AND imm8 (sign-extended). |
 | andl r/m32 imm32 | `81 /4 id [rm=0, i=1]` | r/m32 AND imm32. |
-| andl EAX imm32 | `25 id [i=1]` | EAX AND imm32. |
+| andl _Eax imm32 | `25 id [i=1]` | EAX AND imm32. |
 
 # andnpd
 | Instruction | Encoding | Description |
@@ -132,7 +132,7 @@
 | andq r/m64 r64 | `REX.W+ 21 /r [reg=1, rm=0]` | r/m64 AND r32. |
 | andq r/m64 imm8 | `REX.W+ 83 /4 ib [rm=0, i=1]` | r/m64 AND imm8 (sign-extended). |
 | andq r/m64 imm32 | `REX.W+ 81 /4 id [rm=0, i=1]` | r/m64 AND imm32 sign extended to 64-bits. |
-| andq RAX imm32 | `REX.W+ 25 id [i=1]` | RAX AND imm32 sign-extended to 64-bits. |
+| andq _Rax imm32 | `REX.W+ 25 id [i=1]` | RAX AND imm32 sign-extended to 64-bits. |
 
 # andw
 | Instruction | Encoding | Description |
@@ -141,7 +141,7 @@
 | andw r/m16 r16 | `66 21 /r [reg=1, rm=0]` | r/m16 AND r16. |
 | andw r/m16 imm8 | `66 83 /4 ib [rm=0, i=1]` | r/m16 AND imm8 (sign-extended). |
 | andw r/m16 imm16 | `66 81 /4 iw [rm=0, i=1]` | r/m16 AND imm16. |
-| andw AX imm16 | `66 25 iw [i=1]` | AX AND imm16. |
+| andw _Ax imm16 | `66 25 iw [i=1]` | AX AND imm16. |
 
 # blendpd
 | Instruction | Encoding | Description |
@@ -156,12 +156,12 @@
 # blendvpd
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
-| blendvpd xmm xmm/m128 <XMM0> | `66 0F 38 15 /r [reg=0, rm=1]` | Select packed DP FP values from xmm1 and xmm2 from mask specified in XMM0 and store the values in xmm1. |
+| blendvpd xmm xmm/m128 _Xmm0 | `66 0F 38 15 /r [reg=0, rm=1]` | Select packed DP FP values from xmm1 and xmm2 from mask specified in XMM0 and store the values in xmm1. |
 
 # blendvps
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
-| blendvps xmm xmm/m128 <XMM0> | `66 0F 38 14 /r [reg=0, rm=1]` | Select packed single precision floating-point values from xmm1 and xmm2/m128 from mask specified in XMM0 and store the values into xmm1. |
+| blendvps xmm xmm/m128 _Xmm0 | `66 0F 38 14 /r [reg=0, rm=1]` | Select packed single precision floating-point values from xmm1 and xmm2/m128 from mask specified in XMM0 and store the values into xmm1. |
 
 # bsfl
 | Instruction | Encoding | Description |
@@ -323,7 +323,7 @@
 | cmpb r8 r/m8 | `3A /r [reg=0, rm=1]` | Compare r/m8 with r8. |
 | cmpb r/m8 r8 | `38 /r [reg=1, rm=0]` | Compare r8 with r/m8. |
 | cmpb r/m8 imm8 | `80 /7 ib [rm=0, i=1]` | Compare imm8 with r/m8. |
-| cmpb AL imm8 | `3C ib [i=1]` | Compare imm8 with AL. |
+| cmpb _Al imm8 | `3C ib [i=1]` | Compare imm8 with AL. |
 
 # cmpl
 | Instruction | Encoding | Description |
@@ -332,7 +332,7 @@
 | cmpl r/m32 r32 | `39 /r [reg=1, rm=0]` | Compare r32 with r/m32. |
 | cmpl r/m32 imm8 | `83 /7 ib [rm=0, i=1]` | Compare imm8 with r/m32. |
 | cmpl r/m32 imm32 | `81 /7 id [rm=0, i=1]` | Compare imm32 with r/m32. |
-| cmpl EAX imm32 | `3D id [i=1]` | Compare imm32 with EAX. |
+| cmpl _Eax imm32 | `3D id [i=1]` | Compare imm32 with EAX. |
 
 # cmppd
 | Instruction | Encoding | Description |
@@ -351,7 +351,7 @@
 | cmpq r/m64 r64 | `REX.W+ 39 /r [reg=1, rm=0]` | Compare r64 with r/m64. |
 | cmpq r/m64 imm8 | `REX.W+ 83 /7 ib [rm=0, i=1]` | Compare imm8 with r/m64. |
 | cmpq r/m64 imm32 | `REX.W+ 81 /7 id [rm=0, i=1]` | Compare imm32 sign-extended to 64-bits with r/m64. |
-| cmpq RAX imm32 | `REX.W+ 3D id [i=1]` | Compare imm32 sign-extended to 64-bits with RAX. |
+| cmpq _Rax imm32 | `REX.W+ 3D id [i=1]` | Compare imm32 sign-extended to 64-bits with RAX. |
 
 # cmpsd
 | Instruction | Encoding | Description |
@@ -370,7 +370,7 @@
 | cmpw r/m16 r16 | `66 39 /r [reg=1, rm=0]` | Compare r16 with r/m16. |
 | cmpw r/m16 imm8 | `66 83 /7 ib [rm=0, i=1]` | Compare imm8 with r/m16. |
 | cmpw r/m16 imm16 | `66 81 /7 iw [rm=0, i=1]` | Compare imm16 with r/m16. |
-| cmpw AX imm16 | `66 3D iw [i=1]` | Compare imm16 with AX. |
+| cmpw _Ax imm16 | `66 3D iw [i=1]` | Compare imm16 with AX. |
 
 # cmpxchgb
 | Instruction | Encoding | Description |
@@ -650,32 +650,56 @@
 # imull
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
-| imull r32 r/m32 | `0F AF /r [reg=0, rm=1]` | doubleword register = doubleword register *  r/m32. |
 | imull r32 r/m32 imm8 | `6B /r ib [reg=0, rm=1, i=2]` | doubleword register = r/m32 * sign- extended immediate byte. |
 | imull r32 r/m32 imm32 | `69 /r id [reg=0, rm=1, i=2]` | doubleword register = r/m32 * immediate doubleword. |
+
+# imull1
+| Instruction | Encoding | Description |
+| ----------- | -------- | ----------- |
 | imull r/m32 | `F7 /5 [rm=0]` | EDX:EAX = EAX * r/m32. |
+
+# imull2
+| Instruction | Encoding | Description |
+| ----------- | -------- | ----------- |
+| imull r32 r/m32 | `0F AF /r [reg=0, rm=1]` | doubleword register = doubleword register *  r/m32. |
 
 # imulq
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
-| imulq r64 r/m64 | `REX.W+ 0F AF /r [reg=0, rm=1]` | Quadword register = Quadword register *  r/m64. |
 | imulq r64 r/m64 imm8 | `REX.W+ 6B /r ib [reg=0, rm=1, i=2]` | Quadword register = r/m64 * sign-extended  immediate byte. |
 | imulq r64 r/m64 imm32 | `REX.W+ 69 /r id [reg=0, rm=1, i=2]` | Quadword register = r/m64 * immediate doubleword. |
+
+# imulq1
+| Instruction | Encoding | Description |
+| ----------- | -------- | ----------- |
 | imulq r/m64 | `REX.W+ F7 /5 [rm=0]` | RDX:RAX = RAX * r/m64. |
+
+# imulq2
+| Instruction | Encoding | Description |
+| ----------- | -------- | ----------- |
+| imulq r64 r/m64 | `REX.W+ 0F AF /r [reg=0, rm=1]` | Quadword register = Quadword register *  r/m64. |
 
 # imulw
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
-| imulw r16 r/m16 | `66 0F AF /r [reg=0, rm=1]` | word register = word register * r/m16. |
 | imulw r16 r/m16 imm8 | `66 6B /r ib [reg=0, rm=1, i=2]` | word register = r/m16 * sign-extended immediate byte. |
 | imulw r16 r/m16 imm16 | `66 69 /r iw [reg=0, rm=1, i=2]` | word register = r/m16 * immediate word. |
+
+# imulw1
+| Instruction | Encoding | Description |
+| ----------- | -------- | ----------- |
 | imulw r/m16 | `66 F7 /5 [rm=0]` | DX:AX = AX * r/m word. |
+
+# imulw2
+| Instruction | Encoding | Description |
+| ----------- | -------- | ----------- |
+| imulw r16 r/m16 | `66 0F AF /r [reg=0, rm=1]` | word register = word register * r/m16. |
 
 # inb
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
-| inb AL imm8 | `E4 ib [i=1]` | Input byte from imm8 I/O port address into AL. |
-| inb AL DX | `EC []` | Input byte from I/O port in DX into AL. |
+| inb _Al imm8 | `E4 ib [i=1]` | Input byte from imm8 I/O port address into AL. |
+| inb _Al _Dx | `EC []` | Input byte from I/O port in DX into AL. |
 
 # incb
 | Instruction | Encoding | Description |
@@ -700,14 +724,14 @@
 # inl
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
-| inl EAX imm8 | `E5 ib [i=1]` | Input dword from imm8 I/O port address into EAX. |
-| inl EAX DX | `ED []` | Input doubleword from I/O port in DX into EAX. |
+| inl _Eax imm8 | `E5 ib [i=1]` | Input dword from imm8 I/O port address into EAX. |
+| inl _Eax _Dx | `ED []` | Input doubleword from I/O port in DX into EAX. |
 
 # int
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | int imm8 | `CD ib [i=0]` | Interrupt vector number specified by immediate byte. |
-| int 3 | `CC []` | Interrupt 3-trap to debugger. |
+| int _3 | `CC []` | Interrupt 3-trap to debugger. |
 
 # invd
 | Instruction | Encoding | Description |
@@ -722,8 +746,8 @@
 # inw
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
-| inw AX imm8 | `66 E5 ib [i=1]` | Input word from imm8 I/O port address into AX. |
-| inw AX DX | `66 ED []` | Input word from I/O port in DX into AX. |
+| inw _Ax imm8 | `66 E5 ib [i=1]` | Input word from imm8 I/O port address into AX. |
+| inw _Ax _Dx | `66 ED []` | Input word from I/O port in DX into AX. |
 
 # iretl
 | Instruction | Encoding | Description |
@@ -960,7 +984,7 @@
 # leavew
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
-| leavew p66 | `66 C9 []` | Set SP to BP, then pop BP. |
+| leavew | `66 C9 []` | Set SP to BP, then pop BP. |
 
 # leaw
 | Instruction | Encoding | Description |
@@ -1289,22 +1313,22 @@
 # negb
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
-| negb r/m8 | `F6 /3 [rm=0]` | Two's complement negate r/m8. |
+| negb r/m8 | `F6 /3 [rm=0]` | Two&#x27;s complement negate r/m8. |
 
 # negl
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
-| negl r/m32 | `F7 /3 [rm=0]` | Two's complement negate r/m32. |
+| negl r/m32 | `F7 /3 [rm=0]` | Two&#x27;s complement negate r/m32. |
 
 # negq
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
-| negq r/m64 | `REX.W+ F7 /3 [rm=0]` | Two's complement negate r/m64. |
+| negq r/m64 | `REX.W+ F7 /3 [rm=0]` | Two&#x27;s complement negate r/m64. |
 
 # negw
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
-| negw r/m16 | `66 F7 /3 [rm=0]` | Two's complement negate r/m16. |
+| negw r/m16 | `66 F7 /3 [rm=0]` | Two&#x27;s complement negate r/m16. |
 
 # nop
 | Instruction | Encoding | Description |
@@ -1337,7 +1361,7 @@
 | orb r8 r/m8 | `0A /r [reg=0, rm=1]` | r8 OR r/m8. |
 | orb r/m8 r8 | `08 /r [reg=1, rm=0]` | r/m8 OR r8. |
 | orb r/m8 imm8 | `80 /1 ib [rm=0, i=1]` | r/m8 OR imm8. |
-| orb AL imm8 | `0C ib [i=1]` | AL OR imm8. |
+| orb _Al imm8 | `0C ib [i=1]` | AL OR imm8. |
 
 # orl
 | Instruction | Encoding | Description |
@@ -1346,7 +1370,7 @@
 | orl r/m32 r32 | `09 /r [reg=1, rm=0]` | r/m32 OR r32. |
 | orl r/m32 imm8 | `83 /1 ib [rm=0, i=1]` | r/m32 OR imm8 (sign-extended). |
 | orl r/m32 imm32 | `81 /1 id [rm=0, i=1]` | r/m32 OR imm32. |
-| orl EAX imm32 | `0D id [i=1]` | EAX OR imm32. |
+| orl _Eax imm32 | `0D id [i=1]` | EAX OR imm32. |
 
 # orpd
 | Instruction | Encoding | Description |
@@ -1365,7 +1389,7 @@
 | orq r/m64 r64 | `REX.W+ 09 /r [reg=1, rm=0]` | r/m64 OR r64. |
 | orq r/m64 imm8 | `REX.W+ 83 /1 ib [rm=0, i=1]` | r/m64 OR imm8 (sign-extended). |
 | orq r/m64 imm32 | `REX.W+ 81 /1 id [rm=0, i=1]` | r/m64 OR imm32 (sign-extended). |
-| orq RAX imm32 | `REX.W+ 0D id [i=1]` | RAX OR imm32 (sign-extended). |
+| orq _Rax imm32 | `REX.W+ 0D id [i=1]` | RAX OR imm32 (sign-extended). |
 
 # orw
 | Instruction | Encoding | Description |
@@ -1374,25 +1398,25 @@
 | orw r/m16 r16 | `66 09 /r [reg=1, rm=0]` | r/m16 OR r16. |
 | orw r/m16 imm8 | `66 83 /1 ib [rm=0, i=1]` | r/m16 OR imm8 (sign-extended). |
 | orw r/m16 imm16 | `66 81 /1 iw [rm=0, i=1]` | r/m16 OR imm16. |
-| orw AX imm16 | `66 0D iw [i=1]` | AX OR imm16. |
+| orw _Ax imm16 | `66 0D iw [i=1]` | AX OR imm16. |
 
 # outb
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
-| outb imm8 AL | `E6 ib [i=0]` | Output byte in AL to I/O port address imm8. |
-| outb DX AL | `EE []` | Output byte in AL to I/O port address in DX. |
+| outb imm8 _Al | `E6 ib [i=0]` | Output byte in AL to I/O port address imm8. |
+| outb _Dx _Al | `EE []` | Output byte in AL to I/O port address in DX. |
 
 # outl
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
-| outl imm8 EAX | `E7 ib [i=0]` | Output doubleword in EAX to I/O port address imm8. |
-| outl DX EAX | `EF []` | Output doubleword in EAX to I/O port address in DX. |
+| outl imm8 _Eax | `E7 ib [i=0]` | Output doubleword in EAX to I/O port address imm8. |
+| outl _Dx _Eax | `EF []` | Output doubleword in EAX to I/O port address in DX. |
 
 # outw
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
-| outw imm8 AX | `66 E7 ib [i=0]` | Output word in AX to I/O port address imm8. |
-| outw DX AX | `66 EF []` | Output word in AX to I/O port address in DX. |
+| outw imm8 _Ax | `66 E7 ib [i=0]` | Output word in AX to I/O port address imm8. |
+| outw _Dx _Ax | `66 EF []` | Output word in AX to I/O port address in DX. |
 
 # packssdw
 | Instruction | Encoding | Description |
@@ -1482,7 +1506,7 @@
 # pblendvb
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
-| pblendvb xmm xmm/m128 <XMM0> | `66 0F 38 10 /r [reg=0, rm=1]` | Select byte values from xmm1 and xmm2/m128 from mask specified in the high bit of each byte in XMM0 and store the values into xmm1. |
+| pblendvb xmm xmm/m128 _Xmm0 | `66 0F 38 10 /r [reg=0, rm=1]` | Select byte values from xmm1 and xmm2/m128 from mask specified in the high bit of each byte in XMM0 and store the values into xmm1. |
 
 # pblendw
 | Instruction | Encoding | Description |
@@ -1974,29 +1998,29 @@
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | rclb r/m8 imm8 | `C0 /2 ib [rm=0, i=1]` | Rotate 9 bits (CF, r/m8) left imm8 times. |
-| rclb r/m8 1 | `D0 /2 [rm=0]` | Rotate 9 bits (CF, r/m8) left once. |
-| rclb r/m8 CL | `D2 /2 [rm=0]` | Rotate 9 bits (CF, r/m8) left CL times. |
+| rclb r/m8 _1 | `D0 /2 [rm=0]` | Rotate 9 bits (CF, r/m8) left once. |
+| rclb r/m8 _Cl | `D2 /2 [rm=0]` | Rotate 9 bits (CF, r/m8) left CL times. |
 
 # rcll
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | rcll r/m32 imm8 | `C1 /2 ib [rm=0, i=1]` | Rotate 33 bits (CF, r/m32) left imm8 times. |
-| rcll r/m32 1 | `D1 /2 [rm=0]` | Rotate 33 bits (CF, r/m32) left once. |
-| rcll r/m32 CL | `D3 /2 [rm=0]` | Rotate 33 bits (CF, r/m32) left CL times. |
+| rcll r/m32 _1 | `D1 /2 [rm=0]` | Rotate 33 bits (CF, r/m32) left once. |
+| rcll r/m32 _Cl | `D3 /2 [rm=0]` | Rotate 33 bits (CF, r/m32) left CL times. |
 
 # rclq
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | rclq r/m64 imm8 | `REX.W+ C1 /2 ib [rm=0, i=1]` | Rotate 65 bits (CF, r/m64) left imm8 times. Uses a 6 bit count. |
-| rclq r/m64 1 | `REX.W+ D1 /2 [rm=0]` | Rotate 65 bits (CF, r/m64) left once. Uses a 6 bit count. |
-| rclq r/m64 CL | `REX.W+ D3 /2 [rm=0]` | Rotate 65 bits (CF, r/m64) left CL times. Uses a 6 bit count. |
+| rclq r/m64 _1 | `REX.W+ D1 /2 [rm=0]` | Rotate 65 bits (CF, r/m64) left once. Uses a 6 bit count. |
+| rclq r/m64 _Cl | `REX.W+ D3 /2 [rm=0]` | Rotate 65 bits (CF, r/m64) left CL times. Uses a 6 bit count. |
 
 # rclw
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | rclw r/m16 imm8 | `66 C1 /2 ib [rm=0, i=1]` | Rotate 17 bits (CF, r/m16) left imm8 times. |
-| rclw r/m16 1 | `66 D1 /2 [rm=0]` | Rotate 17 bits (CF, r/m16) left once. |
-| rclw r/m16 CL | `66 D3 /2 [rm=0]` | Rotate 17 bits (CF, r/m16) left CL times. |
+| rclw r/m16 _1 | `66 D1 /2 [rm=0]` | Rotate 17 bits (CF, r/m16) left once. |
+| rclw r/m16 _Cl | `66 D3 /2 [rm=0]` | Rotate 17 bits (CF, r/m16) left CL times. |
 
 # rcpps
 | Instruction | Encoding | Description |
@@ -2012,91 +2036,95 @@
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | rcrb r/m8 imm8 | `C0 /3 ib [rm=0, i=1]` | Rotate 9 bits (CF, r/m8) right imm8 times. |
-| rcrb r/m8 1 | `D0 /3 [rm=0]` | Rotate 9 bits (CF, r/m8) right once. |
-| rcrb r/m8 CL | `D2 /3 [rm=0]` | Rotate 9 bits (CF, r/m8) right CL times. |
+| rcrb r/m8 _1 | `D0 /3 [rm=0]` | Rotate 9 bits (CF, r/m8) right once. |
+| rcrb r/m8 _Cl | `D2 /3 [rm=0]` | Rotate 9 bits (CF, r/m8) right CL times. |
 
 # rcrl
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | rcrl r/m32 imm8 | `C1 /3 ib [rm=0, i=1]` | Rotate 33 bits (CF, r/m32) right imm8 times. |
-| rcrl r/m32 1 | `D1 /3 [rm=0]` | Rotate 33 bits (CF, r/m32) right once. Uses a 6 bit count. |
-| rcrl r/m32 CL | `D3 /3 [rm=0]` | Rotate 33 bits (CF, r/m32) right CL times. |
+| rcrl r/m32 _1 | `D1 /3 [rm=0]` | Rotate 33 bits (CF, r/m32) right once. Uses a 6 bit count. |
+| rcrl r/m32 _Cl | `D3 /3 [rm=0]` | Rotate 33 bits (CF, r/m32) right CL times. |
 
 # rcrq
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | rcrq r/m64 imm8 | `REX.W+ C1 /3 ib [rm=0, i=1]` | Rotate 65 bits (CF, r/m64) right imm8 times. Uses a 6 bit count. |
-| rcrq r/m64 1 | `REX.W+ D1 /3 [rm=0]` | Rotate 65 bits (CF, r/m64) right once. Uses a 6 bit count. |
-| rcrq r/m64 CL | `REX.W+ D3 /3 [rm=0]` | Rotate 65 bits (CF, r/m64) right CL times. Uses a 6 bit count. |
+| rcrq r/m64 _1 | `REX.W+ D1 /3 [rm=0]` | Rotate 65 bits (CF, r/m64) right once. Uses a 6 bit count. |
+| rcrq r/m64 _Cl | `REX.W+ D3 /3 [rm=0]` | Rotate 65 bits (CF, r/m64) right CL times. Uses a 6 bit count. |
 
 # rcrw
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | rcrw r/m16 imm8 | `66 C1 /3 ib [rm=0, i=1]` | Rotate 17 bits (CF, r/m16) right imm8 times. |
-| rcrw r/m16 1 | `66 D1 /3 [rm=0]` | Rotate 17 bits (CF, r/m16) right once. |
-| rcrw r/m16 CL | `66 D3 /3 [rm=0]` | Rotate 17 bits (CF, r/m16) right CL times. |
+| rcrw r/m16 _1 | `66 D1 /3 [rm=0]` | Rotate 17 bits (CF, r/m16) right once. |
+| rcrw r/m16 _Cl | `66 D3 /3 [rm=0]` | Rotate 17 bits (CF, r/m16) right CL times. |
 
 # retq
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
-| retq | `C3 []` | Near return to calling procedure. |
 | retq imm16 | `C2 iw [i=0]` | Near return to calling procedure and pop imm16 bytes from stack. |
+
+# retq0
+| Instruction | Encoding | Description |
+| ----------- | -------- | ----------- |
+| retq | `C3 []` | Near return to calling procedure. |
 
 # rolb
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | rolb r/m8 imm8 | `C0 /0 ib [rm=0, i=1]` | Rotate 8 bits r/m8 left imm8 times. |
-| rolb r/m8 1 | `D0 /0 [rm=0]` | Rotate 8 bits r/m8 left once. |
-| rolb r/m8 CL | `D2 /0 [rm=0]` | Rotate 8 bits r/m8 left CL times. |
+| rolb r/m8 _1 | `D0 /0 [rm=0]` | Rotate 8 bits r/m8 left once. |
+| rolb r/m8 _Cl | `D2 /0 [rm=0]` | Rotate 8 bits r/m8 left CL times. |
 
 # roll
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | roll r/m32 imm8 | `C1 /0 ib [rm=0, i=1]` | Rotate 32 bits r/m32 left imm8 times. |
-| roll r/m32 1 | `D1 /0 [rm=0]` | Rotate 32 bits r/m32 left once. |
-| roll r/m32 CL | `D3 /0 [rm=0]` | Rotate 32 bits r/m32 left CL times. |
+| roll r/m32 _1 | `D1 /0 [rm=0]` | Rotate 32 bits r/m32 left once. |
+| roll r/m32 _Cl | `D3 /0 [rm=0]` | Rotate 32 bits r/m32 left CL times. |
 
 # rolq
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | rolq r/m64 imm8 | `REX.W+ C1 /0 ib [rm=0, i=1]` | Rotate 64 bits r/m64 left imm8 times. Uses a 6 bit count. |
-| rolq r/m64 1 | `REX.W+ D1 /0 [rm=0]` | Rotate 64 bits r/m64 left once. Uses a 6 bit count. |
-| rolq r/m64 CL | `REX.W+ D3 /0 [rm=0]` | Rotate 64 bits r/m64 left CL times. Uses a 6 bit count. |
+| rolq r/m64 _1 | `REX.W+ D1 /0 [rm=0]` | Rotate 64 bits r/m64 left once. Uses a 6 bit count. |
+| rolq r/m64 _Cl | `REX.W+ D3 /0 [rm=0]` | Rotate 64 bits r/m64 left CL times. Uses a 6 bit count. |
 
 # rolw
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | rolw r/m16 imm8 | `66 C1 /0 ib [rm=0, i=1]` | Rotate 16 bits r/m16 left imm8 times. |
-| rolw r/m16 1 | `66 D1 /0 [rm=0]` | Rotate 16 bits r/m16 left once. |
-| rolw r/m16 CL | `66 D3 /0 [rm=0]` | Rotate 16 bits r/m16 left CL times. |
+| rolw r/m16 _1 | `66 D1 /0 [rm=0]` | Rotate 16 bits r/m16 left once. |
+| rolw r/m16 _Cl | `66 D3 /0 [rm=0]` | Rotate 16 bits r/m16 left CL times. |
 
 # rorb
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | rorb r/m8 imm8 | `C0 /1 ib [rm=0, i=1]` | Rotate 8 bits r/m16 right imm8 times. |
-| rorb r/m8 1 | `D0 /1 [rm=0]` | Rotate 8 bits r/m8 right once. |
-| rorb r/m8 CL | `D2 /1 [rm=0]` | Rotate 8 bits r/m8 right CL times. |
+| rorb r/m8 _1 | `D0 /1 [rm=0]` | Rotate 8 bits r/m8 right once. |
+| rorb r/m8 _Cl | `D2 /1 [rm=0]` | Rotate 8 bits r/m8 right CL times. |
 
 # rorl
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | rorl r/m32 imm8 | `C1 /1 ib [rm=0, i=1]` | Rotate 32 bits r/m32 right imm8 times. |
-| rorl r/m32 1 | `D1 /1 [rm=0]` | Rotate 32 bits r/m32 right once. |
-| rorl r/m32 CL | `D3 /1 [rm=0]` | Rotate 32 bits r/m32 right CL times. |
+| rorl r/m32 _1 | `D1 /1 [rm=0]` | Rotate 32 bits r/m32 right once. |
+| rorl r/m32 _Cl | `D3 /1 [rm=0]` | Rotate 32 bits r/m32 right CL times. |
 
 # rorq
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | rorq r/m64 imm8 | `REX.W+ C1 /1 ib [rm=0, i=1]` | Rotate 64 bits r/m64 right imm8 times. Uses a 6 bit count. |
-| rorq r/m64 1 | `REX.W+ D1 /1 [rm=0]` | Rotate 64 bits r/m64 right once. Uses a 6 bit count. |
-| rorq r/m64 CL | `REX.W+ D3 /1 [rm=0]` | Rotate 64 bits r/m64 right CL times. Uses a 6 bit count. |
+| rorq r/m64 _1 | `REX.W+ D1 /1 [rm=0]` | Rotate 64 bits r/m64 right once. Uses a 6 bit count. |
+| rorq r/m64 _Cl | `REX.W+ D3 /1 [rm=0]` | Rotate 64 bits r/m64 right CL times. Uses a 6 bit count. |
 
 # rorw
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | rorw r/m16 imm8 | `66 C1 /1 ib [rm=0, i=1]` | Rotate 16 bits r/m16 right imm8 times. |
-| rorw r/m16 1 | `66 D1 /1 [rm=0]` | Rotate 16 bits r/m16 right once. |
-| rorw r/m16 CL | `66 D3 /1 [rm=0]` | Rotate 16 bits r/m16 right CL times. |
+| rorw r/m16 _1 | `66 D1 /1 [rm=0]` | Rotate 16 bits r/m16 right once. |
+| rorw r/m16 _Cl | `66 D3 /1 [rm=0]` | Rotate 16 bits r/m16 right CL times. |
 
 # roundpd
 | Instruction | Encoding | Description |
@@ -2132,57 +2160,57 @@
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | salb r/m8 imm8 | `C0 /4 ib [rm=0, i=1]` | Multiply r/m8 by 2, imm8 times. |
-| salb r/m8 1 | `D0 /4 [rm=0]` | Multiply r/m8 by 2, once. |
-| salb r/m8 CL | `D2 /4 [rm=0]` | Multiply r/m8 by 2, CL times. |
+| salb r/m8 _1 | `D0 /4 [rm=0]` | Multiply r/m8 by 2, once. |
+| salb r/m8 _Cl | `D2 /4 [rm=0]` | Multiply r/m8 by 2, CL times. |
 
 # sall
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | sall r/m32 imm8 | `C1 /4 ib [rm=0, i=1]` | Multiply r/m32 by 2, imm8 times. |
-| sall r/m32 1 | `D1 /4 [rm=0]` | Multiply r/m32 by 2, once. |
-| sall r/m32 CL | `D3 /4 [rm=0]` | Multiply r/m32 by 2, CL times. |
+| sall r/m32 _1 | `D1 /4 [rm=0]` | Multiply r/m32 by 2, once. |
+| sall r/m32 _Cl | `D3 /4 [rm=0]` | Multiply r/m32 by 2, CL times. |
 
 # salq
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | salq r/m64 imm8 | `REX.W+ C1 /4 ib [rm=0, i=1]` | Multiply r/m64 by 2, imm8 times. |
-| salq r/m64 1 | `REX.W+ D1 /4 [rm=0]` | Multiply r/m64 by 2, once. |
-| salq r/m64 CL | `REX.W+ D3 /4 [rm=0]` | Multiply r/m64 by 2, CL times. |
+| salq r/m64 _1 | `REX.W+ D1 /4 [rm=0]` | Multiply r/m64 by 2, once. |
+| salq r/m64 _Cl | `REX.W+ D3 /4 [rm=0]` | Multiply r/m64 by 2, CL times. |
 
 # salw
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | salw r/m16 imm8 | `66 C1 /4 ib [rm=0, i=1]` | Multiply r/m16 by 2, imm8 times. |
-| salw r/m16 1 | `66 D1 /4 [rm=0]` | Multiply r/m16 by 2, once. |
-| salw r/m16 CL | `66 D3 /4 [rm=0]` | Multiply r/m16 by 2, CL times. |
+| salw r/m16 _1 | `66 D1 /4 [rm=0]` | Multiply r/m16 by 2, once. |
+| salw r/m16 _Cl | `66 D3 /4 [rm=0]` | Multiply r/m16 by 2, CL times. |
 
 # sarb
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | sarb r/m8 imm8 | `C0 /7 ib [rm=0, i=1]` | Signed divide r/m8 by 2, imm8 time. |
-| sarb r/m8 1 | `D0 /7 [rm=0]` | Signed divide r/m8 by 2, once. |
-| sarb r/m8 CL | `D2 /7 [rm=0]` | Signed divide r/m8 by 2, CL times. |
+| sarb r/m8 _1 | `D0 /7 [rm=0]` | Signed divide r/m8 by 2, once. |
+| sarb r/m8 _Cl | `D2 /7 [rm=0]` | Signed divide r/m8 by 2, CL times. |
 
 # sarl
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | sarl r/m32 imm8 | `C1 /7 ib [rm=0, i=1]` | Signed divide r/m32 by 2, imm8 times. |
-| sarl r/m32 1 | `D1 /7 [rm=0]` | Signed divide r/m32 by 2, once. |
-| sarl r/m32 CL | `D3 /7 [rm=0]` | Signed divide r/m32 by 2, CL times. |
+| sarl r/m32 _1 | `D1 /7 [rm=0]` | Signed divide r/m32 by 2, once. |
+| sarl r/m32 _Cl | `D3 /7 [rm=0]` | Signed divide r/m32 by 2, CL times. |
 
 # sarq
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | sarq r/m64 imm8 | `REX.W+ C1 /7 ib [rm=0, i=1]` | Signed divide r/m32 by 2, imm8 times. |
-| sarq r/m64 1 | `REX.W+ D1 /7 [rm=0]` | Signed divide r/m32 by 2, once. |
-| sarq r/m64 CL | `REX.W+ D3 /7 [rm=0]` | Signed divide r/m32 by 2, CL times. |
+| sarq r/m64 _1 | `REX.W+ D1 /7 [rm=0]` | Signed divide r/m32 by 2, once. |
+| sarq r/m64 _Cl | `REX.W+ D3 /7 [rm=0]` | Signed divide r/m32 by 2, CL times. |
 
 # sarw
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | sarw r/m16 imm8 | `66 C1 /7 ib [rm=0, i=1]` | Signed divide r/m16 by 2, imm8 times. |
-| sarw r/m16 1 | `66 D1 /7 [rm=0]` | Signed divide r/m16 by 2, once. |
-| sarw r/m16 CL | `66 D3 /7 [rm=0]` | Signed divide r/m16 by 2, CL times. |
+| sarw r/m16 _1 | `66 D1 /7 [rm=0]` | Signed divide r/m16 by 2, once. |
+| sarw r/m16 _Cl | `66 D3 /7 [rm=0]` | Signed divide r/m16 by 2, CL times. |
 
 # sbbb
 | Instruction | Encoding | Description |
@@ -2190,7 +2218,7 @@
 | sbbb r8 r/m8 | `1A /r [reg=0, rm=1]` | Subtract with borrow r/m8 from r8. |
 | sbbb r/m8 r8 | `18 /r [reg=1, rm=0]` | Subtract with borrow r8 from r/m8. |
 | sbbb r/m8 imm8 | `80 /3 ib [rm=0, i=1]` | Subtract with borrow imm8 from r/m8. |
-| sbbb AL imm8 | `1C ib [i=1]` | Subtract with borrow imm8 from AL. |
+| sbbb _Al imm8 | `1C ib [i=1]` | Subtract with borrow imm8 from AL. |
 
 # sbbl
 | Instruction | Encoding | Description |
@@ -2199,7 +2227,7 @@
 | sbbl r/m32 r32 | `19 /r [reg=1, rm=0]` | Subtract with borrow r32 from r/m32. |
 | sbbl r/m32 imm8 | `83 /3 ib [rm=0, i=1]` | Subtract with borrow sign-extended imm8 from r/m32. |
 | sbbl r/m32 imm32 | `81 /3 id [rm=0, i=1]` | Subtract with borrow imm32 from r/m32. |
-| sbbl EAX imm32 | `1D id [i=1]` | Subtract with borrow imm32 from EAX. |
+| sbbl _Eax imm32 | `1D id [i=1]` | Subtract with borrow imm32 from EAX. |
 
 # sbbq
 | Instruction | Encoding | Description |
@@ -2208,7 +2236,7 @@
 | sbbq r/m64 r64 | `REX.W+ 19 /r [reg=1, rm=0]` | Subtract with borrow r64 from r/m64. |
 | sbbq r/m64 imm8 | `REX.W+ 83 /3 ib [rm=0, i=1]` | Subtract with borrow sign-extended imm8 from r/m64. |
 | sbbq r/m64 imm32 | `REX.W+ 81 /3 id [rm=0, i=1]` | Subtract with borrow sign-extended imm32 to 64-bits from r/m64. |
-| sbbq RAX imm32 | `REX.W+ 1D id [i=1]` | Subtract with borrow sign-extended imm.32 to 64-bits from RAX. |
+| sbbq _Rax imm32 | `REX.W+ 1D id [i=1]` | Subtract with borrow sign-extended imm.32 to 64-bits from RAX. |
 
 # sbbw
 | Instruction | Encoding | Description |
@@ -2217,7 +2245,7 @@
 | sbbw r/m16 r16 | `66 19 /r [reg=1, rm=0]` | Subtract with borrow r16 from r/m16. |
 | sbbw r/m16 imm8 | `66 83 /3 ib [rm=0, i=1]` | Subtract with borrow sign-extended imm8 from r/m16. |
 | sbbw r/m16 imm16 | `66 81 /3 iw [rm=0, i=1]` | Subtract with borrow imm16 from r/m16. |
-| sbbw AX imm16 | `66 1D iw [i=1]` | Subtract with borrow imm16 from AX. |
+| sbbw _Ax imm16 | `66 1D iw [i=1]` | Subtract with borrow imm16 from AX. |
 
 # seta
 | Instruction | Encoding | Description |
@@ -2383,93 +2411,93 @@
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | shlb r/m8 imm8 | `C0 /4 ib [rm=0, i=1]` | Multiply r/m8 by 2, imm8 times. |
-| shlb r/m8 1 | `D0 /4 [rm=0]` | Multiply r/m8 by 2, once. |
-| shlb r/m8 CL | `D2 /4 [rm=0]` | Multiply r/m8 by 2, CL times. |
+| shlb r/m8 _1 | `D0 /4 [rm=0]` | Multiply r/m8 by 2, once. |
+| shlb r/m8 _Cl | `D2 /4 [rm=0]` | Multiply r/m8 by 2, CL times. |
 
 # shldl
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | shldl r/m32 r32 imm8 | `0F A4 /r ib [reg=1, rm=0, i=2]` | Shift r/m32 to left imm8 places while shifting bits from r32 in from the right. |
-| shldl r/m32 r32 CL | `0F A5 /r [reg=1, rm=0]` | Shift r/m32 to left CL places while shifting bits from r32 in from the right. |
+| shldl r/m32 r32 _Cl | `0F A5 /r [reg=1, rm=0]` | Shift r/m32 to left CL places while shifting bits from r32 in from the right. |
 
 # shldq
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | shldq r/m64 r64 imm8 | `REX.W+ 0F A4 /r ib [reg=1, rm=0, i=2]` | Shift r/m64 to left imm8 places while shifting bits from r64 in from the right. |
-| shldq r/m64 r64 CL | `REX.W+ 0F A5 /r [reg=1, rm=0]` | Shift r/m64 to left CL places while shifting bits from r64 in from the right. |
+| shldq r/m64 r64 _Cl | `REX.W+ 0F A5 /r [reg=1, rm=0]` | Shift r/m64 to left CL places while shifting bits from r64 in from the right. |
 
 # shldw
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | shldw r/m16 r16 imm8 | `66 0F A4 /r ib [reg=1, rm=0, i=2]` | Shift r/m16 to left imm8 places while shifting bits from r16 in from the right. |
-| shldw r/m16 r16 CL | `66 0F A5 /r [reg=1, rm=0]` | Shift r/m16 to left CL places while shifting bits from r16 in from the right. |
+| shldw r/m16 r16 _Cl | `66 0F A5 /r [reg=1, rm=0]` | Shift r/m16 to left CL places while shifting bits from r16 in from the right. |
 
 # shll
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | shll r/m32 imm8 | `C1 /4 ib [rm=0, i=1]` | Multiply r/m32 by 2, imm8 times. |
-| shll r/m32 1 | `D1 /4 [rm=0]` | Multiply r/m32 by 2, once. |
-| shll r/m32 CL | `D3 /4 [rm=0]` | Multiply r/m32 by 2, CL times. |
+| shll r/m32 _1 | `D1 /4 [rm=0]` | Multiply r/m32 by 2, once. |
+| shll r/m32 _Cl | `D3 /4 [rm=0]` | Multiply r/m32 by 2, CL times. |
 
 # shlq
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | shlq r/m64 imm8 | `REX.W+ C1 /4 ib [rm=0, i=1]` | Multiply r/m32 by 2, imm8 times. |
-| shlq r/m64 1 | `REX.W+ D1 /4 [rm=0]` | Multiply r/m64 by 2, once. |
-| shlq r/m64 CL | `REX.W+ D3 /4 [rm=0]` | Multiply r/m32 by 2, CL times. |
+| shlq r/m64 _1 | `REX.W+ D1 /4 [rm=0]` | Multiply r/m64 by 2, once. |
+| shlq r/m64 _Cl | `REX.W+ D3 /4 [rm=0]` | Multiply r/m32 by 2, CL times. |
 
 # shlw
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | shlw r/m16 imm8 | `66 C1 /4 ib [rm=0, i=1]` | Multiply r/m16 by 2, imm8 times. |
-| shlw r/m16 1 | `66 D1 /4 [rm=0]` | Multiply r/m16 by 2, once. |
-| shlw r/m16 CL | `66 D3 /4 [rm=0]` | Multiply r/m16 by 2, CL times. |
+| shlw r/m16 _1 | `66 D1 /4 [rm=0]` | Multiply r/m16 by 2, once. |
+| shlw r/m16 _Cl | `66 D3 /4 [rm=0]` | Multiply r/m16 by 2, CL times. |
 
 # shrb
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | shrb r/m8 imm8 | `C0 /5 ib [rm=0, i=1]` | Unsigned divide r/m8 by 2, imm8 times. |
-| shrb r/m8 1 | `D0 /5 [rm=0]` | Unsigned divide r/m8 by 2, once. |
-| shrb r/m8 CL | `D2 /5 [rm=0]` | Unsigned divide r/m8 by 2, CL times. |
+| shrb r/m8 _1 | `D0 /5 [rm=0]` | Unsigned divide r/m8 by 2, once. |
+| shrb r/m8 _Cl | `D2 /5 [rm=0]` | Unsigned divide r/m8 by 2, CL times. |
 
 # shrdl
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | shrdl r/m32 r32 imm8 | `0F AC /r ib [reg=1, rm=0, i=2]` | Shift r/m32 to right imm8 places while shifting bits from r32 in from the left. |
-| shrdl r/m32 r32 CL | `0F AD /r [reg=1, rm=0]` | Shift r/m32 to right CL places while shifting bits from r32 in from the left. |
+| shrdl r/m32 r32 _Cl | `0F AD /r [reg=1, rm=0]` | Shift r/m32 to right CL places while shifting bits from r32 in from the left. |
 
 # shrdq
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | shrdq r/m64 r64 imm8 | `REX.W+ 0F AC /r ib [reg=1, rm=0, i=2]` | Shift r/m64 to right imm8 places while shifting bits from r64 in from the left. |
-| shrdq r/m64 r64 CL | `REX.W+ 0F AD /r [reg=1, rm=0]` | Shift r/m64 to right CL places while shifting bits from r64 in from the left. |
+| shrdq r/m64 r64 _Cl | `REX.W+ 0F AD /r [reg=1, rm=0]` | Shift r/m64 to right CL places while shifting bits from r64 in from the left. |
 
 # shrdw
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | shrdw r/m16 r16 imm8 | `66 0F AC /r ib [reg=1, rm=0, i=2]` | Shift r/m16 to right imm8 places while shifting bits from r16 in from the left. |
-| shrdw r/m16 r16 CL | `66 0F AD /r [reg=1, rm=0]` | Shift r/m16 to right CL places while shifting bits from r16 in from the left. |
+| shrdw r/m16 r16 _Cl | `66 0F AD /r [reg=1, rm=0]` | Shift r/m16 to right CL places while shifting bits from r16 in from the left. |
 
 # shrl
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | shrl r/m32 imm8 | `C1 /5 ib [rm=0, i=1]` | Unsigned divide r/m32 by 2, imm8 times. |
-| shrl r/m32 1 | `D1 /5 [rm=0]` | Unsigned divide r/m32 by 2, once. |
-| shrl r/m32 CL | `D3 /5 [rm=0]` | Unsigned divide r/m32 by 2, CL times. |
+| shrl r/m32 _1 | `D1 /5 [rm=0]` | Unsigned divide r/m32 by 2, once. |
+| shrl r/m32 _Cl | `D3 /5 [rm=0]` | Unsigned divide r/m32 by 2, CL times. |
 
 # shrq
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | shrq r/m64 imm8 | `REX.W+ C1 /5 ib [rm=0, i=1]` | Unsigned divide r/m32 by 2, imm8 times. |
-| shrq r/m64 1 | `REX.W+ D1 /5 [rm=0]` | Unsigned divide r/m32 by 2, once. |
-| shrq r/m64 CL | `REX.W+ D3 /5 [rm=0]` | Unsigned divide r/m32 by 2, CL times. |
+| shrq r/m64 _1 | `REX.W+ D1 /5 [rm=0]` | Unsigned divide r/m32 by 2, once. |
+| shrq r/m64 _Cl | `REX.W+ D3 /5 [rm=0]` | Unsigned divide r/m32 by 2, CL times. |
 
 # shrw
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | shrw r/m16 imm8 | `66 C1 /5 ib [rm=0, i=1]` | Unsigned divide r/m16 by 2, imm8 times. |
-| shrw r/m16 1 | `66 D1 /5 [rm=0]` | Unsigned divide r/m16 by 2, once. |
-| shrw r/m16 CL | `66 D3 /5 [rm=0]` | Unsigned divide r/m16 by 2, CL times |
+| shrw r/m16 _1 | `66 D1 /5 [rm=0]` | Unsigned divide r/m16 by 2, once. |
+| shrw r/m16 _Cl | `66 D3 /5 [rm=0]` | Unsigned divide r/m16 by 2, CL times |
 
 # shufpd
 | Instruction | Encoding | Description |
@@ -2537,7 +2565,7 @@
 | subb r8 r/m8 | `2A /r [reg=0, rm=1]` | Subtract r/m8 from r8. |
 | subb r/m8 r8 | `28 /r [reg=1, rm=0]` | Subtract r8 from r/m8. |
 | subb r/m8 imm8 | `80 /5 ib [rm=0, i=1]` | Subtract imm8 from r/m8. |
-| subb AL imm8 | `2C ib [i=1]` | Subtract imm8 from AL. |
+| subb _Al imm8 | `2C ib [i=1]` | Subtract imm8 from AL. |
 
 # subl
 | Instruction | Encoding | Description |
@@ -2546,7 +2574,7 @@
 | subl r/m32 r32 | `29 /r [reg=1, rm=0]` | Subtract r32 from r/m32. |
 | subl r/m32 imm8 | `83 /5 ib [rm=0, i=1]` | Subtract sign-extended imm8 from r/m32. |
 | subl r/m32 imm32 | `81 /5 id [rm=0, i=1]` | Subtract imm32 from r/m32. |
-| subl EAX imm32 | `2D id [i=1]` | Subtract imm32 from EAX. |
+| subl _Eax imm32 | `2D id [i=1]` | Subtract imm32 from EAX. |
 
 # subpd
 | Instruction | Encoding | Description |
@@ -2565,7 +2593,7 @@
 | subq r/m64 r64 | `REX.W+ 29 /r [reg=1, rm=0]` | Subtract r64 from r/m64. |
 | subq r/m64 imm8 | `REX.W+ 83 /5 ib [rm=0, i=1]` | Subtract sign-extended imm8 from r/m64. |
 | subq r/m64 imm32 | `REX.W+ 81 /5 id [rm=0, i=1]` | Subtract imm32 sign-extended to 64-bits from r/m64. |
-| subq RAX imm32 | `REX.W+ 2D id [i=1]` | Subtract imm32 sign-extended to 64-bits from RAX. |
+| subq _Rax imm32 | `REX.W+ 2D id [i=1]` | Subtract imm32 sign-extended to 64-bits from RAX. |
 
 # subsd
 | Instruction | Encoding | Description |
@@ -2584,7 +2612,7 @@
 | subw r/m16 r16 | `66 29 /r [reg=1, rm=0]` | Subtract r16 from r/m16. |
 | subw r/m16 imm8 | `66 83 /5 ib [rm=0, i=1]` | Subtract sign-extended imm8 from r/m16. |
 | subw r/m16 imm16 | `66 81 /5 iw [rm=0, i=1]` | Subtract imm16 from r/m16. |
-| subw AX imm16 | `66 2D iw [i=1]` | Subtract imm16 from AX. |
+| subw _Ax imm16 | `66 2D iw [i=1]` | Subtract imm16 from AX. |
 
 # swapgs
 | Instruction | Encoding | Description |
@@ -2596,28 +2624,28 @@
 | ----------- | -------- | ----------- |
 | testb r/m8 r8 | `84 /r [reg=1, rm=0]` | AND r8 with r/m8; set SF, ZF, PF according to result. |
 | testb r/m8 imm8 | `F6 /0 ib [rm=0, i=1]` | AND imm8 with r/m8; set SF, ZF, PF according to result. |
-| testb AL imm8 | `A8 ib [i=1]` | AND imm8 with AL; set SF, ZF, PF according to result. |
+| testb _Al imm8 | `A8 ib [i=1]` | AND imm8 with AL; set SF, ZF, PF according to result. |
 
 # testl
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | testl r/m32 r32 | `85 /r [reg=1, rm=0]` | AND r32 with r/m32; set SF, ZF, PF according to result. |
 | testl r/m32 imm32 | `F7 /0 id [rm=0, i=1]` | AND imm32 with r/m32; set SF, ZF, PF according to result. |
-| testl EAX imm32 | `A9 id [i=1]` | AND imm32 with EAX; set SF, ZF, PF according to result. |
+| testl _Eax imm32 | `A9 id [i=1]` | AND imm32 with EAX; set SF, ZF, PF according to result. |
 
 # testq
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | testq r/m64 r64 | `REX.W+ 85 /r [reg=1, rm=0]` | AND r64 with r/m64; set SF, ZF, PF according to result. |
 | testq r/m64 imm32 | `REX.W+ F7 /0 id [rm=0, i=1]` | AND imm32 sign-extended to 64-bits with r/m64; set SF, ZF, PF according to result. |
-| testq RAX imm32 | `REX.W+ A9 id [i=1]` | AND imm32 sign-extended to 64-bits with RAX; set SF, ZF, PF according to result. |
+| testq _Rax imm32 | `REX.W+ A9 id [i=1]` | AND imm32 sign-extended to 64-bits with RAX; set SF, ZF, PF according to result. |
 
 # testw
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | testw r/m16 r16 | `66 85 /r [reg=1, rm=0]` | AND r16 with r/m16; set SF, ZF, PF according to result. |
 | testw r/m16 imm16 | `66 F7 /0 iw [rm=0, i=1]` | AND imm16 with r/m16; set SF, ZF, PF according to result. |
-| testw AX imm16 | `66 A9 iw [i=1]` | AND imm16 with AX; set SF, ZF, PF according to result. |
+| testw _Ax imm16 | `66 A9 iw [i=1]` | AND imm16 with AX; set SF, ZF, PF according to result. |
 
 # ucomisd
 | Instruction | Encoding | Description |
@@ -2704,25 +2732,25 @@
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | xchgl r32 r/m32 | `87 /r [reg=0, rm=1]` | Exchange doubleword from r/m32 with r32. |
-| xchgl r32 EAX | `90 +rd [r=0]` | Exchange EAX with r32. |
+| xchgl r32 _Eax | `90 +rd [r=0]` | Exchange EAX with r32. |
 | xchgl r/m32 r32 | `87 /r [reg=1, rm=0]` | Exchange r32 with doubleword from r/m32. |
-| xchgl EAX r32 | `90 +rd [r=1]` | Exchange r32 with EAX. |
+| xchgl _Eax r32 | `90 +rd [r=1]` | Exchange r32 with EAX. |
 
 # xchgq
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | xchgq r64 r/m64 | `REX.W+ 87 /r [reg=0, rm=1]` | Exchange quadword from r/m64 with r64. |
-| xchgq r64 RAX | `REX.W+ 90 +ro [r=0]` | Exchange RAX with r64. |
+| xchgq r64 _Rax | `REX.W+ 90 +ro [r=0]` | Exchange RAX with r64. |
 | xchgq r/m64 r64 | `REX.W+ 87 /r [reg=1, rm=0]` | Exchange r64 with quadword from r/m64. |
-| xchgq RAX r64 | `REX.W+ 90 +ro [r=1]` | Exchange r64 with RAX. |
+| xchgq _Rax r64 | `REX.W+ 90 +ro [r=1]` | Exchange r64 with RAX. |
 
 # xchgw
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | xchgw r16 r/m16 | `66 87 /r [reg=0, rm=1]` | Exchange word from r/m16 with r16. |
-| xchgw r16 AX | `66 90 +rw [r=0]` | Exchange AX with r16. |
+| xchgw r16 _Ax | `66 90 +rw [r=0]` | Exchange AX with r16. |
 | xchgw r/m16 r16 | `66 87 /r [reg=1, rm=0]` | Exchange r16 with word from r/m16. |
-| xchgw AX r16 | `66 90 +rw [r=1]` | Exchange r16 with AX. |
+| xchgw _Ax r16 | `66 90 +rw [r=1]` | Exchange r16 with AX. |
 
 # xorb
 | Instruction | Encoding | Description |
@@ -2730,7 +2758,7 @@
 | xorb r8 r/m8 | `32 /r [reg=0, rm=1]` | r8 XOR r/m8. |
 | xorb r/m8 r8 | `30 /r [reg=1, rm=0]` | r/m8 XOR r8. |
 | xorb r/m8 imm8 | `80 /6 ib [rm=0, i=1]` | r/m8 XOR imm8. |
-| xorb AL imm8 | `34 ib [i=1]` | AL XOR imm8. |
+| xorb _Al imm8 | `34 ib [i=1]` | AL XOR imm8. |
 
 # xorl
 | Instruction | Encoding | Description |
@@ -2739,7 +2767,7 @@
 | xorl r/m32 r32 | `31 /r [reg=1, rm=0]` | r/m32 XOR r32. |
 | xorl r/m32 imm8 | `83 /6 ib [rm=0, i=1]` | r/m32 XOR imm8 (sign-extended). |
 | xorl r/m32 imm32 | `81 /6 id [rm=0, i=1]` | r/m32 XOR imm32. |
-| xorl EAX imm32 | `35 id [i=1]` | EAX XOR imm32. |
+| xorl _Eax imm32 | `35 id [i=1]` | EAX XOR imm32. |
 
 # xorpd
 | Instruction | Encoding | Description |
@@ -2758,7 +2786,7 @@
 | xorq r/m64 r64 | `REX.W+ 31 /r [reg=1, rm=0]` | r/m64 XOR r64. |
 | xorq r/m64 imm8 | `REX.W+ 83 /6 ib [rm=0, i=1]` | r/m64 XOR imm8 (sign-extended). |
 | xorq r/m64 imm32 | `REX.W+ 81 /6 id [rm=0, i=1]` | r/m64 XOR imm32 (sign-extended). |
-| xorq RAX imm32 | `REX.W+ 35 id [i=1]` | RAX XOR imm32 (sign-extended). |
+| xorq _Rax imm32 | `REX.W+ 35 id [i=1]` | RAX XOR imm32 (sign-extended). |
 
 # xorw
 | Instruction | Encoding | Description |
@@ -2767,7 +2795,7 @@
 | xorw r/m16 r16 | `66 31 /r [reg=1, rm=0]` | r/m16 XOR r16. |
 | xorw r/m16 imm8 | `66 83 /6 ib [rm=0, i=1]` | r/m16 XOR imm8 (sign-extended). |
 | xorw r/m16 imm16 | `66 81 /6 iw [rm=0, i=1]` | r/m16 XOR imm16. |
-| xorw AX imm16 | `66 35 iw [i=1]` | AX XOR imm16. |
+| xorw _Ax imm16 | `66 35 iw [i=1]` | AX XOR imm16. |
 
 # xsetbv
 | Instruction | Encoding | Description |
@@ -2775,4 +2803,4 @@
 | xsetbv | `0F 01 D1 []` | Write the value in EDX:EAX to the XCR specified by ECX. |
 
 ---
-Total 491 mnemonics.
+Total 498 mnemonics.

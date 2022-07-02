@@ -52,31 +52,44 @@ fn build_instruction_set(specs: Vec<Spec>) -> Result<InstructionSet, String> {
         instruction.normalize()?;
         let mnemonic = instruction.mnemonic().to_owned();
         let operands = instruction.operands().to_vec();
-        match accum.entry(mnemonic).or_default().entry(operands) {
-            BTreeEntry::Vacant(e) => discard(e.insert(instruction)),
-            BTreeEntry::Occupied(e) => e.into_mut().merge(instruction)?,
-        }
+        accum
+            .entry(mnemonic)
+            .or_default()
+            .insert_with(operands, instruction, |a, b| a.merge(b))?;
     }
 
-    accum
+    Ok(accum
         .into_iter()
-        .map(|(mnemonic, insts)| Ok((mnemonic, insts.into_iter().map(|e| e.1).collect())))
-        .collect::<Result<_, _>>()
+        .flat_map(|(_, insts)| {
+            let arity_insts_map = insts
+                .into_iter()
+                .group_map(|(_, i)| (i.operands().len(), i));
+            let (&major_arity, _) = arity_insts_map
+                .iter()
+                .max_by_key(|(_, insts)| insts.len())
+                .unwrap();
+
+            arity_insts_map.into_iter().map(move |(arity, insts)| {
+                let mnemonic = if arity == major_arity {
+                    insts[0].mnemonic().clone()
+                } else {
+                    format!("{}{}", insts[0].mnemonic(), arity)
+                };
+                (mnemonic, insts)
+            })
+        })
+        .collect())
 }
 
 fn validate_instruction_set(inst_set: &InstructionSet) -> Result<(), String> {
-    let mut operator_encodings = BTreeMap::new();
+    let mut operators = BTreeMap::new();
     for i in inst_set.values().flat_map(|insts| insts.iter()) {
-        let operator_encoding = i.encoding().operator().collect::<Vec<_>>();
-        match operator_encodings.entry(operator_encoding) {
-            BTreeEntry::Vacant(e) => discard(e.insert(i)),
-            BTreeEntry::Occupied(e) => {
-                let e = e.into_mut();
-                if !i.allows_encoding_overlap_with(e) {
-                    Err(format!("Ambiguous encoding between {} and {}", i, e))?;
-                }
-            }
-        }
+        let operator = i.encoding().operator().collect::<Vec<_>>();
+        operators.insert_with(operator, i, |a, b| {
+            a.allows_encoding_overlap_with(b)
+                .then_some(())
+                .ok_or_else(|| format!("Ambiguous encoding between {} and {}", a, b))
+        })?;
     }
     Ok(())
 }
@@ -85,4 +98,42 @@ fn to_io_error(e: impl AsRef<str>) -> io::Error {
     io::Error::new(io::ErrorKind::Other, e.as_ref())
 }
 
-fn discard<T>(_: T) {}
+trait BTreeMapExt<K, V> {
+    fn insert_with<E>(
+        &mut self,
+        key: K,
+        value: V,
+        merge: impl FnOnce(&mut V, V) -> Result<(), E>,
+    ) -> Result<(), E>;
+}
+
+impl<K: Ord, V> BTreeMapExt<K, V> for BTreeMap<K, V> {
+    fn insert_with<E>(
+        &mut self,
+        key: K,
+        value: V,
+        merge: impl FnOnce(&mut V, V) -> Result<(), E>,
+    ) -> Result<(), E> {
+        match self.entry(key) {
+            BTreeEntry::Vacant(e) => {
+                e.insert(value);
+                Ok(())
+            }
+            BTreeEntry::Occupied(e) => merge(e.into_mut(), value),
+        }
+    }
+}
+
+trait IteratorExt: Iterator {
+    fn group_map<K: Ord, V>(self, f: impl FnMut(Self::Item) -> (K, V)) -> BTreeMap<K, Vec<V>>;
+}
+
+impl<T: Iterator> IteratorExt for T {
+    fn group_map<K: Ord, V>(self, mut f: impl FnMut(Self::Item) -> (K, V)) -> BTreeMap<K, Vec<V>> {
+        self.fold(BTreeMap::<K, Vec<V>>::new(), move |mut map, item| {
+            let (key, value) = f(item);
+            map.entry(key).or_default().push(value);
+            map
+        })
+    }
+}
