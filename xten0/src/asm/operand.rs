@@ -631,51 +631,6 @@ pub struct _3;
 mod tests {
     use super::super::encoding::{ModRM, PartOfOpcode, RegInOpcode};
     use super::*;
-    use std::fs::File;
-    use std::io::{Read, Write};
-    use std::path::Path;
-    use std::process::Command;
-    use tempfile::tempdir;
-
-    fn exec(dir: impl AsRef<Path>, program: &str, args: &[&str]) {
-        let status = Command::new(program)
-            .current_dir(dir)
-            .args(args)
-            .status()
-            .unwrap();
-        assert!(status.success(), "{} failed with: {}", program, status);
-    }
-
-    fn dump(asm: &str) -> Vec<u8> {
-        let dir = tempdir().unwrap();
-
-        // Write to asm.S
-        let mut h = File::create(dir.path().join("asm.S")).unwrap();
-        writeln!(&mut h, ".intel_syntax noprefix").unwrap();
-        writeln!(&mut h, "{}", asm).unwrap();
-        // Assemble asm.S to asm.o
-        exec(dir.path(), "as", &["-o", "asm.o", "asm.S"]);
-        // Extract .text section into mc.bin
-        exec(
-            dir.path(),
-            "objcopy",
-            &["--dump-section", ".text=mc.bin", "asm.o"],
-        );
-        // Read the machine-code from mc.bin
-        let mut out = Vec::new();
-        File::open(dir.path().join("mc.bin"))
-            .unwrap()
-            .read_to_end(&mut out)
-            .unwrap();
-        out
-    }
-
-    macro_rules! assert_dump {
-        ($e:expr, $( $t:tt )*) => {
-            let asm = format!($( $t )*);
-            assert_eq!(dump(&asm), $e, "{}", asm);
-        };
-    }
 
     // movq r/m64 r64: Move r64 to r/m64.
     fn movq(dest: impl Into<Rm>, src: impl Into<Reg>) -> Vec<u8> {
@@ -725,9 +680,10 @@ mod tests {
             .collect()
     }
 
-    fn movsd(src: impl Into<Reg>, dest: impl Into<Rm>) -> Vec<u8> {
+    // movsd xmm1, xmm2/m64: Move scalar double-precision floating-point value from xmm2/m64 to xmm1 register.
+    fn movsd(dest: impl Into<Reg>, src: impl Into<Rm>) -> Vec<u8> {
         // F2 0F 10 /r
-        let modrm = ModRM::new(src, dest);
+        let modrm = ModRM::new(dest, src);
         std::iter::empty()
             .chain([0xf2]) // Mandatory prefix
             .chain(modrm.rex_byte(false)) // REX prefix
@@ -757,7 +713,7 @@ mod tests {
                 if ra == rb {
                     continue;
                 }
-                assert_dump!(movq(ra, rb), "movq {}, {}", sa, sb);
+                assert_as!(movq(ra, rb), "movq {}, {}", sa, sb);
             }
         }
     }
@@ -765,32 +721,32 @@ mod tests {
     #[test]
     fn gpr32() {
         // It also tests with PartOfOpcode
-        assert_dump!(negl(Eax), "neg eax");
-        assert_dump!(negl(Ecx), "neg ecx");
-        assert_dump!(negl(R13D), "neg r13d");
+        assert_as!(negl(Eax), "neg eax");
+        assert_as!(negl(Ecx), "neg ecx");
+        assert_as!(negl(R13D), "neg r13d");
     }
 
     #[test]
     fn gpr16() {
         // It also tests with RegInOpcode
-        assert_dump!(movw(Ax, 30000), "movw ax, 30000");
-        assert_dump!(movw(R8W, -1234), "movw r8w, -1234");
+        assert_as!(movw(Ax, 30000), "movw ax, 30000");
+        assert_as!(movw(R8W, -1234), "movw r8w, -1234");
     }
 
     #[test]
     fn gpr8() {
         // It also tests force_rex_prefix
-        assert_dump!(movb(Al, Cl), "movb al, cl");
-        assert_dump!(movb(memory(Rax + Rcx * 2), Dl), "movb [rax + rcx * 2], dl");
-        assert_dump!(movb(Spl, Bl), "movb spl, bl");
-        assert_dump!(movb(Al, Dil), "movb al, dil");
+        assert_as!(movb(Al, Cl), "movb al, cl");
+        assert_as!(movb(memory(Rax + Rcx * 2), Dl), "movb [rax + rcx * 2], dl");
+        assert_as!(movb(Spl, Bl), "movb spl, bl");
+        assert_as!(movb(Al, Dil), "movb al, dil");
     }
 
     #[test]
     fn xmm() {
-        assert_dump!(movsd(Xmm1, Xmm3), "movsd xmm1, xmm3");
-        assert_dump!(movsd(Xmm10, memory(Rdx)), "movsd xmm10, [rdx]");
-        assert_dump!(
+        assert_as!(movsd(Xmm1, Xmm3), "movsd xmm1, xmm3");
+        assert_as!(movsd(Xmm10, memory(Rdx)), "movsd xmm10, [rdx]");
+        assert_as!(
             movsd(Xmm4, memory(Rax + Rcx * 8 - 8i8)),
             "movsd xmm4, [rax + rcx * 8 - 8]"
         );
@@ -799,21 +755,21 @@ mod tests {
     #[test]
     fn memory_address() {
         // absolute addressing
-        assert_dump!(movq(memory(124), Rax), "mov [124], rax");
-        assert_dump!(movq(memory(124 + Rcx * 2), Rax), "mov [124 + rcx * 2], rax");
-        assert_dump!(
+        assert_as!(movq(memory(124), Rax), "mov [124], rax");
+        assert_as!(movq(memory(124 + Rcx * 2), Rax), "mov [124 + rcx * 2], rax");
+        assert_as!(
             movq(memory(1024 + Rdx * 4), Rax),
             "mov [1024 + rdx * 4], rax"
         );
-        assert_dump!(
+        assert_as!(
             movq(memory(4096 + R14 * 8), Rax),
             "mov [4096 + r14 * 8], rax"
         );
 
         // RIP-relative addressing
-        assert_dump!(movq(memory(Rip), Rcx), "mov [rip], rcx");
-        assert_dump!(movq(memory(Rip + 16), Rcx), "mov [rip + 16], rcx");
-        assert_dump!(movq(memory(Rip - 64), Rcx), "mov [rip - 64], rcx");
+        assert_as!(movq(memory(Rip), Rcx), "mov [rip], rcx");
+        assert_as!(movq(memory(Rip + 16), Rcx), "mov [rip + 16], rcx");
+        assert_as!(movq(memory(Rip - 64), Rcx), "mov [rip - 64], rcx");
 
         for (ra, sa) in general_purpose_registers() {
             for (rb, sb) in general_purpose_registers() {
@@ -822,31 +778,31 @@ mod tests {
                 }
 
                 // [Base]
-                assert_dump!(movq(memory(ra), rb), "mov [{}], {}", sa, sb);
+                assert_as!(movq(memory(ra), rb), "mov [{}], {}", sa, sb);
                 // [Base + disp8]
-                assert_dump!(movq(memory(ra + 12i8), rb), "mov [{} + 12], {}", sa, sb);
+                assert_as!(movq(memory(ra + 12i8), rb), "mov [{} + 12], {}", sa, sb);
                 // [Base + disp32]
-                assert_dump!(movq(memory(ra + 1024), rb), "mov [{} + 1024], {}", sa, sb);
+                assert_as!(movq(memory(ra + 1024), rb), "mov [{} + 1024], {}", sa, sb);
 
                 // Cannot use RSP as an index register
                 if rb != Rsp {
                     // [Base + Index]
-                    assert_dump!(movq(memory(ra + rb), Rcx), "mov [{} + {}], rcx", sa, sb);
-                    assert_dump!(
+                    assert_as!(movq(memory(ra + rb), Rcx), "mov [{} + {}], rcx", sa, sb);
+                    assert_as!(
                         movq(memory(ra + rb * 4), Rcx),
                         "mov [{} + {} * 4], rcx",
                         sa,
                         sb
                     );
                     // [Base + disp8 + Index]
-                    assert_dump!(
+                    assert_as!(
                         movq(memory(ra - 8i8 + rb), Rcx),
                         "mov [{} - 8 + {}], rcx",
                         sa,
                         sb
                     );
                     // [Base + disp32 + Index]
-                    assert_dump!(
+                    assert_as!(
                         movq(memory(ra - 512 + rb * 4), Rcx),
                         "mov [{} - 512 + {} * 4], rcx",
                         sa,
