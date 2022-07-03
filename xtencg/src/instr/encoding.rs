@@ -96,7 +96,7 @@ pub struct Encoding {
     prefixes: HVec<u8, 4>,       // corresponds to Const(u8)
     rex: Option<bool>,           // corresponds to Rex | RexW
     opcode: HVec<u8, 3>,         // corresponds to Const(u8)
-    mod_rm: Option<Option<u8>>,  // corresponds to ModRM(Option<Size>)
+    modrm: Option<Option<u8>>,   // corresponds to ModRM(Option<Size>)
     reg_in_opcode: Option<Size>, // corresponds to R(Size)
     immediate: Option<Size>,     // corresponds to Imm(Size)
     code_offset: Option<Size>,   // corresponds to C(Size)
@@ -109,14 +109,14 @@ impl Encoding {
             prefixes: HVec::new(),
             rex: None,
             opcode: HVec::new(),
-            mod_rm: None,
+            modrm: None,
             reg_in_opcode: None,
             immediate: None,
             code_offset: None,
         }
     }
 
-    pub fn prefixes(&self) -> impl Iterator<Item = u8> + '_ {
+    pub fn prefixes(&self) -> impl ExactSizeIterator<Item = u8> + '_ {
         self.prefixes.iter().copied()
     }
 
@@ -150,7 +150,7 @@ impl Encoding {
             } == other
     }
 
-    pub fn opcode(&self) -> impl Iterator<Item = u8> + '_ {
+    pub fn opcode(&self) -> impl ExactSizeIterator<Item = u8> + '_ {
         self.opcode.iter().copied()
     }
 
@@ -167,7 +167,7 @@ impl Encoding {
     }
 
     pub fn set_reg_in_opcode(&mut self, size: Size) -> Result<(), &'static str> {
-        if self.mod_rm.is_some() {
+        if self.modrm.is_some() {
             Err("Cannot set both ModR/M and +r_")
         } else if self.reg_in_opcode.is_none() {
             self.reg_in_opcode = Some(size);
@@ -177,15 +177,15 @@ impl Encoding {
         }
     }
 
-    pub fn mod_rm(&self) -> Option<Option<u8>> {
-        self.mod_rm
+    pub fn modrm(&self) -> Option<Option<u8>> {
+        self.modrm
     }
 
-    pub fn set_mod_rm(&mut self, reg_fixed: Option<u8>) -> Result<(), &'static str> {
+    pub fn set_modrm(&mut self, reg_fixed: Option<u8>) -> Result<(), &'static str> {
         if self.reg_in_opcode.is_some() {
             Err("Cannot set both ModR/M and +r_")
-        } else if self.mod_rm.is_none() {
-            self.mod_rm = Some(reg_fixed);
+        } else if self.modrm.is_none() {
+            self.modrm = Some(reg_fixed);
             Ok(())
         } else {
             Err("Duplicate ModR/M")
@@ -223,7 +223,7 @@ impl Encoding {
             + self.rex.is_some() as usize
             + self.opcode.len()
             + self.reg_in_opcode.is_some() as usize
-            + self.mod_rm.is_some() as usize
+            + self.modrm.is_some() as usize
             + self.immediate.is_some() as usize
             + self.code_offset.is_some() as usize
     }
@@ -236,7 +236,7 @@ impl Encoding {
             }))
             .chain(self.opcode.iter().copied().map(Const))
             .chain(self.reg_in_opcode.map(R))
-            .chain(self.mod_rm.map(ModRM))
+            .chain(self.modrm.map(ModRM))
             .chain(self.immediate.map(Imm))
             .chain(self.code_offset.map(C))
     }
@@ -272,7 +272,7 @@ impl Encoding {
                     phase = Phase::Opcode;
                 }
                 (ModRM(reg_fixed), Phase::Opcode) => {
-                    encoding.set_mod_rm(reg_fixed)?;
+                    encoding.set_modrm(reg_fixed)?;
                     phase = Phase::Operands;
                 }
                 (R(s), Phase::Opcode) => {
@@ -328,6 +328,31 @@ impl fmt::Display for Encoding {
         }
         Ok(())
     }
+}
+
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
+pub enum Reg {
+    Operand(usize),
+    PartOfOpcode(u8),
+    Default,
+}
+
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
+pub enum Rm {
+    Operand(usize),
+    Default,
+}
+
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
+pub struct RegInOpcode {
+    pub operand: usize,
+}
+
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
+pub enum RexSource {
+    ModRM { w: bool },
+    RegInOpcode { w: bool },
+    Standalone { w: bool },
 }
 
 #[cfg(test)]

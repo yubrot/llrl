@@ -118,7 +118,7 @@ pub struct OperandMap {
     pub reg: Option<usize>,           // At ModR/M reg field (+REX.r, if required)
     pub rm: Option<usize>, // At ModR/M r/m field (+SIB +Displacement +REX.x +REX.b, if required)
     pub code_offset: Option<usize>, // Immediate after opcode, corresponds to {cb,cw,cd,co}.
-    pub imm: Option<usize>, // Immediate after ModR/M (+SIB +Displacement), corresponds to {ib,iw,id,io}.
+    pub immediate: Option<usize>, // Immediate after ModR/M (+SIB +Displacement), corresponds to {ib,iw,id,io}.
     pub reg_in_opcode: Option<usize>, // At the lower 3 bits of the opcode last byte (+REX.b, if required), corresponds to {+rb,+rw,+rd,+ro}.
 }
 
@@ -144,7 +144,7 @@ impl OperandMap {
         let mut reg = None;
         let mut rm = None;
         let mut code_offset = None;
-        let mut imm = None;
+        let mut immediate = None;
         let mut reg_in_opcode = None;
 
         for (index, (operand, hint)) in operands_with_hints.into_iter().enumerate() {
@@ -153,7 +153,7 @@ impl OperandMap {
                 (R(_), Some('R') | None) => set(&mut reg, index)?,
                 (R(_), Some('M')) => set(&mut rm, index)?,
                 (R(_), Some('O')) => set(&mut reg_in_opcode, index)?,
-                (Imm(_), h) if !matches!(h, Some('R' | 'M')) => set(&mut imm, index)?,
+                (Imm(_), h) if !matches!(h, Some('R' | 'M')) => set(&mut immediate, index)?,
                 (Rm(_, _), Some('R')) => set(&mut reg, index)?, // mod == 0b11
                 (Rm(_, _), Some('M') | None) => set(&mut rm, index)?,
                 (M(_), Some('M') | None) => set(&mut rm, index)?, // mod != 0b11
@@ -174,7 +174,7 @@ impl OperandMap {
             reg,
             rm,
             code_offset,
-            imm,
+            immediate,
             reg_in_opcode,
         })
     }
@@ -186,7 +186,7 @@ impl fmt::Display for OperandMap {
             (self.reg, "reg"),
             (self.rm, "rm"),
             (self.code_offset, "c"),
-            (self.imm, "i"),
+            (self.immediate, "i"),
             (self.reg_in_opcode, "r"),
         ]
         .into_iter()
@@ -238,7 +238,7 @@ mod tests {
                 reg: Some(1),
                 rm: Some(0),
                 code_offset: None,
-                imm: Some(2),
+                immediate: Some(2),
                 reg_in_opcode: None,
             }),
         );
@@ -250,7 +250,7 @@ mod tests {
                 reg: None,
                 rm: None,
                 code_offset: None,
-                imm: None,
+                immediate: None,
                 reg_in_opcode: Some(1),
             }),
         );
@@ -263,7 +263,7 @@ mod tests {
                 reg: Some(1),
                 rm: Some(0),
                 code_offset: None,
-                imm: Some(2),
+                immediate: Some(2),
                 reg_in_opcode: None,
             }
             .to_string(),

@@ -1,7 +1,10 @@
 use instr::*;
-use std::collections::{btree_map::Entry as BTreeEntry, BTreeMap};
+use std::collections::{btree_map::Entry as BTreeEntry, BTreeMap, BTreeSet};
 use std::env;
-use std::io;
+use std::ffi::OsStr;
+use std::fs::{read_dir, File};
+use std::io::{self, Write};
+use std::path::PathBuf;
 use std::process::exit;
 
 pub mod instr;
@@ -15,7 +18,7 @@ fn main() -> io::Result<()> {
         .filter_map(Spec::from_csv_line)
         .collect::<Vec<_>>();
 
-    let inst_set = build_instruction_set(specs).map_err(to_io_error)?;
+    let mut inst_set = build_instruction_set(specs).map_err(to_io_error)?;
     validate_instruction_set(&inst_set).map_err(to_io_error)?;
 
     for arg in env::args().skip(1) {
@@ -36,11 +39,22 @@ fn main() -> io::Result<()> {
         }
     }
 
+    monomorphise_instruction_set(&mut inst_set);
+
+    let workspace = llrl_workspace_dir()?;
+    {
+        let mut path = workspace;
+        path.extend(&["xten0", "src", "asm", "instr.rs"]);
+        let mut file = File::create(path)?;
+        writeln!(&mut file, "{}", render::xten0(&inst_set))?;
+    }
+
     Ok(())
 }
 
 fn usage() {
     println!("Usage:");
+    println!("    xtencg         Generate assembler code for xten0");
     println!("    xtencg -d      Show list of supported instructions in markdown");
     println!("    xtencg -h      Show help");
 }
@@ -92,6 +106,39 @@ fn validate_instruction_set(inst_set: &InstructionSet) -> Result<(), String> {
         })?;
     }
     Ok(())
+}
+
+fn monomorphise_instruction_set(inst_set: &mut InstructionSet) {
+    for insts in inst_set.values_mut() {
+        let it = std::mem::take(insts).into_iter();
+        let mut supported_operands = BTreeSet::new();
+        insts.extend(it.flat_map(|i| i.monomorphise()).filter_map(|i| {
+            supported_operands
+                .insert(i.operands().to_vec())
+                .then_some(i)
+        }));
+    }
+}
+
+fn llrl_workspace_dir() -> io::Result<PathBuf> {
+    let mut dir = env::current_dir()?;
+    loop {
+        let entries: Vec<PathBuf> = read_dir(&dir)?
+            .map(|e| Ok(e?.path()))
+            .collect::<Result<_, io::Error>>()?;
+
+        if entries
+            .iter()
+            .any(|p| p.is_dir() && p.file_name() == Some(OsStr::new("xten0")))
+        {
+            return Ok(dir);
+        }
+
+        match dir.parent() {
+            Some(d) => dir = d.to_path_buf(),
+            None => Err(to_io_error("Cannot run xtencg outside llrl workspace"))?,
+        }
+    }
 }
 
 fn to_io_error(e: impl AsRef<str>) -> io::Error {
