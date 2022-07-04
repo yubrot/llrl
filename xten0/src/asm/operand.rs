@@ -321,7 +321,7 @@ impl Mul<Scale> for Gpr64 {
     type Output = IndexScale;
 
     fn mul(self, scale: Scale) -> Self::Output {
-        // This implies that `idxs.index.encoded_index()` will never be 0b100.
+        // This implies that `idxs.index.register_code()` will never be 0b100.
         assert!(self != Rsp, "Cannot use RSP as an index register");
         IndexScale { index: self, scale }
     }
@@ -530,7 +530,7 @@ impl From<Memory<Address<Rip, i32, ()>>> for Rm {
     }
 }
 
-// [GP]
+// [GP64]
 impl From<Memory<Address<Gpr64, (), ()>>> for Rm {
     fn from(Memory(Address { base, .. }): Memory<Address<Gpr64, (), ()>>) -> Self {
         match base {
@@ -550,7 +550,7 @@ impl From<Memory<Address<Gpr64, (), ()>>> for Rm {
     }
 }
 
-// [GP + disp]
+// [GP64 + disp]
 impl<Disp> From<Memory<Address<Gpr64, Disp, ()>>> for Rm
 where
     Disp: Into<Displacement>,
@@ -570,7 +570,7 @@ where
     }
 }
 
-// [GP + IndexScale]
+// [GP64 + IndexScale]
 impl From<Memory<Address<Gpr64, (), IndexScale>>> for Rm {
     fn from(Memory(Address { base, idxs, .. }): Memory<Address<Gpr64, (), IndexScale>>) -> Self {
         match base {
@@ -590,7 +590,7 @@ impl From<Memory<Address<Gpr64, (), IndexScale>>> for Rm {
     }
 }
 
-// [GP + disp + IndexScale]
+// [GP64 + disp + IndexScale]
 impl<Disp> From<Memory<Address<Gpr64, Disp, IndexScale>>> for Rm
 where
     Disp: Into<Displacement>,
@@ -777,34 +777,54 @@ mod tests {
                     continue;
                 }
 
-                // [Base]
-                assert_as!(movq(memory(ra), rb), "mov [{}], {}", sa, sb);
-                // [Base + disp8]
-                assert_as!(movq(memory(ra + 12i8), rb), "mov [{} + 12], {}", sa, sb);
-                // [Base + disp32]
-                assert_as!(movq(memory(ra + 1024), rb), "mov [{} + 1024], {}", sa, sb);
+                // [Base], [Base + disp8], [Base + disp32]
+                assert_as!(
+                    [
+                        movq(memory(ra), rb),
+                        movq(memory(ra + 12i8), rb),
+                        movq(memory(ra + 1024), rb),
+                    ]
+                    .into_iter()
+                    .flatten()
+                    .collect::<Vec<_>>(),
+                    r#"
+                        mov [{}], {}
+                        mov [{} + 12], {}
+                        mov [{} + 1024], {}
+                    "#,
+                    sa,
+                    sb,
+                    sa,
+                    sb,
+                    sa,
+                    sb
+                );
 
                 // Cannot use RSP as an index register
                 if rb != Rsp {
-                    // [Base + Index]
-                    assert_as!(movq(memory(ra + rb), Rcx), "mov [{} + {}], rcx", sa, sb);
+                    // [Base + Index] *2, [Base + disp8 + Index], [Base + disp32 + Index]
                     assert_as!(
-                        movq(memory(ra + rb * 4), Rcx),
-                        "mov [{} + {} * 4], rcx",
+                        [
+                            movq(memory(ra + rb), Rcx),
+                            movq(memory(ra + rb * 4), Rcx),
+                            movq(memory(ra - 8i8 + rb), Rcx),
+                            movq(memory(ra - 512 + rb * 4), Rcx),
+                        ]
+                        .into_iter()
+                        .flatten()
+                        .collect::<Vec<_>>(),
+                        r#"
+                            mov [{} + {}], rcx
+                            mov [{} + {} * 4], rcx
+                            mov [{} - 8 + {}], rcx
+                            mov [{} - 512 + {} * 4], rcx
+                        "#,
                         sa,
-                        sb
-                    );
-                    // [Base + disp8 + Index]
-                    assert_as!(
-                        movq(memory(ra - 8i8 + rb), Rcx),
-                        "mov [{} - 8 + {}], rcx",
+                        sb,
                         sa,
-                        sb
-                    );
-                    // [Base + disp32 + Index]
-                    assert_as!(
-                        movq(memory(ra - 512 + rb * 4), Rcx),
-                        "mov [{} - 512 + {} * 4], rcx",
+                        sb,
+                        sa,
+                        sb,
                         sa,
                         sb
                     );

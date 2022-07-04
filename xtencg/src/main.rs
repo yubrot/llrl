@@ -44,7 +44,7 @@ fn main() -> io::Result<()> {
     let workspace = llrl_workspace_dir()?;
     {
         let mut path = workspace;
-        path.extend(&["xten0", "src", "asm", "instr.rs"]);
+        path.extend(&["xten0", "src", "asm", "inst.rs"]);
         let mut file = File::create(path)?;
         writeln!(&mut file, "{}", render::xten0(&inst_set))?;
     }
@@ -80,7 +80,7 @@ fn build_instruction_set(specs: Vec<Spec>) -> Result<InstructionSet, String> {
                 .group_map(|(_, i)| (i.operands().len(), i));
             let (&major_arity, _) = arity_insts_map
                 .iter()
-                .max_by_key(|(_, insts)| insts.len())
+                .max_by_key(|(arity, insts)| (insts.len(), -(**arity as isize)))
                 .unwrap();
 
             arity_insts_map.into_iter().map(move |(arity, insts)| {

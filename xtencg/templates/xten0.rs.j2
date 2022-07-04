@@ -73,17 +73,12 @@ impl WriteInst for {{ mnemonic|capitalize }}{% call impl_type_params(inst) %} {
 {%- when Some with ((reg, rm)) %}
         let modrm = ModRM::new(
 {%- match reg -%}
-{%- when Reg::PartOfOpcode with (opcode) -%}
-            PartOfOpcode({{ opcode }})
-{%- when Reg::Operand with (operand) -%}
-            self.{{ operand }}
-{%- when Reg::Default -%}
-            Reg::default()
+{%- when Reg::PartOfOpcode with (opcode) -%} PartOfOpcode({{ opcode }})
+{%- when Reg::Operand with (operand) -%} self.{{ operand }}
+{%- when Reg::Default -%} Reg::default()
 {%- endmatch %}, {% match rm -%}
-{%- when Rm::Operand with (operand) -%}
-            self.{{ operand }}
-{%- when Rm::Default -%}
-            Rm::default()
+{%- when Rm::Operand with (operand) -%} self.{{ operand }}
+{%- when Rm::Default -%} Rm::default()
 {%- endmatch -%}
         );
 {%- when None %}
@@ -101,13 +96,11 @@ impl WriteInst for {{ mnemonic|capitalize }}{% call impl_type_params(inst) %} {
 
 {%- match inst.rex_source() %}
 {%- when Some with (rex_source) %}
-        puts(w, {% match rex_source -%}
-{%- when RexSource::ModRM with { w } -%}
-            modrm.rex_byte({{ w }})
-{%- when RexSource::RegInOpcode with { w } -%}
-            rio.rex_byte({{ w }})
-{%- when RexSource::Standalone with { w } -%}
-            rex_byte(false, {{ w }}, false, false, false)
+        puts(w,
+{%- match rex_source -%}
+{%- when RexSource::ModRM with { w } %} modrm.rex_byte({{ w }})
+{%- when RexSource::RegInOpcode with { w } %} rio.rex_byte({{ w }})
+{%- when RexSource::Standalone with { w } %} rex_byte(false, {{ w }}, false, false, false)
 {%- endmatch -%}
         )?;
 {%- else %}

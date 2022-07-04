@@ -2523,15 +2523,15 @@ pub trait WriteInstExt: io::Write {
         Rcrw(op0, op1).write_inst(self)
     }
 
-    fn retq<Op0>(&mut self, op0: Op0) -> io::Result<()>
-    where
-        Retq<Op0>: WriteInst,
-    {
-        Retq(op0).write_inst(self)
+    fn retq(&mut self) -> io::Result<()> {
+        Retq().write_inst(self)
     }
 
-    fn retq0(&mut self) -> io::Result<()> {
-        Retq0().write_inst(self)
+    fn retq1<Op0>(&mut self, op0: Op0) -> io::Result<()>
+    where
+        Retq1<Op0>: WriteInst,
+    {
+        Retq1(op0).write_inst(self)
     }
 
     fn rolb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
@@ -17698,25 +17698,25 @@ impl WriteInst for Rcrw<Memory, _Cl> {
     }
 }
 
-pub struct Retq<Op0>(Op0);
+pub struct Retq();
 
-/// retq imm16: Near return to calling procedure and pop imm16 bytes from stack.
-impl WriteInst for Retq<i16> {
+/// retq: Near return to calling procedure.
+impl WriteInst for Retq {
     fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
-        // C2 iw
-        put(w, 0xC2)?;
-        puts(w, self.0.to_le_bytes())?;
+        // C3
+        put(w, 0xC3)?;
         Ok(())
     }
 }
 
-pub struct Retq0();
+pub struct Retq1<Op0>(Op0);
 
-/// retq: Near return to calling procedure.
-impl WriteInst for Retq0 {
+/// retq imm16: Near return to calling procedure and pop imm16 bytes from stack.
+impl WriteInst for Retq1<i16> {
     fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
-        // C3
-        put(w, 0xC3)?;
+        // C2 iw
+        put(w, 0xC2)?;
+        puts(w, self.0.to_le_bytes())?;
         Ok(())
     }
 }

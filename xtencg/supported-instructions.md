@@ -2063,12 +2063,12 @@
 # retq
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
-| retq imm16 | `C2 iw [i=0]` | Near return to calling procedure and pop imm16 bytes from stack. |
+| retq | `C3 []` | Near return to calling procedure. |
 
-# retq0
+# retq1
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
-| retq | `C3 []` | Near return to calling procedure. |
+| retq imm16 | `C2 iw [i=0]` | Near return to calling procedure and pop imm16 bytes from stack. |
 
 # rolb
 | Instruction | Encoding | Description |
