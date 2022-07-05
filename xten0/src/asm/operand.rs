@@ -2,6 +2,7 @@
 
 use super::encoding::{Displacement, Reg, Rm, Scale};
 use std::ops::{Add, Mul, Sub};
+use derive_new::new;
 
 // 64-bit general-purpose (GP) register.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
@@ -328,17 +329,11 @@ impl Mul<Scale> for Gpr64 {
 }
 
 /// Memory address. `Base + Disp + Idxs`
-#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy, new)]
 pub struct Address<Base, Disp, Idxs> {
     pub base: Base,
     pub disp: Disp,
     pub idxs: Idxs,
-}
-
-impl<Base, Disp, Idxs> Address<Base, Disp, Idxs> {
-    pub fn new(base: Base, disp: Disp, idxs: Idxs) -> Self {
-        Self { base, disp, idxs }
-    }
 }
 
 impl From<i32> for Address<(), i32, ()> {

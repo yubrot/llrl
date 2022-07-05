@@ -2,7 +2,7 @@
 
 #[cfg(test)]
 #[macro_use]
-mod gas;
+mod gnu;
 
 mod encoding;
 mod inst;
@@ -19,19 +19,7 @@ mod tests {
     fn asm(f: impl FnOnce(&mut Vec<u8>) -> io::Result<()>) -> Vec<u8> {
         let mut buf = Vec::new();
         f(&mut buf).unwrap();
-        adjust_to_gas_output(&mut buf);
         buf
-    }
-
-    fn adjust_to_gas_output(buf: &mut [u8]) {
-        // XXX: It's not a fundamental solution to the problem,
-        // it might be better to use disassembler for testing.
-        for i in 0..buf.len() - 1 {
-            if buf[i] == 0xf2 && buf[i + 1] == 0x66 {
-                buf[i] = 0x66;
-                buf[i + 1] = 0xf2;
-            }
-        }
     }
 
     #[test]
@@ -53,14 +41,14 @@ mod tests {
         );
         assert_as!(
             asm(|w| {
-                // w.adcw(Cx, Bx)?; // NOTE: This can be encoded by both `13 /r` and `11 /r`
+                w.adcw(Cx, Bx)?;
                 w.adcw(memory(11), Bx)?;
                 w.adcw(Cx, memory(Rip + 5))?;
                 w.adcw(R11W, 1234i16)?;
                 Ok(())
             }),
             r#"
-                /* adcw cx, bx */
+                adcw cx, bx
                 adcw [11], bx
                 adcw cx, [rip + 5]
                 adcw r11w, 1234

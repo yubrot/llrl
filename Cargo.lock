@@ -952,7 +952,10 @@ name = "xten0"
 version = "0.1.0"
 dependencies = [
  "byteorder",
+ "derive-new",
  "heapless",
+ "once_cell",
+ "regex",
  "tempfile",
 ]
 
