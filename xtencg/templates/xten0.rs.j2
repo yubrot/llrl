@@ -1,24 +1,20 @@
-{%- macro generic_type_args(inst) -%}
+{%- macro generic_type_params(inst) -%}
+{%- if !inst.operands().is_empty() -%}
+<
 {%- for (i, _) in inst.operands().iter().enumerate() -%}
 {%- if i != 0 -%}, {% endif -%}Op{{ i }}
 {%- endfor -%}
-{%- endmacro -%}
-
-{%- macro generic_type_params(inst) -%}
-{%- if !inst.operands().is_empty() -%}
-<{%- call generic_type_args(inst) -%}>
+>
 {%- endif -%}
-{%- endmacro -%}
-
-{%- macro impl_type_args(inst) -%}
-{%- for (i, o) in inst.operands().iter().enumerate() -%}
-{%- if i != 0 -%}, {% endif -%}{{ o|rsoperand }}
-{%- endfor -%}
 {%- endmacro -%}
 
 {%- macro impl_type_params(inst) -%}
 {%- if !inst.operands().is_empty() -%}
-<{%- call impl_type_args(inst) -%}>
+<
+{%- for (i, o) in inst.operands().iter().enumerate() -%}
+{%- if i != 0 -%}, {% endif -%}{{ o|rsoperand }}
+{%- endfor -%}
+>
 {%- endif -%}
 {%- endmacro -%}
 
@@ -38,7 +34,7 @@ pub trait WriteInstExt: io::Write {
     ) -> io::Result<()>
 {%- if inst.operands().is_empty() %} {% else %}
     where
-        {{ mnemonic|capitalize }}{% call generic_type_params(inst) %}: WriteInst,
+        {{ mnemonic|capitalize }}{% call generic_type_params(inst) %}: WriteInst<Self>,
     {% endif -%}
     {
         {{ mnemonic|capitalize }}(
@@ -52,21 +48,25 @@ pub trait WriteInstExt: io::Write {
 
 impl<W: io::Write + ?Sized> WriteInstExt for W {}
 
-pub trait WriteInst {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()>;
+pub trait WriteInst<W: ?Sized> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()>;
 }
 
 {%- for (mnemonic, insts) in inst_set %}
 {%- let inst = insts.first().unwrap() %}
 
-pub struct {{ mnemonic|capitalize }}{% call generic_type_params(inst) %}({% call generic_type_args(inst) %});
+pub struct {{ mnemonic|capitalize }}{% call generic_type_params(inst) %}(
+{%- for (i, _) in inst.operands().iter().enumerate() -%}
+{%- if i != 0 -%}, {% endif -%}pub Op{{ i }}
+{%- endfor -%}
+);
 
 {%- for inst in insts.iter() %}
 {%- let enc = inst.encoding() %}
 
 /// {{ inst }}: {{ inst.description() }}
-impl WriteInst for {{ mnemonic|capitalize }}{% call impl_type_params(inst) %} {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for {{ mnemonic|capitalize }}{% call impl_type_params(inst) %} {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // {{ enc }}
 
 {%- match inst.modrm() %}

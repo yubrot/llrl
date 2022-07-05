@@ -7,308 +7,308 @@ use std::io;
 pub trait WriteInstExt: io::Write {
     fn adcb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Adcb<Op0, Op1>: WriteInst,
+        Adcb<Op0, Op1>: WriteInst<Self>,
     {
         Adcb(op0, op1).write_inst(self)
     }
 
     fn adcl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Adcl<Op0, Op1>: WriteInst,
+        Adcl<Op0, Op1>: WriteInst<Self>,
     {
         Adcl(op0, op1).write_inst(self)
     }
 
     fn adcq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Adcq<Op0, Op1>: WriteInst,
+        Adcq<Op0, Op1>: WriteInst<Self>,
     {
         Adcq(op0, op1).write_inst(self)
     }
 
     fn adcw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Adcw<Op0, Op1>: WriteInst,
+        Adcw<Op0, Op1>: WriteInst<Self>,
     {
         Adcw(op0, op1).write_inst(self)
     }
 
     fn addb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Addb<Op0, Op1>: WriteInst,
+        Addb<Op0, Op1>: WriteInst<Self>,
     {
         Addb(op0, op1).write_inst(self)
     }
 
     fn addl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Addl<Op0, Op1>: WriteInst,
+        Addl<Op0, Op1>: WriteInst<Self>,
     {
         Addl(op0, op1).write_inst(self)
     }
 
     fn addpd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Addpd<Op0, Op1>: WriteInst,
+        Addpd<Op0, Op1>: WriteInst<Self>,
     {
         Addpd(op0, op1).write_inst(self)
     }
 
     fn addps<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Addps<Op0, Op1>: WriteInst,
+        Addps<Op0, Op1>: WriteInst<Self>,
     {
         Addps(op0, op1).write_inst(self)
     }
 
     fn addq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Addq<Op0, Op1>: WriteInst,
+        Addq<Op0, Op1>: WriteInst<Self>,
     {
         Addq(op0, op1).write_inst(self)
     }
 
     fn addsd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Addsd<Op0, Op1>: WriteInst,
+        Addsd<Op0, Op1>: WriteInst<Self>,
     {
         Addsd(op0, op1).write_inst(self)
     }
 
     fn addss<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Addss<Op0, Op1>: WriteInst,
+        Addss<Op0, Op1>: WriteInst<Self>,
     {
         Addss(op0, op1).write_inst(self)
     }
 
     fn addw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Addw<Op0, Op1>: WriteInst,
+        Addw<Op0, Op1>: WriteInst<Self>,
     {
         Addw(op0, op1).write_inst(self)
     }
 
     fn andb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Andb<Op0, Op1>: WriteInst,
+        Andb<Op0, Op1>: WriteInst<Self>,
     {
         Andb(op0, op1).write_inst(self)
     }
 
     fn andl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Andl<Op0, Op1>: WriteInst,
+        Andl<Op0, Op1>: WriteInst<Self>,
     {
         Andl(op0, op1).write_inst(self)
     }
 
     fn andnpd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Andnpd<Op0, Op1>: WriteInst,
+        Andnpd<Op0, Op1>: WriteInst<Self>,
     {
         Andnpd(op0, op1).write_inst(self)
     }
 
     fn andnps<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Andnps<Op0, Op1>: WriteInst,
+        Andnps<Op0, Op1>: WriteInst<Self>,
     {
         Andnps(op0, op1).write_inst(self)
     }
 
     fn andpd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Andpd<Op0, Op1>: WriteInst,
+        Andpd<Op0, Op1>: WriteInst<Self>,
     {
         Andpd(op0, op1).write_inst(self)
     }
 
     fn andps<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Andps<Op0, Op1>: WriteInst,
+        Andps<Op0, Op1>: WriteInst<Self>,
     {
         Andps(op0, op1).write_inst(self)
     }
 
     fn andq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Andq<Op0, Op1>: WriteInst,
+        Andq<Op0, Op1>: WriteInst<Self>,
     {
         Andq(op0, op1).write_inst(self)
     }
 
     fn andw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Andw<Op0, Op1>: WriteInst,
+        Andw<Op0, Op1>: WriteInst<Self>,
     {
         Andw(op0, op1).write_inst(self)
     }
 
     fn blendpd<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Blendpd<Op0, Op1, Op2>: WriteInst,
+        Blendpd<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Blendpd(op0, op1, op2).write_inst(self)
     }
 
     fn blendps<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Blendps<Op0, Op1, Op2>: WriteInst,
+        Blendps<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Blendps(op0, op1, op2).write_inst(self)
     }
 
     fn blendvpd<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Blendvpd<Op0, Op1, Op2>: WriteInst,
+        Blendvpd<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Blendvpd(op0, op1, op2).write_inst(self)
     }
 
     fn blendvps<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Blendvps<Op0, Op1, Op2>: WriteInst,
+        Blendvps<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Blendvps(op0, op1, op2).write_inst(self)
     }
 
     fn bsfl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Bsfl<Op0, Op1>: WriteInst,
+        Bsfl<Op0, Op1>: WriteInst<Self>,
     {
         Bsfl(op0, op1).write_inst(self)
     }
 
     fn bsfq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Bsfq<Op0, Op1>: WriteInst,
+        Bsfq<Op0, Op1>: WriteInst<Self>,
     {
         Bsfq(op0, op1).write_inst(self)
     }
 
     fn bsfw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Bsfw<Op0, Op1>: WriteInst,
+        Bsfw<Op0, Op1>: WriteInst<Self>,
     {
         Bsfw(op0, op1).write_inst(self)
     }
 
     fn bsrl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Bsrl<Op0, Op1>: WriteInst,
+        Bsrl<Op0, Op1>: WriteInst<Self>,
     {
         Bsrl(op0, op1).write_inst(self)
     }
 
     fn bsrq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Bsrq<Op0, Op1>: WriteInst,
+        Bsrq<Op0, Op1>: WriteInst<Self>,
     {
         Bsrq(op0, op1).write_inst(self)
     }
 
     fn bsrw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Bsrw<Op0, Op1>: WriteInst,
+        Bsrw<Op0, Op1>: WriteInst<Self>,
     {
         Bsrw(op0, op1).write_inst(self)
     }
 
     fn bswap<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Bswap<Op0>: WriteInst,
+        Bswap<Op0>: WriteInst<Self>,
     {
         Bswap(op0).write_inst(self)
     }
 
     fn btcl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Btcl<Op0, Op1>: WriteInst,
+        Btcl<Op0, Op1>: WriteInst<Self>,
     {
         Btcl(op0, op1).write_inst(self)
     }
 
     fn btcq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Btcq<Op0, Op1>: WriteInst,
+        Btcq<Op0, Op1>: WriteInst<Self>,
     {
         Btcq(op0, op1).write_inst(self)
     }
 
     fn btcw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Btcw<Op0, Op1>: WriteInst,
+        Btcw<Op0, Op1>: WriteInst<Self>,
     {
         Btcw(op0, op1).write_inst(self)
     }
 
     fn btl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Btl<Op0, Op1>: WriteInst,
+        Btl<Op0, Op1>: WriteInst<Self>,
     {
         Btl(op0, op1).write_inst(self)
     }
 
     fn btq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Btq<Op0, Op1>: WriteInst,
+        Btq<Op0, Op1>: WriteInst<Self>,
     {
         Btq(op0, op1).write_inst(self)
     }
 
     fn btrl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Btrl<Op0, Op1>: WriteInst,
+        Btrl<Op0, Op1>: WriteInst<Self>,
     {
         Btrl(op0, op1).write_inst(self)
     }
 
     fn btrq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Btrq<Op0, Op1>: WriteInst,
+        Btrq<Op0, Op1>: WriteInst<Self>,
     {
         Btrq(op0, op1).write_inst(self)
     }
 
     fn btrw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Btrw<Op0, Op1>: WriteInst,
+        Btrw<Op0, Op1>: WriteInst<Self>,
     {
         Btrw(op0, op1).write_inst(self)
     }
 
     fn btsl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Btsl<Op0, Op1>: WriteInst,
+        Btsl<Op0, Op1>: WriteInst<Self>,
     {
         Btsl(op0, op1).write_inst(self)
     }
 
     fn btsq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Btsq<Op0, Op1>: WriteInst,
+        Btsq<Op0, Op1>: WriteInst<Self>,
     {
         Btsq(op0, op1).write_inst(self)
     }
 
     fn btsw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Btsw<Op0, Op1>: WriteInst,
+        Btsw<Op0, Op1>: WriteInst<Self>,
     {
         Btsw(op0, op1).write_inst(self)
     }
 
     fn btw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Btw<Op0, Op1>: WriteInst,
+        Btw<Op0, Op1>: WriteInst<Self>,
     {
         Btw(op0, op1).write_inst(self)
     }
 
     fn callq<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Callq<Op0>: WriteInst,
+        Callq<Op0>: WriteInst<Self>,
     {
         Callq(op0).write_inst(self)
     }
@@ -347,42 +347,42 @@ pub trait WriteInstExt: io::Write {
 
     fn cmpb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Cmpb<Op0, Op1>: WriteInst,
+        Cmpb<Op0, Op1>: WriteInst<Self>,
     {
         Cmpb(op0, op1).write_inst(self)
     }
 
     fn cmpl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Cmpl<Op0, Op1>: WriteInst,
+        Cmpl<Op0, Op1>: WriteInst<Self>,
     {
         Cmpl(op0, op1).write_inst(self)
     }
 
     fn cmppd<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Cmppd<Op0, Op1, Op2>: WriteInst,
+        Cmppd<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Cmppd(op0, op1, op2).write_inst(self)
     }
 
     fn cmpps<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Cmpps<Op0, Op1, Op2>: WriteInst,
+        Cmpps<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Cmpps(op0, op1, op2).write_inst(self)
     }
 
     fn cmpq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Cmpq<Op0, Op1>: WriteInst,
+        Cmpq<Op0, Op1>: WriteInst<Self>,
     {
         Cmpq(op0, op1).write_inst(self)
     }
 
     fn cmpsd<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Cmpsd<Op0, Op1, Op2>: WriteInst,
+        Cmpsd<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Cmpsd(op0, op1, op2).write_inst(self)
     }
@@ -393,49 +393,49 @@ pub trait WriteInstExt: io::Write {
 
     fn cmpw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Cmpw<Op0, Op1>: WriteInst,
+        Cmpw<Op0, Op1>: WriteInst<Self>,
     {
         Cmpw(op0, op1).write_inst(self)
     }
 
     fn cmpxchgb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Cmpxchgb<Op0, Op1>: WriteInst,
+        Cmpxchgb<Op0, Op1>: WriteInst<Self>,
     {
         Cmpxchgb(op0, op1).write_inst(self)
     }
 
     fn cmpxchgl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Cmpxchgl<Op0, Op1>: WriteInst,
+        Cmpxchgl<Op0, Op1>: WriteInst<Self>,
     {
         Cmpxchgl(op0, op1).write_inst(self)
     }
 
     fn cmpxchgq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Cmpxchgq<Op0, Op1>: WriteInst,
+        Cmpxchgq<Op0, Op1>: WriteInst<Self>,
     {
         Cmpxchgq(op0, op1).write_inst(self)
     }
 
     fn cmpxchgw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Cmpxchgw<Op0, Op1>: WriteInst,
+        Cmpxchgw<Op0, Op1>: WriteInst<Self>,
     {
         Cmpxchgw(op0, op1).write_inst(self)
     }
 
     fn comisd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Comisd<Op0, Op1>: WriteInst,
+        Comisd<Op0, Op1>: WriteInst<Self>,
     {
         Comisd(op0, op1).write_inst(self)
     }
 
     fn comiss<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Comiss<Op0, Op1>: WriteInst,
+        Comiss<Op0, Op1>: WriteInst<Self>,
     {
         Comiss(op0, op1).write_inst(self)
     }
@@ -450,154 +450,154 @@ pub trait WriteInstExt: io::Write {
 
     fn crc32b<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Crc32b<Op0, Op1>: WriteInst,
+        Crc32b<Op0, Op1>: WriteInst<Self>,
     {
         Crc32b(op0, op1).write_inst(self)
     }
 
     fn crc32l<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Crc32l<Op0, Op1>: WriteInst,
+        Crc32l<Op0, Op1>: WriteInst<Self>,
     {
         Crc32l(op0, op1).write_inst(self)
     }
 
     fn crc32q<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Crc32q<Op0, Op1>: WriteInst,
+        Crc32q<Op0, Op1>: WriteInst<Self>,
     {
         Crc32q(op0, op1).write_inst(self)
     }
 
     fn crc32w<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Crc32w<Op0, Op1>: WriteInst,
+        Crc32w<Op0, Op1>: WriteInst<Self>,
     {
         Crc32w(op0, op1).write_inst(self)
     }
 
     fn cvtdq2pd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Cvtdq2pd<Op0, Op1>: WriteInst,
+        Cvtdq2pd<Op0, Op1>: WriteInst<Self>,
     {
         Cvtdq2pd(op0, op1).write_inst(self)
     }
 
     fn cvtdq2ps<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Cvtdq2ps<Op0, Op1>: WriteInst,
+        Cvtdq2ps<Op0, Op1>: WriteInst<Self>,
     {
         Cvtdq2ps(op0, op1).write_inst(self)
     }
 
     fn cvtpd2dq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Cvtpd2dq<Op0, Op1>: WriteInst,
+        Cvtpd2dq<Op0, Op1>: WriteInst<Self>,
     {
         Cvtpd2dq(op0, op1).write_inst(self)
     }
 
     fn cvtpd2ps<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Cvtpd2ps<Op0, Op1>: WriteInst,
+        Cvtpd2ps<Op0, Op1>: WriteInst<Self>,
     {
         Cvtpd2ps(op0, op1).write_inst(self)
     }
 
     fn cvtps2dq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Cvtps2dq<Op0, Op1>: WriteInst,
+        Cvtps2dq<Op0, Op1>: WriteInst<Self>,
     {
         Cvtps2dq(op0, op1).write_inst(self)
     }
 
     fn cvtps2pd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Cvtps2pd<Op0, Op1>: WriteInst,
+        Cvtps2pd<Op0, Op1>: WriteInst<Self>,
     {
         Cvtps2pd(op0, op1).write_inst(self)
     }
 
     fn cvtsd2si<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Cvtsd2si<Op0, Op1>: WriteInst,
+        Cvtsd2si<Op0, Op1>: WriteInst<Self>,
     {
         Cvtsd2si(op0, op1).write_inst(self)
     }
 
     fn cvtsd2ss<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Cvtsd2ss<Op0, Op1>: WriteInst,
+        Cvtsd2ss<Op0, Op1>: WriteInst<Self>,
     {
         Cvtsd2ss(op0, op1).write_inst(self)
     }
 
     fn cvtsi2sdl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Cvtsi2sdl<Op0, Op1>: WriteInst,
+        Cvtsi2sdl<Op0, Op1>: WriteInst<Self>,
     {
         Cvtsi2sdl(op0, op1).write_inst(self)
     }
 
     fn cvtsi2sdq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Cvtsi2sdq<Op0, Op1>: WriteInst,
+        Cvtsi2sdq<Op0, Op1>: WriteInst<Self>,
     {
         Cvtsi2sdq(op0, op1).write_inst(self)
     }
 
     fn cvtsi2ssl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Cvtsi2ssl<Op0, Op1>: WriteInst,
+        Cvtsi2ssl<Op0, Op1>: WriteInst<Self>,
     {
         Cvtsi2ssl(op0, op1).write_inst(self)
     }
 
     fn cvtsi2ssq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Cvtsi2ssq<Op0, Op1>: WriteInst,
+        Cvtsi2ssq<Op0, Op1>: WriteInst<Self>,
     {
         Cvtsi2ssq(op0, op1).write_inst(self)
     }
 
     fn cvtss2sd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Cvtss2sd<Op0, Op1>: WriteInst,
+        Cvtss2sd<Op0, Op1>: WriteInst<Self>,
     {
         Cvtss2sd(op0, op1).write_inst(self)
     }
 
     fn cvtss2si<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Cvtss2si<Op0, Op1>: WriteInst,
+        Cvtss2si<Op0, Op1>: WriteInst<Self>,
     {
         Cvtss2si(op0, op1).write_inst(self)
     }
 
     fn cvttpd2dq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Cvttpd2dq<Op0, Op1>: WriteInst,
+        Cvttpd2dq<Op0, Op1>: WriteInst<Self>,
     {
         Cvttpd2dq(op0, op1).write_inst(self)
     }
 
     fn cvttps2dq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Cvttps2dq<Op0, Op1>: WriteInst,
+        Cvttps2dq<Op0, Op1>: WriteInst<Self>,
     {
         Cvttps2dq(op0, op1).write_inst(self)
     }
 
     fn cvttsd2si<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Cvttsd2si<Op0, Op1>: WriteInst,
+        Cvttsd2si<Op0, Op1>: WriteInst<Self>,
     {
         Cvttsd2si(op0, op1).write_inst(self)
     }
 
     fn cvttss2si<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Cvttss2si<Op0, Op1>: WriteInst,
+        Cvttss2si<Op0, Op1>: WriteInst<Self>,
     {
         Cvttss2si(op0, op1).write_inst(self)
     }
@@ -612,98 +612,98 @@ pub trait WriteInstExt: io::Write {
 
     fn decb<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Decb<Op0>: WriteInst,
+        Decb<Op0>: WriteInst<Self>,
     {
         Decb(op0).write_inst(self)
     }
 
     fn decl<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Decl<Op0>: WriteInst,
+        Decl<Op0>: WriteInst<Self>,
     {
         Decl(op0).write_inst(self)
     }
 
     fn decq<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Decq<Op0>: WriteInst,
+        Decq<Op0>: WriteInst<Self>,
     {
         Decq(op0).write_inst(self)
     }
 
     fn decw<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Decw<Op0>: WriteInst,
+        Decw<Op0>: WriteInst<Self>,
     {
         Decw(op0).write_inst(self)
     }
 
     fn divb<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Divb<Op0>: WriteInst,
+        Divb<Op0>: WriteInst<Self>,
     {
         Divb(op0).write_inst(self)
     }
 
     fn divl<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Divl<Op0>: WriteInst,
+        Divl<Op0>: WriteInst<Self>,
     {
         Divl(op0).write_inst(self)
     }
 
     fn divpd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Divpd<Op0, Op1>: WriteInst,
+        Divpd<Op0, Op1>: WriteInst<Self>,
     {
         Divpd(op0, op1).write_inst(self)
     }
 
     fn divps<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Divps<Op0, Op1>: WriteInst,
+        Divps<Op0, Op1>: WriteInst<Self>,
     {
         Divps(op0, op1).write_inst(self)
     }
 
     fn divq<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Divq<Op0>: WriteInst,
+        Divq<Op0>: WriteInst<Self>,
     {
         Divq(op0).write_inst(self)
     }
 
     fn divsd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Divsd<Op0, Op1>: WriteInst,
+        Divsd<Op0, Op1>: WriteInst<Self>,
     {
         Divsd(op0, op1).write_inst(self)
     }
 
     fn divss<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Divss<Op0, Op1>: WriteInst,
+        Divss<Op0, Op1>: WriteInst<Self>,
     {
         Divss(op0, op1).write_inst(self)
     }
 
     fn divw<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Divw<Op0>: WriteInst,
+        Divw<Op0>: WriteInst<Self>,
     {
         Divw(op0).write_inst(self)
     }
 
     fn dppd<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Dppd<Op0, Op1, Op2>: WriteInst,
+        Dppd<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Dppd(op0, op1, op2).write_inst(self)
     }
 
     fn dpps<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Dpps<Op0, Op1, Op2>: WriteInst,
+        Dpps<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Dpps(op0, op1, op2).write_inst(self)
     }
@@ -714,7 +714,7 @@ pub trait WriteInstExt: io::Write {
 
     fn extractps<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Extractps<Op0, Op1, Op2>: WriteInst,
+        Extractps<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Extractps(op0, op1, op2).write_inst(self)
     }
@@ -725,147 +725,147 @@ pub trait WriteInstExt: io::Write {
 
     fn idivb<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Idivb<Op0>: WriteInst,
+        Idivb<Op0>: WriteInst<Self>,
     {
         Idivb(op0).write_inst(self)
     }
 
     fn idivl<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Idivl<Op0>: WriteInst,
+        Idivl<Op0>: WriteInst<Self>,
     {
         Idivl(op0).write_inst(self)
     }
 
     fn idivq<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Idivq<Op0>: WriteInst,
+        Idivq<Op0>: WriteInst<Self>,
     {
         Idivq(op0).write_inst(self)
     }
 
     fn idivw<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Idivw<Op0>: WriteInst,
+        Idivw<Op0>: WriteInst<Self>,
     {
         Idivw(op0).write_inst(self)
     }
 
     fn imulb<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Imulb<Op0>: WriteInst,
+        Imulb<Op0>: WriteInst<Self>,
     {
         Imulb(op0).write_inst(self)
     }
 
     fn imull<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Imull<Op0, Op1, Op2>: WriteInst,
+        Imull<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Imull(op0, op1, op2).write_inst(self)
     }
 
     fn imull1<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Imull1<Op0>: WriteInst,
+        Imull1<Op0>: WriteInst<Self>,
     {
         Imull1(op0).write_inst(self)
     }
 
     fn imull2<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Imull2<Op0, Op1>: WriteInst,
+        Imull2<Op0, Op1>: WriteInst<Self>,
     {
         Imull2(op0, op1).write_inst(self)
     }
 
     fn imulq<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Imulq<Op0, Op1, Op2>: WriteInst,
+        Imulq<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Imulq(op0, op1, op2).write_inst(self)
     }
 
     fn imulq1<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Imulq1<Op0>: WriteInst,
+        Imulq1<Op0>: WriteInst<Self>,
     {
         Imulq1(op0).write_inst(self)
     }
 
     fn imulq2<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Imulq2<Op0, Op1>: WriteInst,
+        Imulq2<Op0, Op1>: WriteInst<Self>,
     {
         Imulq2(op0, op1).write_inst(self)
     }
 
     fn imulw<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Imulw<Op0, Op1, Op2>: WriteInst,
+        Imulw<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Imulw(op0, op1, op2).write_inst(self)
     }
 
     fn imulw1<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Imulw1<Op0>: WriteInst,
+        Imulw1<Op0>: WriteInst<Self>,
     {
         Imulw1(op0).write_inst(self)
     }
 
     fn imulw2<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Imulw2<Op0, Op1>: WriteInst,
+        Imulw2<Op0, Op1>: WriteInst<Self>,
     {
         Imulw2(op0, op1).write_inst(self)
     }
 
     fn inb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Inb<Op0, Op1>: WriteInst,
+        Inb<Op0, Op1>: WriteInst<Self>,
     {
         Inb(op0, op1).write_inst(self)
     }
 
     fn incb<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Incb<Op0>: WriteInst,
+        Incb<Op0>: WriteInst<Self>,
     {
         Incb(op0).write_inst(self)
     }
 
     fn incl<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Incl<Op0>: WriteInst,
+        Incl<Op0>: WriteInst<Self>,
     {
         Incl(op0).write_inst(self)
     }
 
     fn incq<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Incq<Op0>: WriteInst,
+        Incq<Op0>: WriteInst<Self>,
     {
         Incq(op0).write_inst(self)
     }
 
     fn incw<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Incw<Op0>: WriteInst,
+        Incw<Op0>: WriteInst<Self>,
     {
         Incw(op0).write_inst(self)
     }
 
     fn inl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Inl<Op0, Op1>: WriteInst,
+        Inl<Op0, Op1>: WriteInst<Self>,
     {
         Inl(op0, op1).write_inst(self)
     }
 
     fn int<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Int<Op0>: WriteInst,
+        Int<Op0>: WriteInst<Self>,
     {
         Int(op0).write_inst(self)
     }
@@ -876,14 +876,14 @@ pub trait WriteInstExt: io::Write {
 
     fn invlpg<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Invlpg<Op0>: WriteInst,
+        Invlpg<Op0>: WriteInst<Self>,
     {
         Invlpg(op0).write_inst(self)
     }
 
     fn inw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Inw<Op0, Op1>: WriteInst,
+        Inw<Op0, Op1>: WriteInst<Self>,
     {
         Inw(op0, op1).write_inst(self)
     }
@@ -902,252 +902,252 @@ pub trait WriteInstExt: io::Write {
 
     fn ja<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Ja<Op0>: WriteInst,
+        Ja<Op0>: WriteInst<Self>,
     {
         Ja(op0).write_inst(self)
     }
 
     fn jae<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jae<Op0>: WriteInst,
+        Jae<Op0>: WriteInst<Self>,
     {
         Jae(op0).write_inst(self)
     }
 
     fn jb<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jb<Op0>: WriteInst,
+        Jb<Op0>: WriteInst<Self>,
     {
         Jb(op0).write_inst(self)
     }
 
     fn jbe<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jbe<Op0>: WriteInst,
+        Jbe<Op0>: WriteInst<Self>,
     {
         Jbe(op0).write_inst(self)
     }
 
     fn jc<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jc<Op0>: WriteInst,
+        Jc<Op0>: WriteInst<Self>,
     {
         Jc(op0).write_inst(self)
     }
 
     fn je<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Je<Op0>: WriteInst,
+        Je<Op0>: WriteInst<Self>,
     {
         Je(op0).write_inst(self)
     }
 
     fn jecxz<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jecxz<Op0>: WriteInst,
+        Jecxz<Op0>: WriteInst<Self>,
     {
         Jecxz(op0).write_inst(self)
     }
 
     fn jg<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jg<Op0>: WriteInst,
+        Jg<Op0>: WriteInst<Self>,
     {
         Jg(op0).write_inst(self)
     }
 
     fn jge<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jge<Op0>: WriteInst,
+        Jge<Op0>: WriteInst<Self>,
     {
         Jge(op0).write_inst(self)
     }
 
     fn jl<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jl<Op0>: WriteInst,
+        Jl<Op0>: WriteInst<Self>,
     {
         Jl(op0).write_inst(self)
     }
 
     fn jle<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jle<Op0>: WriteInst,
+        Jle<Op0>: WriteInst<Self>,
     {
         Jle(op0).write_inst(self)
     }
 
     fn jmpq<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jmpq<Op0>: WriteInst,
+        Jmpq<Op0>: WriteInst<Self>,
     {
         Jmpq(op0).write_inst(self)
     }
 
     fn jna<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jna<Op0>: WriteInst,
+        Jna<Op0>: WriteInst<Self>,
     {
         Jna(op0).write_inst(self)
     }
 
     fn jnae<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jnae<Op0>: WriteInst,
+        Jnae<Op0>: WriteInst<Self>,
     {
         Jnae(op0).write_inst(self)
     }
 
     fn jnb<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jnb<Op0>: WriteInst,
+        Jnb<Op0>: WriteInst<Self>,
     {
         Jnb(op0).write_inst(self)
     }
 
     fn jnbe<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jnbe<Op0>: WriteInst,
+        Jnbe<Op0>: WriteInst<Self>,
     {
         Jnbe(op0).write_inst(self)
     }
 
     fn jnc<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jnc<Op0>: WriteInst,
+        Jnc<Op0>: WriteInst<Self>,
     {
         Jnc(op0).write_inst(self)
     }
 
     fn jne<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jne<Op0>: WriteInst,
+        Jne<Op0>: WriteInst<Self>,
     {
         Jne(op0).write_inst(self)
     }
 
     fn jng<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jng<Op0>: WriteInst,
+        Jng<Op0>: WriteInst<Self>,
     {
         Jng(op0).write_inst(self)
     }
 
     fn jnge<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jnge<Op0>: WriteInst,
+        Jnge<Op0>: WriteInst<Self>,
     {
         Jnge(op0).write_inst(self)
     }
 
     fn jnl<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jnl<Op0>: WriteInst,
+        Jnl<Op0>: WriteInst<Self>,
     {
         Jnl(op0).write_inst(self)
     }
 
     fn jnle<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jnle<Op0>: WriteInst,
+        Jnle<Op0>: WriteInst<Self>,
     {
         Jnle(op0).write_inst(self)
     }
 
     fn jno<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jno<Op0>: WriteInst,
+        Jno<Op0>: WriteInst<Self>,
     {
         Jno(op0).write_inst(self)
     }
 
     fn jnp<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jnp<Op0>: WriteInst,
+        Jnp<Op0>: WriteInst<Self>,
     {
         Jnp(op0).write_inst(self)
     }
 
     fn jns<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jns<Op0>: WriteInst,
+        Jns<Op0>: WriteInst<Self>,
     {
         Jns(op0).write_inst(self)
     }
 
     fn jnz<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jnz<Op0>: WriteInst,
+        Jnz<Op0>: WriteInst<Self>,
     {
         Jnz(op0).write_inst(self)
     }
 
     fn jo<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jo<Op0>: WriteInst,
+        Jo<Op0>: WriteInst<Self>,
     {
         Jo(op0).write_inst(self)
     }
 
     fn jp<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jp<Op0>: WriteInst,
+        Jp<Op0>: WriteInst<Self>,
     {
         Jp(op0).write_inst(self)
     }
 
     fn jpe<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jpe<Op0>: WriteInst,
+        Jpe<Op0>: WriteInst<Self>,
     {
         Jpe(op0).write_inst(self)
     }
 
     fn jpo<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jpo<Op0>: WriteInst,
+        Jpo<Op0>: WriteInst<Self>,
     {
         Jpo(op0).write_inst(self)
     }
 
     fn jrcxz<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jrcxz<Op0>: WriteInst,
+        Jrcxz<Op0>: WriteInst<Self>,
     {
         Jrcxz(op0).write_inst(self)
     }
 
     fn js<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Js<Op0>: WriteInst,
+        Js<Op0>: WriteInst<Self>,
     {
         Js(op0).write_inst(self)
     }
 
     fn jz<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Jz<Op0>: WriteInst,
+        Jz<Op0>: WriteInst<Self>,
     {
         Jz(op0).write_inst(self)
     }
 
     fn ldmxcsr<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Ldmxcsr<Op0>: WriteInst,
+        Ldmxcsr<Op0>: WriteInst<Self>,
     {
         Ldmxcsr(op0).write_inst(self)
     }
 
     fn leal<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Leal<Op0, Op1>: WriteInst,
+        Leal<Op0, Op1>: WriteInst<Self>,
     {
         Leal(op0, op1).write_inst(self)
     }
 
     fn leaq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Leaq<Op0, Op1>: WriteInst,
+        Leaq<Op0, Op1>: WriteInst<Self>,
     {
         Leaq(op0, op1).write_inst(self)
     }
@@ -1162,7 +1162,7 @@ pub trait WriteInstExt: io::Write {
 
     fn leaw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Leaw<Op0, Op1>: WriteInst,
+        Leaw<Op0, Op1>: WriteInst<Self>,
     {
         Leaw(op0, op1).write_inst(self)
     }
@@ -1173,7 +1173,7 @@ pub trait WriteInstExt: io::Write {
 
     fn lmsw<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Lmsw<Op0>: WriteInst,
+        Lmsw<Op0>: WriteInst<Self>,
     {
         Lmsw(op0).write_inst(self)
     }
@@ -1184,35 +1184,35 @@ pub trait WriteInstExt: io::Write {
 
     fn maskmovdqu<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Maskmovdqu<Op0, Op1>: WriteInst,
+        Maskmovdqu<Op0, Op1>: WriteInst<Self>,
     {
         Maskmovdqu(op0, op1).write_inst(self)
     }
 
     fn maxpd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Maxpd<Op0, Op1>: WriteInst,
+        Maxpd<Op0, Op1>: WriteInst<Self>,
     {
         Maxpd(op0, op1).write_inst(self)
     }
 
     fn maxps<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Maxps<Op0, Op1>: WriteInst,
+        Maxps<Op0, Op1>: WriteInst<Self>,
     {
         Maxps(op0, op1).write_inst(self)
     }
 
     fn maxsd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Maxsd<Op0, Op1>: WriteInst,
+        Maxsd<Op0, Op1>: WriteInst<Self>,
     {
         Maxsd(op0, op1).write_inst(self)
     }
 
     fn maxss<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Maxss<Op0, Op1>: WriteInst,
+        Maxss<Op0, Op1>: WriteInst<Self>,
     {
         Maxss(op0, op1).write_inst(self)
     }
@@ -1223,203 +1223,203 @@ pub trait WriteInstExt: io::Write {
 
     fn minpd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Minpd<Op0, Op1>: WriteInst,
+        Minpd<Op0, Op1>: WriteInst<Self>,
     {
         Minpd(op0, op1).write_inst(self)
     }
 
     fn minps<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Minps<Op0, Op1>: WriteInst,
+        Minps<Op0, Op1>: WriteInst<Self>,
     {
         Minps(op0, op1).write_inst(self)
     }
 
     fn minsd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Minsd<Op0, Op1>: WriteInst,
+        Minsd<Op0, Op1>: WriteInst<Self>,
     {
         Minsd(op0, op1).write_inst(self)
     }
 
     fn minss<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Minss<Op0, Op1>: WriteInst,
+        Minss<Op0, Op1>: WriteInst<Self>,
     {
         Minss(op0, op1).write_inst(self)
     }
 
     fn movapd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movapd<Op0, Op1>: WriteInst,
+        Movapd<Op0, Op1>: WriteInst<Self>,
     {
         Movapd(op0, op1).write_inst(self)
     }
 
     fn movaps<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movaps<Op0, Op1>: WriteInst,
+        Movaps<Op0, Op1>: WriteInst<Self>,
     {
         Movaps(op0, op1).write_inst(self)
     }
 
     fn movb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movb<Op0, Op1>: WriteInst,
+        Movb<Op0, Op1>: WriteInst<Self>,
     {
         Movb(op0, op1).write_inst(self)
     }
 
     fn movd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movd<Op0, Op1>: WriteInst,
+        Movd<Op0, Op1>: WriteInst<Self>,
     {
         Movd(op0, op1).write_inst(self)
     }
 
     fn movdqa<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movdqa<Op0, Op1>: WriteInst,
+        Movdqa<Op0, Op1>: WriteInst<Self>,
     {
         Movdqa(op0, op1).write_inst(self)
     }
 
     fn movdqu<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movdqu<Op0, Op1>: WriteInst,
+        Movdqu<Op0, Op1>: WriteInst<Self>,
     {
         Movdqu(op0, op1).write_inst(self)
     }
 
     fn movhlps<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movhlps<Op0, Op1>: WriteInst,
+        Movhlps<Op0, Op1>: WriteInst<Self>,
     {
         Movhlps(op0, op1).write_inst(self)
     }
 
     fn movhpd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movhpd<Op0, Op1>: WriteInst,
+        Movhpd<Op0, Op1>: WriteInst<Self>,
     {
         Movhpd(op0, op1).write_inst(self)
     }
 
     fn movhps<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movhps<Op0, Op1>: WriteInst,
+        Movhps<Op0, Op1>: WriteInst<Self>,
     {
         Movhps(op0, op1).write_inst(self)
     }
 
     fn movl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movl<Op0, Op1>: WriteInst,
+        Movl<Op0, Op1>: WriteInst<Self>,
     {
         Movl(op0, op1).write_inst(self)
     }
 
     fn movlhps<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movlhps<Op0, Op1>: WriteInst,
+        Movlhps<Op0, Op1>: WriteInst<Self>,
     {
         Movlhps(op0, op1).write_inst(self)
     }
 
     fn movlpd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movlpd<Op0, Op1>: WriteInst,
+        Movlpd<Op0, Op1>: WriteInst<Self>,
     {
         Movlpd(op0, op1).write_inst(self)
     }
 
     fn movlps<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movlps<Op0, Op1>: WriteInst,
+        Movlps<Op0, Op1>: WriteInst<Self>,
     {
         Movlps(op0, op1).write_inst(self)
     }
 
     fn movmskpd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movmskpd<Op0, Op1>: WriteInst,
+        Movmskpd<Op0, Op1>: WriteInst<Self>,
     {
         Movmskpd(op0, op1).write_inst(self)
     }
 
     fn movmskps<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movmskps<Op0, Op1>: WriteInst,
+        Movmskps<Op0, Op1>: WriteInst<Self>,
     {
         Movmskps(op0, op1).write_inst(self)
     }
 
     fn movntdq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movntdq<Op0, Op1>: WriteInst,
+        Movntdq<Op0, Op1>: WriteInst<Self>,
     {
         Movntdq(op0, op1).write_inst(self)
     }
 
     fn movntdqa<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movntdqa<Op0, Op1>: WriteInst,
+        Movntdqa<Op0, Op1>: WriteInst<Self>,
     {
         Movntdqa(op0, op1).write_inst(self)
     }
 
     fn movnti<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movnti<Op0, Op1>: WriteInst,
+        Movnti<Op0, Op1>: WriteInst<Self>,
     {
         Movnti(op0, op1).write_inst(self)
     }
 
     fn movntpd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movntpd<Op0, Op1>: WriteInst,
+        Movntpd<Op0, Op1>: WriteInst<Self>,
     {
         Movntpd(op0, op1).write_inst(self)
     }
 
     fn movntps<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movntps<Op0, Op1>: WriteInst,
+        Movntps<Op0, Op1>: WriteInst<Self>,
     {
         Movntps(op0, op1).write_inst(self)
     }
 
     fn movq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movq<Op0, Op1>: WriteInst,
+        Movq<Op0, Op1>: WriteInst<Self>,
     {
         Movq(op0, op1).write_inst(self)
     }
 
     fn movsbl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movsbl<Op0, Op1>: WriteInst,
+        Movsbl<Op0, Op1>: WriteInst<Self>,
     {
         Movsbl(op0, op1).write_inst(self)
     }
 
     fn movsbq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movsbq<Op0, Op1>: WriteInst,
+        Movsbq<Op0, Op1>: WriteInst<Self>,
     {
         Movsbq(op0, op1).write_inst(self)
     }
 
     fn movsbw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movsbw<Op0, Op1>: WriteInst,
+        Movsbw<Op0, Op1>: WriteInst<Self>,
     {
         Movsbw(op0, op1).write_inst(self)
     }
 
     fn movsd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movsd<Op0, Op1>: WriteInst,
+        Movsd<Op0, Op1>: WriteInst<Self>,
     {
         Movsd(op0, op1).write_inst(self)
     }
@@ -1430,161 +1430,161 @@ pub trait WriteInstExt: io::Write {
 
     fn movswl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movswl<Op0, Op1>: WriteInst,
+        Movswl<Op0, Op1>: WriteInst<Self>,
     {
         Movswl(op0, op1).write_inst(self)
     }
 
     fn movswq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movswq<Op0, Op1>: WriteInst,
+        Movswq<Op0, Op1>: WriteInst<Self>,
     {
         Movswq(op0, op1).write_inst(self)
     }
 
     fn movupd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movupd<Op0, Op1>: WriteInst,
+        Movupd<Op0, Op1>: WriteInst<Self>,
     {
         Movupd(op0, op1).write_inst(self)
     }
 
     fn movups<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movups<Op0, Op1>: WriteInst,
+        Movups<Op0, Op1>: WriteInst<Self>,
     {
         Movups(op0, op1).write_inst(self)
     }
 
     fn movw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movw<Op0, Op1>: WriteInst,
+        Movw<Op0, Op1>: WriteInst<Self>,
     {
         Movw(op0, op1).write_inst(self)
     }
 
     fn movzbl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movzbl<Op0, Op1>: WriteInst,
+        Movzbl<Op0, Op1>: WriteInst<Self>,
     {
         Movzbl(op0, op1).write_inst(self)
     }
 
     fn movzbq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movzbq<Op0, Op1>: WriteInst,
+        Movzbq<Op0, Op1>: WriteInst<Self>,
     {
         Movzbq(op0, op1).write_inst(self)
     }
 
     fn movzbw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movzbw<Op0, Op1>: WriteInst,
+        Movzbw<Op0, Op1>: WriteInst<Self>,
     {
         Movzbw(op0, op1).write_inst(self)
     }
 
     fn movzwl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movzwl<Op0, Op1>: WriteInst,
+        Movzwl<Op0, Op1>: WriteInst<Self>,
     {
         Movzwl(op0, op1).write_inst(self)
     }
 
     fn movzwq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Movzwq<Op0, Op1>: WriteInst,
+        Movzwq<Op0, Op1>: WriteInst<Self>,
     {
         Movzwq(op0, op1).write_inst(self)
     }
 
     fn mpsadbw<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Mpsadbw<Op0, Op1, Op2>: WriteInst,
+        Mpsadbw<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Mpsadbw(op0, op1, op2).write_inst(self)
     }
 
     fn mulb<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Mulb<Op0>: WriteInst,
+        Mulb<Op0>: WriteInst<Self>,
     {
         Mulb(op0).write_inst(self)
     }
 
     fn mull<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Mull<Op0>: WriteInst,
+        Mull<Op0>: WriteInst<Self>,
     {
         Mull(op0).write_inst(self)
     }
 
     fn mulpd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Mulpd<Op0, Op1>: WriteInst,
+        Mulpd<Op0, Op1>: WriteInst<Self>,
     {
         Mulpd(op0, op1).write_inst(self)
     }
 
     fn mulps<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Mulps<Op0, Op1>: WriteInst,
+        Mulps<Op0, Op1>: WriteInst<Self>,
     {
         Mulps(op0, op1).write_inst(self)
     }
 
     fn mulq<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Mulq<Op0>: WriteInst,
+        Mulq<Op0>: WriteInst<Self>,
     {
         Mulq(op0).write_inst(self)
     }
 
     fn mulsd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Mulsd<Op0, Op1>: WriteInst,
+        Mulsd<Op0, Op1>: WriteInst<Self>,
     {
         Mulsd(op0, op1).write_inst(self)
     }
 
     fn mulss<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Mulss<Op0, Op1>: WriteInst,
+        Mulss<Op0, Op1>: WriteInst<Self>,
     {
         Mulss(op0, op1).write_inst(self)
     }
 
     fn mulw<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Mulw<Op0>: WriteInst,
+        Mulw<Op0>: WriteInst<Self>,
     {
         Mulw(op0).write_inst(self)
     }
 
     fn negb<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Negb<Op0>: WriteInst,
+        Negb<Op0>: WriteInst<Self>,
     {
         Negb(op0).write_inst(self)
     }
 
     fn negl<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Negl<Op0>: WriteInst,
+        Negl<Op0>: WriteInst<Self>,
     {
         Negl(op0).write_inst(self)
     }
 
     fn negq<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Negq<Op0>: WriteInst,
+        Negq<Op0>: WriteInst<Self>,
     {
         Negq(op0).write_inst(self)
     }
 
     fn negw<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Negw<Op0>: WriteInst,
+        Negw<Op0>: WriteInst<Self>,
     {
         Negw(op0).write_inst(self)
     }
@@ -1595,189 +1595,189 @@ pub trait WriteInstExt: io::Write {
 
     fn notb<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Notb<Op0>: WriteInst,
+        Notb<Op0>: WriteInst<Self>,
     {
         Notb(op0).write_inst(self)
     }
 
     fn notl<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Notl<Op0>: WriteInst,
+        Notl<Op0>: WriteInst<Self>,
     {
         Notl(op0).write_inst(self)
     }
 
     fn notq<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Notq<Op0>: WriteInst,
+        Notq<Op0>: WriteInst<Self>,
     {
         Notq(op0).write_inst(self)
     }
 
     fn notw<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Notw<Op0>: WriteInst,
+        Notw<Op0>: WriteInst<Self>,
     {
         Notw(op0).write_inst(self)
     }
 
     fn orb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Orb<Op0, Op1>: WriteInst,
+        Orb<Op0, Op1>: WriteInst<Self>,
     {
         Orb(op0, op1).write_inst(self)
     }
 
     fn orl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Orl<Op0, Op1>: WriteInst,
+        Orl<Op0, Op1>: WriteInst<Self>,
     {
         Orl(op0, op1).write_inst(self)
     }
 
     fn orpd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Orpd<Op0, Op1>: WriteInst,
+        Orpd<Op0, Op1>: WriteInst<Self>,
     {
         Orpd(op0, op1).write_inst(self)
     }
 
     fn orps<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Orps<Op0, Op1>: WriteInst,
+        Orps<Op0, Op1>: WriteInst<Self>,
     {
         Orps(op0, op1).write_inst(self)
     }
 
     fn orq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Orq<Op0, Op1>: WriteInst,
+        Orq<Op0, Op1>: WriteInst<Self>,
     {
         Orq(op0, op1).write_inst(self)
     }
 
     fn orw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Orw<Op0, Op1>: WriteInst,
+        Orw<Op0, Op1>: WriteInst<Self>,
     {
         Orw(op0, op1).write_inst(self)
     }
 
     fn outb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Outb<Op0, Op1>: WriteInst,
+        Outb<Op0, Op1>: WriteInst<Self>,
     {
         Outb(op0, op1).write_inst(self)
     }
 
     fn outl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Outl<Op0, Op1>: WriteInst,
+        Outl<Op0, Op1>: WriteInst<Self>,
     {
         Outl(op0, op1).write_inst(self)
     }
 
     fn outw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Outw<Op0, Op1>: WriteInst,
+        Outw<Op0, Op1>: WriteInst<Self>,
     {
         Outw(op0, op1).write_inst(self)
     }
 
     fn packssdw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Packssdw<Op0, Op1>: WriteInst,
+        Packssdw<Op0, Op1>: WriteInst<Self>,
     {
         Packssdw(op0, op1).write_inst(self)
     }
 
     fn packsswb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Packsswb<Op0, Op1>: WriteInst,
+        Packsswb<Op0, Op1>: WriteInst<Self>,
     {
         Packsswb(op0, op1).write_inst(self)
     }
 
     fn packusdw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Packusdw<Op0, Op1>: WriteInst,
+        Packusdw<Op0, Op1>: WriteInst<Self>,
     {
         Packusdw(op0, op1).write_inst(self)
     }
 
     fn packuswb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Packuswb<Op0, Op1>: WriteInst,
+        Packuswb<Op0, Op1>: WriteInst<Self>,
     {
         Packuswb(op0, op1).write_inst(self)
     }
 
     fn paddb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Paddb<Op0, Op1>: WriteInst,
+        Paddb<Op0, Op1>: WriteInst<Self>,
     {
         Paddb(op0, op1).write_inst(self)
     }
 
     fn paddd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Paddd<Op0, Op1>: WriteInst,
+        Paddd<Op0, Op1>: WriteInst<Self>,
     {
         Paddd(op0, op1).write_inst(self)
     }
 
     fn paddq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Paddq<Op0, Op1>: WriteInst,
+        Paddq<Op0, Op1>: WriteInst<Self>,
     {
         Paddq(op0, op1).write_inst(self)
     }
 
     fn paddsb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Paddsb<Op0, Op1>: WriteInst,
+        Paddsb<Op0, Op1>: WriteInst<Self>,
     {
         Paddsb(op0, op1).write_inst(self)
     }
 
     fn paddsw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Paddsw<Op0, Op1>: WriteInst,
+        Paddsw<Op0, Op1>: WriteInst<Self>,
     {
         Paddsw(op0, op1).write_inst(self)
     }
 
     fn paddusb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Paddusb<Op0, Op1>: WriteInst,
+        Paddusb<Op0, Op1>: WriteInst<Self>,
     {
         Paddusb(op0, op1).write_inst(self)
     }
 
     fn paddusw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Paddusw<Op0, Op1>: WriteInst,
+        Paddusw<Op0, Op1>: WriteInst<Self>,
     {
         Paddusw(op0, op1).write_inst(self)
     }
 
     fn paddw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Paddw<Op0, Op1>: WriteInst,
+        Paddw<Op0, Op1>: WriteInst<Self>,
     {
         Paddw(op0, op1).write_inst(self)
     }
 
     fn pand<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pand<Op0, Op1>: WriteInst,
+        Pand<Op0, Op1>: WriteInst<Self>,
     {
         Pand(op0, op1).write_inst(self)
     }
 
     fn pandn<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pandn<Op0, Op1>: WriteInst,
+        Pandn<Op0, Op1>: WriteInst<Self>,
     {
         Pandn(op0, op1).write_inst(self)
     }
@@ -1788,392 +1788,392 @@ pub trait WriteInstExt: io::Write {
 
     fn pavgb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pavgb<Op0, Op1>: WriteInst,
+        Pavgb<Op0, Op1>: WriteInst<Self>,
     {
         Pavgb(op0, op1).write_inst(self)
     }
 
     fn pavgw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pavgw<Op0, Op1>: WriteInst,
+        Pavgw<Op0, Op1>: WriteInst<Self>,
     {
         Pavgw(op0, op1).write_inst(self)
     }
 
     fn pblendvb<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Pblendvb<Op0, Op1, Op2>: WriteInst,
+        Pblendvb<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Pblendvb(op0, op1, op2).write_inst(self)
     }
 
     fn pblendw<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Pblendw<Op0, Op1, Op2>: WriteInst,
+        Pblendw<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Pblendw(op0, op1, op2).write_inst(self)
     }
 
     fn pcmpeqb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pcmpeqb<Op0, Op1>: WriteInst,
+        Pcmpeqb<Op0, Op1>: WriteInst<Self>,
     {
         Pcmpeqb(op0, op1).write_inst(self)
     }
 
     fn pcmpeqd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pcmpeqd<Op0, Op1>: WriteInst,
+        Pcmpeqd<Op0, Op1>: WriteInst<Self>,
     {
         Pcmpeqd(op0, op1).write_inst(self)
     }
 
     fn pcmpeqq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pcmpeqq<Op0, Op1>: WriteInst,
+        Pcmpeqq<Op0, Op1>: WriteInst<Self>,
     {
         Pcmpeqq(op0, op1).write_inst(self)
     }
 
     fn pcmpeqw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pcmpeqw<Op0, Op1>: WriteInst,
+        Pcmpeqw<Op0, Op1>: WriteInst<Self>,
     {
         Pcmpeqw(op0, op1).write_inst(self)
     }
 
     fn pcmpestri<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Pcmpestri<Op0, Op1, Op2>: WriteInst,
+        Pcmpestri<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Pcmpestri(op0, op1, op2).write_inst(self)
     }
 
     fn pcmpestrm<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Pcmpestrm<Op0, Op1, Op2>: WriteInst,
+        Pcmpestrm<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Pcmpestrm(op0, op1, op2).write_inst(self)
     }
 
     fn pcmpgtb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pcmpgtb<Op0, Op1>: WriteInst,
+        Pcmpgtb<Op0, Op1>: WriteInst<Self>,
     {
         Pcmpgtb(op0, op1).write_inst(self)
     }
 
     fn pcmpgtd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pcmpgtd<Op0, Op1>: WriteInst,
+        Pcmpgtd<Op0, Op1>: WriteInst<Self>,
     {
         Pcmpgtd(op0, op1).write_inst(self)
     }
 
     fn pcmpgtq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pcmpgtq<Op0, Op1>: WriteInst,
+        Pcmpgtq<Op0, Op1>: WriteInst<Self>,
     {
         Pcmpgtq(op0, op1).write_inst(self)
     }
 
     fn pcmpgtw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pcmpgtw<Op0, Op1>: WriteInst,
+        Pcmpgtw<Op0, Op1>: WriteInst<Self>,
     {
         Pcmpgtw(op0, op1).write_inst(self)
     }
 
     fn pcmpistri<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Pcmpistri<Op0, Op1, Op2>: WriteInst,
+        Pcmpistri<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Pcmpistri(op0, op1, op2).write_inst(self)
     }
 
     fn pcmpistrm<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Pcmpistrm<Op0, Op1, Op2>: WriteInst,
+        Pcmpistrm<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Pcmpistrm(op0, op1, op2).write_inst(self)
     }
 
     fn pextrb<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Pextrb<Op0, Op1, Op2>: WriteInst,
+        Pextrb<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Pextrb(op0, op1, op2).write_inst(self)
     }
 
     fn pextrd<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Pextrd<Op0, Op1, Op2>: WriteInst,
+        Pextrd<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Pextrd(op0, op1, op2).write_inst(self)
     }
 
     fn pextrq<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Pextrq<Op0, Op1, Op2>: WriteInst,
+        Pextrq<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Pextrq(op0, op1, op2).write_inst(self)
     }
 
     fn pextrw<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Pextrw<Op0, Op1, Op2>: WriteInst,
+        Pextrw<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Pextrw(op0, op1, op2).write_inst(self)
     }
 
     fn phminposuw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Phminposuw<Op0, Op1>: WriteInst,
+        Phminposuw<Op0, Op1>: WriteInst<Self>,
     {
         Phminposuw(op0, op1).write_inst(self)
     }
 
     fn pinsrb<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Pinsrb<Op0, Op1, Op2>: WriteInst,
+        Pinsrb<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Pinsrb(op0, op1, op2).write_inst(self)
     }
 
     fn pinsrd<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Pinsrd<Op0, Op1, Op2>: WriteInst,
+        Pinsrd<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Pinsrd(op0, op1, op2).write_inst(self)
     }
 
     fn pinsrw<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Pinsrw<Op0, Op1, Op2>: WriteInst,
+        Pinsrw<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Pinsrw(op0, op1, op2).write_inst(self)
     }
 
     fn pmaddwd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pmaddwd<Op0, Op1>: WriteInst,
+        Pmaddwd<Op0, Op1>: WriteInst<Self>,
     {
         Pmaddwd(op0, op1).write_inst(self)
     }
 
     fn pmaxsb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pmaxsb<Op0, Op1>: WriteInst,
+        Pmaxsb<Op0, Op1>: WriteInst<Self>,
     {
         Pmaxsb(op0, op1).write_inst(self)
     }
 
     fn pmaxsd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pmaxsd<Op0, Op1>: WriteInst,
+        Pmaxsd<Op0, Op1>: WriteInst<Self>,
     {
         Pmaxsd(op0, op1).write_inst(self)
     }
 
     fn pmaxsw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pmaxsw<Op0, Op1>: WriteInst,
+        Pmaxsw<Op0, Op1>: WriteInst<Self>,
     {
         Pmaxsw(op0, op1).write_inst(self)
     }
 
     fn pmaxub<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pmaxub<Op0, Op1>: WriteInst,
+        Pmaxub<Op0, Op1>: WriteInst<Self>,
     {
         Pmaxub(op0, op1).write_inst(self)
     }
 
     fn pmaxud<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pmaxud<Op0, Op1>: WriteInst,
+        Pmaxud<Op0, Op1>: WriteInst<Self>,
     {
         Pmaxud(op0, op1).write_inst(self)
     }
 
     fn pmaxuw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pmaxuw<Op0, Op1>: WriteInst,
+        Pmaxuw<Op0, Op1>: WriteInst<Self>,
     {
         Pmaxuw(op0, op1).write_inst(self)
     }
 
     fn pminsb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pminsb<Op0, Op1>: WriteInst,
+        Pminsb<Op0, Op1>: WriteInst<Self>,
     {
         Pminsb(op0, op1).write_inst(self)
     }
 
     fn pminsd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pminsd<Op0, Op1>: WriteInst,
+        Pminsd<Op0, Op1>: WriteInst<Self>,
     {
         Pminsd(op0, op1).write_inst(self)
     }
 
     fn pminsw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pminsw<Op0, Op1>: WriteInst,
+        Pminsw<Op0, Op1>: WriteInst<Self>,
     {
         Pminsw(op0, op1).write_inst(self)
     }
 
     fn pminub<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pminub<Op0, Op1>: WriteInst,
+        Pminub<Op0, Op1>: WriteInst<Self>,
     {
         Pminub(op0, op1).write_inst(self)
     }
 
     fn pminud<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pminud<Op0, Op1>: WriteInst,
+        Pminud<Op0, Op1>: WriteInst<Self>,
     {
         Pminud(op0, op1).write_inst(self)
     }
 
     fn pminuw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pminuw<Op0, Op1>: WriteInst,
+        Pminuw<Op0, Op1>: WriteInst<Self>,
     {
         Pminuw(op0, op1).write_inst(self)
     }
 
     fn pmovmskb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pmovmskb<Op0, Op1>: WriteInst,
+        Pmovmskb<Op0, Op1>: WriteInst<Self>,
     {
         Pmovmskb(op0, op1).write_inst(self)
     }
 
     fn pmovsxbd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pmovsxbd<Op0, Op1>: WriteInst,
+        Pmovsxbd<Op0, Op1>: WriteInst<Self>,
     {
         Pmovsxbd(op0, op1).write_inst(self)
     }
 
     fn pmovsxbq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pmovsxbq<Op0, Op1>: WriteInst,
+        Pmovsxbq<Op0, Op1>: WriteInst<Self>,
     {
         Pmovsxbq(op0, op1).write_inst(self)
     }
 
     fn pmovsxbw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pmovsxbw<Op0, Op1>: WriteInst,
+        Pmovsxbw<Op0, Op1>: WriteInst<Self>,
     {
         Pmovsxbw(op0, op1).write_inst(self)
     }
 
     fn pmovsxdq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pmovsxdq<Op0, Op1>: WriteInst,
+        Pmovsxdq<Op0, Op1>: WriteInst<Self>,
     {
         Pmovsxdq(op0, op1).write_inst(self)
     }
 
     fn pmovsxwd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pmovsxwd<Op0, Op1>: WriteInst,
+        Pmovsxwd<Op0, Op1>: WriteInst<Self>,
     {
         Pmovsxwd(op0, op1).write_inst(self)
     }
 
     fn pmovsxwq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pmovsxwq<Op0, Op1>: WriteInst,
+        Pmovsxwq<Op0, Op1>: WriteInst<Self>,
     {
         Pmovsxwq(op0, op1).write_inst(self)
     }
 
     fn pmovzxbd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pmovzxbd<Op0, Op1>: WriteInst,
+        Pmovzxbd<Op0, Op1>: WriteInst<Self>,
     {
         Pmovzxbd(op0, op1).write_inst(self)
     }
 
     fn pmovzxbq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pmovzxbq<Op0, Op1>: WriteInst,
+        Pmovzxbq<Op0, Op1>: WriteInst<Self>,
     {
         Pmovzxbq(op0, op1).write_inst(self)
     }
 
     fn pmovzxbw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pmovzxbw<Op0, Op1>: WriteInst,
+        Pmovzxbw<Op0, Op1>: WriteInst<Self>,
     {
         Pmovzxbw(op0, op1).write_inst(self)
     }
 
     fn pmovzxdq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pmovzxdq<Op0, Op1>: WriteInst,
+        Pmovzxdq<Op0, Op1>: WriteInst<Self>,
     {
         Pmovzxdq(op0, op1).write_inst(self)
     }
 
     fn pmovzxwd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pmovzxwd<Op0, Op1>: WriteInst,
+        Pmovzxwd<Op0, Op1>: WriteInst<Self>,
     {
         Pmovzxwd(op0, op1).write_inst(self)
     }
 
     fn pmovzxwq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pmovzxwq<Op0, Op1>: WriteInst,
+        Pmovzxwq<Op0, Op1>: WriteInst<Self>,
     {
         Pmovzxwq(op0, op1).write_inst(self)
     }
 
     fn pmuldq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pmuldq<Op0, Op1>: WriteInst,
+        Pmuldq<Op0, Op1>: WriteInst<Self>,
     {
         Pmuldq(op0, op1).write_inst(self)
     }
 
     fn pmulhuw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pmulhuw<Op0, Op1>: WriteInst,
+        Pmulhuw<Op0, Op1>: WriteInst<Self>,
     {
         Pmulhuw(op0, op1).write_inst(self)
     }
 
     fn pmulhw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pmulhw<Op0, Op1>: WriteInst,
+        Pmulhw<Op0, Op1>: WriteInst<Self>,
     {
         Pmulhw(op0, op1).write_inst(self)
     }
 
     fn pmulld<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pmulld<Op0, Op1>: WriteInst,
+        Pmulld<Op0, Op1>: WriteInst<Self>,
     {
         Pmulld(op0, op1).write_inst(self)
     }
 
     fn pmullw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pmullw<Op0, Op1>: WriteInst,
+        Pmullw<Op0, Op1>: WriteInst<Self>,
     {
         Pmullw(op0, op1).write_inst(self)
     }
 
     fn pmuludq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pmuludq<Op0, Op1>: WriteInst,
+        Pmuludq<Op0, Op1>: WriteInst<Self>,
     {
         Pmuludq(op0, op1).write_inst(self)
     }
@@ -2188,238 +2188,238 @@ pub trait WriteInstExt: io::Write {
 
     fn popq<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Popq<Op0>: WriteInst,
+        Popq<Op0>: WriteInst<Self>,
     {
         Popq(op0).write_inst(self)
     }
 
     fn popw<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Popw<Op0>: WriteInst,
+        Popw<Op0>: WriteInst<Self>,
     {
         Popw(op0).write_inst(self)
     }
 
     fn por<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Por<Op0, Op1>: WriteInst,
+        Por<Op0, Op1>: WriteInst<Self>,
     {
         Por(op0, op1).write_inst(self)
     }
 
     fn psadbw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Psadbw<Op0, Op1>: WriteInst,
+        Psadbw<Op0, Op1>: WriteInst<Self>,
     {
         Psadbw(op0, op1).write_inst(self)
     }
 
     fn pshufd<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Pshufd<Op0, Op1, Op2>: WriteInst,
+        Pshufd<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Pshufd(op0, op1, op2).write_inst(self)
     }
 
     fn pshufhw<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Pshufhw<Op0, Op1, Op2>: WriteInst,
+        Pshufhw<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Pshufhw(op0, op1, op2).write_inst(self)
     }
 
     fn pshuflw<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Pshuflw<Op0, Op1, Op2>: WriteInst,
+        Pshuflw<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Pshuflw(op0, op1, op2).write_inst(self)
     }
 
     fn pslld<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pslld<Op0, Op1>: WriteInst,
+        Pslld<Op0, Op1>: WriteInst<Self>,
     {
         Pslld(op0, op1).write_inst(self)
     }
 
     fn pslldq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pslldq<Op0, Op1>: WriteInst,
+        Pslldq<Op0, Op1>: WriteInst<Self>,
     {
         Pslldq(op0, op1).write_inst(self)
     }
 
     fn psllq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Psllq<Op0, Op1>: WriteInst,
+        Psllq<Op0, Op1>: WriteInst<Self>,
     {
         Psllq(op0, op1).write_inst(self)
     }
 
     fn psllw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Psllw<Op0, Op1>: WriteInst,
+        Psllw<Op0, Op1>: WriteInst<Self>,
     {
         Psllw(op0, op1).write_inst(self)
     }
 
     fn psrad<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Psrad<Op0, Op1>: WriteInst,
+        Psrad<Op0, Op1>: WriteInst<Self>,
     {
         Psrad(op0, op1).write_inst(self)
     }
 
     fn psraw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Psraw<Op0, Op1>: WriteInst,
+        Psraw<Op0, Op1>: WriteInst<Self>,
     {
         Psraw(op0, op1).write_inst(self)
     }
 
     fn psrld<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Psrld<Op0, Op1>: WriteInst,
+        Psrld<Op0, Op1>: WriteInst<Self>,
     {
         Psrld(op0, op1).write_inst(self)
     }
 
     fn psrldq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Psrldq<Op0, Op1>: WriteInst,
+        Psrldq<Op0, Op1>: WriteInst<Self>,
     {
         Psrldq(op0, op1).write_inst(self)
     }
 
     fn psrlq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Psrlq<Op0, Op1>: WriteInst,
+        Psrlq<Op0, Op1>: WriteInst<Self>,
     {
         Psrlq(op0, op1).write_inst(self)
     }
 
     fn psrlw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Psrlw<Op0, Op1>: WriteInst,
+        Psrlw<Op0, Op1>: WriteInst<Self>,
     {
         Psrlw(op0, op1).write_inst(self)
     }
 
     fn psubb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Psubb<Op0, Op1>: WriteInst,
+        Psubb<Op0, Op1>: WriteInst<Self>,
     {
         Psubb(op0, op1).write_inst(self)
     }
 
     fn psubd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Psubd<Op0, Op1>: WriteInst,
+        Psubd<Op0, Op1>: WriteInst<Self>,
     {
         Psubd(op0, op1).write_inst(self)
     }
 
     fn psubq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Psubq<Op0, Op1>: WriteInst,
+        Psubq<Op0, Op1>: WriteInst<Self>,
     {
         Psubq(op0, op1).write_inst(self)
     }
 
     fn psubsb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Psubsb<Op0, Op1>: WriteInst,
+        Psubsb<Op0, Op1>: WriteInst<Self>,
     {
         Psubsb(op0, op1).write_inst(self)
     }
 
     fn psubsw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Psubsw<Op0, Op1>: WriteInst,
+        Psubsw<Op0, Op1>: WriteInst<Self>,
     {
         Psubsw(op0, op1).write_inst(self)
     }
 
     fn psubusb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Psubusb<Op0, Op1>: WriteInst,
+        Psubusb<Op0, Op1>: WriteInst<Self>,
     {
         Psubusb(op0, op1).write_inst(self)
     }
 
     fn psubusw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Psubusw<Op0, Op1>: WriteInst,
+        Psubusw<Op0, Op1>: WriteInst<Self>,
     {
         Psubusw(op0, op1).write_inst(self)
     }
 
     fn psubw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Psubw<Op0, Op1>: WriteInst,
+        Psubw<Op0, Op1>: WriteInst<Self>,
     {
         Psubw(op0, op1).write_inst(self)
     }
 
     fn ptest<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Ptest<Op0, Op1>: WriteInst,
+        Ptest<Op0, Op1>: WriteInst<Self>,
     {
         Ptest(op0, op1).write_inst(self)
     }
 
     fn punpckhbw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Punpckhbw<Op0, Op1>: WriteInst,
+        Punpckhbw<Op0, Op1>: WriteInst<Self>,
     {
         Punpckhbw(op0, op1).write_inst(self)
     }
 
     fn punpckhdq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Punpckhdq<Op0, Op1>: WriteInst,
+        Punpckhdq<Op0, Op1>: WriteInst<Self>,
     {
         Punpckhdq(op0, op1).write_inst(self)
     }
 
     fn punpckhqdq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Punpckhqdq<Op0, Op1>: WriteInst,
+        Punpckhqdq<Op0, Op1>: WriteInst<Self>,
     {
         Punpckhqdq(op0, op1).write_inst(self)
     }
 
     fn punpckhwd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Punpckhwd<Op0, Op1>: WriteInst,
+        Punpckhwd<Op0, Op1>: WriteInst<Self>,
     {
         Punpckhwd(op0, op1).write_inst(self)
     }
 
     fn punpcklbw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Punpcklbw<Op0, Op1>: WriteInst,
+        Punpcklbw<Op0, Op1>: WriteInst<Self>,
     {
         Punpcklbw(op0, op1).write_inst(self)
     }
 
     fn punpckldq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Punpckldq<Op0, Op1>: WriteInst,
+        Punpckldq<Op0, Op1>: WriteInst<Self>,
     {
         Punpckldq(op0, op1).write_inst(self)
     }
 
     fn punpcklqdq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Punpcklqdq<Op0, Op1>: WriteInst,
+        Punpcklqdq<Op0, Op1>: WriteInst<Self>,
     {
         Punpcklqdq(op0, op1).write_inst(self)
     }
 
     fn punpcklwd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Punpcklwd<Op0, Op1>: WriteInst,
+        Punpcklwd<Op0, Op1>: WriteInst<Self>,
     {
         Punpcklwd(op0, op1).write_inst(self)
     }
@@ -2434,91 +2434,91 @@ pub trait WriteInstExt: io::Write {
 
     fn pushq<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Pushq<Op0>: WriteInst,
+        Pushq<Op0>: WriteInst<Self>,
     {
         Pushq(op0).write_inst(self)
     }
 
     fn pushw<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Pushw<Op0>: WriteInst,
+        Pushw<Op0>: WriteInst<Self>,
     {
         Pushw(op0).write_inst(self)
     }
 
     fn pxor<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Pxor<Op0, Op1>: WriteInst,
+        Pxor<Op0, Op1>: WriteInst<Self>,
     {
         Pxor(op0, op1).write_inst(self)
     }
 
     fn rclb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Rclb<Op0, Op1>: WriteInst,
+        Rclb<Op0, Op1>: WriteInst<Self>,
     {
         Rclb(op0, op1).write_inst(self)
     }
 
     fn rcll<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Rcll<Op0, Op1>: WriteInst,
+        Rcll<Op0, Op1>: WriteInst<Self>,
     {
         Rcll(op0, op1).write_inst(self)
     }
 
     fn rclq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Rclq<Op0, Op1>: WriteInst,
+        Rclq<Op0, Op1>: WriteInst<Self>,
     {
         Rclq(op0, op1).write_inst(self)
     }
 
     fn rclw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Rclw<Op0, Op1>: WriteInst,
+        Rclw<Op0, Op1>: WriteInst<Self>,
     {
         Rclw(op0, op1).write_inst(self)
     }
 
     fn rcpps<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Rcpps<Op0, Op1>: WriteInst,
+        Rcpps<Op0, Op1>: WriteInst<Self>,
     {
         Rcpps(op0, op1).write_inst(self)
     }
 
     fn rcpss<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Rcpss<Op0, Op1>: WriteInst,
+        Rcpss<Op0, Op1>: WriteInst<Self>,
     {
         Rcpss(op0, op1).write_inst(self)
     }
 
     fn rcrb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Rcrb<Op0, Op1>: WriteInst,
+        Rcrb<Op0, Op1>: WriteInst<Self>,
     {
         Rcrb(op0, op1).write_inst(self)
     }
 
     fn rcrl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Rcrl<Op0, Op1>: WriteInst,
+        Rcrl<Op0, Op1>: WriteInst<Self>,
     {
         Rcrl(op0, op1).write_inst(self)
     }
 
     fn rcrq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Rcrq<Op0, Op1>: WriteInst,
+        Rcrq<Op0, Op1>: WriteInst<Self>,
     {
         Rcrq(op0, op1).write_inst(self)
     }
 
     fn rcrw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Rcrw<Op0, Op1>: WriteInst,
+        Rcrw<Op0, Op1>: WriteInst<Self>,
     {
         Rcrw(op0, op1).write_inst(self)
     }
@@ -2529,399 +2529,399 @@ pub trait WriteInstExt: io::Write {
 
     fn retq1<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Retq1<Op0>: WriteInst,
+        Retq1<Op0>: WriteInst<Self>,
     {
         Retq1(op0).write_inst(self)
     }
 
     fn rolb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Rolb<Op0, Op1>: WriteInst,
+        Rolb<Op0, Op1>: WriteInst<Self>,
     {
         Rolb(op0, op1).write_inst(self)
     }
 
     fn roll<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Roll<Op0, Op1>: WriteInst,
+        Roll<Op0, Op1>: WriteInst<Self>,
     {
         Roll(op0, op1).write_inst(self)
     }
 
     fn rolq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Rolq<Op0, Op1>: WriteInst,
+        Rolq<Op0, Op1>: WriteInst<Self>,
     {
         Rolq(op0, op1).write_inst(self)
     }
 
     fn rolw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Rolw<Op0, Op1>: WriteInst,
+        Rolw<Op0, Op1>: WriteInst<Self>,
     {
         Rolw(op0, op1).write_inst(self)
     }
 
     fn rorb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Rorb<Op0, Op1>: WriteInst,
+        Rorb<Op0, Op1>: WriteInst<Self>,
     {
         Rorb(op0, op1).write_inst(self)
     }
 
     fn rorl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Rorl<Op0, Op1>: WriteInst,
+        Rorl<Op0, Op1>: WriteInst<Self>,
     {
         Rorl(op0, op1).write_inst(self)
     }
 
     fn rorq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Rorq<Op0, Op1>: WriteInst,
+        Rorq<Op0, Op1>: WriteInst<Self>,
     {
         Rorq(op0, op1).write_inst(self)
     }
 
     fn rorw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Rorw<Op0, Op1>: WriteInst,
+        Rorw<Op0, Op1>: WriteInst<Self>,
     {
         Rorw(op0, op1).write_inst(self)
     }
 
     fn roundpd<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Roundpd<Op0, Op1, Op2>: WriteInst,
+        Roundpd<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Roundpd(op0, op1, op2).write_inst(self)
     }
 
     fn roundps<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Roundps<Op0, Op1, Op2>: WriteInst,
+        Roundps<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Roundps(op0, op1, op2).write_inst(self)
     }
 
     fn roundsd<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Roundsd<Op0, Op1, Op2>: WriteInst,
+        Roundsd<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Roundsd(op0, op1, op2).write_inst(self)
     }
 
     fn roundss<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Roundss<Op0, Op1, Op2>: WriteInst,
+        Roundss<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Roundss(op0, op1, op2).write_inst(self)
     }
 
     fn rsqrtps<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Rsqrtps<Op0, Op1>: WriteInst,
+        Rsqrtps<Op0, Op1>: WriteInst<Self>,
     {
         Rsqrtps(op0, op1).write_inst(self)
     }
 
     fn rsqrtss<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Rsqrtss<Op0, Op1>: WriteInst,
+        Rsqrtss<Op0, Op1>: WriteInst<Self>,
     {
         Rsqrtss(op0, op1).write_inst(self)
     }
 
     fn salb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Salb<Op0, Op1>: WriteInst,
+        Salb<Op0, Op1>: WriteInst<Self>,
     {
         Salb(op0, op1).write_inst(self)
     }
 
     fn sall<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Sall<Op0, Op1>: WriteInst,
+        Sall<Op0, Op1>: WriteInst<Self>,
     {
         Sall(op0, op1).write_inst(self)
     }
 
     fn salq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Salq<Op0, Op1>: WriteInst,
+        Salq<Op0, Op1>: WriteInst<Self>,
     {
         Salq(op0, op1).write_inst(self)
     }
 
     fn salw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Salw<Op0, Op1>: WriteInst,
+        Salw<Op0, Op1>: WriteInst<Self>,
     {
         Salw(op0, op1).write_inst(self)
     }
 
     fn sarb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Sarb<Op0, Op1>: WriteInst,
+        Sarb<Op0, Op1>: WriteInst<Self>,
     {
         Sarb(op0, op1).write_inst(self)
     }
 
     fn sarl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Sarl<Op0, Op1>: WriteInst,
+        Sarl<Op0, Op1>: WriteInst<Self>,
     {
         Sarl(op0, op1).write_inst(self)
     }
 
     fn sarq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Sarq<Op0, Op1>: WriteInst,
+        Sarq<Op0, Op1>: WriteInst<Self>,
     {
         Sarq(op0, op1).write_inst(self)
     }
 
     fn sarw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Sarw<Op0, Op1>: WriteInst,
+        Sarw<Op0, Op1>: WriteInst<Self>,
     {
         Sarw(op0, op1).write_inst(self)
     }
 
     fn sbbb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Sbbb<Op0, Op1>: WriteInst,
+        Sbbb<Op0, Op1>: WriteInst<Self>,
     {
         Sbbb(op0, op1).write_inst(self)
     }
 
     fn sbbl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Sbbl<Op0, Op1>: WriteInst,
+        Sbbl<Op0, Op1>: WriteInst<Self>,
     {
         Sbbl(op0, op1).write_inst(self)
     }
 
     fn sbbq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Sbbq<Op0, Op1>: WriteInst,
+        Sbbq<Op0, Op1>: WriteInst<Self>,
     {
         Sbbq(op0, op1).write_inst(self)
     }
 
     fn sbbw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Sbbw<Op0, Op1>: WriteInst,
+        Sbbw<Op0, Op1>: WriteInst<Self>,
     {
         Sbbw(op0, op1).write_inst(self)
     }
 
     fn seta<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Seta<Op0>: WriteInst,
+        Seta<Op0>: WriteInst<Self>,
     {
         Seta(op0).write_inst(self)
     }
 
     fn setae<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Setae<Op0>: WriteInst,
+        Setae<Op0>: WriteInst<Self>,
     {
         Setae(op0).write_inst(self)
     }
 
     fn setb<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Setb<Op0>: WriteInst,
+        Setb<Op0>: WriteInst<Self>,
     {
         Setb(op0).write_inst(self)
     }
 
     fn setbe<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Setbe<Op0>: WriteInst,
+        Setbe<Op0>: WriteInst<Self>,
     {
         Setbe(op0).write_inst(self)
     }
 
     fn setc<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Setc<Op0>: WriteInst,
+        Setc<Op0>: WriteInst<Self>,
     {
         Setc(op0).write_inst(self)
     }
 
     fn sete<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Sete<Op0>: WriteInst,
+        Sete<Op0>: WriteInst<Self>,
     {
         Sete(op0).write_inst(self)
     }
 
     fn setg<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Setg<Op0>: WriteInst,
+        Setg<Op0>: WriteInst<Self>,
     {
         Setg(op0).write_inst(self)
     }
 
     fn setge<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Setge<Op0>: WriteInst,
+        Setge<Op0>: WriteInst<Self>,
     {
         Setge(op0).write_inst(self)
     }
 
     fn setl<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Setl<Op0>: WriteInst,
+        Setl<Op0>: WriteInst<Self>,
     {
         Setl(op0).write_inst(self)
     }
 
     fn setle<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Setle<Op0>: WriteInst,
+        Setle<Op0>: WriteInst<Self>,
     {
         Setle(op0).write_inst(self)
     }
 
     fn setna<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Setna<Op0>: WriteInst,
+        Setna<Op0>: WriteInst<Self>,
     {
         Setna(op0).write_inst(self)
     }
 
     fn setnae<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Setnae<Op0>: WriteInst,
+        Setnae<Op0>: WriteInst<Self>,
     {
         Setnae(op0).write_inst(self)
     }
 
     fn setnb<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Setnb<Op0>: WriteInst,
+        Setnb<Op0>: WriteInst<Self>,
     {
         Setnb(op0).write_inst(self)
     }
 
     fn setnbe<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Setnbe<Op0>: WriteInst,
+        Setnbe<Op0>: WriteInst<Self>,
     {
         Setnbe(op0).write_inst(self)
     }
 
     fn setnc<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Setnc<Op0>: WriteInst,
+        Setnc<Op0>: WriteInst<Self>,
     {
         Setnc(op0).write_inst(self)
     }
 
     fn setne<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Setne<Op0>: WriteInst,
+        Setne<Op0>: WriteInst<Self>,
     {
         Setne(op0).write_inst(self)
     }
 
     fn setng<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Setng<Op0>: WriteInst,
+        Setng<Op0>: WriteInst<Self>,
     {
         Setng(op0).write_inst(self)
     }
 
     fn setnge<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Setnge<Op0>: WriteInst,
+        Setnge<Op0>: WriteInst<Self>,
     {
         Setnge(op0).write_inst(self)
     }
 
     fn setnl<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Setnl<Op0>: WriteInst,
+        Setnl<Op0>: WriteInst<Self>,
     {
         Setnl(op0).write_inst(self)
     }
 
     fn setnle<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Setnle<Op0>: WriteInst,
+        Setnle<Op0>: WriteInst<Self>,
     {
         Setnle(op0).write_inst(self)
     }
 
     fn setno<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Setno<Op0>: WriteInst,
+        Setno<Op0>: WriteInst<Self>,
     {
         Setno(op0).write_inst(self)
     }
 
     fn setnp<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Setnp<Op0>: WriteInst,
+        Setnp<Op0>: WriteInst<Self>,
     {
         Setnp(op0).write_inst(self)
     }
 
     fn setns<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Setns<Op0>: WriteInst,
+        Setns<Op0>: WriteInst<Self>,
     {
         Setns(op0).write_inst(self)
     }
 
     fn setnz<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Setnz<Op0>: WriteInst,
+        Setnz<Op0>: WriteInst<Self>,
     {
         Setnz(op0).write_inst(self)
     }
 
     fn seto<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Seto<Op0>: WriteInst,
+        Seto<Op0>: WriteInst<Self>,
     {
         Seto(op0).write_inst(self)
     }
 
     fn setp<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Setp<Op0>: WriteInst,
+        Setp<Op0>: WriteInst<Self>,
     {
         Setp(op0).write_inst(self)
     }
 
     fn setpe<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Setpe<Op0>: WriteInst,
+        Setpe<Op0>: WriteInst<Self>,
     {
         Setpe(op0).write_inst(self)
     }
 
     fn setpo<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Setpo<Op0>: WriteInst,
+        Setpo<Op0>: WriteInst<Self>,
     {
         Setpo(op0).write_inst(self)
     }
 
     fn sets<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Sets<Op0>: WriteInst,
+        Sets<Op0>: WriteInst<Self>,
     {
         Sets(op0).write_inst(self)
     }
 
     fn setz<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Setz<Op0>: WriteInst,
+        Setz<Op0>: WriteInst<Self>,
     {
         Setz(op0).write_inst(self)
     }
@@ -2932,154 +2932,154 @@ pub trait WriteInstExt: io::Write {
 
     fn sgdt<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Sgdt<Op0>: WriteInst,
+        Sgdt<Op0>: WriteInst<Self>,
     {
         Sgdt(op0).write_inst(self)
     }
 
     fn shlb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Shlb<Op0, Op1>: WriteInst,
+        Shlb<Op0, Op1>: WriteInst<Self>,
     {
         Shlb(op0, op1).write_inst(self)
     }
 
     fn shldl<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Shldl<Op0, Op1, Op2>: WriteInst,
+        Shldl<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Shldl(op0, op1, op2).write_inst(self)
     }
 
     fn shldq<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Shldq<Op0, Op1, Op2>: WriteInst,
+        Shldq<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Shldq(op0, op1, op2).write_inst(self)
     }
 
     fn shldw<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Shldw<Op0, Op1, Op2>: WriteInst,
+        Shldw<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Shldw(op0, op1, op2).write_inst(self)
     }
 
     fn shll<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Shll<Op0, Op1>: WriteInst,
+        Shll<Op0, Op1>: WriteInst<Self>,
     {
         Shll(op0, op1).write_inst(self)
     }
 
     fn shlq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Shlq<Op0, Op1>: WriteInst,
+        Shlq<Op0, Op1>: WriteInst<Self>,
     {
         Shlq(op0, op1).write_inst(self)
     }
 
     fn shlw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Shlw<Op0, Op1>: WriteInst,
+        Shlw<Op0, Op1>: WriteInst<Self>,
     {
         Shlw(op0, op1).write_inst(self)
     }
 
     fn shrb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Shrb<Op0, Op1>: WriteInst,
+        Shrb<Op0, Op1>: WriteInst<Self>,
     {
         Shrb(op0, op1).write_inst(self)
     }
 
     fn shrdl<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Shrdl<Op0, Op1, Op2>: WriteInst,
+        Shrdl<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Shrdl(op0, op1, op2).write_inst(self)
     }
 
     fn shrdq<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Shrdq<Op0, Op1, Op2>: WriteInst,
+        Shrdq<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Shrdq(op0, op1, op2).write_inst(self)
     }
 
     fn shrdw<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Shrdw<Op0, Op1, Op2>: WriteInst,
+        Shrdw<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Shrdw(op0, op1, op2).write_inst(self)
     }
 
     fn shrl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Shrl<Op0, Op1>: WriteInst,
+        Shrl<Op0, Op1>: WriteInst<Self>,
     {
         Shrl(op0, op1).write_inst(self)
     }
 
     fn shrq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Shrq<Op0, Op1>: WriteInst,
+        Shrq<Op0, Op1>: WriteInst<Self>,
     {
         Shrq(op0, op1).write_inst(self)
     }
 
     fn shrw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Shrw<Op0, Op1>: WriteInst,
+        Shrw<Op0, Op1>: WriteInst<Self>,
     {
         Shrw(op0, op1).write_inst(self)
     }
 
     fn shufpd<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Shufpd<Op0, Op1, Op2>: WriteInst,
+        Shufpd<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Shufpd(op0, op1, op2).write_inst(self)
     }
 
     fn shufps<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
     where
-        Shufps<Op0, Op1, Op2>: WriteInst,
+        Shufps<Op0, Op1, Op2>: WriteInst<Self>,
     {
         Shufps(op0, op1, op2).write_inst(self)
     }
 
     fn sidt<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Sidt<Op0>: WriteInst,
+        Sidt<Op0>: WriteInst<Self>,
     {
         Sidt(op0).write_inst(self)
     }
 
     fn sqrtpd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Sqrtpd<Op0, Op1>: WriteInst,
+        Sqrtpd<Op0, Op1>: WriteInst<Self>,
     {
         Sqrtpd(op0, op1).write_inst(self)
     }
 
     fn sqrtps<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Sqrtps<Op0, Op1>: WriteInst,
+        Sqrtps<Op0, Op1>: WriteInst<Self>,
     {
         Sqrtps(op0, op1).write_inst(self)
     }
 
     fn sqrtsd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Sqrtsd<Op0, Op1>: WriteInst,
+        Sqrtsd<Op0, Op1>: WriteInst<Self>,
     {
         Sqrtsd(op0, op1).write_inst(self)
     }
 
     fn sqrtss<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Sqrtss<Op0, Op1>: WriteInst,
+        Sqrtss<Op0, Op1>: WriteInst<Self>,
     {
         Sqrtss(op0, op1).write_inst(self)
     }
@@ -3098,70 +3098,70 @@ pub trait WriteInstExt: io::Write {
 
     fn stmxcsr<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Stmxcsr<Op0>: WriteInst,
+        Stmxcsr<Op0>: WriteInst<Self>,
     {
         Stmxcsr(op0).write_inst(self)
     }
 
     fn str<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Str<Op0>: WriteInst,
+        Str<Op0>: WriteInst<Self>,
     {
         Str(op0).write_inst(self)
     }
 
     fn subb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Subb<Op0, Op1>: WriteInst,
+        Subb<Op0, Op1>: WriteInst<Self>,
     {
         Subb(op0, op1).write_inst(self)
     }
 
     fn subl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Subl<Op0, Op1>: WriteInst,
+        Subl<Op0, Op1>: WriteInst<Self>,
     {
         Subl(op0, op1).write_inst(self)
     }
 
     fn subpd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Subpd<Op0, Op1>: WriteInst,
+        Subpd<Op0, Op1>: WriteInst<Self>,
     {
         Subpd(op0, op1).write_inst(self)
     }
 
     fn subps<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Subps<Op0, Op1>: WriteInst,
+        Subps<Op0, Op1>: WriteInst<Self>,
     {
         Subps(op0, op1).write_inst(self)
     }
 
     fn subq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Subq<Op0, Op1>: WriteInst,
+        Subq<Op0, Op1>: WriteInst<Self>,
     {
         Subq(op0, op1).write_inst(self)
     }
 
     fn subsd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Subsd<Op0, Op1>: WriteInst,
+        Subsd<Op0, Op1>: WriteInst<Self>,
     {
         Subsd(op0, op1).write_inst(self)
     }
 
     fn subss<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Subss<Op0, Op1>: WriteInst,
+        Subss<Op0, Op1>: WriteInst<Self>,
     {
         Subss(op0, op1).write_inst(self)
     }
 
     fn subw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Subw<Op0, Op1>: WriteInst,
+        Subw<Op0, Op1>: WriteInst<Self>,
     {
         Subw(op0, op1).write_inst(self)
     }
@@ -3172,42 +3172,42 @@ pub trait WriteInstExt: io::Write {
 
     fn testb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Testb<Op0, Op1>: WriteInst,
+        Testb<Op0, Op1>: WriteInst<Self>,
     {
         Testb(op0, op1).write_inst(self)
     }
 
     fn testl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Testl<Op0, Op1>: WriteInst,
+        Testl<Op0, Op1>: WriteInst<Self>,
     {
         Testl(op0, op1).write_inst(self)
     }
 
     fn testq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Testq<Op0, Op1>: WriteInst,
+        Testq<Op0, Op1>: WriteInst<Self>,
     {
         Testq(op0, op1).write_inst(self)
     }
 
     fn testw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Testw<Op0, Op1>: WriteInst,
+        Testw<Op0, Op1>: WriteInst<Self>,
     {
         Testw(op0, op1).write_inst(self)
     }
 
     fn ucomisd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Ucomisd<Op0, Op1>: WriteInst,
+        Ucomisd<Op0, Op1>: WriteInst<Self>,
     {
         Ucomisd(op0, op1).write_inst(self)
     }
 
     fn ucomiss<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Ucomiss<Op0, Op1>: WriteInst,
+        Ucomiss<Op0, Op1>: WriteInst<Self>,
     {
         Ucomiss(op0, op1).write_inst(self)
     }
@@ -3218,42 +3218,42 @@ pub trait WriteInstExt: io::Write {
 
     fn unpckhpd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Unpckhpd<Op0, Op1>: WriteInst,
+        Unpckhpd<Op0, Op1>: WriteInst<Self>,
     {
         Unpckhpd(op0, op1).write_inst(self)
     }
 
     fn unpckhps<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Unpckhps<Op0, Op1>: WriteInst,
+        Unpckhps<Op0, Op1>: WriteInst<Self>,
     {
         Unpckhps(op0, op1).write_inst(self)
     }
 
     fn unpcklpd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Unpcklpd<Op0, Op1>: WriteInst,
+        Unpcklpd<Op0, Op1>: WriteInst<Self>,
     {
         Unpcklpd(op0, op1).write_inst(self)
     }
 
     fn unpcklps<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Unpcklps<Op0, Op1>: WriteInst,
+        Unpcklps<Op0, Op1>: WriteInst<Self>,
     {
         Unpcklps(op0, op1).write_inst(self)
     }
 
     fn verr<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Verr<Op0>: WriteInst,
+        Verr<Op0>: WriteInst<Self>,
     {
         Verr(op0).write_inst(self)
     }
 
     fn verw<Op0>(&mut self, op0: Op0) -> io::Result<()>
     where
-        Verw<Op0>: WriteInst,
+        Verw<Op0>: WriteInst<Self>,
     {
         Verw(op0).write_inst(self)
     }
@@ -3268,98 +3268,98 @@ pub trait WriteInstExt: io::Write {
 
     fn xaddb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Xaddb<Op0, Op1>: WriteInst,
+        Xaddb<Op0, Op1>: WriteInst<Self>,
     {
         Xaddb(op0, op1).write_inst(self)
     }
 
     fn xaddl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Xaddl<Op0, Op1>: WriteInst,
+        Xaddl<Op0, Op1>: WriteInst<Self>,
     {
         Xaddl(op0, op1).write_inst(self)
     }
 
     fn xaddq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Xaddq<Op0, Op1>: WriteInst,
+        Xaddq<Op0, Op1>: WriteInst<Self>,
     {
         Xaddq(op0, op1).write_inst(self)
     }
 
     fn xaddw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Xaddw<Op0, Op1>: WriteInst,
+        Xaddw<Op0, Op1>: WriteInst<Self>,
     {
         Xaddw(op0, op1).write_inst(self)
     }
 
     fn xchgb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Xchgb<Op0, Op1>: WriteInst,
+        Xchgb<Op0, Op1>: WriteInst<Self>,
     {
         Xchgb(op0, op1).write_inst(self)
     }
 
     fn xchgl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Xchgl<Op0, Op1>: WriteInst,
+        Xchgl<Op0, Op1>: WriteInst<Self>,
     {
         Xchgl(op0, op1).write_inst(self)
     }
 
     fn xchgq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Xchgq<Op0, Op1>: WriteInst,
+        Xchgq<Op0, Op1>: WriteInst<Self>,
     {
         Xchgq(op0, op1).write_inst(self)
     }
 
     fn xchgw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Xchgw<Op0, Op1>: WriteInst,
+        Xchgw<Op0, Op1>: WriteInst<Self>,
     {
         Xchgw(op0, op1).write_inst(self)
     }
 
     fn xorb<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Xorb<Op0, Op1>: WriteInst,
+        Xorb<Op0, Op1>: WriteInst<Self>,
     {
         Xorb(op0, op1).write_inst(self)
     }
 
     fn xorl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Xorl<Op0, Op1>: WriteInst,
+        Xorl<Op0, Op1>: WriteInst<Self>,
     {
         Xorl(op0, op1).write_inst(self)
     }
 
     fn xorpd<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Xorpd<Op0, Op1>: WriteInst,
+        Xorpd<Op0, Op1>: WriteInst<Self>,
     {
         Xorpd(op0, op1).write_inst(self)
     }
 
     fn xorps<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Xorps<Op0, Op1>: WriteInst,
+        Xorps<Op0, Op1>: WriteInst<Self>,
     {
         Xorps(op0, op1).write_inst(self)
     }
 
     fn xorq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Xorq<Op0, Op1>: WriteInst,
+        Xorq<Op0, Op1>: WriteInst<Self>,
     {
         Xorq(op0, op1).write_inst(self)
     }
 
     fn xorw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
-        Xorw<Op0, Op1>: WriteInst,
+        Xorw<Op0, Op1>: WriteInst<Self>,
     {
         Xorw(op0, op1).write_inst(self)
     }
@@ -3371,15 +3371,15 @@ pub trait WriteInstExt: io::Write {
 
 impl<W: io::Write + ?Sized> WriteInstExt for W {}
 
-pub trait WriteInst {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()>;
+pub trait WriteInst<W: ?Sized> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()>;
 }
 
-pub struct Adcb<Op0, Op1>(Op0, Op1);
+pub struct Adcb<Op0, Op1>(pub Op0, pub Op1);
 
 /// adcb r8 r8: Add with carry r/m8 to byte register.
-impl WriteInst for Adcb<Gpr8, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcb<Gpr8, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 12 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -3392,8 +3392,8 @@ impl WriteInst for Adcb<Gpr8, Gpr8> {
 }
 
 /// adcb r8 m8: Add with carry r/m8 to byte register.
-impl WriteInst for Adcb<Gpr8, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcb<Gpr8, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 12 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -3406,8 +3406,8 @@ impl WriteInst for Adcb<Gpr8, Memory> {
 }
 
 /// adcb m8 r8: Add with carry byte register to r/m8.
-impl WriteInst for Adcb<Memory, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcb<Memory, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 10 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -3420,8 +3420,8 @@ impl WriteInst for Adcb<Memory, Gpr8> {
 }
 
 /// adcb r8 imm8: Add with carry imm8 to r/m8.
-impl WriteInst for Adcb<Gpr8, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcb<Gpr8, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 80 /2 ib
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -3435,8 +3435,8 @@ impl WriteInst for Adcb<Gpr8, i8> {
 }
 
 /// adcb m8 imm8: Add with carry imm8 to r/m8.
-impl WriteInst for Adcb<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcb<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 80 /2 ib
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -3450,8 +3450,8 @@ impl WriteInst for Adcb<Memory, i8> {
 }
 
 /// adcb _Al imm8: Add with carry imm8 to AL
-impl WriteInst for Adcb<_Al, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcb<_Al, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 14 ib
         put(w, 0x14)?;
         puts(w, self.1.to_le_bytes())?;
@@ -3459,11 +3459,11 @@ impl WriteInst for Adcb<_Al, i8> {
     }
 }
 
-pub struct Adcl<Op0, Op1>(Op0, Op1);
+pub struct Adcl<Op0, Op1>(pub Op0, pub Op1);
 
 /// adcl r32 r32: Add with CF r/m32 to r32.
-impl WriteInst for Adcl<Gpr32, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcl<Gpr32, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 13 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -3476,8 +3476,8 @@ impl WriteInst for Adcl<Gpr32, Gpr32> {
 }
 
 /// adcl r32 m32: Add with CF r/m32 to r32.
-impl WriteInst for Adcl<Gpr32, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcl<Gpr32, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 13 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -3490,8 +3490,8 @@ impl WriteInst for Adcl<Gpr32, Memory> {
 }
 
 /// adcl m32 r32: Add with CF r32 to r/m32.
-impl WriteInst for Adcl<Memory, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcl<Memory, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 11 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -3504,8 +3504,8 @@ impl WriteInst for Adcl<Memory, Gpr32> {
 }
 
 /// adcl r32 imm8: Add with CF sign-extended imm8 into r/m32.
-impl WriteInst for Adcl<Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcl<Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 83 /2 ib
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -3519,8 +3519,8 @@ impl WriteInst for Adcl<Gpr32, i8> {
 }
 
 /// adcl m32 imm8: Add with CF sign-extended imm8 into r/m32.
-impl WriteInst for Adcl<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcl<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 83 /2 ib
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -3534,8 +3534,8 @@ impl WriteInst for Adcl<Memory, i8> {
 }
 
 /// adcl r32 imm32: Add with CF imm32 to r/m32.
-impl WriteInst for Adcl<Gpr32, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcl<Gpr32, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 81 /2 id
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -3549,8 +3549,8 @@ impl WriteInst for Adcl<Gpr32, i32> {
 }
 
 /// adcl m32 imm32: Add with CF imm32 to r/m32.
-impl WriteInst for Adcl<Memory, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcl<Memory, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 81 /2 id
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -3564,8 +3564,8 @@ impl WriteInst for Adcl<Memory, i32> {
 }
 
 /// adcl _Eax imm32: Add with carry imm32 to EAX.
-impl WriteInst for Adcl<_Eax, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcl<_Eax, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 15 id
         put(w, 0x15)?;
         puts(w, self.1.to_le_bytes())?;
@@ -3573,11 +3573,11 @@ impl WriteInst for Adcl<_Eax, i32> {
     }
 }
 
-pub struct Adcq<Op0, Op1>(Op0, Op1);
+pub struct Adcq<Op0, Op1>(pub Op0, pub Op1);
 
 /// adcq r64 r64: Add with CF r/m64 to r64.
-impl WriteInst for Adcq<Gpr64, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcq<Gpr64, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 13 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -3590,8 +3590,8 @@ impl WriteInst for Adcq<Gpr64, Gpr64> {
 }
 
 /// adcq r64 m64: Add with CF r/m64 to r64.
-impl WriteInst for Adcq<Gpr64, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcq<Gpr64, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 13 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -3604,8 +3604,8 @@ impl WriteInst for Adcq<Gpr64, Memory> {
 }
 
 /// adcq m64 r64: Add with CF r64 to r/m64.
-impl WriteInst for Adcq<Memory, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcq<Memory, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 11 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -3618,8 +3618,8 @@ impl WriteInst for Adcq<Memory, Gpr64> {
 }
 
 /// adcq r64 imm8: Add with CF sign-extended imm8 into r/m64.
-impl WriteInst for Adcq<Gpr64, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcq<Gpr64, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 83 /2 ib
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -3633,8 +3633,8 @@ impl WriteInst for Adcq<Gpr64, i8> {
 }
 
 /// adcq m64 imm8: Add with CF sign-extended imm8 into r/m64.
-impl WriteInst for Adcq<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcq<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 83 /2 ib
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -3648,8 +3648,8 @@ impl WriteInst for Adcq<Memory, i8> {
 }
 
 /// adcq r64 imm32: Add with CF imm32 sign extended to 64-bits to r/m64.
-impl WriteInst for Adcq<Gpr64, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcq<Gpr64, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 81 /2 id
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -3663,8 +3663,8 @@ impl WriteInst for Adcq<Gpr64, i32> {
 }
 
 /// adcq m64 imm32: Add with CF imm32 sign extended to 64-bits to r/m64.
-impl WriteInst for Adcq<Memory, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcq<Memory, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 81 /2 id
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -3678,8 +3678,8 @@ impl WriteInst for Adcq<Memory, i32> {
 }
 
 /// adcq _Rax imm32: Add with carry imm32 sign extended to 64- bits to RAX.
-impl WriteInst for Adcq<_Rax, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcq<_Rax, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 15 id
         puts(w, rex_byte(false, true, false, false, false))?;
         put(w, 0x15)?;
@@ -3688,11 +3688,11 @@ impl WriteInst for Adcq<_Rax, i32> {
     }
 }
 
-pub struct Adcw<Op0, Op1>(Op0, Op1);
+pub struct Adcw<Op0, Op1>(pub Op0, pub Op1);
 
 /// adcw r16 r16: Add with carry r/m16 to r16.
-impl WriteInst for Adcw<Gpr16, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcw<Gpr16, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 13 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -3706,8 +3706,8 @@ impl WriteInst for Adcw<Gpr16, Gpr16> {
 }
 
 /// adcw r16 m16: Add with carry r/m16 to r16.
-impl WriteInst for Adcw<Gpr16, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcw<Gpr16, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 13 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -3721,8 +3721,8 @@ impl WriteInst for Adcw<Gpr16, Memory> {
 }
 
 /// adcw m16 r16: Add with carry r16 to r/m16.
-impl WriteInst for Adcw<Memory, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcw<Memory, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 11 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -3736,8 +3736,8 @@ impl WriteInst for Adcw<Memory, Gpr16> {
 }
 
 /// adcw r16 imm8: Add with CF sign-extended imm8 to r/m16.
-impl WriteInst for Adcw<Gpr16, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcw<Gpr16, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 83 /2 ib
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         put(w, 0x66)?;
@@ -3752,8 +3752,8 @@ impl WriteInst for Adcw<Gpr16, i8> {
 }
 
 /// adcw m16 imm8: Add with CF sign-extended imm8 to r/m16.
-impl WriteInst for Adcw<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcw<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 83 /2 ib
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         put(w, 0x66)?;
@@ -3768,8 +3768,8 @@ impl WriteInst for Adcw<Memory, i8> {
 }
 
 /// adcw r16 imm16: Add with carry imm16 to r/m16.
-impl WriteInst for Adcw<Gpr16, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcw<Gpr16, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 81 /2 iw
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         put(w, 0x66)?;
@@ -3784,8 +3784,8 @@ impl WriteInst for Adcw<Gpr16, i16> {
 }
 
 /// adcw m16 imm16: Add with carry imm16 to r/m16.
-impl WriteInst for Adcw<Memory, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcw<Memory, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 81 /2 iw
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         put(w, 0x66)?;
@@ -3800,8 +3800,8 @@ impl WriteInst for Adcw<Memory, i16> {
 }
 
 /// adcw _Ax imm16: Add with carry imm16 to AX.
-impl WriteInst for Adcw<_Ax, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Adcw<_Ax, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 15 iw
         put(w, 0x66)?;
         put(w, 0x15)?;
@@ -3810,11 +3810,11 @@ impl WriteInst for Adcw<_Ax, i16> {
     }
 }
 
-pub struct Addb<Op0, Op1>(Op0, Op1);
+pub struct Addb<Op0, Op1>(pub Op0, pub Op1);
 
 /// addb r8 r8: Add r/m8 to r8.
-impl WriteInst for Addb<Gpr8, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addb<Gpr8, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 02 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -3827,8 +3827,8 @@ impl WriteInst for Addb<Gpr8, Gpr8> {
 }
 
 /// addb r8 m8: Add r/m8 to r8.
-impl WriteInst for Addb<Gpr8, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addb<Gpr8, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 02 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -3841,8 +3841,8 @@ impl WriteInst for Addb<Gpr8, Memory> {
 }
 
 /// addb m8 r8: Add r8 to r/m8.
-impl WriteInst for Addb<Memory, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addb<Memory, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 00 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -3855,8 +3855,8 @@ impl WriteInst for Addb<Memory, Gpr8> {
 }
 
 /// addb r8 imm8: Add imm8 to r/m8.
-impl WriteInst for Addb<Gpr8, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addb<Gpr8, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 80 /0 ib
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -3870,8 +3870,8 @@ impl WriteInst for Addb<Gpr8, i8> {
 }
 
 /// addb m8 imm8: Add imm8 to r/m8.
-impl WriteInst for Addb<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addb<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 80 /0 ib
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -3885,8 +3885,8 @@ impl WriteInst for Addb<Memory, i8> {
 }
 
 /// addb _Al imm8: Add imm8 to AL.
-impl WriteInst for Addb<_Al, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addb<_Al, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 04 ib
         put(w, 0x04)?;
         puts(w, self.1.to_le_bytes())?;
@@ -3894,11 +3894,11 @@ impl WriteInst for Addb<_Al, i8> {
     }
 }
 
-pub struct Addl<Op0, Op1>(Op0, Op1);
+pub struct Addl<Op0, Op1>(pub Op0, pub Op1);
 
 /// addl r32 r32: Add r/m32 to r32.
-impl WriteInst for Addl<Gpr32, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addl<Gpr32, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 03 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -3911,8 +3911,8 @@ impl WriteInst for Addl<Gpr32, Gpr32> {
 }
 
 /// addl r32 m32: Add r/m32 to r32.
-impl WriteInst for Addl<Gpr32, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addl<Gpr32, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 03 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -3925,8 +3925,8 @@ impl WriteInst for Addl<Gpr32, Memory> {
 }
 
 /// addl m32 r32: Add r32 to r/m32.
-impl WriteInst for Addl<Memory, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addl<Memory, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 01 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -3939,8 +3939,8 @@ impl WriteInst for Addl<Memory, Gpr32> {
 }
 
 /// addl r32 imm8: Add sign-extended imm8 to r/m32.
-impl WriteInst for Addl<Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addl<Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 83 /0 ib
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -3954,8 +3954,8 @@ impl WriteInst for Addl<Gpr32, i8> {
 }
 
 /// addl m32 imm8: Add sign-extended imm8 to r/m32.
-impl WriteInst for Addl<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addl<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 83 /0 ib
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -3969,8 +3969,8 @@ impl WriteInst for Addl<Memory, i8> {
 }
 
 /// addl r32 imm32: Add imm32 to r/m32.
-impl WriteInst for Addl<Gpr32, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addl<Gpr32, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 81 /0 id
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -3984,8 +3984,8 @@ impl WriteInst for Addl<Gpr32, i32> {
 }
 
 /// addl m32 imm32: Add imm32 to r/m32.
-impl WriteInst for Addl<Memory, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addl<Memory, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 81 /0 id
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -3999,8 +3999,8 @@ impl WriteInst for Addl<Memory, i32> {
 }
 
 /// addl _Eax imm32: Add imm32 to EAX.
-impl WriteInst for Addl<_Eax, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addl<_Eax, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 05 id
         put(w, 0x05)?;
         puts(w, self.1.to_le_bytes())?;
@@ -4008,11 +4008,11 @@ impl WriteInst for Addl<_Eax, i32> {
     }
 }
 
-pub struct Addpd<Op0, Op1>(Op0, Op1);
+pub struct Addpd<Op0, Op1>(pub Op0, pub Op1);
 
 /// addpd xmm xmm: Add packed double-precision floating-point values from xmm2/m128 to xmm1.
-impl WriteInst for Addpd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addpd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 58 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -4027,8 +4027,8 @@ impl WriteInst for Addpd<Xmm, Xmm> {
 }
 
 /// addpd xmm m128: Add packed double-precision floating-point values from xmm2/m128 to xmm1.
-impl WriteInst for Addpd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addpd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 58 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -4042,11 +4042,11 @@ impl WriteInst for Addpd<Xmm, Memory> {
     }
 }
 
-pub struct Addps<Op0, Op1>(Op0, Op1);
+pub struct Addps<Op0, Op1>(pub Op0, pub Op1);
 
 /// addps xmm xmm: Add packed single-precision floating-point values from xmm2/m128 to xmm1 and stores result in xmm1.
-impl WriteInst for Addps<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addps<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 58 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -4060,8 +4060,8 @@ impl WriteInst for Addps<Xmm, Xmm> {
 }
 
 /// addps xmm m128: Add packed single-precision floating-point values from xmm2/m128 to xmm1 and stores result in xmm1.
-impl WriteInst for Addps<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addps<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 58 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -4074,11 +4074,11 @@ impl WriteInst for Addps<Xmm, Memory> {
     }
 }
 
-pub struct Addq<Op0, Op1>(Op0, Op1);
+pub struct Addq<Op0, Op1>(pub Op0, pub Op1);
 
 /// addq r64 r64: Add r/m64 to r64.
-impl WriteInst for Addq<Gpr64, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addq<Gpr64, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 03 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -4091,8 +4091,8 @@ impl WriteInst for Addq<Gpr64, Gpr64> {
 }
 
 /// addq r64 m64: Add r/m64 to r64.
-impl WriteInst for Addq<Gpr64, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addq<Gpr64, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 03 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -4105,8 +4105,8 @@ impl WriteInst for Addq<Gpr64, Memory> {
 }
 
 /// addq m64 r64: Add r64 to r/m64.
-impl WriteInst for Addq<Memory, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addq<Memory, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 01 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -4119,8 +4119,8 @@ impl WriteInst for Addq<Memory, Gpr64> {
 }
 
 /// addq r64 imm8: Add sign-extended imm8 to r/m64.
-impl WriteInst for Addq<Gpr64, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addq<Gpr64, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 83 /0 ib
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -4134,8 +4134,8 @@ impl WriteInst for Addq<Gpr64, i8> {
 }
 
 /// addq m64 imm8: Add sign-extended imm8 to r/m64.
-impl WriteInst for Addq<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addq<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 83 /0 ib
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -4149,8 +4149,8 @@ impl WriteInst for Addq<Memory, i8> {
 }
 
 /// addq r64 imm32: Add imm32 sign-extended to 64-bits to r/m64.
-impl WriteInst for Addq<Gpr64, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addq<Gpr64, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 81 /0 id
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -4164,8 +4164,8 @@ impl WriteInst for Addq<Gpr64, i32> {
 }
 
 /// addq m64 imm32: Add imm32 sign-extended to 64-bits to r/m64.
-impl WriteInst for Addq<Memory, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addq<Memory, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 81 /0 id
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -4179,8 +4179,8 @@ impl WriteInst for Addq<Memory, i32> {
 }
 
 /// addq _Rax imm32: Add imm32 sign-extended to 64-bits to RAX.
-impl WriteInst for Addq<_Rax, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addq<_Rax, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 05 id
         puts(w, rex_byte(false, true, false, false, false))?;
         put(w, 0x05)?;
@@ -4189,11 +4189,11 @@ impl WriteInst for Addq<_Rax, i32> {
     }
 }
 
-pub struct Addsd<Op0, Op1>(Op0, Op1);
+pub struct Addsd<Op0, Op1>(pub Op0, pub Op1);
 
 /// addsd xmm xmm: Add the low double-precision floating-point value from xmm2/m64 to xmm1.
-impl WriteInst for Addsd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addsd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 58 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -4208,8 +4208,8 @@ impl WriteInst for Addsd<Xmm, Xmm> {
 }
 
 /// addsd xmm m64: Add the low double-precision floating-point value from xmm2/m64 to xmm1.
-impl WriteInst for Addsd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addsd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 58 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -4223,11 +4223,11 @@ impl WriteInst for Addsd<Xmm, Memory> {
     }
 }
 
-pub struct Addss<Op0, Op1>(Op0, Op1);
+pub struct Addss<Op0, Op1>(pub Op0, pub Op1);
 
 /// addss xmm xmm: Add the low single-precision floating-point value from xmm2/m32 to xmm1.
-impl WriteInst for Addss<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addss<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 58 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -4242,8 +4242,8 @@ impl WriteInst for Addss<Xmm, Xmm> {
 }
 
 /// addss xmm m32: Add the low single-precision floating-point value from xmm2/m32 to xmm1.
-impl WriteInst for Addss<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addss<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 58 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -4257,11 +4257,11 @@ impl WriteInst for Addss<Xmm, Memory> {
     }
 }
 
-pub struct Addw<Op0, Op1>(Op0, Op1);
+pub struct Addw<Op0, Op1>(pub Op0, pub Op1);
 
 /// addw r16 r16: Add r/m16 to r16.
-impl WriteInst for Addw<Gpr16, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addw<Gpr16, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 03 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -4275,8 +4275,8 @@ impl WriteInst for Addw<Gpr16, Gpr16> {
 }
 
 /// addw r16 m16: Add r/m16 to r16.
-impl WriteInst for Addw<Gpr16, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addw<Gpr16, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 03 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -4290,8 +4290,8 @@ impl WriteInst for Addw<Gpr16, Memory> {
 }
 
 /// addw m16 r16: Add r16 to r/m16.
-impl WriteInst for Addw<Memory, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addw<Memory, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 01 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -4305,8 +4305,8 @@ impl WriteInst for Addw<Memory, Gpr16> {
 }
 
 /// addw r16 imm8: Add sign-extended imm8 to r/m16.
-impl WriteInst for Addw<Gpr16, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addw<Gpr16, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 83 /0 ib
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         put(w, 0x66)?;
@@ -4321,8 +4321,8 @@ impl WriteInst for Addw<Gpr16, i8> {
 }
 
 /// addw m16 imm8: Add sign-extended imm8 to r/m16.
-impl WriteInst for Addw<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addw<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 83 /0 ib
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         put(w, 0x66)?;
@@ -4337,8 +4337,8 @@ impl WriteInst for Addw<Memory, i8> {
 }
 
 /// addw r16 imm16: Add imm16 to r/m16.
-impl WriteInst for Addw<Gpr16, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addw<Gpr16, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 81 /0 iw
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         put(w, 0x66)?;
@@ -4353,8 +4353,8 @@ impl WriteInst for Addw<Gpr16, i16> {
 }
 
 /// addw m16 imm16: Add imm16 to r/m16.
-impl WriteInst for Addw<Memory, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addw<Memory, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 81 /0 iw
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         put(w, 0x66)?;
@@ -4369,8 +4369,8 @@ impl WriteInst for Addw<Memory, i16> {
 }
 
 /// addw _Ax imm16: Add imm16 to AX.
-impl WriteInst for Addw<_Ax, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Addw<_Ax, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 05 iw
         put(w, 0x66)?;
         put(w, 0x05)?;
@@ -4379,11 +4379,11 @@ impl WriteInst for Addw<_Ax, i16> {
     }
 }
 
-pub struct Andb<Op0, Op1>(Op0, Op1);
+pub struct Andb<Op0, Op1>(pub Op0, pub Op1);
 
 /// andb r8 r8: r8 AND r/m8.
-impl WriteInst for Andb<Gpr8, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andb<Gpr8, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 22 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -4396,8 +4396,8 @@ impl WriteInst for Andb<Gpr8, Gpr8> {
 }
 
 /// andb r8 m8: r8 AND r/m8.
-impl WriteInst for Andb<Gpr8, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andb<Gpr8, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 22 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -4410,8 +4410,8 @@ impl WriteInst for Andb<Gpr8, Memory> {
 }
 
 /// andb m8 r8: r/m8 AND r8.
-impl WriteInst for Andb<Memory, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andb<Memory, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 20 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -4424,8 +4424,8 @@ impl WriteInst for Andb<Memory, Gpr8> {
 }
 
 /// andb r8 imm8: r/m8 AND imm8.
-impl WriteInst for Andb<Gpr8, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andb<Gpr8, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 80 /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -4439,8 +4439,8 @@ impl WriteInst for Andb<Gpr8, i8> {
 }
 
 /// andb m8 imm8: r/m8 AND imm8.
-impl WriteInst for Andb<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andb<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 80 /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -4454,8 +4454,8 @@ impl WriteInst for Andb<Memory, i8> {
 }
 
 /// andb _Al imm8: AL AND imm8.
-impl WriteInst for Andb<_Al, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andb<_Al, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 24 ib
         put(w, 0x24)?;
         puts(w, self.1.to_le_bytes())?;
@@ -4463,11 +4463,11 @@ impl WriteInst for Andb<_Al, i8> {
     }
 }
 
-pub struct Andl<Op0, Op1>(Op0, Op1);
+pub struct Andl<Op0, Op1>(pub Op0, pub Op1);
 
 /// andl r32 r32: r32 AND r/m32.
-impl WriteInst for Andl<Gpr32, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andl<Gpr32, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 23 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -4480,8 +4480,8 @@ impl WriteInst for Andl<Gpr32, Gpr32> {
 }
 
 /// andl r32 m32: r32 AND r/m32.
-impl WriteInst for Andl<Gpr32, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andl<Gpr32, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 23 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -4494,8 +4494,8 @@ impl WriteInst for Andl<Gpr32, Memory> {
 }
 
 /// andl m32 r32: r/m32 AND r32.
-impl WriteInst for Andl<Memory, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andl<Memory, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 21 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -4508,8 +4508,8 @@ impl WriteInst for Andl<Memory, Gpr32> {
 }
 
 /// andl r32 imm8: r/m32 AND imm8 (sign-extended).
-impl WriteInst for Andl<Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andl<Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 83 /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -4523,8 +4523,8 @@ impl WriteInst for Andl<Gpr32, i8> {
 }
 
 /// andl m32 imm8: r/m32 AND imm8 (sign-extended).
-impl WriteInst for Andl<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andl<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 83 /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -4538,8 +4538,8 @@ impl WriteInst for Andl<Memory, i8> {
 }
 
 /// andl r32 imm32: r/m32 AND imm32.
-impl WriteInst for Andl<Gpr32, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andl<Gpr32, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 81 /4 id
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -4553,8 +4553,8 @@ impl WriteInst for Andl<Gpr32, i32> {
 }
 
 /// andl m32 imm32: r/m32 AND imm32.
-impl WriteInst for Andl<Memory, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andl<Memory, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 81 /4 id
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -4568,8 +4568,8 @@ impl WriteInst for Andl<Memory, i32> {
 }
 
 /// andl _Eax imm32: EAX AND imm32.
-impl WriteInst for Andl<_Eax, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andl<_Eax, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 25 id
         put(w, 0x25)?;
         puts(w, self.1.to_le_bytes())?;
@@ -4577,11 +4577,11 @@ impl WriteInst for Andl<_Eax, i32> {
     }
 }
 
-pub struct Andnpd<Op0, Op1>(Op0, Op1);
+pub struct Andnpd<Op0, Op1>(pub Op0, pub Op1);
 
 /// andnpd xmm xmm: Bitwise logical AND NOT of xmm2/m128 and xmm1.
-impl WriteInst for Andnpd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andnpd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 55 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -4596,8 +4596,8 @@ impl WriteInst for Andnpd<Xmm, Xmm> {
 }
 
 /// andnpd xmm m128: Bitwise logical AND NOT of xmm2/m128 and xmm1.
-impl WriteInst for Andnpd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andnpd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 55 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -4611,11 +4611,11 @@ impl WriteInst for Andnpd<Xmm, Memory> {
     }
 }
 
-pub struct Andnps<Op0, Op1>(Op0, Op1);
+pub struct Andnps<Op0, Op1>(pub Op0, pub Op1);
 
 /// andnps xmm xmm: Bitwise logical AND NOT of xmm2/m128 and xmm1.
-impl WriteInst for Andnps<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andnps<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 55 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -4629,8 +4629,8 @@ impl WriteInst for Andnps<Xmm, Xmm> {
 }
 
 /// andnps xmm m128: Bitwise logical AND NOT of xmm2/m128 and xmm1.
-impl WriteInst for Andnps<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andnps<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 55 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -4643,11 +4643,11 @@ impl WriteInst for Andnps<Xmm, Memory> {
     }
 }
 
-pub struct Andpd<Op0, Op1>(Op0, Op1);
+pub struct Andpd<Op0, Op1>(pub Op0, pub Op1);
 
 /// andpd xmm xmm: Return the bitwise logical AND of packed double-precision floating-point values in xmm1 and xmm2/m128.
-impl WriteInst for Andpd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andpd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 54 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -4662,8 +4662,8 @@ impl WriteInst for Andpd<Xmm, Xmm> {
 }
 
 /// andpd xmm m128: Return the bitwise logical AND of packed double-precision floating-point values in xmm1 and xmm2/m128.
-impl WriteInst for Andpd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andpd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 54 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -4677,11 +4677,11 @@ impl WriteInst for Andpd<Xmm, Memory> {
     }
 }
 
-pub struct Andps<Op0, Op1>(Op0, Op1);
+pub struct Andps<Op0, Op1>(pub Op0, pub Op1);
 
 /// andps xmm xmm: Bitwise logical AND of xmm2/m128 and xmm1.
-impl WriteInst for Andps<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andps<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 54 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -4695,8 +4695,8 @@ impl WriteInst for Andps<Xmm, Xmm> {
 }
 
 /// andps xmm m128: Bitwise logical AND of xmm2/m128 and xmm1.
-impl WriteInst for Andps<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andps<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 54 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -4709,11 +4709,11 @@ impl WriteInst for Andps<Xmm, Memory> {
     }
 }
 
-pub struct Andq<Op0, Op1>(Op0, Op1);
+pub struct Andq<Op0, Op1>(pub Op0, pub Op1);
 
 /// andq r64 r64: r64 AND r/m64.
-impl WriteInst for Andq<Gpr64, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andq<Gpr64, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 23 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -4726,8 +4726,8 @@ impl WriteInst for Andq<Gpr64, Gpr64> {
 }
 
 /// andq r64 m64: r64 AND r/m64.
-impl WriteInst for Andq<Gpr64, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andq<Gpr64, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 23 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -4740,8 +4740,8 @@ impl WriteInst for Andq<Gpr64, Memory> {
 }
 
 /// andq m64 r64: r/m64 AND r32.
-impl WriteInst for Andq<Memory, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andq<Memory, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 21 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -4754,8 +4754,8 @@ impl WriteInst for Andq<Memory, Gpr64> {
 }
 
 /// andq r64 imm8: r/m64 AND imm8 (sign-extended).
-impl WriteInst for Andq<Gpr64, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andq<Gpr64, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 83 /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -4769,8 +4769,8 @@ impl WriteInst for Andq<Gpr64, i8> {
 }
 
 /// andq m64 imm8: r/m64 AND imm8 (sign-extended).
-impl WriteInst for Andq<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andq<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 83 /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -4784,8 +4784,8 @@ impl WriteInst for Andq<Memory, i8> {
 }
 
 /// andq r64 imm32: r/m64 AND imm32 sign extended to 64-bits.
-impl WriteInst for Andq<Gpr64, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andq<Gpr64, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 81 /4 id
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -4799,8 +4799,8 @@ impl WriteInst for Andq<Gpr64, i32> {
 }
 
 /// andq m64 imm32: r/m64 AND imm32 sign extended to 64-bits.
-impl WriteInst for Andq<Memory, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andq<Memory, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 81 /4 id
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -4814,8 +4814,8 @@ impl WriteInst for Andq<Memory, i32> {
 }
 
 /// andq _Rax imm32: RAX AND imm32 sign-extended to 64-bits.
-impl WriteInst for Andq<_Rax, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andq<_Rax, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 25 id
         puts(w, rex_byte(false, true, false, false, false))?;
         put(w, 0x25)?;
@@ -4824,11 +4824,11 @@ impl WriteInst for Andq<_Rax, i32> {
     }
 }
 
-pub struct Andw<Op0, Op1>(Op0, Op1);
+pub struct Andw<Op0, Op1>(pub Op0, pub Op1);
 
 /// andw r16 r16: r16 AND r/m16.
-impl WriteInst for Andw<Gpr16, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andw<Gpr16, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 23 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -4842,8 +4842,8 @@ impl WriteInst for Andw<Gpr16, Gpr16> {
 }
 
 /// andw r16 m16: r16 AND r/m16.
-impl WriteInst for Andw<Gpr16, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andw<Gpr16, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 23 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -4857,8 +4857,8 @@ impl WriteInst for Andw<Gpr16, Memory> {
 }
 
 /// andw m16 r16: r/m16 AND r16.
-impl WriteInst for Andw<Memory, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andw<Memory, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 21 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -4872,8 +4872,8 @@ impl WriteInst for Andw<Memory, Gpr16> {
 }
 
 /// andw r16 imm8: r/m16 AND imm8 (sign-extended).
-impl WriteInst for Andw<Gpr16, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andw<Gpr16, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 83 /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         put(w, 0x66)?;
@@ -4888,8 +4888,8 @@ impl WriteInst for Andw<Gpr16, i8> {
 }
 
 /// andw m16 imm8: r/m16 AND imm8 (sign-extended).
-impl WriteInst for Andw<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andw<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 83 /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         put(w, 0x66)?;
@@ -4904,8 +4904,8 @@ impl WriteInst for Andw<Memory, i8> {
 }
 
 /// andw r16 imm16: r/m16 AND imm16.
-impl WriteInst for Andw<Gpr16, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andw<Gpr16, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 81 /4 iw
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         put(w, 0x66)?;
@@ -4920,8 +4920,8 @@ impl WriteInst for Andw<Gpr16, i16> {
 }
 
 /// andw m16 imm16: r/m16 AND imm16.
-impl WriteInst for Andw<Memory, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andw<Memory, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 81 /4 iw
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         put(w, 0x66)?;
@@ -4936,8 +4936,8 @@ impl WriteInst for Andw<Memory, i16> {
 }
 
 /// andw _Ax imm16: AX AND imm16.
-impl WriteInst for Andw<_Ax, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Andw<_Ax, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 25 iw
         put(w, 0x66)?;
         put(w, 0x25)?;
@@ -4946,11 +4946,11 @@ impl WriteInst for Andw<_Ax, i16> {
     }
 }
 
-pub struct Blendpd<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Blendpd<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// blendpd xmm xmm imm8: Select packed DP-FP values from xmm1 and xmm2/m128 from mask specified in imm8 and store the values into xmm1.
-impl WriteInst for Blendpd<Xmm, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Blendpd<Xmm, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 0D /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -4967,8 +4967,8 @@ impl WriteInst for Blendpd<Xmm, Xmm, i8> {
 }
 
 /// blendpd xmm m128 imm8: Select packed DP-FP values from xmm1 and xmm2/m128 from mask specified in imm8 and store the values into xmm1.
-impl WriteInst for Blendpd<Xmm, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Blendpd<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 0D /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -4984,11 +4984,11 @@ impl WriteInst for Blendpd<Xmm, Memory, i8> {
     }
 }
 
-pub struct Blendps<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Blendps<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// blendps xmm xmm imm8: Select packed single precision floating-point values from xmm1 and xmm2/m128 from mask specified in imm8 and store the values into xmm1.
-impl WriteInst for Blendps<Xmm, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Blendps<Xmm, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 0C /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -5005,8 +5005,8 @@ impl WriteInst for Blendps<Xmm, Xmm, i8> {
 }
 
 /// blendps xmm m128 imm8: Select packed single precision floating-point values from xmm1 and xmm2/m128 from mask specified in imm8 and store the values into xmm1.
-impl WriteInst for Blendps<Xmm, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Blendps<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 0C /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -5022,11 +5022,11 @@ impl WriteInst for Blendps<Xmm, Memory, i8> {
     }
 }
 
-pub struct Blendvpd<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Blendvpd<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// blendvpd xmm xmm _Xmm0: Select packed DP FP values from xmm1 and xmm2 from mask specified in XMM0 and store the values in xmm1.
-impl WriteInst for Blendvpd<Xmm, Xmm, _Xmm0> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Blendvpd<Xmm, Xmm, _Xmm0> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 15 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -5042,8 +5042,8 @@ impl WriteInst for Blendvpd<Xmm, Xmm, _Xmm0> {
 }
 
 /// blendvpd xmm m128 _Xmm0: Select packed DP FP values from xmm1 and xmm2 from mask specified in XMM0 and store the values in xmm1.
-impl WriteInst for Blendvpd<Xmm, Memory, _Xmm0> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Blendvpd<Xmm, Memory, _Xmm0> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 15 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -5058,11 +5058,11 @@ impl WriteInst for Blendvpd<Xmm, Memory, _Xmm0> {
     }
 }
 
-pub struct Blendvps<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Blendvps<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// blendvps xmm xmm _Xmm0: Select packed single precision floating-point values from xmm1 and xmm2/m128 from mask specified in XMM0 and store the values into xmm1.
-impl WriteInst for Blendvps<Xmm, Xmm, _Xmm0> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Blendvps<Xmm, Xmm, _Xmm0> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 14 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -5078,8 +5078,8 @@ impl WriteInst for Blendvps<Xmm, Xmm, _Xmm0> {
 }
 
 /// blendvps xmm m128 _Xmm0: Select packed single precision floating-point values from xmm1 and xmm2/m128 from mask specified in XMM0 and store the values into xmm1.
-impl WriteInst for Blendvps<Xmm, Memory, _Xmm0> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Blendvps<Xmm, Memory, _Xmm0> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 14 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -5094,11 +5094,11 @@ impl WriteInst for Blendvps<Xmm, Memory, _Xmm0> {
     }
 }
 
-pub struct Bsfl<Op0, Op1>(Op0, Op1);
+pub struct Bsfl<Op0, Op1>(pub Op0, pub Op1);
 
 /// bsfl r32 r32: Bit scan forward on r/m32.
-impl WriteInst for Bsfl<Gpr32, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Bsfl<Gpr32, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F BC /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -5112,8 +5112,8 @@ impl WriteInst for Bsfl<Gpr32, Gpr32> {
 }
 
 /// bsfl r32 m32: Bit scan forward on r/m32.
-impl WriteInst for Bsfl<Gpr32, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Bsfl<Gpr32, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F BC /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -5126,11 +5126,11 @@ impl WriteInst for Bsfl<Gpr32, Memory> {
     }
 }
 
-pub struct Bsfq<Op0, Op1>(Op0, Op1);
+pub struct Bsfq<Op0, Op1>(pub Op0, pub Op1);
 
 /// bsfq r64 r64: Bit scan forward on r/m64.
-impl WriteInst for Bsfq<Gpr64, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Bsfq<Gpr64, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F BC /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -5144,8 +5144,8 @@ impl WriteInst for Bsfq<Gpr64, Gpr64> {
 }
 
 /// bsfq r64 m64: Bit scan forward on r/m64.
-impl WriteInst for Bsfq<Gpr64, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Bsfq<Gpr64, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F BC /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -5158,11 +5158,11 @@ impl WriteInst for Bsfq<Gpr64, Memory> {
     }
 }
 
-pub struct Bsfw<Op0, Op1>(Op0, Op1);
+pub struct Bsfw<Op0, Op1>(pub Op0, pub Op1);
 
 /// bsfw r16 r16: Bit scan forward on r/m16.
-impl WriteInst for Bsfw<Gpr16, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Bsfw<Gpr16, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F BC /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -5177,8 +5177,8 @@ impl WriteInst for Bsfw<Gpr16, Gpr16> {
 }
 
 /// bsfw r16 m16: Bit scan forward on r/m16.
-impl WriteInst for Bsfw<Gpr16, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Bsfw<Gpr16, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F BC /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -5192,11 +5192,11 @@ impl WriteInst for Bsfw<Gpr16, Memory> {
     }
 }
 
-pub struct Bsrl<Op0, Op1>(Op0, Op1);
+pub struct Bsrl<Op0, Op1>(pub Op0, pub Op1);
 
 /// bsrl r32 r32: Bit scan reverse on r/m32.
-impl WriteInst for Bsrl<Gpr32, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Bsrl<Gpr32, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F BD /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -5210,8 +5210,8 @@ impl WriteInst for Bsrl<Gpr32, Gpr32> {
 }
 
 /// bsrl r32 m32: Bit scan reverse on r/m32.
-impl WriteInst for Bsrl<Gpr32, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Bsrl<Gpr32, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F BD /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -5224,11 +5224,11 @@ impl WriteInst for Bsrl<Gpr32, Memory> {
     }
 }
 
-pub struct Bsrq<Op0, Op1>(Op0, Op1);
+pub struct Bsrq<Op0, Op1>(pub Op0, pub Op1);
 
 /// bsrq r64 r64: Bit scan reverse on r/m64.
-impl WriteInst for Bsrq<Gpr64, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Bsrq<Gpr64, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F BD /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -5242,8 +5242,8 @@ impl WriteInst for Bsrq<Gpr64, Gpr64> {
 }
 
 /// bsrq r64 m64: Bit scan reverse on r/m64.
-impl WriteInst for Bsrq<Gpr64, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Bsrq<Gpr64, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F BD /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -5256,11 +5256,11 @@ impl WriteInst for Bsrq<Gpr64, Memory> {
     }
 }
 
-pub struct Bsrw<Op0, Op1>(Op0, Op1);
+pub struct Bsrw<Op0, Op1>(pub Op0, pub Op1);
 
 /// bsrw r16 r16: Bit scan reverse on r/m16.
-impl WriteInst for Bsrw<Gpr16, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Bsrw<Gpr16, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F BD /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -5275,8 +5275,8 @@ impl WriteInst for Bsrw<Gpr16, Gpr16> {
 }
 
 /// bsrw r16 m16: Bit scan reverse on r/m16.
-impl WriteInst for Bsrw<Gpr16, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Bsrw<Gpr16, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F BD /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -5290,11 +5290,11 @@ impl WriteInst for Bsrw<Gpr16, Memory> {
     }
 }
 
-pub struct Bswap<Op0>(Op0);
+pub struct Bswap<Op0>(pub Op0);
 
 /// bswap r32: Reverses the byte order of a 32-bit register.
-impl WriteInst for Bswap<Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Bswap<Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F C8 +rd
         let rio = RegInOpcode::from(self.0);
         puts(w, rio.rex_byte(false))?;
@@ -5305,8 +5305,8 @@ impl WriteInst for Bswap<Gpr32> {
 }
 
 /// bswap r64: Reverses the byte order of a 64-bit register.
-impl WriteInst for Bswap<Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Bswap<Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F C8 +ro
         let rio = RegInOpcode::from(self.0);
         puts(w, rio.rex_byte(true))?;
@@ -5316,11 +5316,11 @@ impl WriteInst for Bswap<Gpr64> {
     }
 }
 
-pub struct Btcl<Op0, Op1>(Op0, Op1);
+pub struct Btcl<Op0, Op1>(pub Op0, pub Op1);
 
 /// btcl r32 r32: Store selected bit in CF flag and complement.
-impl WriteInst for Btcl<Gpr32, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btcl<Gpr32, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F BB /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -5334,8 +5334,8 @@ impl WriteInst for Btcl<Gpr32, Gpr32> {
 }
 
 /// btcl m32 r32: Store selected bit in CF flag and complement.
-impl WriteInst for Btcl<Memory, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btcl<Memory, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F BB /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -5349,8 +5349,8 @@ impl WriteInst for Btcl<Memory, Gpr32> {
 }
 
 /// btcl r32 imm8: Store selected bit in CF flag and complement.
-impl WriteInst for Btcl<Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btcl<Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F BA /7 ib
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -5365,8 +5365,8 @@ impl WriteInst for Btcl<Gpr32, i8> {
 }
 
 /// btcl m32 imm8: Store selected bit in CF flag and complement.
-impl WriteInst for Btcl<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btcl<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F BA /7 ib
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -5380,11 +5380,11 @@ impl WriteInst for Btcl<Memory, i8> {
     }
 }
 
-pub struct Btcq<Op0, Op1>(Op0, Op1);
+pub struct Btcq<Op0, Op1>(pub Op0, pub Op1);
 
 /// btcq r64 r64: Store selected bit in CF flag and complement.
-impl WriteInst for Btcq<Gpr64, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btcq<Gpr64, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F BB /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -5398,8 +5398,8 @@ impl WriteInst for Btcq<Gpr64, Gpr64> {
 }
 
 /// btcq m64 r64: Store selected bit in CF flag and complement.
-impl WriteInst for Btcq<Memory, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btcq<Memory, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F BB /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -5413,8 +5413,8 @@ impl WriteInst for Btcq<Memory, Gpr64> {
 }
 
 /// btcq r64 imm8: Store selected bit in CF flag and complement.
-impl WriteInst for Btcq<Gpr64, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btcq<Gpr64, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F BA /7 ib
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -5429,8 +5429,8 @@ impl WriteInst for Btcq<Gpr64, i8> {
 }
 
 /// btcq m64 imm8: Store selected bit in CF flag and complement.
-impl WriteInst for Btcq<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btcq<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F BA /7 ib
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -5444,11 +5444,11 @@ impl WriteInst for Btcq<Memory, i8> {
     }
 }
 
-pub struct Btcw<Op0, Op1>(Op0, Op1);
+pub struct Btcw<Op0, Op1>(pub Op0, pub Op1);
 
 /// btcw r16 r16: Store selected bit in CF flag and complement.
-impl WriteInst for Btcw<Gpr16, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btcw<Gpr16, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F BB /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -5463,8 +5463,8 @@ impl WriteInst for Btcw<Gpr16, Gpr16> {
 }
 
 /// btcw m16 r16: Store selected bit in CF flag and complement.
-impl WriteInst for Btcw<Memory, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btcw<Memory, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F BB /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -5479,8 +5479,8 @@ impl WriteInst for Btcw<Memory, Gpr16> {
 }
 
 /// btcw r16 imm8: Store selected bit in CF flag and complement.
-impl WriteInst for Btcw<Gpr16, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btcw<Gpr16, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F BA /7 ib
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         put(w, 0x66)?;
@@ -5496,8 +5496,8 @@ impl WriteInst for Btcw<Gpr16, i8> {
 }
 
 /// btcw m16 imm8: Store selected bit in CF flag and complement.
-impl WriteInst for Btcw<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btcw<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F BA /7 ib
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         put(w, 0x66)?;
@@ -5512,11 +5512,11 @@ impl WriteInst for Btcw<Memory, i8> {
     }
 }
 
-pub struct Btl<Op0, Op1>(Op0, Op1);
+pub struct Btl<Op0, Op1>(pub Op0, pub Op1);
 
 /// btl r32 r32: Store selected bit in CF flag.
-impl WriteInst for Btl<Gpr32, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btl<Gpr32, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F A3 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -5530,8 +5530,8 @@ impl WriteInst for Btl<Gpr32, Gpr32> {
 }
 
 /// btl m32 r32: Store selected bit in CF flag.
-impl WriteInst for Btl<Memory, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btl<Memory, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F A3 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -5545,8 +5545,8 @@ impl WriteInst for Btl<Memory, Gpr32> {
 }
 
 /// btl r32 imm8: Store selected bit in CF flag.
-impl WriteInst for Btl<Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btl<Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F BA /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -5561,8 +5561,8 @@ impl WriteInst for Btl<Gpr32, i8> {
 }
 
 /// btl m32 imm8: Store selected bit in CF flag.
-impl WriteInst for Btl<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btl<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F BA /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -5576,11 +5576,11 @@ impl WriteInst for Btl<Memory, i8> {
     }
 }
 
-pub struct Btq<Op0, Op1>(Op0, Op1);
+pub struct Btq<Op0, Op1>(pub Op0, pub Op1);
 
 /// btq r64 r64: Store selected bit in CF flag.
-impl WriteInst for Btq<Gpr64, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btq<Gpr64, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F A3 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -5594,8 +5594,8 @@ impl WriteInst for Btq<Gpr64, Gpr64> {
 }
 
 /// btq m64 r64: Store selected bit in CF flag.
-impl WriteInst for Btq<Memory, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btq<Memory, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F A3 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -5609,8 +5609,8 @@ impl WriteInst for Btq<Memory, Gpr64> {
 }
 
 /// btq r64 imm8: Store selected bit in CF flag.
-impl WriteInst for Btq<Gpr64, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btq<Gpr64, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F BA /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -5625,8 +5625,8 @@ impl WriteInst for Btq<Gpr64, i8> {
 }
 
 /// btq m64 imm8: Store selected bit in CF flag.
-impl WriteInst for Btq<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btq<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F BA /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -5640,11 +5640,11 @@ impl WriteInst for Btq<Memory, i8> {
     }
 }
 
-pub struct Btrl<Op0, Op1>(Op0, Op1);
+pub struct Btrl<Op0, Op1>(pub Op0, pub Op1);
 
 /// btrl r32 r32: Store selected bit in CF flag and clear.
-impl WriteInst for Btrl<Gpr32, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btrl<Gpr32, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F B3 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -5658,8 +5658,8 @@ impl WriteInst for Btrl<Gpr32, Gpr32> {
 }
 
 /// btrl m32 r32: Store selected bit in CF flag and clear.
-impl WriteInst for Btrl<Memory, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btrl<Memory, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F B3 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -5673,8 +5673,8 @@ impl WriteInst for Btrl<Memory, Gpr32> {
 }
 
 /// btrl r32 imm8: Store selected bit in CF flag and clear.
-impl WriteInst for Btrl<Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btrl<Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F BA /6 ib
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -5689,8 +5689,8 @@ impl WriteInst for Btrl<Gpr32, i8> {
 }
 
 /// btrl m32 imm8: Store selected bit in CF flag and clear.
-impl WriteInst for Btrl<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btrl<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F BA /6 ib
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -5704,11 +5704,11 @@ impl WriteInst for Btrl<Memory, i8> {
     }
 }
 
-pub struct Btrq<Op0, Op1>(Op0, Op1);
+pub struct Btrq<Op0, Op1>(pub Op0, pub Op1);
 
 /// btrq r64 r64: Store selected bit in CF flag and clear.
-impl WriteInst for Btrq<Gpr64, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btrq<Gpr64, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F B3 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -5722,8 +5722,8 @@ impl WriteInst for Btrq<Gpr64, Gpr64> {
 }
 
 /// btrq m64 r64: Store selected bit in CF flag and clear.
-impl WriteInst for Btrq<Memory, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btrq<Memory, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F B3 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -5737,8 +5737,8 @@ impl WriteInst for Btrq<Memory, Gpr64> {
 }
 
 /// btrq r64 imm8: Store selected bit in CF flag and clear.
-impl WriteInst for Btrq<Gpr64, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btrq<Gpr64, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F BA /6 ib
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -5753,8 +5753,8 @@ impl WriteInst for Btrq<Gpr64, i8> {
 }
 
 /// btrq m64 imm8: Store selected bit in CF flag and clear.
-impl WriteInst for Btrq<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btrq<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F BA /6 ib
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -5768,11 +5768,11 @@ impl WriteInst for Btrq<Memory, i8> {
     }
 }
 
-pub struct Btrw<Op0, Op1>(Op0, Op1);
+pub struct Btrw<Op0, Op1>(pub Op0, pub Op1);
 
 /// btrw r16 r16: Store selected bit in CF flag and clear.
-impl WriteInst for Btrw<Gpr16, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btrw<Gpr16, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F B3 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -5787,8 +5787,8 @@ impl WriteInst for Btrw<Gpr16, Gpr16> {
 }
 
 /// btrw m16 r16: Store selected bit in CF flag and clear.
-impl WriteInst for Btrw<Memory, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btrw<Memory, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F B3 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -5803,8 +5803,8 @@ impl WriteInst for Btrw<Memory, Gpr16> {
 }
 
 /// btrw r16 imm8: Store selected bit in CF flag and clear.
-impl WriteInst for Btrw<Gpr16, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btrw<Gpr16, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F BA /6 ib
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         put(w, 0x66)?;
@@ -5820,8 +5820,8 @@ impl WriteInst for Btrw<Gpr16, i8> {
 }
 
 /// btrw m16 imm8: Store selected bit in CF flag and clear.
-impl WriteInst for Btrw<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btrw<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F BA /6 ib
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         put(w, 0x66)?;
@@ -5836,11 +5836,11 @@ impl WriteInst for Btrw<Memory, i8> {
     }
 }
 
-pub struct Btsl<Op0, Op1>(Op0, Op1);
+pub struct Btsl<Op0, Op1>(pub Op0, pub Op1);
 
 /// btsl r32 r32: Store selected bit in CF flag and set.
-impl WriteInst for Btsl<Gpr32, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btsl<Gpr32, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F AB /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -5854,8 +5854,8 @@ impl WriteInst for Btsl<Gpr32, Gpr32> {
 }
 
 /// btsl m32 r32: Store selected bit in CF flag and set.
-impl WriteInst for Btsl<Memory, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btsl<Memory, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F AB /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -5869,8 +5869,8 @@ impl WriteInst for Btsl<Memory, Gpr32> {
 }
 
 /// btsl r32 imm8: Store selected bit in CF flag and set.
-impl WriteInst for Btsl<Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btsl<Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F BA /5 ib
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -5885,8 +5885,8 @@ impl WriteInst for Btsl<Gpr32, i8> {
 }
 
 /// btsl m32 imm8: Store selected bit in CF flag and set.
-impl WriteInst for Btsl<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btsl<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F BA /5 ib
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -5900,11 +5900,11 @@ impl WriteInst for Btsl<Memory, i8> {
     }
 }
 
-pub struct Btsq<Op0, Op1>(Op0, Op1);
+pub struct Btsq<Op0, Op1>(pub Op0, pub Op1);
 
 /// btsq r64 r64: Store selected bit in CF flag and set.
-impl WriteInst for Btsq<Gpr64, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btsq<Gpr64, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F AB /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -5918,8 +5918,8 @@ impl WriteInst for Btsq<Gpr64, Gpr64> {
 }
 
 /// btsq m64 r64: Store selected bit in CF flag and set.
-impl WriteInst for Btsq<Memory, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btsq<Memory, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F AB /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -5933,8 +5933,8 @@ impl WriteInst for Btsq<Memory, Gpr64> {
 }
 
 /// btsq r64 imm8: Store selected bit in CF flag and set.
-impl WriteInst for Btsq<Gpr64, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btsq<Gpr64, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F BA /5 ib
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -5949,8 +5949,8 @@ impl WriteInst for Btsq<Gpr64, i8> {
 }
 
 /// btsq m64 imm8: Store selected bit in CF flag and set.
-impl WriteInst for Btsq<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btsq<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F BA /5 ib
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -5964,11 +5964,11 @@ impl WriteInst for Btsq<Memory, i8> {
     }
 }
 
-pub struct Btsw<Op0, Op1>(Op0, Op1);
+pub struct Btsw<Op0, Op1>(pub Op0, pub Op1);
 
 /// btsw r16 r16: Store selected bit in CF flag and set.
-impl WriteInst for Btsw<Gpr16, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btsw<Gpr16, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F AB /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -5983,8 +5983,8 @@ impl WriteInst for Btsw<Gpr16, Gpr16> {
 }
 
 /// btsw m16 r16: Store selected bit in CF flag and set.
-impl WriteInst for Btsw<Memory, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btsw<Memory, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F AB /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -5999,8 +5999,8 @@ impl WriteInst for Btsw<Memory, Gpr16> {
 }
 
 /// btsw r16 imm8: Store selected bit in CF flag and set.
-impl WriteInst for Btsw<Gpr16, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btsw<Gpr16, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F BA /5 ib
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         put(w, 0x66)?;
@@ -6016,8 +6016,8 @@ impl WriteInst for Btsw<Gpr16, i8> {
 }
 
 /// btsw m16 imm8: Store selected bit in CF flag and set.
-impl WriteInst for Btsw<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btsw<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F BA /5 ib
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         put(w, 0x66)?;
@@ -6032,11 +6032,11 @@ impl WriteInst for Btsw<Memory, i8> {
     }
 }
 
-pub struct Btw<Op0, Op1>(Op0, Op1);
+pub struct Btw<Op0, Op1>(pub Op0, pub Op1);
 
 /// btw r16 r16: Store selected bit in CF flag.
-impl WriteInst for Btw<Gpr16, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btw<Gpr16, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F A3 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -6051,8 +6051,8 @@ impl WriteInst for Btw<Gpr16, Gpr16> {
 }
 
 /// btw m16 r16: Store selected bit in CF flag.
-impl WriteInst for Btw<Memory, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btw<Memory, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F A3 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -6067,8 +6067,8 @@ impl WriteInst for Btw<Memory, Gpr16> {
 }
 
 /// btw r16 imm8: Store selected bit in CF flag.
-impl WriteInst for Btw<Gpr16, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btw<Gpr16, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F BA /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         put(w, 0x66)?;
@@ -6084,8 +6084,8 @@ impl WriteInst for Btw<Gpr16, i8> {
 }
 
 /// btw m16 imm8: Store selected bit in CF flag.
-impl WriteInst for Btw<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Btw<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F BA /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         put(w, 0x66)?;
@@ -6100,11 +6100,11 @@ impl WriteInst for Btw<Memory, i8> {
     }
 }
 
-pub struct Callq<Op0>(Op0);
+pub struct Callq<Op0>(pub Op0);
 
 /// callq rel32: Call near, relative, displacement relative to next instruction. 32-bit displacement sign extended to 64-bits in 64-bit mode.
-impl WriteInst for Callq<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Callq<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // E8 cd
         put(w, 0xE8)?;
         puts(w, self.0.to_le_bytes())?;
@@ -6113,8 +6113,8 @@ impl WriteInst for Callq<i32> {
 }
 
 /// callq r64: Call near, absolute indirect, address given in r/m64.
-impl WriteInst for Callq<Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Callq<Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // FF /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -6127,8 +6127,8 @@ impl WriteInst for Callq<Gpr64> {
 }
 
 /// callq m64: Call near, absolute indirect, address given in r/m64.
-impl WriteInst for Callq<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Callq<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // FF /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -6143,8 +6143,8 @@ impl WriteInst for Callq<Memory> {
 pub struct Cbtw();
 
 /// cbtw: AX = sign-extend of AL.
-impl WriteInst for Cbtw {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cbtw {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 98
         put(w, 0x66)?;
         put(w, 0x98)?;
@@ -6155,8 +6155,8 @@ impl WriteInst for Cbtw {
 pub struct Clc();
 
 /// clc: Clear CF flag.
-impl WriteInst for Clc {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Clc {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F8
         put(w, 0xF8)?;
         Ok(())
@@ -6166,8 +6166,8 @@ impl WriteInst for Clc {
 pub struct Cld();
 
 /// cld: Clear DF flag.
-impl WriteInst for Cld {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cld {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // FC
         put(w, 0xFC)?;
         Ok(())
@@ -6177,8 +6177,8 @@ impl WriteInst for Cld {
 pub struct Cli();
 
 /// cli: Clear interrupt flag; interrupts disabled when interrupt flag cleared.
-impl WriteInst for Cli {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cli {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // FA
         put(w, 0xFA)?;
         Ok(())
@@ -6188,8 +6188,8 @@ impl WriteInst for Cli {
 pub struct Cltd();
 
 /// cltd: EDX:EAX = sign-extend of EAX.
-impl WriteInst for Cltd {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cltd {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 99
         put(w, 0x99)?;
         Ok(())
@@ -6199,8 +6199,8 @@ impl WriteInst for Cltd {
 pub struct Cltq();
 
 /// cltq: RAX = sign-extend of EAX.
-impl WriteInst for Cltq {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cltq {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 98
         puts(w, rex_byte(false, true, false, false, false))?;
         put(w, 0x98)?;
@@ -6211,8 +6211,8 @@ impl WriteInst for Cltq {
 pub struct Clts();
 
 /// clts: Clears TS flag in CR0.
-impl WriteInst for Clts {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Clts {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 06
         put(w, 0x0F)?;
         put(w, 0x06)?;
@@ -6223,19 +6223,19 @@ impl WriteInst for Clts {
 pub struct Cmc();
 
 /// cmc: Complement CF flag.
-impl WriteInst for Cmc {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmc {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F5
         put(w, 0xF5)?;
         Ok(())
     }
 }
 
-pub struct Cmpb<Op0, Op1>(Op0, Op1);
+pub struct Cmpb<Op0, Op1>(pub Op0, pub Op1);
 
 /// cmpb r8 r8: Compare r/m8 with r8.
-impl WriteInst for Cmpb<Gpr8, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpb<Gpr8, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 3A /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -6248,8 +6248,8 @@ impl WriteInst for Cmpb<Gpr8, Gpr8> {
 }
 
 /// cmpb r8 m8: Compare r/m8 with r8.
-impl WriteInst for Cmpb<Gpr8, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpb<Gpr8, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 3A /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -6262,8 +6262,8 @@ impl WriteInst for Cmpb<Gpr8, Memory> {
 }
 
 /// cmpb m8 r8: Compare r8 with r/m8.
-impl WriteInst for Cmpb<Memory, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpb<Memory, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 38 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -6276,8 +6276,8 @@ impl WriteInst for Cmpb<Memory, Gpr8> {
 }
 
 /// cmpb r8 imm8: Compare imm8 with r/m8.
-impl WriteInst for Cmpb<Gpr8, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpb<Gpr8, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 80 /7 ib
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -6291,8 +6291,8 @@ impl WriteInst for Cmpb<Gpr8, i8> {
 }
 
 /// cmpb m8 imm8: Compare imm8 with r/m8.
-impl WriteInst for Cmpb<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpb<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 80 /7 ib
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -6306,8 +6306,8 @@ impl WriteInst for Cmpb<Memory, i8> {
 }
 
 /// cmpb _Al imm8: Compare imm8 with AL.
-impl WriteInst for Cmpb<_Al, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpb<_Al, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 3C ib
         put(w, 0x3C)?;
         puts(w, self.1.to_le_bytes())?;
@@ -6315,11 +6315,11 @@ impl WriteInst for Cmpb<_Al, i8> {
     }
 }
 
-pub struct Cmpl<Op0, Op1>(Op0, Op1);
+pub struct Cmpl<Op0, Op1>(pub Op0, pub Op1);
 
 /// cmpl r32 r32: Compare r/m32 with r32.
-impl WriteInst for Cmpl<Gpr32, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpl<Gpr32, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 3B /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -6332,8 +6332,8 @@ impl WriteInst for Cmpl<Gpr32, Gpr32> {
 }
 
 /// cmpl r32 m32: Compare r/m32 with r32.
-impl WriteInst for Cmpl<Gpr32, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpl<Gpr32, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 3B /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -6346,8 +6346,8 @@ impl WriteInst for Cmpl<Gpr32, Memory> {
 }
 
 /// cmpl m32 r32: Compare r32 with r/m32.
-impl WriteInst for Cmpl<Memory, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpl<Memory, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 39 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -6360,8 +6360,8 @@ impl WriteInst for Cmpl<Memory, Gpr32> {
 }
 
 /// cmpl r32 imm8: Compare imm8 with r/m32.
-impl WriteInst for Cmpl<Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpl<Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 83 /7 ib
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -6375,8 +6375,8 @@ impl WriteInst for Cmpl<Gpr32, i8> {
 }
 
 /// cmpl m32 imm8: Compare imm8 with r/m32.
-impl WriteInst for Cmpl<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpl<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 83 /7 ib
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -6390,8 +6390,8 @@ impl WriteInst for Cmpl<Memory, i8> {
 }
 
 /// cmpl r32 imm32: Compare imm32 with r/m32.
-impl WriteInst for Cmpl<Gpr32, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpl<Gpr32, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 81 /7 id
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -6405,8 +6405,8 @@ impl WriteInst for Cmpl<Gpr32, i32> {
 }
 
 /// cmpl m32 imm32: Compare imm32 with r/m32.
-impl WriteInst for Cmpl<Memory, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpl<Memory, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 81 /7 id
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -6420,8 +6420,8 @@ impl WriteInst for Cmpl<Memory, i32> {
 }
 
 /// cmpl _Eax imm32: Compare imm32 with EAX.
-impl WriteInst for Cmpl<_Eax, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpl<_Eax, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 3D id
         put(w, 0x3D)?;
         puts(w, self.1.to_le_bytes())?;
@@ -6429,11 +6429,11 @@ impl WriteInst for Cmpl<_Eax, i32> {
     }
 }
 
-pub struct Cmppd<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Cmppd<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// cmppd xmm xmm imm8: Compare packed double-precision floating- point values in xmm2/m128 and xmm1 using imm8 as comparison predicate.
-impl WriteInst for Cmppd<Xmm, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmppd<Xmm, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F C2 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -6449,8 +6449,8 @@ impl WriteInst for Cmppd<Xmm, Xmm, i8> {
 }
 
 /// cmppd xmm m128 imm8: Compare packed double-precision floating- point values in xmm2/m128 and xmm1 using imm8 as comparison predicate.
-impl WriteInst for Cmppd<Xmm, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmppd<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F C2 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -6465,11 +6465,11 @@ impl WriteInst for Cmppd<Xmm, Memory, i8> {
     }
 }
 
-pub struct Cmpps<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Cmpps<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// cmpps xmm xmm imm8: Compare packed single-precision floating- point values in xmm2/mem and xmm1 using imm8 as comparison predicate.
-impl WriteInst for Cmpps<Xmm, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpps<Xmm, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F C2 /r ib
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -6484,8 +6484,8 @@ impl WriteInst for Cmpps<Xmm, Xmm, i8> {
 }
 
 /// cmpps xmm m128 imm8: Compare packed single-precision floating- point values in xmm2/mem and xmm1 using imm8 as comparison predicate.
-impl WriteInst for Cmpps<Xmm, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpps<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F C2 /r ib
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -6499,11 +6499,11 @@ impl WriteInst for Cmpps<Xmm, Memory, i8> {
     }
 }
 
-pub struct Cmpq<Op0, Op1>(Op0, Op1);
+pub struct Cmpq<Op0, Op1>(pub Op0, pub Op1);
 
 /// cmpq r64 r64: Compare r/m64 with r64.
-impl WriteInst for Cmpq<Gpr64, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpq<Gpr64, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 3B /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -6516,8 +6516,8 @@ impl WriteInst for Cmpq<Gpr64, Gpr64> {
 }
 
 /// cmpq r64 m64: Compare r/m64 with r64.
-impl WriteInst for Cmpq<Gpr64, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpq<Gpr64, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 3B /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -6530,8 +6530,8 @@ impl WriteInst for Cmpq<Gpr64, Memory> {
 }
 
 /// cmpq m64 r64: Compare r64 with r/m64.
-impl WriteInst for Cmpq<Memory, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpq<Memory, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 39 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -6544,8 +6544,8 @@ impl WriteInst for Cmpq<Memory, Gpr64> {
 }
 
 /// cmpq r64 imm8: Compare imm8 with r/m64.
-impl WriteInst for Cmpq<Gpr64, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpq<Gpr64, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 83 /7 ib
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -6559,8 +6559,8 @@ impl WriteInst for Cmpq<Gpr64, i8> {
 }
 
 /// cmpq m64 imm8: Compare imm8 with r/m64.
-impl WriteInst for Cmpq<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpq<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 83 /7 ib
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -6574,8 +6574,8 @@ impl WriteInst for Cmpq<Memory, i8> {
 }
 
 /// cmpq r64 imm32: Compare imm32 sign-extended to 64-bits with r/m64.
-impl WriteInst for Cmpq<Gpr64, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpq<Gpr64, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 81 /7 id
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -6589,8 +6589,8 @@ impl WriteInst for Cmpq<Gpr64, i32> {
 }
 
 /// cmpq m64 imm32: Compare imm32 sign-extended to 64-bits with r/m64.
-impl WriteInst for Cmpq<Memory, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpq<Memory, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 81 /7 id
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -6604,8 +6604,8 @@ impl WriteInst for Cmpq<Memory, i32> {
 }
 
 /// cmpq _Rax imm32: Compare imm32 sign-extended to 64-bits with RAX.
-impl WriteInst for Cmpq<_Rax, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpq<_Rax, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 3D id
         puts(w, rex_byte(false, true, false, false, false))?;
         put(w, 0x3D)?;
@@ -6614,11 +6614,11 @@ impl WriteInst for Cmpq<_Rax, i32> {
     }
 }
 
-pub struct Cmpsd<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Cmpsd<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// cmpsd xmm xmm imm8: Compare low double-precision floating-point value in xmm2/m64 and xmm1 using imm8 as comparison predicate.
-impl WriteInst for Cmpsd<Xmm, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpsd<Xmm, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F C2 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -6634,8 +6634,8 @@ impl WriteInst for Cmpsd<Xmm, Xmm, i8> {
 }
 
 /// cmpsd xmm m64 imm8: Compare low double-precision floating-point value in xmm2/m64 and xmm1 using imm8 as comparison predicate.
-impl WriteInst for Cmpsd<Xmm, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpsd<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F C2 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -6653,19 +6653,19 @@ impl WriteInst for Cmpsd<Xmm, Memory, i8> {
 pub struct Cmpsl();
 
 /// cmpsl: For legacy mode, compare dword at address DS:(E)SI with dword at address ES:(E)DI; For 64-bit mode compare dword at address (R|E)SI with dword at address (R|E)DI. The status flags are set accordingly.
-impl WriteInst for Cmpsl {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpsl {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // A7
         put(w, 0xA7)?;
         Ok(())
     }
 }
 
-pub struct Cmpw<Op0, Op1>(Op0, Op1);
+pub struct Cmpw<Op0, Op1>(pub Op0, pub Op1);
 
 /// cmpw r16 r16: Compare r/m16 with r16.
-impl WriteInst for Cmpw<Gpr16, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpw<Gpr16, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 3B /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -6679,8 +6679,8 @@ impl WriteInst for Cmpw<Gpr16, Gpr16> {
 }
 
 /// cmpw r16 m16: Compare r/m16 with r16.
-impl WriteInst for Cmpw<Gpr16, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpw<Gpr16, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 3B /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -6694,8 +6694,8 @@ impl WriteInst for Cmpw<Gpr16, Memory> {
 }
 
 /// cmpw m16 r16: Compare r16 with r/m16.
-impl WriteInst for Cmpw<Memory, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpw<Memory, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 39 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -6709,8 +6709,8 @@ impl WriteInst for Cmpw<Memory, Gpr16> {
 }
 
 /// cmpw r16 imm8: Compare imm8 with r/m16.
-impl WriteInst for Cmpw<Gpr16, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpw<Gpr16, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 83 /7 ib
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         put(w, 0x66)?;
@@ -6725,8 +6725,8 @@ impl WriteInst for Cmpw<Gpr16, i8> {
 }
 
 /// cmpw m16 imm8: Compare imm8 with r/m16.
-impl WriteInst for Cmpw<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpw<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 83 /7 ib
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         put(w, 0x66)?;
@@ -6741,8 +6741,8 @@ impl WriteInst for Cmpw<Memory, i8> {
 }
 
 /// cmpw r16 imm16: Compare imm16 with r/m16.
-impl WriteInst for Cmpw<Gpr16, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpw<Gpr16, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 81 /7 iw
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         put(w, 0x66)?;
@@ -6757,8 +6757,8 @@ impl WriteInst for Cmpw<Gpr16, i16> {
 }
 
 /// cmpw m16 imm16: Compare imm16 with r/m16.
-impl WriteInst for Cmpw<Memory, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpw<Memory, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 81 /7 iw
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         put(w, 0x66)?;
@@ -6773,8 +6773,8 @@ impl WriteInst for Cmpw<Memory, i16> {
 }
 
 /// cmpw _Ax imm16: Compare imm16 with AX.
-impl WriteInst for Cmpw<_Ax, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpw<_Ax, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 3D iw
         put(w, 0x66)?;
         put(w, 0x3D)?;
@@ -6783,11 +6783,11 @@ impl WriteInst for Cmpw<_Ax, i16> {
     }
 }
 
-pub struct Cmpxchgb<Op0, Op1>(Op0, Op1);
+pub struct Cmpxchgb<Op0, Op1>(pub Op0, pub Op1);
 
 /// cmpxchgb r8 r8: Compare AL with r/m8. If equal, ZF is set and r8 is loaded into r/m8. Else, clear ZF and load r/m8 into AL.
-impl WriteInst for Cmpxchgb<Gpr8, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpxchgb<Gpr8, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F B0 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -6801,8 +6801,8 @@ impl WriteInst for Cmpxchgb<Gpr8, Gpr8> {
 }
 
 /// cmpxchgb m8 r8: Compare AL with r/m8. If equal, ZF is set and r8 is loaded into r/m8. Else, clear ZF and load r/m8 into AL.
-impl WriteInst for Cmpxchgb<Memory, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpxchgb<Memory, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F B0 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -6815,11 +6815,11 @@ impl WriteInst for Cmpxchgb<Memory, Gpr8> {
     }
 }
 
-pub struct Cmpxchgl<Op0, Op1>(Op0, Op1);
+pub struct Cmpxchgl<Op0, Op1>(pub Op0, pub Op1);
 
 /// cmpxchgl r32 r32: Compare EAX with r/m32. If equal, ZF is set and r32 is loaded into r/m32. Else, clear ZF and load r/m32 into EAX.
-impl WriteInst for Cmpxchgl<Gpr32, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpxchgl<Gpr32, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F B1 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -6833,8 +6833,8 @@ impl WriteInst for Cmpxchgl<Gpr32, Gpr32> {
 }
 
 /// cmpxchgl m32 r32: Compare EAX with r/m32. If equal, ZF is set and r32 is loaded into r/m32. Else, clear ZF and load r/m32 into EAX.
-impl WriteInst for Cmpxchgl<Memory, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpxchgl<Memory, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F B1 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -6847,11 +6847,11 @@ impl WriteInst for Cmpxchgl<Memory, Gpr32> {
     }
 }
 
-pub struct Cmpxchgq<Op0, Op1>(Op0, Op1);
+pub struct Cmpxchgq<Op0, Op1>(pub Op0, pub Op1);
 
 /// cmpxchgq r64 r64: Compare RAX with r/m64. If equal, ZF is set and r64 is loaded into r/m64. Else, clear ZF and load r/m64 into RAX.
-impl WriteInst for Cmpxchgq<Gpr64, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpxchgq<Gpr64, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F B1 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -6865,8 +6865,8 @@ impl WriteInst for Cmpxchgq<Gpr64, Gpr64> {
 }
 
 /// cmpxchgq m64 r64: Compare RAX with r/m64. If equal, ZF is set and r64 is loaded into r/m64. Else, clear ZF and load r/m64 into RAX.
-impl WriteInst for Cmpxchgq<Memory, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpxchgq<Memory, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F B1 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -6879,11 +6879,11 @@ impl WriteInst for Cmpxchgq<Memory, Gpr64> {
     }
 }
 
-pub struct Cmpxchgw<Op0, Op1>(Op0, Op1);
+pub struct Cmpxchgw<Op0, Op1>(pub Op0, pub Op1);
 
 /// cmpxchgw r16 r16: Compare AX with r/m16. If equal, ZF is set and r16 is loaded into r/m16. Else, clear ZF and load r/m16 into AX.
-impl WriteInst for Cmpxchgw<Gpr16, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpxchgw<Gpr16, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F B1 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -6898,8 +6898,8 @@ impl WriteInst for Cmpxchgw<Gpr16, Gpr16> {
 }
 
 /// cmpxchgw m16 r16: Compare AX with r/m16. If equal, ZF is set and r16 is loaded into r/m16. Else, clear ZF and load r/m16 into AX.
-impl WriteInst for Cmpxchgw<Memory, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpxchgw<Memory, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F B1 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -6913,11 +6913,11 @@ impl WriteInst for Cmpxchgw<Memory, Gpr16> {
     }
 }
 
-pub struct Comisd<Op0, Op1>(Op0, Op1);
+pub struct Comisd<Op0, Op1>(pub Op0, pub Op1);
 
 /// comisd xmm xmm: Compare low double-precision floating-point values in xmm1 and xmm2/mem64 and set the EFLAGS flags accordingly.
-impl WriteInst for Comisd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Comisd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 2F /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -6932,8 +6932,8 @@ impl WriteInst for Comisd<Xmm, Xmm> {
 }
 
 /// comisd xmm m64: Compare low double-precision floating-point values in xmm1 and xmm2/mem64 and set the EFLAGS flags accordingly.
-impl WriteInst for Comisd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Comisd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 2F /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -6947,11 +6947,11 @@ impl WriteInst for Comisd<Xmm, Memory> {
     }
 }
 
-pub struct Comiss<Op0, Op1>(Op0, Op1);
+pub struct Comiss<Op0, Op1>(pub Op0, pub Op1);
 
 /// comiss xmm xmm: Compare low single-precision floating-point values in xmm1 and xmm2/mem32 and set the EFLAGS flags accordingly.
-impl WriteInst for Comiss<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Comiss<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 2F /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -6965,8 +6965,8 @@ impl WriteInst for Comiss<Xmm, Xmm> {
 }
 
 /// comiss xmm m32: Compare low single-precision floating-point values in xmm1 and xmm2/mem32 and set the EFLAGS flags accordingly.
-impl WriteInst for Comiss<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Comiss<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 2F /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -6982,8 +6982,8 @@ impl WriteInst for Comiss<Xmm, Memory> {
 pub struct Cpuid();
 
 /// cpuid: Returns processor identification and feature information to the EAX, EBX, ECX, and EDX registers, as determined by input entered in EAX (in some cases, ECX as well).
-impl WriteInst for Cpuid {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cpuid {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F A2
         put(w, 0x0F)?;
         put(w, 0xA2)?;
@@ -6994,8 +6994,8 @@ impl WriteInst for Cpuid {
 pub struct Cqto();
 
 /// cqto: RDX:RAX = sign-extend of RAX.
-impl WriteInst for Cqto {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cqto {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 99
         puts(w, rex_byte(false, true, false, false, false))?;
         put(w, 0x99)?;
@@ -7003,11 +7003,11 @@ impl WriteInst for Cqto {
     }
 }
 
-pub struct Crc32b<Op0, Op1>(Op0, Op1);
+pub struct Crc32b<Op0, Op1>(pub Op0, pub Op1);
 
 /// crc32b r32 r8: Accumulate CRC32 on r/m8.
-impl WriteInst for Crc32b<Gpr32, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Crc32b<Gpr32, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 38 F0 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -7023,8 +7023,8 @@ impl WriteInst for Crc32b<Gpr32, Gpr8> {
 }
 
 /// crc32b r32 m8: Accumulate CRC32 on r/m8.
-impl WriteInst for Crc32b<Gpr32, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Crc32b<Gpr32, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 38 F0 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -7040,8 +7040,8 @@ impl WriteInst for Crc32b<Gpr32, Memory> {
 }
 
 /// crc32b r64 r8: Accumulate CRC32 on r/m8.
-impl WriteInst for Crc32b<Gpr64, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Crc32b<Gpr64, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 REX.W+ 0F 38 F0 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -7057,8 +7057,8 @@ impl WriteInst for Crc32b<Gpr64, Gpr8> {
 }
 
 /// crc32b r64 m8: Accumulate CRC32 on r/m8.
-impl WriteInst for Crc32b<Gpr64, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Crc32b<Gpr64, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 REX.W+ 0F 38 F0 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -7073,11 +7073,11 @@ impl WriteInst for Crc32b<Gpr64, Memory> {
     }
 }
 
-pub struct Crc32l<Op0, Op1>(Op0, Op1);
+pub struct Crc32l<Op0, Op1>(pub Op0, pub Op1);
 
 /// crc32l r32 r32: Accumulate CRC32 on r/m32.
-impl WriteInst for Crc32l<Gpr32, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Crc32l<Gpr32, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 38 F1 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -7093,8 +7093,8 @@ impl WriteInst for Crc32l<Gpr32, Gpr32> {
 }
 
 /// crc32l r32 m32: Accumulate CRC32 on r/m32.
-impl WriteInst for Crc32l<Gpr32, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Crc32l<Gpr32, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 38 F1 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -7109,11 +7109,11 @@ impl WriteInst for Crc32l<Gpr32, Memory> {
     }
 }
 
-pub struct Crc32q<Op0, Op1>(Op0, Op1);
+pub struct Crc32q<Op0, Op1>(pub Op0, pub Op1);
 
 /// crc32q r64 r64: Accumulate CRC32 on r/m64.
-impl WriteInst for Crc32q<Gpr64, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Crc32q<Gpr64, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 REX.W+ 0F 38 F1 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -7129,8 +7129,8 @@ impl WriteInst for Crc32q<Gpr64, Gpr64> {
 }
 
 /// crc32q r64 m64: Accumulate CRC32 on r/m64.
-impl WriteInst for Crc32q<Gpr64, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Crc32q<Gpr64, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 REX.W+ 0F 38 F1 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -7145,11 +7145,11 @@ impl WriteInst for Crc32q<Gpr64, Memory> {
     }
 }
 
-pub struct Crc32w<Op0, Op1>(Op0, Op1);
+pub struct Crc32w<Op0, Op1>(pub Op0, pub Op1);
 
 /// crc32w r32 r16: Accumulate CRC32 on r/m16.
-impl WriteInst for Crc32w<Gpr32, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Crc32w<Gpr32, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 66 0F 38 F1 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -7166,8 +7166,8 @@ impl WriteInst for Crc32w<Gpr32, Gpr16> {
 }
 
 /// crc32w r32 m16: Accumulate CRC32 on r/m16.
-impl WriteInst for Crc32w<Gpr32, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Crc32w<Gpr32, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 66 0F 38 F1 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -7183,11 +7183,11 @@ impl WriteInst for Crc32w<Gpr32, Memory> {
     }
 }
 
-pub struct Cvtdq2pd<Op0, Op1>(Op0, Op1);
+pub struct Cvtdq2pd<Op0, Op1>(pub Op0, pub Op1);
 
 /// cvtdq2pd xmm xmm: Convert two packed signed doubleword integers from xmm2/m128 to two packed double-precision floating-point values in xmm1.
-impl WriteInst for Cvtdq2pd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtdq2pd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F E6 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -7202,8 +7202,8 @@ impl WriteInst for Cvtdq2pd<Xmm, Xmm> {
 }
 
 /// cvtdq2pd xmm m64: Convert two packed signed doubleword integers from xmm2/m128 to two packed double-precision floating-point values in xmm1.
-impl WriteInst for Cvtdq2pd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtdq2pd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F E6 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -7217,11 +7217,11 @@ impl WriteInst for Cvtdq2pd<Xmm, Memory> {
     }
 }
 
-pub struct Cvtdq2ps<Op0, Op1>(Op0, Op1);
+pub struct Cvtdq2ps<Op0, Op1>(pub Op0, pub Op1);
 
 /// cvtdq2ps xmm xmm: Convert four packed signed doubleword integers from xmm2/m128 to four packed single-precision floating-point values in xmm1.
-impl WriteInst for Cvtdq2ps<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtdq2ps<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 5B /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -7235,8 +7235,8 @@ impl WriteInst for Cvtdq2ps<Xmm, Xmm> {
 }
 
 /// cvtdq2ps xmm m128: Convert four packed signed doubleword integers from xmm2/m128 to four packed single-precision floating-point values in xmm1.
-impl WriteInst for Cvtdq2ps<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtdq2ps<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 5B /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -7249,11 +7249,11 @@ impl WriteInst for Cvtdq2ps<Xmm, Memory> {
     }
 }
 
-pub struct Cvtpd2dq<Op0, Op1>(Op0, Op1);
+pub struct Cvtpd2dq<Op0, Op1>(pub Op0, pub Op1);
 
 /// cvtpd2dq xmm xmm: Convert two packed double-precision floating- point values from xmm2/m128 to two packed signed doubleword integers in xmm1.
-impl WriteInst for Cvtpd2dq<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtpd2dq<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F E6 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -7268,8 +7268,8 @@ impl WriteInst for Cvtpd2dq<Xmm, Xmm> {
 }
 
 /// cvtpd2dq xmm m128: Convert two packed double-precision floating- point values from xmm2/m128 to two packed signed doubleword integers in xmm1.
-impl WriteInst for Cvtpd2dq<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtpd2dq<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F E6 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -7283,11 +7283,11 @@ impl WriteInst for Cvtpd2dq<Xmm, Memory> {
     }
 }
 
-pub struct Cvtpd2ps<Op0, Op1>(Op0, Op1);
+pub struct Cvtpd2ps<Op0, Op1>(pub Op0, pub Op1);
 
 /// cvtpd2ps xmm xmm: Convert two packed double-precision floating- point values in xmm2/m128 to two packed single-precision floating-point values in xmm1.
-impl WriteInst for Cvtpd2ps<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtpd2ps<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 5A /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -7302,8 +7302,8 @@ impl WriteInst for Cvtpd2ps<Xmm, Xmm> {
 }
 
 /// cvtpd2ps xmm m128: Convert two packed double-precision floating- point values in xmm2/m128 to two packed single-precision floating-point values in xmm1.
-impl WriteInst for Cvtpd2ps<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtpd2ps<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 5A /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -7317,11 +7317,11 @@ impl WriteInst for Cvtpd2ps<Xmm, Memory> {
     }
 }
 
-pub struct Cvtps2dq<Op0, Op1>(Op0, Op1);
+pub struct Cvtps2dq<Op0, Op1>(pub Op0, pub Op1);
 
 /// cvtps2dq xmm xmm: Convert four packed single-precision floating- point values from xmm2/m128 to four packed signed doubleword integers in xmm1.
-impl WriteInst for Cvtps2dq<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtps2dq<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 5B /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -7336,8 +7336,8 @@ impl WriteInst for Cvtps2dq<Xmm, Xmm> {
 }
 
 /// cvtps2dq xmm m128: Convert four packed single-precision floating- point values from xmm2/m128 to four packed signed doubleword integers in xmm1.
-impl WriteInst for Cvtps2dq<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtps2dq<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 5B /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -7351,11 +7351,11 @@ impl WriteInst for Cvtps2dq<Xmm, Memory> {
     }
 }
 
-pub struct Cvtps2pd<Op0, Op1>(Op0, Op1);
+pub struct Cvtps2pd<Op0, Op1>(pub Op0, pub Op1);
 
 /// cvtps2pd xmm xmm: Convert two packed single-precision floating- point values in xmm2/m64 to two packed double-precision floating-point values in xmm1.
-impl WriteInst for Cvtps2pd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtps2pd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 5A /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -7369,8 +7369,8 @@ impl WriteInst for Cvtps2pd<Xmm, Xmm> {
 }
 
 /// cvtps2pd xmm m64: Convert two packed single-precision floating- point values in xmm2/m64 to two packed double-precision floating-point values in xmm1.
-impl WriteInst for Cvtps2pd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtps2pd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 5A /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -7383,11 +7383,11 @@ impl WriteInst for Cvtps2pd<Xmm, Memory> {
     }
 }
 
-pub struct Cvtsd2si<Op0, Op1>(Op0, Op1);
+pub struct Cvtsd2si<Op0, Op1>(pub Op0, pub Op1);
 
 /// cvtsd2si r32 xmm: Convert one double-precision floating-point value from xmm/m64 to one signed doubleword integer r32.
-impl WriteInst for Cvtsd2si<Gpr32, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtsd2si<Gpr32, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 2D /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -7402,8 +7402,8 @@ impl WriteInst for Cvtsd2si<Gpr32, Xmm> {
 }
 
 /// cvtsd2si r32 m64: Convert one double-precision floating-point value from xmm/m64 to one signed doubleword integer r32.
-impl WriteInst for Cvtsd2si<Gpr32, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtsd2si<Gpr32, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 2D /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -7418,8 +7418,8 @@ impl WriteInst for Cvtsd2si<Gpr32, Memory> {
 }
 
 /// cvtsd2si r64 xmm: Convert one double-precision floating-point value from xmm/m64 to one signed quadword integer sign-extended into r64.
-impl WriteInst for Cvtsd2si<Gpr64, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtsd2si<Gpr64, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 REX.W+ 0F 2D /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -7434,8 +7434,8 @@ impl WriteInst for Cvtsd2si<Gpr64, Xmm> {
 }
 
 /// cvtsd2si r64 m64: Convert one double-precision floating-point value from xmm/m64 to one signed quadword integer sign-extended into r64.
-impl WriteInst for Cvtsd2si<Gpr64, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtsd2si<Gpr64, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 REX.W+ 0F 2D /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -7449,11 +7449,11 @@ impl WriteInst for Cvtsd2si<Gpr64, Memory> {
     }
 }
 
-pub struct Cvtsd2ss<Op0, Op1>(Op0, Op1);
+pub struct Cvtsd2ss<Op0, Op1>(pub Op0, pub Op1);
 
 /// cvtsd2ss xmm xmm: Convert one double-precision floating-point value in xmm2/m64 to one single-precision floating-point value in xmm1.
-impl WriteInst for Cvtsd2ss<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtsd2ss<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 5A /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -7468,8 +7468,8 @@ impl WriteInst for Cvtsd2ss<Xmm, Xmm> {
 }
 
 /// cvtsd2ss xmm m64: Convert one double-precision floating-point value in xmm2/m64 to one single-precision floating-point value in xmm1.
-impl WriteInst for Cvtsd2ss<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtsd2ss<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 5A /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -7483,11 +7483,11 @@ impl WriteInst for Cvtsd2ss<Xmm, Memory> {
     }
 }
 
-pub struct Cvtsi2sdl<Op0, Op1>(Op0, Op1);
+pub struct Cvtsi2sdl<Op0, Op1>(pub Op0, pub Op1);
 
 /// cvtsi2sdl xmm r32: Convert one signed doubleword integer from r/m32 to one double-precision floating-point value in xmm.
-impl WriteInst for Cvtsi2sdl<Xmm, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtsi2sdl<Xmm, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 2A /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -7502,8 +7502,8 @@ impl WriteInst for Cvtsi2sdl<Xmm, Gpr32> {
 }
 
 /// cvtsi2sdl xmm m32: Convert one signed doubleword integer from r/m32 to one double-precision floating-point value in xmm.
-impl WriteInst for Cvtsi2sdl<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtsi2sdl<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 2A /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -7517,11 +7517,11 @@ impl WriteInst for Cvtsi2sdl<Xmm, Memory> {
     }
 }
 
-pub struct Cvtsi2sdq<Op0, Op1>(Op0, Op1);
+pub struct Cvtsi2sdq<Op0, Op1>(pub Op0, pub Op1);
 
 /// cvtsi2sdq xmm r64: Convert one signed quadword integer from r/m64 to one double-precision floating-point value in xmm.
-impl WriteInst for Cvtsi2sdq<Xmm, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtsi2sdq<Xmm, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 REX.W+ 0F 2A /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -7536,8 +7536,8 @@ impl WriteInst for Cvtsi2sdq<Xmm, Gpr64> {
 }
 
 /// cvtsi2sdq xmm m64: Convert one signed quadword integer from r/m64 to one double-precision floating-point value in xmm.
-impl WriteInst for Cvtsi2sdq<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtsi2sdq<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 REX.W+ 0F 2A /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -7551,11 +7551,11 @@ impl WriteInst for Cvtsi2sdq<Xmm, Memory> {
     }
 }
 
-pub struct Cvtsi2ssl<Op0, Op1>(Op0, Op1);
+pub struct Cvtsi2ssl<Op0, Op1>(pub Op0, pub Op1);
 
 /// cvtsi2ssl xmm r32: Convert one signed doubleword integer from r/m32 to one single-precision floating-point value in xmm.
-impl WriteInst for Cvtsi2ssl<Xmm, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtsi2ssl<Xmm, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 2A /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -7570,8 +7570,8 @@ impl WriteInst for Cvtsi2ssl<Xmm, Gpr32> {
 }
 
 /// cvtsi2ssl xmm m32: Convert one signed doubleword integer from r/m32 to one single-precision floating-point value in xmm.
-impl WriteInst for Cvtsi2ssl<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtsi2ssl<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 2A /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -7585,11 +7585,11 @@ impl WriteInst for Cvtsi2ssl<Xmm, Memory> {
     }
 }
 
-pub struct Cvtsi2ssq<Op0, Op1>(Op0, Op1);
+pub struct Cvtsi2ssq<Op0, Op1>(pub Op0, pub Op1);
 
 /// cvtsi2ssq xmm r64: Convert one signed quadword integer from r/m64 to one single-precision floating-point value in xmm.
-impl WriteInst for Cvtsi2ssq<Xmm, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtsi2ssq<Xmm, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 REX.W+ 0F 2A /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -7604,8 +7604,8 @@ impl WriteInst for Cvtsi2ssq<Xmm, Gpr64> {
 }
 
 /// cvtsi2ssq xmm m64: Convert one signed quadword integer from r/m64 to one single-precision floating-point value in xmm.
-impl WriteInst for Cvtsi2ssq<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtsi2ssq<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 REX.W+ 0F 2A /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -7619,11 +7619,11 @@ impl WriteInst for Cvtsi2ssq<Xmm, Memory> {
     }
 }
 
-pub struct Cvtss2sd<Op0, Op1>(Op0, Op1);
+pub struct Cvtss2sd<Op0, Op1>(pub Op0, pub Op1);
 
 /// cvtss2sd xmm xmm: Convert one single-precision floating-point value in xmm2/m32 to one double-precision floating-point value in xmm1.
-impl WriteInst for Cvtss2sd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtss2sd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 5A /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -7638,8 +7638,8 @@ impl WriteInst for Cvtss2sd<Xmm, Xmm> {
 }
 
 /// cvtss2sd xmm m32: Convert one single-precision floating-point value in xmm2/m32 to one double-precision floating-point value in xmm1.
-impl WriteInst for Cvtss2sd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtss2sd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 5A /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -7653,11 +7653,11 @@ impl WriteInst for Cvtss2sd<Xmm, Memory> {
     }
 }
 
-pub struct Cvtss2si<Op0, Op1>(Op0, Op1);
+pub struct Cvtss2si<Op0, Op1>(pub Op0, pub Op1);
 
 /// cvtss2si r32 xmm: Convert one single-precision floating-point value from xmm/m32 to one signed doubleword integer in r32.
-impl WriteInst for Cvtss2si<Gpr32, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtss2si<Gpr32, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 2D /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -7672,8 +7672,8 @@ impl WriteInst for Cvtss2si<Gpr32, Xmm> {
 }
 
 /// cvtss2si r32 m32: Convert one single-precision floating-point value from xmm/m32 to one signed doubleword integer in r32.
-impl WriteInst for Cvtss2si<Gpr32, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtss2si<Gpr32, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 2D /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -7688,8 +7688,8 @@ impl WriteInst for Cvtss2si<Gpr32, Memory> {
 }
 
 /// cvtss2si r64 xmm: Convert one single-precision floating-point value from xmm/m32 to one signed quadword integer in r64.
-impl WriteInst for Cvtss2si<Gpr64, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtss2si<Gpr64, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 REX.W+ 0F 2D /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -7704,8 +7704,8 @@ impl WriteInst for Cvtss2si<Gpr64, Xmm> {
 }
 
 /// cvtss2si r64 m32: Convert one single-precision floating-point value from xmm/m32 to one signed quadword integer in r64.
-impl WriteInst for Cvtss2si<Gpr64, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvtss2si<Gpr64, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 REX.W+ 0F 2D /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -7719,11 +7719,11 @@ impl WriteInst for Cvtss2si<Gpr64, Memory> {
     }
 }
 
-pub struct Cvttpd2dq<Op0, Op1>(Op0, Op1);
+pub struct Cvttpd2dq<Op0, Op1>(pub Op0, pub Op1);
 
 /// cvttpd2dq xmm xmm: Convert two packed double-precision floating- point values from xmm2/m128 to two packed signed doubleword integers in xmm1 using truncation.
-impl WriteInst for Cvttpd2dq<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvttpd2dq<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F E6 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -7738,8 +7738,8 @@ impl WriteInst for Cvttpd2dq<Xmm, Xmm> {
 }
 
 /// cvttpd2dq xmm m128: Convert two packed double-precision floating- point values from xmm2/m128 to two packed signed doubleword integers in xmm1 using truncation.
-impl WriteInst for Cvttpd2dq<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvttpd2dq<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F E6 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -7753,11 +7753,11 @@ impl WriteInst for Cvttpd2dq<Xmm, Memory> {
     }
 }
 
-pub struct Cvttps2dq<Op0, Op1>(Op0, Op1);
+pub struct Cvttps2dq<Op0, Op1>(pub Op0, pub Op1);
 
 /// cvttps2dq xmm xmm: Convert four single-precision floating-point values from xmm2/m128 to four signed doubleword integers in xmm1 using truncation.
-impl WriteInst for Cvttps2dq<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvttps2dq<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 5B /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -7772,8 +7772,8 @@ impl WriteInst for Cvttps2dq<Xmm, Xmm> {
 }
 
 /// cvttps2dq xmm m128: Convert four single-precision floating-point values from xmm2/m128 to four signed doubleword integers in xmm1 using truncation.
-impl WriteInst for Cvttps2dq<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvttps2dq<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 5B /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -7787,11 +7787,11 @@ impl WriteInst for Cvttps2dq<Xmm, Memory> {
     }
 }
 
-pub struct Cvttsd2si<Op0, Op1>(Op0, Op1);
+pub struct Cvttsd2si<Op0, Op1>(pub Op0, pub Op1);
 
 /// cvttsd2si r32 xmm: Convert one double-precision floating-point value from xmm/m64 to one signed doubleword integer in r32 using truncation.
-impl WriteInst for Cvttsd2si<Gpr32, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvttsd2si<Gpr32, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 2C /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -7806,8 +7806,8 @@ impl WriteInst for Cvttsd2si<Gpr32, Xmm> {
 }
 
 /// cvttsd2si r32 m64: Convert one double-precision floating-point value from xmm/m64 to one signed doubleword integer in r32 using truncation.
-impl WriteInst for Cvttsd2si<Gpr32, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvttsd2si<Gpr32, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 2C /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -7822,8 +7822,8 @@ impl WriteInst for Cvttsd2si<Gpr32, Memory> {
 }
 
 /// cvttsd2si r64 xmm: Convert one double precision floating-point value from xmm/m64 to one signedquadword integer in r64 using truncation.
-impl WriteInst for Cvttsd2si<Gpr64, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvttsd2si<Gpr64, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 REX.W+ 0F 2C /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -7838,8 +7838,8 @@ impl WriteInst for Cvttsd2si<Gpr64, Xmm> {
 }
 
 /// cvttsd2si r64 m64: Convert one double precision floating-point value from xmm/m64 to one signedquadword integer in r64 using truncation.
-impl WriteInst for Cvttsd2si<Gpr64, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvttsd2si<Gpr64, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 REX.W+ 0F 2C /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -7853,11 +7853,11 @@ impl WriteInst for Cvttsd2si<Gpr64, Memory> {
     }
 }
 
-pub struct Cvttss2si<Op0, Op1>(Op0, Op1);
+pub struct Cvttss2si<Op0, Op1>(pub Op0, pub Op1);
 
 /// cvttss2si r32 xmm: Convert one single-precision floating-point value from xmm/m32 to one signed doubleword integer in r32 using truncation.
-impl WriteInst for Cvttss2si<Gpr32, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvttss2si<Gpr32, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 2C /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -7872,8 +7872,8 @@ impl WriteInst for Cvttss2si<Gpr32, Xmm> {
 }
 
 /// cvttss2si r32 m32: Convert one single-precision floating-point value from xmm/m32 to one signed doubleword integer in r32 using truncation.
-impl WriteInst for Cvttss2si<Gpr32, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvttss2si<Gpr32, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 2C /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -7888,8 +7888,8 @@ impl WriteInst for Cvttss2si<Gpr32, Memory> {
 }
 
 /// cvttss2si r64 xmm: Convert one single-precision floating-point value from xmm/m32 to one signed quadword integer in r64 using truncation.
-impl WriteInst for Cvttss2si<Gpr64, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvttss2si<Gpr64, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 REX.W+ 0F 2C /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -7904,8 +7904,8 @@ impl WriteInst for Cvttss2si<Gpr64, Xmm> {
 }
 
 /// cvttss2si r64 m32: Convert one single-precision floating-point value from xmm/m32 to one signed quadword integer in r64 using truncation.
-impl WriteInst for Cvttss2si<Gpr64, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cvttss2si<Gpr64, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 REX.W+ 0F 2C /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -7922,8 +7922,8 @@ impl WriteInst for Cvttss2si<Gpr64, Memory> {
 pub struct Cwtd();
 
 /// cwtd: DX:AX = sign-extend of AX.
-impl WriteInst for Cwtd {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cwtd {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 99
         put(w, 0x66)?;
         put(w, 0x99)?;
@@ -7934,19 +7934,19 @@ impl WriteInst for Cwtd {
 pub struct Cwtl();
 
 /// cwtl: EAX = sign-extend of AX.
-impl WriteInst for Cwtl {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Cwtl {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 98
         put(w, 0x98)?;
         Ok(())
     }
 }
 
-pub struct Decb<Op0>(Op0);
+pub struct Decb<Op0>(pub Op0);
 
 /// decb r8: Decrement r/m8 by 1.
-impl WriteInst for Decb<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Decb<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // FE /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -7959,8 +7959,8 @@ impl WriteInst for Decb<Gpr8> {
 }
 
 /// decb m8: Decrement r/m8 by 1.
-impl WriteInst for Decb<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Decb<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // FE /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -7972,11 +7972,11 @@ impl WriteInst for Decb<Memory> {
     }
 }
 
-pub struct Decl<Op0>(Op0);
+pub struct Decl<Op0>(pub Op0);
 
 /// decl r32: Decrement r/m32 by 1.
-impl WriteInst for Decl<Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Decl<Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // FF /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -7989,8 +7989,8 @@ impl WriteInst for Decl<Gpr32> {
 }
 
 /// decl m32: Decrement r/m32 by 1.
-impl WriteInst for Decl<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Decl<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // FF /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -8002,11 +8002,11 @@ impl WriteInst for Decl<Memory> {
     }
 }
 
-pub struct Decq<Op0>(Op0);
+pub struct Decq<Op0>(pub Op0);
 
 /// decq r64: Decrement r/m64 by 1.
-impl WriteInst for Decq<Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Decq<Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ FF /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -8019,8 +8019,8 @@ impl WriteInst for Decq<Gpr64> {
 }
 
 /// decq m64: Decrement r/m64 by 1.
-impl WriteInst for Decq<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Decq<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ FF /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -8032,11 +8032,11 @@ impl WriteInst for Decq<Memory> {
     }
 }
 
-pub struct Decw<Op0>(Op0);
+pub struct Decw<Op0>(pub Op0);
 
 /// decw r16: Decrement r/m16 by 1.
-impl WriteInst for Decw<Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Decw<Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 FF /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         put(w, 0x66)?;
@@ -8050,8 +8050,8 @@ impl WriteInst for Decw<Gpr16> {
 }
 
 /// decw m16: Decrement r/m16 by 1.
-impl WriteInst for Decw<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Decw<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 FF /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         put(w, 0x66)?;
@@ -8064,11 +8064,11 @@ impl WriteInst for Decw<Memory> {
     }
 }
 
-pub struct Divb<Op0>(Op0);
+pub struct Divb<Op0>(pub Op0);
 
 /// divb r8: Unsigned divide AX by r/m8, with result stored in AL = Quotient, AH = Remainder.
-impl WriteInst for Divb<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Divb<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F6 /6
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -8081,8 +8081,8 @@ impl WriteInst for Divb<Gpr8> {
 }
 
 /// divb m8: Unsigned divide AX by r/m8, with result stored in AL = Quotient, AH = Remainder.
-impl WriteInst for Divb<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Divb<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F6 /6
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -8094,11 +8094,11 @@ impl WriteInst for Divb<Memory> {
     }
 }
 
-pub struct Divl<Op0>(Op0);
+pub struct Divl<Op0>(pub Op0);
 
 /// divl r32: Unsigned divide EDX:EAX by r/m32, with result stored in EAX = Quotient, EDX = Remainder.
-impl WriteInst for Divl<Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Divl<Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F7 /6
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -8111,8 +8111,8 @@ impl WriteInst for Divl<Gpr32> {
 }
 
 /// divl m32: Unsigned divide EDX:EAX by r/m32, with result stored in EAX = Quotient, EDX = Remainder.
-impl WriteInst for Divl<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Divl<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F7 /6
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -8124,11 +8124,11 @@ impl WriteInst for Divl<Memory> {
     }
 }
 
-pub struct Divpd<Op0, Op1>(Op0, Op1);
+pub struct Divpd<Op0, Op1>(pub Op0, pub Op1);
 
 /// divpd xmm xmm: Divide packed double-precision floating-point values in xmm1 by packed double-precision floating-point values xmm2/m128.
-impl WriteInst for Divpd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Divpd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 5E /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -8143,8 +8143,8 @@ impl WriteInst for Divpd<Xmm, Xmm> {
 }
 
 /// divpd xmm m128: Divide packed double-precision floating-point values in xmm1 by packed double-precision floating-point values xmm2/m128.
-impl WriteInst for Divpd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Divpd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 5E /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -8158,11 +8158,11 @@ impl WriteInst for Divpd<Xmm, Memory> {
     }
 }
 
-pub struct Divps<Op0, Op1>(Op0, Op1);
+pub struct Divps<Op0, Op1>(pub Op0, pub Op1);
 
 /// divps xmm xmm: Divide packed single-precision floating-point values in xmm1 by packed single-precision floating-point values xmm2/m128.
-impl WriteInst for Divps<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Divps<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 5E /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -8176,8 +8176,8 @@ impl WriteInst for Divps<Xmm, Xmm> {
 }
 
 /// divps xmm m128: Divide packed single-precision floating-point values in xmm1 by packed single-precision floating-point values xmm2/m128.
-impl WriteInst for Divps<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Divps<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 5E /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -8190,11 +8190,11 @@ impl WriteInst for Divps<Xmm, Memory> {
     }
 }
 
-pub struct Divq<Op0>(Op0);
+pub struct Divq<Op0>(pub Op0);
 
 /// divq r64: Unsigned divide RDX:RAX by r/m64, with result stored in RAX = Quotient, RDX = Remainder.
-impl WriteInst for Divq<Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Divq<Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ F7 /6
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -8207,8 +8207,8 @@ impl WriteInst for Divq<Gpr64> {
 }
 
 /// divq m64: Unsigned divide RDX:RAX by r/m64, with result stored in RAX = Quotient, RDX = Remainder.
-impl WriteInst for Divq<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Divq<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ F7 /6
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -8220,11 +8220,11 @@ impl WriteInst for Divq<Memory> {
     }
 }
 
-pub struct Divsd<Op0, Op1>(Op0, Op1);
+pub struct Divsd<Op0, Op1>(pub Op0, pub Op1);
 
 /// divsd xmm xmm: Divide low double-precision floating-point value in xmm1 by low double-precision floating-point value in xmm2/mem64.
-impl WriteInst for Divsd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Divsd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 5E /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -8239,8 +8239,8 @@ impl WriteInst for Divsd<Xmm, Xmm> {
 }
 
 /// divsd xmm m64: Divide low double-precision floating-point value in xmm1 by low double-precision floating-point value in xmm2/mem64.
-impl WriteInst for Divsd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Divsd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 5E /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -8254,11 +8254,11 @@ impl WriteInst for Divsd<Xmm, Memory> {
     }
 }
 
-pub struct Divss<Op0, Op1>(Op0, Op1);
+pub struct Divss<Op0, Op1>(pub Op0, pub Op1);
 
 /// divss xmm xmm: Divide low single-precision floating-point value in xmm1 by low single-precision floating-point value in xmm2/m32.
-impl WriteInst for Divss<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Divss<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 5E /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -8273,8 +8273,8 @@ impl WriteInst for Divss<Xmm, Xmm> {
 }
 
 /// divss xmm m32: Divide low single-precision floating-point value in xmm1 by low single-precision floating-point value in xmm2/m32.
-impl WriteInst for Divss<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Divss<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 5E /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -8288,11 +8288,11 @@ impl WriteInst for Divss<Xmm, Memory> {
     }
 }
 
-pub struct Divw<Op0>(Op0);
+pub struct Divw<Op0>(pub Op0);
 
 /// divw r16: Unsigned divide DX:AX by r/m16, with result stored in AX = Quotient, DX = Remainder.
-impl WriteInst for Divw<Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Divw<Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 F7 /6
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         put(w, 0x66)?;
@@ -8306,8 +8306,8 @@ impl WriteInst for Divw<Gpr16> {
 }
 
 /// divw m16: Unsigned divide DX:AX by r/m16, with result stored in AX = Quotient, DX = Remainder.
-impl WriteInst for Divw<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Divw<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 F7 /6
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         put(w, 0x66)?;
@@ -8320,11 +8320,11 @@ impl WriteInst for Divw<Memory> {
     }
 }
 
-pub struct Dppd<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Dppd<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// dppd xmm xmm imm8: Selectively multiply packed DP floating-point values from xmm1 with packed DP floating- point values from xmm2, add and selectively store the packed DP floating-point values to xmm1.
-impl WriteInst for Dppd<Xmm, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Dppd<Xmm, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 41 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -8341,8 +8341,8 @@ impl WriteInst for Dppd<Xmm, Xmm, i8> {
 }
 
 /// dppd xmm m128 imm8: Selectively multiply packed DP floating-point values from xmm1 with packed DP floating- point values from xmm2, add and selectively store the packed DP floating-point values to xmm1.
-impl WriteInst for Dppd<Xmm, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Dppd<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 41 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -8358,11 +8358,11 @@ impl WriteInst for Dppd<Xmm, Memory, i8> {
     }
 }
 
-pub struct Dpps<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Dpps<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// dpps xmm xmm imm8: Selectively multiply packed SP floating-point values from xmm1 with packed SP floating- point values from xmm2, add and selectively store the packed SP floating-point values or zero values to xmm1.
-impl WriteInst for Dpps<Xmm, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Dpps<Xmm, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 40 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -8379,8 +8379,8 @@ impl WriteInst for Dpps<Xmm, Xmm, i8> {
 }
 
 /// dpps xmm m128 imm8: Selectively multiply packed SP floating-point values from xmm1 with packed SP floating- point values from xmm2, add and selectively store the packed SP floating-point values or zero values to xmm1.
-impl WriteInst for Dpps<Xmm, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Dpps<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 40 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -8399,8 +8399,8 @@ impl WriteInst for Dpps<Xmm, Memory, i8> {
 pub struct Emms();
 
 /// emms: Set the x87 FPU tag word to empty.
-impl WriteInst for Emms {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Emms {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 77
         put(w, 0x0F)?;
         put(w, 0x77)?;
@@ -8408,11 +8408,11 @@ impl WriteInst for Emms {
     }
 }
 
-pub struct Extractps<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Extractps<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// extractps reg xmm imm8: Extract a single-precision floating-point value from xmm2 at the source offset specified by imm8 and store the result to reg or m32. The upper 32 bits of r64 is zeroed if reg is r64.
-impl WriteInst for Extractps<Gpr64, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Extractps<Gpr64, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 17 /r ib
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -8429,8 +8429,8 @@ impl WriteInst for Extractps<Gpr64, Xmm, i8> {
 }
 
 /// extractps m32 xmm imm8: Extract a single-precision floating-point value from xmm2 at the source offset specified by imm8 and store the result to reg or m32. The upper 32 bits of r64 is zeroed if reg is r64.
-impl WriteInst for Extractps<Memory, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Extractps<Memory, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 17 /r ib
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -8449,19 +8449,19 @@ impl WriteInst for Extractps<Memory, Xmm, i8> {
 pub struct Hlt();
 
 /// hlt: Halt
-impl WriteInst for Hlt {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Hlt {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F4
         put(w, 0xF4)?;
         Ok(())
     }
 }
 
-pub struct Idivb<Op0>(Op0);
+pub struct Idivb<Op0>(pub Op0);
 
 /// idivb r8: Signed divide AX by r/m8, with result stored in: AL = Quotient, AH = Remainder.
-impl WriteInst for Idivb<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Idivb<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F6 /7
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -8474,8 +8474,8 @@ impl WriteInst for Idivb<Gpr8> {
 }
 
 /// idivb m8: Signed divide AX by r/m8, with result stored in: AL = Quotient, AH = Remainder.
-impl WriteInst for Idivb<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Idivb<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F6 /7
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -8487,11 +8487,11 @@ impl WriteInst for Idivb<Memory> {
     }
 }
 
-pub struct Idivl<Op0>(Op0);
+pub struct Idivl<Op0>(pub Op0);
 
 /// idivl r32: Signed divide EDX:EAX by r/m32, with result stored in EAX = Quotient, EDX = Remainder.
-impl WriteInst for Idivl<Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Idivl<Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F7 /7
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -8504,8 +8504,8 @@ impl WriteInst for Idivl<Gpr32> {
 }
 
 /// idivl m32: Signed divide EDX:EAX by r/m32, with result stored in EAX = Quotient, EDX = Remainder.
-impl WriteInst for Idivl<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Idivl<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F7 /7
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -8517,11 +8517,11 @@ impl WriteInst for Idivl<Memory> {
     }
 }
 
-pub struct Idivq<Op0>(Op0);
+pub struct Idivq<Op0>(pub Op0);
 
 /// idivq r64: Signed divide RDX:RAX by r/m64, with result stored in RAX = Quotient, RDX = Remainder.
-impl WriteInst for Idivq<Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Idivq<Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ F7 /7
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -8534,8 +8534,8 @@ impl WriteInst for Idivq<Gpr64> {
 }
 
 /// idivq m64: Signed divide RDX:RAX by r/m64, with result stored in RAX = Quotient, RDX = Remainder.
-impl WriteInst for Idivq<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Idivq<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ F7 /7
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -8547,11 +8547,11 @@ impl WriteInst for Idivq<Memory> {
     }
 }
 
-pub struct Idivw<Op0>(Op0);
+pub struct Idivw<Op0>(pub Op0);
 
 /// idivw r16: Signed divide DX:AX by r/m16, with result stored in AX = Quotient, DX = Remainder.
-impl WriteInst for Idivw<Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Idivw<Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 F7 /7
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         put(w, 0x66)?;
@@ -8565,8 +8565,8 @@ impl WriteInst for Idivw<Gpr16> {
 }
 
 /// idivw m16: Signed divide DX:AX by r/m16, with result stored in AX = Quotient, DX = Remainder.
-impl WriteInst for Idivw<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Idivw<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 F7 /7
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         put(w, 0x66)?;
@@ -8579,11 +8579,11 @@ impl WriteInst for Idivw<Memory> {
     }
 }
 
-pub struct Imulb<Op0>(Op0);
+pub struct Imulb<Op0>(pub Op0);
 
 /// imulb r8: AX= AL * r/m byte.
-impl WriteInst for Imulb<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Imulb<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F6 /5
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -8596,8 +8596,8 @@ impl WriteInst for Imulb<Gpr8> {
 }
 
 /// imulb m8: AX= AL * r/m byte.
-impl WriteInst for Imulb<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Imulb<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F6 /5
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -8609,11 +8609,11 @@ impl WriteInst for Imulb<Memory> {
     }
 }
 
-pub struct Imull<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Imull<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// imull r32 r32 imm8: doubleword register = r/m32 * sign- extended immediate byte.
-impl WriteInst for Imull<Gpr32, Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Imull<Gpr32, Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 6B /r ib
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -8627,8 +8627,8 @@ impl WriteInst for Imull<Gpr32, Gpr32, i8> {
 }
 
 /// imull r32 m32 imm8: doubleword register = r/m32 * sign- extended immediate byte.
-impl WriteInst for Imull<Gpr32, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Imull<Gpr32, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 6B /r ib
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -8642,8 +8642,8 @@ impl WriteInst for Imull<Gpr32, Memory, i8> {
 }
 
 /// imull r32 r32 imm32: doubleword register = r/m32 * immediate doubleword.
-impl WriteInst for Imull<Gpr32, Gpr32, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Imull<Gpr32, Gpr32, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 69 /r id
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -8657,8 +8657,8 @@ impl WriteInst for Imull<Gpr32, Gpr32, i32> {
 }
 
 /// imull r32 m32 imm32: doubleword register = r/m32 * immediate doubleword.
-impl WriteInst for Imull<Gpr32, Memory, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Imull<Gpr32, Memory, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 69 /r id
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -8671,11 +8671,11 @@ impl WriteInst for Imull<Gpr32, Memory, i32> {
     }
 }
 
-pub struct Imull1<Op0>(Op0);
+pub struct Imull1<Op0>(pub Op0);
 
 /// imull r32: EDX:EAX = EAX * r/m32.
-impl WriteInst for Imull1<Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Imull1<Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F7 /5
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -8688,8 +8688,8 @@ impl WriteInst for Imull1<Gpr32> {
 }
 
 /// imull m32: EDX:EAX = EAX * r/m32.
-impl WriteInst for Imull1<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Imull1<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F7 /5
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -8701,11 +8701,11 @@ impl WriteInst for Imull1<Memory> {
     }
 }
 
-pub struct Imull2<Op0, Op1>(Op0, Op1);
+pub struct Imull2<Op0, Op1>(pub Op0, pub Op1);
 
 /// imull r32 r32: doubleword register = doubleword register *  r/m32.
-impl WriteInst for Imull2<Gpr32, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Imull2<Gpr32, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F AF /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -8719,8 +8719,8 @@ impl WriteInst for Imull2<Gpr32, Gpr32> {
 }
 
 /// imull r32 m32: doubleword register = doubleword register *  r/m32.
-impl WriteInst for Imull2<Gpr32, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Imull2<Gpr32, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F AF /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -8733,11 +8733,11 @@ impl WriteInst for Imull2<Gpr32, Memory> {
     }
 }
 
-pub struct Imulq<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Imulq<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// imulq r64 r64 imm8: Quadword register = r/m64 * sign-extended  immediate byte.
-impl WriteInst for Imulq<Gpr64, Gpr64, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Imulq<Gpr64, Gpr64, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 6B /r ib
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -8751,8 +8751,8 @@ impl WriteInst for Imulq<Gpr64, Gpr64, i8> {
 }
 
 /// imulq r64 m64 imm8: Quadword register = r/m64 * sign-extended  immediate byte.
-impl WriteInst for Imulq<Gpr64, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Imulq<Gpr64, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 6B /r ib
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -8766,8 +8766,8 @@ impl WriteInst for Imulq<Gpr64, Memory, i8> {
 }
 
 /// imulq r64 r64 imm32: Quadword register = r/m64 * immediate doubleword.
-impl WriteInst for Imulq<Gpr64, Gpr64, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Imulq<Gpr64, Gpr64, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 69 /r id
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -8781,8 +8781,8 @@ impl WriteInst for Imulq<Gpr64, Gpr64, i32> {
 }
 
 /// imulq r64 m64 imm32: Quadword register = r/m64 * immediate doubleword.
-impl WriteInst for Imulq<Gpr64, Memory, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Imulq<Gpr64, Memory, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 69 /r id
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -8795,11 +8795,11 @@ impl WriteInst for Imulq<Gpr64, Memory, i32> {
     }
 }
 
-pub struct Imulq1<Op0>(Op0);
+pub struct Imulq1<Op0>(pub Op0);
 
 /// imulq r64: RDX:RAX = RAX * r/m64.
-impl WriteInst for Imulq1<Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Imulq1<Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ F7 /5
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -8812,8 +8812,8 @@ impl WriteInst for Imulq1<Gpr64> {
 }
 
 /// imulq m64: RDX:RAX = RAX * r/m64.
-impl WriteInst for Imulq1<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Imulq1<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ F7 /5
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -8825,11 +8825,11 @@ impl WriteInst for Imulq1<Memory> {
     }
 }
 
-pub struct Imulq2<Op0, Op1>(Op0, Op1);
+pub struct Imulq2<Op0, Op1>(pub Op0, pub Op1);
 
 /// imulq r64 r64: Quadword register = Quadword register *  r/m64.
-impl WriteInst for Imulq2<Gpr64, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Imulq2<Gpr64, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F AF /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -8843,8 +8843,8 @@ impl WriteInst for Imulq2<Gpr64, Gpr64> {
 }
 
 /// imulq r64 m64: Quadword register = Quadword register *  r/m64.
-impl WriteInst for Imulq2<Gpr64, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Imulq2<Gpr64, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F AF /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -8857,11 +8857,11 @@ impl WriteInst for Imulq2<Gpr64, Memory> {
     }
 }
 
-pub struct Imulw<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Imulw<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// imulw r16 r16 imm8: word register = r/m16 * sign-extended immediate byte.
-impl WriteInst for Imulw<Gpr16, Gpr16, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Imulw<Gpr16, Gpr16, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 6B /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -8876,8 +8876,8 @@ impl WriteInst for Imulw<Gpr16, Gpr16, i8> {
 }
 
 /// imulw r16 m16 imm8: word register = r/m16 * sign-extended immediate byte.
-impl WriteInst for Imulw<Gpr16, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Imulw<Gpr16, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 6B /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -8892,8 +8892,8 @@ impl WriteInst for Imulw<Gpr16, Memory, i8> {
 }
 
 /// imulw r16 r16 imm16: word register = r/m16 * immediate word.
-impl WriteInst for Imulw<Gpr16, Gpr16, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Imulw<Gpr16, Gpr16, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 69 /r iw
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -8908,8 +8908,8 @@ impl WriteInst for Imulw<Gpr16, Gpr16, i16> {
 }
 
 /// imulw r16 m16 imm16: word register = r/m16 * immediate word.
-impl WriteInst for Imulw<Gpr16, Memory, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Imulw<Gpr16, Memory, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 69 /r iw
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -8923,11 +8923,11 @@ impl WriteInst for Imulw<Gpr16, Memory, i16> {
     }
 }
 
-pub struct Imulw1<Op0>(Op0);
+pub struct Imulw1<Op0>(pub Op0);
 
 /// imulw r16: DX:AX = AX * r/m word.
-impl WriteInst for Imulw1<Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Imulw1<Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 F7 /5
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         put(w, 0x66)?;
@@ -8941,8 +8941,8 @@ impl WriteInst for Imulw1<Gpr16> {
 }
 
 /// imulw m16: DX:AX = AX * r/m word.
-impl WriteInst for Imulw1<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Imulw1<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 F7 /5
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         put(w, 0x66)?;
@@ -8955,11 +8955,11 @@ impl WriteInst for Imulw1<Memory> {
     }
 }
 
-pub struct Imulw2<Op0, Op1>(Op0, Op1);
+pub struct Imulw2<Op0, Op1>(pub Op0, pub Op1);
 
 /// imulw r16 r16: word register = word register * r/m16.
-impl WriteInst for Imulw2<Gpr16, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Imulw2<Gpr16, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F AF /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -8974,8 +8974,8 @@ impl WriteInst for Imulw2<Gpr16, Gpr16> {
 }
 
 /// imulw r16 m16: word register = word register * r/m16.
-impl WriteInst for Imulw2<Gpr16, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Imulw2<Gpr16, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F AF /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -8989,11 +8989,11 @@ impl WriteInst for Imulw2<Gpr16, Memory> {
     }
 }
 
-pub struct Inb<Op0, Op1>(Op0, Op1);
+pub struct Inb<Op0, Op1>(pub Op0, pub Op1);
 
 /// inb _Al imm8: Input byte from imm8 I/O port address into AL.
-impl WriteInst for Inb<_Al, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Inb<_Al, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // E4 ib
         put(w, 0xE4)?;
         puts(w, self.1.to_le_bytes())?;
@@ -9002,19 +9002,19 @@ impl WriteInst for Inb<_Al, i8> {
 }
 
 /// inb _Al _Dx: Input byte from I/O port in DX into AL.
-impl WriteInst for Inb<_Al, _Dx> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Inb<_Al, _Dx> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // EC
         put(w, 0xEC)?;
         Ok(())
     }
 }
 
-pub struct Incb<Op0>(Op0);
+pub struct Incb<Op0>(pub Op0);
 
 /// incb r8: Increment r/m byte by 1.
-impl WriteInst for Incb<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Incb<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // FE /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -9027,8 +9027,8 @@ impl WriteInst for Incb<Gpr8> {
 }
 
 /// incb m8: Increment r/m byte by 1.
-impl WriteInst for Incb<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Incb<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // FE /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -9040,11 +9040,11 @@ impl WriteInst for Incb<Memory> {
     }
 }
 
-pub struct Incl<Op0>(Op0);
+pub struct Incl<Op0>(pub Op0);
 
 /// incl r32: Increment r/m doubleword by 1.
-impl WriteInst for Incl<Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Incl<Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // FF /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -9057,8 +9057,8 @@ impl WriteInst for Incl<Gpr32> {
 }
 
 /// incl m32: Increment r/m doubleword by 1.
-impl WriteInst for Incl<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Incl<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // FF /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -9070,11 +9070,11 @@ impl WriteInst for Incl<Memory> {
     }
 }
 
-pub struct Incq<Op0>(Op0);
+pub struct Incq<Op0>(pub Op0);
 
 /// incq r64: Increment r/m quadword by 1.
-impl WriteInst for Incq<Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Incq<Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ FF /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -9087,8 +9087,8 @@ impl WriteInst for Incq<Gpr64> {
 }
 
 /// incq m64: Increment r/m quadword by 1.
-impl WriteInst for Incq<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Incq<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ FF /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -9100,11 +9100,11 @@ impl WriteInst for Incq<Memory> {
     }
 }
 
-pub struct Incw<Op0>(Op0);
+pub struct Incw<Op0>(pub Op0);
 
 /// incw r16: Increment r/m word by 1.
-impl WriteInst for Incw<Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Incw<Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 FF /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         put(w, 0x66)?;
@@ -9118,8 +9118,8 @@ impl WriteInst for Incw<Gpr16> {
 }
 
 /// incw m16: Increment r/m word by 1.
-impl WriteInst for Incw<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Incw<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 FF /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         put(w, 0x66)?;
@@ -9132,11 +9132,11 @@ impl WriteInst for Incw<Memory> {
     }
 }
 
-pub struct Inl<Op0, Op1>(Op0, Op1);
+pub struct Inl<Op0, Op1>(pub Op0, pub Op1);
 
 /// inl _Eax imm8: Input dword from imm8 I/O port address into EAX.
-impl WriteInst for Inl<_Eax, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Inl<_Eax, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // E5 ib
         put(w, 0xE5)?;
         puts(w, self.1.to_le_bytes())?;
@@ -9145,19 +9145,19 @@ impl WriteInst for Inl<_Eax, i8> {
 }
 
 /// inl _Eax _Dx: Input doubleword from I/O port in DX into EAX.
-impl WriteInst for Inl<_Eax, _Dx> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Inl<_Eax, _Dx> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // ED
         put(w, 0xED)?;
         Ok(())
     }
 }
 
-pub struct Int<Op0>(Op0);
+pub struct Int<Op0>(pub Op0);
 
 /// int imm8: Interrupt vector number specified by immediate byte.
-impl WriteInst for Int<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Int<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // CD ib
         put(w, 0xCD)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9166,8 +9166,8 @@ impl WriteInst for Int<i8> {
 }
 
 /// int _3: Interrupt 3-trap to debugger.
-impl WriteInst for Int<_3> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Int<_3> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // CC
         put(w, 0xCC)?;
         Ok(())
@@ -9177,8 +9177,8 @@ impl WriteInst for Int<_3> {
 pub struct Invd();
 
 /// invd: Flush internal caches; initiate flushing of external caches.
-impl WriteInst for Invd {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Invd {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 08
         put(w, 0x0F)?;
         put(w, 0x08)?;
@@ -9186,11 +9186,11 @@ impl WriteInst for Invd {
     }
 }
 
-pub struct Invlpg<Op0>(Op0);
+pub struct Invlpg<Op0>(pub Op0);
 
 /// invlpg m: Invalidate TLB Entry for page that contains m.
-impl WriteInst for Invlpg<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Invlpg<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 01 /7
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -9203,11 +9203,11 @@ impl WriteInst for Invlpg<Memory> {
     }
 }
 
-pub struct Inw<Op0, Op1>(Op0, Op1);
+pub struct Inw<Op0, Op1>(pub Op0, pub Op1);
 
 /// inw _Ax imm8: Input word from imm8 I/O port address into AX.
-impl WriteInst for Inw<_Ax, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Inw<_Ax, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 E5 ib
         put(w, 0x66)?;
         put(w, 0xE5)?;
@@ -9217,8 +9217,8 @@ impl WriteInst for Inw<_Ax, i8> {
 }
 
 /// inw _Ax _Dx: Input word from I/O port in DX into AX.
-impl WriteInst for Inw<_Ax, _Dx> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Inw<_Ax, _Dx> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 ED
         put(w, 0x66)?;
         put(w, 0xED)?;
@@ -9229,8 +9229,8 @@ impl WriteInst for Inw<_Ax, _Dx> {
 pub struct Iretl();
 
 /// iretl: Interrupt return (32-bit operand size).
-impl WriteInst for Iretl {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Iretl {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // CF
         put(w, 0xCF)?;
         Ok(())
@@ -9240,8 +9240,8 @@ impl WriteInst for Iretl {
 pub struct Iretq();
 
 /// iretq: Interrupt return (64-bit operand size).
-impl WriteInst for Iretq {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Iretq {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ CF
         puts(w, rex_byte(false, true, false, false, false))?;
         put(w, 0xCF)?;
@@ -9252,8 +9252,8 @@ impl WriteInst for Iretq {
 pub struct Iretw();
 
 /// iretw: Interrupt return (16-bit operand size).
-impl WriteInst for Iretw {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Iretw {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 CF
         put(w, 0x66)?;
         put(w, 0xCF)?;
@@ -9261,11 +9261,11 @@ impl WriteInst for Iretw {
     }
 }
 
-pub struct Ja<Op0>(Op0);
+pub struct Ja<Op0>(pub Op0);
 
 /// ja rel8: Jump short if above (CF=0 and ZF=0).
-impl WriteInst for Ja<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Ja<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 77 cb
         put(w, 0x77)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9274,8 +9274,8 @@ impl WriteInst for Ja<i8> {
 }
 
 /// ja rel32: Jump near if above (CF=0 and ZF=0).
-impl WriteInst for Ja<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Ja<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 87 cd
         put(w, 0x0F)?;
         put(w, 0x87)?;
@@ -9284,11 +9284,11 @@ impl WriteInst for Ja<i32> {
     }
 }
 
-pub struct Jae<Op0>(Op0);
+pub struct Jae<Op0>(pub Op0);
 
 /// jae rel8: Jump short if above or equal (CF=0).
-impl WriteInst for Jae<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jae<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 73 cb
         put(w, 0x73)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9297,8 +9297,8 @@ impl WriteInst for Jae<i8> {
 }
 
 /// jae rel32: Jump near if above or equal (CF=0).
-impl WriteInst for Jae<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jae<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 83 cd
         put(w, 0x0F)?;
         put(w, 0x83)?;
@@ -9307,11 +9307,11 @@ impl WriteInst for Jae<i32> {
     }
 }
 
-pub struct Jb<Op0>(Op0);
+pub struct Jb<Op0>(pub Op0);
 
 /// jb rel8: Jump short if below (CF=1).
-impl WriteInst for Jb<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jb<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 72 cb
         put(w, 0x72)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9320,8 +9320,8 @@ impl WriteInst for Jb<i8> {
 }
 
 /// jb rel32: Jump near if below (CF=1).
-impl WriteInst for Jb<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jb<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 82 cd
         put(w, 0x0F)?;
         put(w, 0x82)?;
@@ -9330,11 +9330,11 @@ impl WriteInst for Jb<i32> {
     }
 }
 
-pub struct Jbe<Op0>(Op0);
+pub struct Jbe<Op0>(pub Op0);
 
 /// jbe rel8: Jump short if below or equal (CF=1 or ZF=1).
-impl WriteInst for Jbe<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jbe<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 76 cb
         put(w, 0x76)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9343,8 +9343,8 @@ impl WriteInst for Jbe<i8> {
 }
 
 /// jbe rel32: Jump near if below or equal (CF=1 or ZF=1).
-impl WriteInst for Jbe<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jbe<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 86 cd
         put(w, 0x0F)?;
         put(w, 0x86)?;
@@ -9353,11 +9353,11 @@ impl WriteInst for Jbe<i32> {
     }
 }
 
-pub struct Jc<Op0>(Op0);
+pub struct Jc<Op0>(pub Op0);
 
 /// jc rel8: Jump short if carry (CF=1).
-impl WriteInst for Jc<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jc<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 72 cb
         put(w, 0x72)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9366,8 +9366,8 @@ impl WriteInst for Jc<i8> {
 }
 
 /// jc rel32: Jump near if carry (CF=1).
-impl WriteInst for Jc<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jc<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 82 cd
         put(w, 0x0F)?;
         put(w, 0x82)?;
@@ -9376,11 +9376,11 @@ impl WriteInst for Jc<i32> {
     }
 }
 
-pub struct Je<Op0>(Op0);
+pub struct Je<Op0>(pub Op0);
 
 /// je rel8: Jump short if equal (ZF=1).
-impl WriteInst for Je<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Je<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 74 cb
         put(w, 0x74)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9389,8 +9389,8 @@ impl WriteInst for Je<i8> {
 }
 
 /// je rel32: Jump near if 0 (ZF=1).
-impl WriteInst for Je<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Je<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 84 cd
         put(w, 0x0F)?;
         put(w, 0x84)?;
@@ -9399,11 +9399,11 @@ impl WriteInst for Je<i32> {
     }
 }
 
-pub struct Jecxz<Op0>(Op0);
+pub struct Jecxz<Op0>(pub Op0);
 
 /// jecxz rel8: Jump short if ECX register is 0.
-impl WriteInst for Jecxz<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jecxz<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // E3 cb
         put(w, 0xE3)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9411,11 +9411,11 @@ impl WriteInst for Jecxz<i8> {
     }
 }
 
-pub struct Jg<Op0>(Op0);
+pub struct Jg<Op0>(pub Op0);
 
 /// jg rel8: Jump short if greater (ZF=0 and SF=OF).
-impl WriteInst for Jg<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jg<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 7F cb
         put(w, 0x7F)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9424,8 +9424,8 @@ impl WriteInst for Jg<i8> {
 }
 
 /// jg rel32: Jump near if greater (ZF=0 and SF=OF).
-impl WriteInst for Jg<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jg<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 8F cd
         put(w, 0x0F)?;
         put(w, 0x8F)?;
@@ -9434,11 +9434,11 @@ impl WriteInst for Jg<i32> {
     }
 }
 
-pub struct Jge<Op0>(Op0);
+pub struct Jge<Op0>(pub Op0);
 
 /// jge rel8: Jump short if greater or equal (SF=OF).
-impl WriteInst for Jge<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jge<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 7D cb
         put(w, 0x7D)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9447,8 +9447,8 @@ impl WriteInst for Jge<i8> {
 }
 
 /// jge rel32: Jump near if greater or equal (SF=OF).
-impl WriteInst for Jge<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jge<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 8D cd
         put(w, 0x0F)?;
         put(w, 0x8D)?;
@@ -9457,11 +9457,11 @@ impl WriteInst for Jge<i32> {
     }
 }
 
-pub struct Jl<Op0>(Op0);
+pub struct Jl<Op0>(pub Op0);
 
 /// jl rel8: Jump short if less (SF!= OF).
-impl WriteInst for Jl<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jl<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 7C cb
         put(w, 0x7C)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9470,8 +9470,8 @@ impl WriteInst for Jl<i8> {
 }
 
 /// jl rel32: Jump near if less (SF!= OF).
-impl WriteInst for Jl<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jl<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 8C cd
         put(w, 0x0F)?;
         put(w, 0x8C)?;
@@ -9480,11 +9480,11 @@ impl WriteInst for Jl<i32> {
     }
 }
 
-pub struct Jle<Op0>(Op0);
+pub struct Jle<Op0>(pub Op0);
 
 /// jle rel8: Jump short if less or equal (ZF=1 or SF!= OF).
-impl WriteInst for Jle<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jle<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 7E cb
         put(w, 0x7E)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9493,8 +9493,8 @@ impl WriteInst for Jle<i8> {
 }
 
 /// jle rel32: Jump near if less or equal (ZF=1 or SF!= OF).
-impl WriteInst for Jle<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jle<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 8E cd
         put(w, 0x0F)?;
         put(w, 0x8E)?;
@@ -9503,11 +9503,11 @@ impl WriteInst for Jle<i32> {
     }
 }
 
-pub struct Jmpq<Op0>(Op0);
+pub struct Jmpq<Op0>(pub Op0);
 
 /// jmpq rel8: Jump short, RIP = RIP + 8-bit displacement sign extended to 64-bits
-impl WriteInst for Jmpq<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jmpq<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // EB cb
         put(w, 0xEB)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9516,8 +9516,8 @@ impl WriteInst for Jmpq<i8> {
 }
 
 /// jmpq rel32: Jump near, relative, RIP = RIP + 32-bit displacement sign extended to 64-bits
-impl WriteInst for Jmpq<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jmpq<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // E9 cd
         put(w, 0xE9)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9526,8 +9526,8 @@ impl WriteInst for Jmpq<i32> {
 }
 
 /// jmpq r64: Jump near, absolute indirect, RIP = 64-Bit offset from register or memory
-impl WriteInst for Jmpq<Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jmpq<Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // FF /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -9540,8 +9540,8 @@ impl WriteInst for Jmpq<Gpr64> {
 }
 
 /// jmpq m64: Jump near, absolute indirect, RIP = 64-Bit offset from register or memory
-impl WriteInst for Jmpq<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jmpq<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // FF /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -9553,11 +9553,11 @@ impl WriteInst for Jmpq<Memory> {
     }
 }
 
-pub struct Jna<Op0>(Op0);
+pub struct Jna<Op0>(pub Op0);
 
 /// jna rel8: Jump short if not above (CF=1 or ZF=1).
-impl WriteInst for Jna<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jna<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 76 cb
         put(w, 0x76)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9566,8 +9566,8 @@ impl WriteInst for Jna<i8> {
 }
 
 /// jna rel32: Jump near if not above (CF=1 or ZF=1).
-impl WriteInst for Jna<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jna<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 86 cd
         put(w, 0x0F)?;
         put(w, 0x86)?;
@@ -9576,11 +9576,11 @@ impl WriteInst for Jna<i32> {
     }
 }
 
-pub struct Jnae<Op0>(Op0);
+pub struct Jnae<Op0>(pub Op0);
 
 /// jnae rel8: Jump short if not above or equal (CF=1).
-impl WriteInst for Jnae<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jnae<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 72 cb
         put(w, 0x72)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9589,8 +9589,8 @@ impl WriteInst for Jnae<i8> {
 }
 
 /// jnae rel32: Jump near if not above or equal (CF=1).
-impl WriteInst for Jnae<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jnae<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 82 cd
         put(w, 0x0F)?;
         put(w, 0x82)?;
@@ -9599,11 +9599,11 @@ impl WriteInst for Jnae<i32> {
     }
 }
 
-pub struct Jnb<Op0>(Op0);
+pub struct Jnb<Op0>(pub Op0);
 
 /// jnb rel8: Jump short if not below (CF=0).
-impl WriteInst for Jnb<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jnb<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 73 cb
         put(w, 0x73)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9612,8 +9612,8 @@ impl WriteInst for Jnb<i8> {
 }
 
 /// jnb rel32: Jump near if not below (CF=0).
-impl WriteInst for Jnb<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jnb<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 83 cd
         put(w, 0x0F)?;
         put(w, 0x83)?;
@@ -9622,11 +9622,11 @@ impl WriteInst for Jnb<i32> {
     }
 }
 
-pub struct Jnbe<Op0>(Op0);
+pub struct Jnbe<Op0>(pub Op0);
 
 /// jnbe rel8: Jump short if not below or equal (CF=0 and ZF=0).
-impl WriteInst for Jnbe<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jnbe<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 77 cb
         put(w, 0x77)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9635,8 +9635,8 @@ impl WriteInst for Jnbe<i8> {
 }
 
 /// jnbe rel32: Jump near if not below or equal (CF=0 and ZF=0).
-impl WriteInst for Jnbe<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jnbe<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 87 cd
         put(w, 0x0F)?;
         put(w, 0x87)?;
@@ -9645,11 +9645,11 @@ impl WriteInst for Jnbe<i32> {
     }
 }
 
-pub struct Jnc<Op0>(Op0);
+pub struct Jnc<Op0>(pub Op0);
 
 /// jnc rel8: Jump short if not carry (CF=0).
-impl WriteInst for Jnc<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jnc<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 73 cb
         put(w, 0x73)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9658,8 +9658,8 @@ impl WriteInst for Jnc<i8> {
 }
 
 /// jnc rel32: Jump near if not carry (CF=0).
-impl WriteInst for Jnc<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jnc<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 83 cd
         put(w, 0x0F)?;
         put(w, 0x83)?;
@@ -9668,11 +9668,11 @@ impl WriteInst for Jnc<i32> {
     }
 }
 
-pub struct Jne<Op0>(Op0);
+pub struct Jne<Op0>(pub Op0);
 
 /// jne rel8: Jump short if not equal (ZF=0).
-impl WriteInst for Jne<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jne<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 75 cb
         put(w, 0x75)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9681,8 +9681,8 @@ impl WriteInst for Jne<i8> {
 }
 
 /// jne rel32: Jump near if not equal (ZF=0).
-impl WriteInst for Jne<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jne<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 85 cd
         put(w, 0x0F)?;
         put(w, 0x85)?;
@@ -9691,11 +9691,11 @@ impl WriteInst for Jne<i32> {
     }
 }
 
-pub struct Jng<Op0>(Op0);
+pub struct Jng<Op0>(pub Op0);
 
 /// jng rel8: Jump short if not greater (ZF=1 or SF!= OF).
-impl WriteInst for Jng<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jng<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 7E cb
         put(w, 0x7E)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9704,8 +9704,8 @@ impl WriteInst for Jng<i8> {
 }
 
 /// jng rel32: Jump near if not greater (ZF=1 or SF != OF).
-impl WriteInst for Jng<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jng<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 8E cd
         put(w, 0x0F)?;
         put(w, 0x8E)?;
@@ -9714,11 +9714,11 @@ impl WriteInst for Jng<i32> {
     }
 }
 
-pub struct Jnge<Op0>(Op0);
+pub struct Jnge<Op0>(pub Op0);
 
 /// jnge rel8: Jump short if not greater or equal (SF!= OF).
-impl WriteInst for Jnge<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jnge<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 7C cb
         put(w, 0x7C)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9727,8 +9727,8 @@ impl WriteInst for Jnge<i8> {
 }
 
 /// jnge rel32: Jump near if not greater or equal (SF != OF).
-impl WriteInst for Jnge<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jnge<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 8C cd
         put(w, 0x0F)?;
         put(w, 0x8C)?;
@@ -9737,11 +9737,11 @@ impl WriteInst for Jnge<i32> {
     }
 }
 
-pub struct Jnl<Op0>(Op0);
+pub struct Jnl<Op0>(pub Op0);
 
 /// jnl rel8: Jump short if not less (SF=OF).
-impl WriteInst for Jnl<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jnl<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 7D cb
         put(w, 0x7D)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9750,8 +9750,8 @@ impl WriteInst for Jnl<i8> {
 }
 
 /// jnl rel32: Jump near if not less (SF=OF).
-impl WriteInst for Jnl<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jnl<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 8D cd
         put(w, 0x0F)?;
         put(w, 0x8D)?;
@@ -9760,11 +9760,11 @@ impl WriteInst for Jnl<i32> {
     }
 }
 
-pub struct Jnle<Op0>(Op0);
+pub struct Jnle<Op0>(pub Op0);
 
 /// jnle rel8: Jump short if not less or equal (ZF=0 and SF=OF).
-impl WriteInst for Jnle<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jnle<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 7F cb
         put(w, 0x7F)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9773,8 +9773,8 @@ impl WriteInst for Jnle<i8> {
 }
 
 /// jnle rel32: Jump near if not less or equal (ZF=0 and SF=OF).
-impl WriteInst for Jnle<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jnle<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 8F cd
         put(w, 0x0F)?;
         put(w, 0x8F)?;
@@ -9783,11 +9783,11 @@ impl WriteInst for Jnle<i32> {
     }
 }
 
-pub struct Jno<Op0>(Op0);
+pub struct Jno<Op0>(pub Op0);
 
 /// jno rel8: Jump short if not overflow (OF=0).
-impl WriteInst for Jno<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jno<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 71 cb
         put(w, 0x71)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9796,8 +9796,8 @@ impl WriteInst for Jno<i8> {
 }
 
 /// jno rel32: Jump near if not overflow (OF=0).
-impl WriteInst for Jno<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jno<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 81 cd
         put(w, 0x0F)?;
         put(w, 0x81)?;
@@ -9806,11 +9806,11 @@ impl WriteInst for Jno<i32> {
     }
 }
 
-pub struct Jnp<Op0>(Op0);
+pub struct Jnp<Op0>(pub Op0);
 
 /// jnp rel8: Jump short if not parity (PF=0).
-impl WriteInst for Jnp<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jnp<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 7B cb
         put(w, 0x7B)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9819,8 +9819,8 @@ impl WriteInst for Jnp<i8> {
 }
 
 /// jnp rel32: Jump near if not parity (PF=0).
-impl WriteInst for Jnp<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jnp<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 8B cd
         put(w, 0x0F)?;
         put(w, 0x8B)?;
@@ -9829,11 +9829,11 @@ impl WriteInst for Jnp<i32> {
     }
 }
 
-pub struct Jns<Op0>(Op0);
+pub struct Jns<Op0>(pub Op0);
 
 /// jns rel8: Jump short if not sign (SF=0).
-impl WriteInst for Jns<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jns<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 79 cb
         put(w, 0x79)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9842,8 +9842,8 @@ impl WriteInst for Jns<i8> {
 }
 
 /// jns rel32: Jump near if not sign (SF=0).
-impl WriteInst for Jns<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jns<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 89 cd
         put(w, 0x0F)?;
         put(w, 0x89)?;
@@ -9852,11 +9852,11 @@ impl WriteInst for Jns<i32> {
     }
 }
 
-pub struct Jnz<Op0>(Op0);
+pub struct Jnz<Op0>(pub Op0);
 
 /// jnz rel8: Jump short if not zero (ZF=0).
-impl WriteInst for Jnz<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jnz<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 75 cb
         put(w, 0x75)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9865,8 +9865,8 @@ impl WriteInst for Jnz<i8> {
 }
 
 /// jnz rel32: Jump near if not zero (ZF=0).
-impl WriteInst for Jnz<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jnz<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 85 cd
         put(w, 0x0F)?;
         put(w, 0x85)?;
@@ -9875,11 +9875,11 @@ impl WriteInst for Jnz<i32> {
     }
 }
 
-pub struct Jo<Op0>(Op0);
+pub struct Jo<Op0>(pub Op0);
 
 /// jo rel8: Jump short if overflow (OF=1).
-impl WriteInst for Jo<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jo<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 70 cb
         put(w, 0x70)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9888,8 +9888,8 @@ impl WriteInst for Jo<i8> {
 }
 
 /// jo rel32: Jump near if overflow (OF=1).
-impl WriteInst for Jo<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jo<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 80 cd
         put(w, 0x0F)?;
         put(w, 0x80)?;
@@ -9898,11 +9898,11 @@ impl WriteInst for Jo<i32> {
     }
 }
 
-pub struct Jp<Op0>(Op0);
+pub struct Jp<Op0>(pub Op0);
 
 /// jp rel8: Jump short if parity (PF=1).
-impl WriteInst for Jp<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jp<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 7A cb
         put(w, 0x7A)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9911,8 +9911,8 @@ impl WriteInst for Jp<i8> {
 }
 
 /// jp rel32: Jump near if parity (PF=1).
-impl WriteInst for Jp<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jp<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 8A cd
         put(w, 0x0F)?;
         put(w, 0x8A)?;
@@ -9921,11 +9921,11 @@ impl WriteInst for Jp<i32> {
     }
 }
 
-pub struct Jpe<Op0>(Op0);
+pub struct Jpe<Op0>(pub Op0);
 
 /// jpe rel8: Jump short if parity even (PF=1).
-impl WriteInst for Jpe<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jpe<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 7A cb
         put(w, 0x7A)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9934,8 +9934,8 @@ impl WriteInst for Jpe<i8> {
 }
 
 /// jpe rel32: Jump near if parity even (PF=1).
-impl WriteInst for Jpe<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jpe<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 8A cd
         put(w, 0x0F)?;
         put(w, 0x8A)?;
@@ -9944,11 +9944,11 @@ impl WriteInst for Jpe<i32> {
     }
 }
 
-pub struct Jpo<Op0>(Op0);
+pub struct Jpo<Op0>(pub Op0);
 
 /// jpo rel8: Jump short if parity odd (PF=0).
-impl WriteInst for Jpo<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jpo<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 7B cb
         put(w, 0x7B)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9957,8 +9957,8 @@ impl WriteInst for Jpo<i8> {
 }
 
 /// jpo rel32: Jump near if parity odd (PF=0).
-impl WriteInst for Jpo<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jpo<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 8B cd
         put(w, 0x0F)?;
         put(w, 0x8B)?;
@@ -9967,11 +9967,11 @@ impl WriteInst for Jpo<i32> {
     }
 }
 
-pub struct Jrcxz<Op0>(Op0);
+pub struct Jrcxz<Op0>(pub Op0);
 
 /// jrcxz rel8: Jump short if RCX register is 0.
-impl WriteInst for Jrcxz<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jrcxz<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // E3 cb
         put(w, 0xE3)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9979,11 +9979,11 @@ impl WriteInst for Jrcxz<i8> {
     }
 }
 
-pub struct Js<Op0>(Op0);
+pub struct Js<Op0>(pub Op0);
 
 /// js rel8: Jump short if sign (SF=1).
-impl WriteInst for Js<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Js<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 78 cb
         put(w, 0x78)?;
         puts(w, self.0.to_le_bytes())?;
@@ -9992,8 +9992,8 @@ impl WriteInst for Js<i8> {
 }
 
 /// js rel32: Jump near if sign (SF=1).
-impl WriteInst for Js<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Js<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 88 cd
         put(w, 0x0F)?;
         put(w, 0x88)?;
@@ -10002,11 +10002,11 @@ impl WriteInst for Js<i32> {
     }
 }
 
-pub struct Jz<Op0>(Op0);
+pub struct Jz<Op0>(pub Op0);
 
 /// jz rel8: Jump short if zero (ZF = 1).
-impl WriteInst for Jz<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jz<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 74 cb
         put(w, 0x74)?;
         puts(w, self.0.to_le_bytes())?;
@@ -10015,8 +10015,8 @@ impl WriteInst for Jz<i8> {
 }
 
 /// jz rel32: Jump near if 0 (ZF=1).
-impl WriteInst for Jz<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Jz<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 84 cd
         put(w, 0x0F)?;
         put(w, 0x84)?;
@@ -10025,11 +10025,11 @@ impl WriteInst for Jz<i32> {
     }
 }
 
-pub struct Ldmxcsr<Op0>(Op0);
+pub struct Ldmxcsr<Op0>(pub Op0);
 
 /// ldmxcsr m32: Load MXCSR register from m32.
-impl WriteInst for Ldmxcsr<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Ldmxcsr<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F AE /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -10042,11 +10042,11 @@ impl WriteInst for Ldmxcsr<Memory> {
     }
 }
 
-pub struct Leal<Op0, Op1>(Op0, Op1);
+pub struct Leal<Op0, Op1>(pub Op0, pub Op1);
 
 /// leal r32 m: Store effective address for m in register r32.
-impl WriteInst for Leal<Gpr32, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Leal<Gpr32, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 8D /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -10058,11 +10058,11 @@ impl WriteInst for Leal<Gpr32, Memory> {
     }
 }
 
-pub struct Leaq<Op0, Op1>(Op0, Op1);
+pub struct Leaq<Op0, Op1>(pub Op0, pub Op1);
 
 /// leaq r64 m: Store effective address for m in register r64.
-impl WriteInst for Leaq<Gpr64, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Leaq<Gpr64, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 8D /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -10077,8 +10077,8 @@ impl WriteInst for Leaq<Gpr64, Memory> {
 pub struct Leaveq();
 
 /// leaveq: Set RSP to RBP, then pop RBP.
-impl WriteInst for Leaveq {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Leaveq {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C9
         put(w, 0xC9)?;
         Ok(())
@@ -10088,8 +10088,8 @@ impl WriteInst for Leaveq {
 pub struct Leavew();
 
 /// leavew: Set SP to BP, then pop BP.
-impl WriteInst for Leavew {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Leavew {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 C9
         put(w, 0x66)?;
         put(w, 0xC9)?;
@@ -10097,11 +10097,11 @@ impl WriteInst for Leavew {
     }
 }
 
-pub struct Leaw<Op0, Op1>(Op0, Op1);
+pub struct Leaw<Op0, Op1>(pub Op0, pub Op1);
 
 /// leaw r16 m: Store effective address for m in register r16.
-impl WriteInst for Leaw<Gpr16, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Leaw<Gpr16, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 8D /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -10117,8 +10117,8 @@ impl WriteInst for Leaw<Gpr16, Memory> {
 pub struct Lfence();
 
 /// lfence: Serializes load operations.
-impl WriteInst for Lfence {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Lfence {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F AE E8
         put(w, 0x0F)?;
         put(w, 0xAE)?;
@@ -10127,11 +10127,11 @@ impl WriteInst for Lfence {
     }
 }
 
-pub struct Lmsw<Op0>(Op0);
+pub struct Lmsw<Op0>(pub Op0);
 
 /// lmsw r16: Loads r/m16 in machine status word of CR0.
-impl WriteInst for Lmsw<Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Lmsw<Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 01 /6
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -10145,8 +10145,8 @@ impl WriteInst for Lmsw<Gpr16> {
 }
 
 /// lmsw m16: Loads r/m16 in machine status word of CR0.
-impl WriteInst for Lmsw<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Lmsw<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 01 /6
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -10162,19 +10162,19 @@ impl WriteInst for Lmsw<Memory> {
 pub struct Lock();
 
 /// lock: Asserts LOCK# signal for duration of the accompanying instruction.
-impl WriteInst for Lock {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Lock {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F0
         put(w, 0xF0)?;
         Ok(())
     }
 }
 
-pub struct Maskmovdqu<Op0, Op1>(Op0, Op1);
+pub struct Maskmovdqu<Op0, Op1>(pub Op0, pub Op1);
 
 /// maskmovdqu xmm xmm: Selectively write bytes from xmm1 to memory location using the byte mask in xmm2. The default memory location is specified by DS:DI/EDI/RDI.
-impl WriteInst for Maskmovdqu<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Maskmovdqu<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F F7 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -10188,11 +10188,11 @@ impl WriteInst for Maskmovdqu<Xmm, Xmm> {
     }
 }
 
-pub struct Maxpd<Op0, Op1>(Op0, Op1);
+pub struct Maxpd<Op0, Op1>(pub Op0, pub Op1);
 
 /// maxpd xmm xmm: Return the maximum double-precision floating-point values between xmm2/m128 and xmm1.
-impl WriteInst for Maxpd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Maxpd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 5F /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -10207,8 +10207,8 @@ impl WriteInst for Maxpd<Xmm, Xmm> {
 }
 
 /// maxpd xmm m128: Return the maximum double-precision floating-point values between xmm2/m128 and xmm1.
-impl WriteInst for Maxpd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Maxpd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 5F /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -10222,11 +10222,11 @@ impl WriteInst for Maxpd<Xmm, Memory> {
     }
 }
 
-pub struct Maxps<Op0, Op1>(Op0, Op1);
+pub struct Maxps<Op0, Op1>(pub Op0, pub Op1);
 
 /// maxps xmm xmm: Return the maximum single-precision floating-point values between xmm2/m128 and xmm1.
-impl WriteInst for Maxps<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Maxps<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 5F /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -10240,8 +10240,8 @@ impl WriteInst for Maxps<Xmm, Xmm> {
 }
 
 /// maxps xmm m128: Return the maximum single-precision floating-point values between xmm2/m128 and xmm1.
-impl WriteInst for Maxps<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Maxps<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 5F /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -10254,11 +10254,11 @@ impl WriteInst for Maxps<Xmm, Memory> {
     }
 }
 
-pub struct Maxsd<Op0, Op1>(Op0, Op1);
+pub struct Maxsd<Op0, Op1>(pub Op0, pub Op1);
 
 /// maxsd xmm xmm: Return the maximum scalar double-precision floating-point value between xmm2/mem64 and xmm1.
-impl WriteInst for Maxsd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Maxsd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 5F /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -10273,8 +10273,8 @@ impl WriteInst for Maxsd<Xmm, Xmm> {
 }
 
 /// maxsd xmm m64: Return the maximum scalar double-precision floating-point value between xmm2/mem64 and xmm1.
-impl WriteInst for Maxsd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Maxsd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 5F /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -10288,11 +10288,11 @@ impl WriteInst for Maxsd<Xmm, Memory> {
     }
 }
 
-pub struct Maxss<Op0, Op1>(Op0, Op1);
+pub struct Maxss<Op0, Op1>(pub Op0, pub Op1);
 
 /// maxss xmm xmm: Return the maximum scalar single-precision floating-point value between xmm2/mem32 and xmm1.
-impl WriteInst for Maxss<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Maxss<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 5F /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -10307,8 +10307,8 @@ impl WriteInst for Maxss<Xmm, Xmm> {
 }
 
 /// maxss xmm m32: Return the maximum scalar single-precision floating-point value between xmm2/mem32 and xmm1.
-impl WriteInst for Maxss<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Maxss<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 5F /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -10325,8 +10325,8 @@ impl WriteInst for Maxss<Xmm, Memory> {
 pub struct Mfence();
 
 /// mfence: Serializes load and store operations.
-impl WriteInst for Mfence {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Mfence {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F AE F0
         put(w, 0x0F)?;
         put(w, 0xAE)?;
@@ -10335,11 +10335,11 @@ impl WriteInst for Mfence {
     }
 }
 
-pub struct Minpd<Op0, Op1>(Op0, Op1);
+pub struct Minpd<Op0, Op1>(pub Op0, pub Op1);
 
 /// minpd xmm xmm: Return the minimum double-precision floating-point values between xmm2/m128 and xmm1.
-impl WriteInst for Minpd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Minpd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 5D /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -10354,8 +10354,8 @@ impl WriteInst for Minpd<Xmm, Xmm> {
 }
 
 /// minpd xmm m128: Return the minimum double-precision floating-point values between xmm2/m128 and xmm1.
-impl WriteInst for Minpd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Minpd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 5D /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -10369,11 +10369,11 @@ impl WriteInst for Minpd<Xmm, Memory> {
     }
 }
 
-pub struct Minps<Op0, Op1>(Op0, Op1);
+pub struct Minps<Op0, Op1>(pub Op0, pub Op1);
 
 /// minps xmm xmm: Return the minimum single-precision floating-point values between xmm2/m128 and xmm1.
-impl WriteInst for Minps<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Minps<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 5D /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -10387,8 +10387,8 @@ impl WriteInst for Minps<Xmm, Xmm> {
 }
 
 /// minps xmm m128: Return the minimum single-precision floating-point values between xmm2/m128 and xmm1.
-impl WriteInst for Minps<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Minps<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 5D /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -10401,11 +10401,11 @@ impl WriteInst for Minps<Xmm, Memory> {
     }
 }
 
-pub struct Minsd<Op0, Op1>(Op0, Op1);
+pub struct Minsd<Op0, Op1>(pub Op0, pub Op1);
 
 /// minsd xmm xmm: Return the minimum scalar double-precision floating-point value between xmm2/mem64 and xmm1.
-impl WriteInst for Minsd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Minsd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 5D /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -10420,8 +10420,8 @@ impl WriteInst for Minsd<Xmm, Xmm> {
 }
 
 /// minsd xmm m64: Return the minimum scalar double-precision floating-point value between xmm2/mem64 and xmm1.
-impl WriteInst for Minsd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Minsd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 5D /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -10435,11 +10435,11 @@ impl WriteInst for Minsd<Xmm, Memory> {
     }
 }
 
-pub struct Minss<Op0, Op1>(Op0, Op1);
+pub struct Minss<Op0, Op1>(pub Op0, pub Op1);
 
 /// minss xmm xmm: Return the minimum scalar single-precision floating-point value between xmm2/mem32 and xmm1.
-impl WriteInst for Minss<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Minss<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 5D /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -10454,8 +10454,8 @@ impl WriteInst for Minss<Xmm, Xmm> {
 }
 
 /// minss xmm m32: Return the minimum scalar single-precision floating-point value between xmm2/mem32 and xmm1.
-impl WriteInst for Minss<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Minss<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 5D /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -10469,11 +10469,11 @@ impl WriteInst for Minss<Xmm, Memory> {
     }
 }
 
-pub struct Movapd<Op0, Op1>(Op0, Op1);
+pub struct Movapd<Op0, Op1>(pub Op0, pub Op1);
 
 /// movapd xmm xmm: Move packed double-precision floating-point values from xmm2/m128 to xmm1.
-impl WriteInst for Movapd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movapd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 28 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -10488,8 +10488,8 @@ impl WriteInst for Movapd<Xmm, Xmm> {
 }
 
 /// movapd xmm m128: Move packed double-precision floating-point values from xmm2/m128 to xmm1.
-impl WriteInst for Movapd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movapd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 28 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -10504,8 +10504,8 @@ impl WriteInst for Movapd<Xmm, Memory> {
 }
 
 /// movapd m128 xmm: Move packed double-precision floating-point values from xmm1 to xmm2/m128.
-impl WriteInst for Movapd<Memory, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movapd<Memory, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 29 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -10519,11 +10519,11 @@ impl WriteInst for Movapd<Memory, Xmm> {
     }
 }
 
-pub struct Movaps<Op0, Op1>(Op0, Op1);
+pub struct Movaps<Op0, Op1>(pub Op0, pub Op1);
 
 /// movaps xmm xmm: Move packed single-precision floating-point values from xmm2/m128 to xmm1.
-impl WriteInst for Movaps<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movaps<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 28 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -10537,8 +10537,8 @@ impl WriteInst for Movaps<Xmm, Xmm> {
 }
 
 /// movaps xmm m128: Move packed single-precision floating-point values from xmm2/m128 to xmm1.
-impl WriteInst for Movaps<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movaps<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 28 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -10552,8 +10552,8 @@ impl WriteInst for Movaps<Xmm, Memory> {
 }
 
 /// movaps m128 xmm: Move packed single-precision floating-point values from xmm1 to xmm2/m128.
-impl WriteInst for Movaps<Memory, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movaps<Memory, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 29 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -10566,11 +10566,11 @@ impl WriteInst for Movaps<Memory, Xmm> {
     }
 }
 
-pub struct Movb<Op0, Op1>(Op0, Op1);
+pub struct Movb<Op0, Op1>(pub Op0, pub Op1);
 
 /// movb r8 imm8: Move imm8 to r8.
-impl WriteInst for Movb<Gpr8, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movb<Gpr8, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // B0 +rb ib
         let rio = RegInOpcode::from(self.0);
         puts(w, rio.rex_byte(false))?;
@@ -10581,8 +10581,8 @@ impl WriteInst for Movb<Gpr8, i8> {
 }
 
 /// movb r8 r8: Move r/m8 to r8.
-impl WriteInst for Movb<Gpr8, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movb<Gpr8, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 8A /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -10595,8 +10595,8 @@ impl WriteInst for Movb<Gpr8, Gpr8> {
 }
 
 /// movb r8 m8: Move r/m8 to r8.
-impl WriteInst for Movb<Gpr8, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movb<Gpr8, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 8A /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -10609,8 +10609,8 @@ impl WriteInst for Movb<Gpr8, Memory> {
 }
 
 /// movb m8 r8: Move r8 to r/m8.
-impl WriteInst for Movb<Memory, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movb<Memory, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 88 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -10623,8 +10623,8 @@ impl WriteInst for Movb<Memory, Gpr8> {
 }
 
 /// movb m8 imm8: Move imm8 to r/m8.
-impl WriteInst for Movb<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movb<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C6 /0 ib
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -10637,11 +10637,11 @@ impl WriteInst for Movb<Memory, i8> {
     }
 }
 
-pub struct Movd<Op0, Op1>(Op0, Op1);
+pub struct Movd<Op0, Op1>(pub Op0, pub Op1);
 
 /// movd r32 xmm: Move doubleword from xmm register to r/m32.
-impl WriteInst for Movd<Gpr32, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movd<Gpr32, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 7E /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -10656,8 +10656,8 @@ impl WriteInst for Movd<Gpr32, Xmm> {
 }
 
 /// movd m32 xmm: Move doubleword from xmm register to r/m32.
-impl WriteInst for Movd<Memory, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movd<Memory, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 7E /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -10672,8 +10672,8 @@ impl WriteInst for Movd<Memory, Xmm> {
 }
 
 /// movd xmm r32: Move doubleword from r/m32 to xmm.
-impl WriteInst for Movd<Xmm, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movd<Xmm, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 6E /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -10688,8 +10688,8 @@ impl WriteInst for Movd<Xmm, Gpr32> {
 }
 
 /// movd xmm m32: Move doubleword from r/m32 to xmm.
-impl WriteInst for Movd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 6E /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -10703,11 +10703,11 @@ impl WriteInst for Movd<Xmm, Memory> {
     }
 }
 
-pub struct Movdqa<Op0, Op1>(Op0, Op1);
+pub struct Movdqa<Op0, Op1>(pub Op0, pub Op1);
 
 /// movdqa xmm xmm: Move aligned double quadword from xmm2/m128 to xmm1.
-impl WriteInst for Movdqa<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movdqa<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 6F /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -10722,8 +10722,8 @@ impl WriteInst for Movdqa<Xmm, Xmm> {
 }
 
 /// movdqa xmm m128: Move aligned double quadword from xmm2/m128 to xmm1.
-impl WriteInst for Movdqa<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movdqa<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 6F /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -10738,8 +10738,8 @@ impl WriteInst for Movdqa<Xmm, Memory> {
 }
 
 /// movdqa m128 xmm: Move aligned double quadword from xmm1 to xmm2/m128.
-impl WriteInst for Movdqa<Memory, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movdqa<Memory, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 7F /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -10753,11 +10753,11 @@ impl WriteInst for Movdqa<Memory, Xmm> {
     }
 }
 
-pub struct Movdqu<Op0, Op1>(Op0, Op1);
+pub struct Movdqu<Op0, Op1>(pub Op0, pub Op1);
 
 /// movdqu xmm xmm: Move unaligned double quadword from xmm2/m128 to xmm1.
-impl WriteInst for Movdqu<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movdqu<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 6F /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -10772,8 +10772,8 @@ impl WriteInst for Movdqu<Xmm, Xmm> {
 }
 
 /// movdqu xmm m128: Move unaligned double quadword from xmm2/m128 to xmm1.
-impl WriteInst for Movdqu<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movdqu<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 6F /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -10788,8 +10788,8 @@ impl WriteInst for Movdqu<Xmm, Memory> {
 }
 
 /// movdqu m128 xmm: Move unaligned double quadword from xmm1 to xmm2/m128.
-impl WriteInst for Movdqu<Memory, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movdqu<Memory, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 7F /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0xF3)?;
@@ -10803,11 +10803,11 @@ impl WriteInst for Movdqu<Memory, Xmm> {
     }
 }
 
-pub struct Movhlps<Op0, Op1>(Op0, Op1);
+pub struct Movhlps<Op0, Op1>(pub Op0, pub Op1);
 
 /// movhlps xmm xmm: Move two packed single-precision floating-point values from high quadword of xmm2 to low quadword of xmm1.
-impl WriteInst for Movhlps<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movhlps<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 12 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -10820,11 +10820,11 @@ impl WriteInst for Movhlps<Xmm, Xmm> {
     }
 }
 
-pub struct Movhpd<Op0, Op1>(Op0, Op1);
+pub struct Movhpd<Op0, Op1>(pub Op0, pub Op1);
 
 /// movhpd m64 xmm: Move double-precision floating-point value from high quadword of xmm to m64.
-impl WriteInst for Movhpd<Memory, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movhpd<Memory, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 17 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -10839,8 +10839,8 @@ impl WriteInst for Movhpd<Memory, Xmm> {
 }
 
 /// movhpd xmm m64: Move double-precision floating-point value from m64 to high quadword of xmm.
-impl WriteInst for Movhpd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movhpd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 16 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -10854,11 +10854,11 @@ impl WriteInst for Movhpd<Xmm, Memory> {
     }
 }
 
-pub struct Movhps<Op0, Op1>(Op0, Op1);
+pub struct Movhps<Op0, Op1>(pub Op0, pub Op1);
 
 /// movhps m64 xmm: Move two packed single-precision floating-point values from high quadword of xmm to m64.
-impl WriteInst for Movhps<Memory, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movhps<Memory, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 17 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -10872,8 +10872,8 @@ impl WriteInst for Movhps<Memory, Xmm> {
 }
 
 /// movhps xmm m64: Move two packed single-precision floating-point values from m64 to high quadword of xmm.
-impl WriteInst for Movhps<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movhps<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 16 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -10886,11 +10886,11 @@ impl WriteInst for Movhps<Xmm, Memory> {
     }
 }
 
-pub struct Movl<Op0, Op1>(Op0, Op1);
+pub struct Movl<Op0, Op1>(pub Op0, pub Op1);
 
 /// movl r32 imm32: Move imm32 to r32.
-impl WriteInst for Movl<Gpr32, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movl<Gpr32, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // B8 +rd id
         let rio = RegInOpcode::from(self.0);
         puts(w, rio.rex_byte(false))?;
@@ -10901,8 +10901,8 @@ impl WriteInst for Movl<Gpr32, i32> {
 }
 
 /// movl r32 r32: Move r/m32 to r32.
-impl WriteInst for Movl<Gpr32, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movl<Gpr32, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 8B /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -10915,8 +10915,8 @@ impl WriteInst for Movl<Gpr32, Gpr32> {
 }
 
 /// movl r32 m32: Move r/m32 to r32.
-impl WriteInst for Movl<Gpr32, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movl<Gpr32, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 8B /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -10929,8 +10929,8 @@ impl WriteInst for Movl<Gpr32, Memory> {
 }
 
 /// movl m32 r32: Move r32 to r/m32.
-impl WriteInst for Movl<Memory, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movl<Memory, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 89 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -10943,8 +10943,8 @@ impl WriteInst for Movl<Memory, Gpr32> {
 }
 
 /// movl m32 imm32: Move imm32 to r/m32.
-impl WriteInst for Movl<Memory, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movl<Memory, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C7 /0 id
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -10957,11 +10957,11 @@ impl WriteInst for Movl<Memory, i32> {
     }
 }
 
-pub struct Movlhps<Op0, Op1>(Op0, Op1);
+pub struct Movlhps<Op0, Op1>(pub Op0, pub Op1);
 
 /// movlhps xmm xmm: Move two packed single-precision floating-point values from low quadword of xmm2 to high quadword of xmm1.
-impl WriteInst for Movlhps<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movlhps<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 16 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -10974,11 +10974,11 @@ impl WriteInst for Movlhps<Xmm, Xmm> {
     }
 }
 
-pub struct Movlpd<Op0, Op1>(Op0, Op1);
+pub struct Movlpd<Op0, Op1>(pub Op0, pub Op1);
 
 /// movlpd m64 xmm: Move double-precision floating-point nvalue from low quadword of xmm register to m64.
-impl WriteInst for Movlpd<Memory, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movlpd<Memory, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 13 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -10993,8 +10993,8 @@ impl WriteInst for Movlpd<Memory, Xmm> {
 }
 
 /// movlpd xmm m64: Move double-precision floating-point value from m64 to low quadword of xmm register.
-impl WriteInst for Movlpd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movlpd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 12 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -11008,11 +11008,11 @@ impl WriteInst for Movlpd<Xmm, Memory> {
     }
 }
 
-pub struct Movlps<Op0, Op1>(Op0, Op1);
+pub struct Movlps<Op0, Op1>(pub Op0, pub Op1);
 
 /// movlps m64 xmm: Move two packed single-precision floating-point values from low quadword of xmm to m64.
-impl WriteInst for Movlps<Memory, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movlps<Memory, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 13 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -11026,8 +11026,8 @@ impl WriteInst for Movlps<Memory, Xmm> {
 }
 
 /// movlps xmm m64: Move two packed single-precision floating-point values from m64 to low quadword of xmm.
-impl WriteInst for Movlps<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movlps<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 12 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -11040,11 +11040,11 @@ impl WriteInst for Movlps<Xmm, Memory> {
     }
 }
 
-pub struct Movmskpd<Op0, Op1>(Op0, Op1);
+pub struct Movmskpd<Op0, Op1>(pub Op0, pub Op1);
 
 /// movmskpd reg xmm: Extract 2-bit sign mask from xmm and store in reg. The upper bits of r32 or r64 are filled with zeros.
-impl WriteInst for Movmskpd<Gpr64, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movmskpd<Gpr64, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 50 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -11058,11 +11058,11 @@ impl WriteInst for Movmskpd<Gpr64, Xmm> {
     }
 }
 
-pub struct Movmskps<Op0, Op1>(Op0, Op1);
+pub struct Movmskps<Op0, Op1>(pub Op0, pub Op1);
 
 /// movmskps reg xmm: Extract 4-bit sign mask from xmm and store in reg. The upper bits of r32 or r64 are filled with zeros.
-impl WriteInst for Movmskps<Gpr64, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movmskps<Gpr64, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 50 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -11075,11 +11075,11 @@ impl WriteInst for Movmskps<Gpr64, Xmm> {
     }
 }
 
-pub struct Movntdq<Op0, Op1>(Op0, Op1);
+pub struct Movntdq<Op0, Op1>(pub Op0, pub Op1);
 
 /// movntdq m128 xmm: Move double quadword from xmm to m128 using non-temporal hint.
-impl WriteInst for Movntdq<Memory, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movntdq<Memory, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F E7 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -11093,11 +11093,11 @@ impl WriteInst for Movntdq<Memory, Xmm> {
     }
 }
 
-pub struct Movntdqa<Op0, Op1>(Op0, Op1);
+pub struct Movntdqa<Op0, Op1>(pub Op0, pub Op1);
 
 /// movntdqa xmm m128: Move double quadword from m128 to xmm using non-temporal hint if WC memory type.
-impl WriteInst for Movntdqa<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movntdqa<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 2A /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -11112,11 +11112,11 @@ impl WriteInst for Movntdqa<Xmm, Memory> {
     }
 }
 
-pub struct Movnti<Op0, Op1>(Op0, Op1);
+pub struct Movnti<Op0, Op1>(pub Op0, pub Op1);
 
 /// movnti m32 r32: Move doubleword from r32 to m32 using non-temporal hint.
-impl WriteInst for Movnti<Memory, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movnti<Memory, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F C3 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -11130,8 +11130,8 @@ impl WriteInst for Movnti<Memory, Gpr32> {
 }
 
 /// movnti m64 r64: Move quadword from r64 to m64 using non-temporal hint.
-impl WriteInst for Movnti<Memory, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movnti<Memory, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F C3 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -11144,11 +11144,11 @@ impl WriteInst for Movnti<Memory, Gpr64> {
     }
 }
 
-pub struct Movntpd<Op0, Op1>(Op0, Op1);
+pub struct Movntpd<Op0, Op1>(pub Op0, pub Op1);
 
 /// movntpd m128 xmm: Move packed double-precision floating-point values from xmm to m128 using non-temporal hint.
-impl WriteInst for Movntpd<Memory, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movntpd<Memory, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 2B /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -11162,11 +11162,11 @@ impl WriteInst for Movntpd<Memory, Xmm> {
     }
 }
 
-pub struct Movntps<Op0, Op1>(Op0, Op1);
+pub struct Movntps<Op0, Op1>(pub Op0, pub Op1);
 
 /// movntps m128 xmm: Move packed single-precision floating-point values from xmm to m128 using non-temporal hint.
-impl WriteInst for Movntps<Memory, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movntps<Memory, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 2B /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -11179,11 +11179,11 @@ impl WriteInst for Movntps<Memory, Xmm> {
     }
 }
 
-pub struct Movq<Op0, Op1>(Op0, Op1);
+pub struct Movq<Op0, Op1>(pub Op0, pub Op1);
 
 /// movq r64 imm64: Move imm64 to r64.
-impl WriteInst for Movq<Gpr64, i64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movq<Gpr64, i64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ B8 +ro io
         let rio = RegInOpcode::from(self.0);
         puts(w, rio.rex_byte(true))?;
@@ -11194,8 +11194,8 @@ impl WriteInst for Movq<Gpr64, i64> {
 }
 
 /// movq r64 r64: Move r/m64 to r64.
-impl WriteInst for Movq<Gpr64, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movq<Gpr64, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 8B /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -11208,8 +11208,8 @@ impl WriteInst for Movq<Gpr64, Gpr64> {
 }
 
 /// movq r64 m64: Move r/m64 to r64.
-impl WriteInst for Movq<Gpr64, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movq<Gpr64, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 8B /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -11222,8 +11222,8 @@ impl WriteInst for Movq<Gpr64, Memory> {
 }
 
 /// movq m64 r64: Move r64 to r/m64.
-impl WriteInst for Movq<Memory, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movq<Memory, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 89 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -11236,8 +11236,8 @@ impl WriteInst for Movq<Memory, Gpr64> {
 }
 
 /// movq r64 imm32: Move imm32 sign extended to 64-bits to r/m64.
-impl WriteInst for Movq<Gpr64, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movq<Gpr64, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ C7 /0 id
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -11251,8 +11251,8 @@ impl WriteInst for Movq<Gpr64, i32> {
 }
 
 /// movq m64 imm32: Move imm32 sign extended to 64-bits to r/m64.
-impl WriteInst for Movq<Memory, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movq<Memory, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ C7 /0 id
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -11266,8 +11266,8 @@ impl WriteInst for Movq<Memory, i32> {
 }
 
 /// movq r64 xmm: Move quadword from xmm register to r/m64.
-impl WriteInst for Movq<Gpr64, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movq<Gpr64, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 REX.W+ 0F 7E /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -11282,8 +11282,8 @@ impl WriteInst for Movq<Gpr64, Xmm> {
 }
 
 /// movq m64 xmm: Move quadword from xmm register to r/m64.
-impl WriteInst for Movq<Memory, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movq<Memory, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 REX.W+ 0F 7E /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -11298,8 +11298,8 @@ impl WriteInst for Movq<Memory, Xmm> {
 }
 
 /// movq xmm r64: Move quadword from r/m64 to xmm.
-impl WriteInst for Movq<Xmm, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movq<Xmm, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 REX.W+ 0F 6E /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -11314,8 +11314,8 @@ impl WriteInst for Movq<Xmm, Gpr64> {
 }
 
 /// movq xmm m64: Move quadword from r/m64 to xmm.
-impl WriteInst for Movq<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movq<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 REX.W+ 0F 6E /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -11330,8 +11330,8 @@ impl WriteInst for Movq<Xmm, Memory> {
 }
 
 /// movq xmm xmm: Move quadword from xmm2/mem64 to xmm1.
-impl WriteInst for Movq<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movq<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 7E /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -11345,11 +11345,11 @@ impl WriteInst for Movq<Xmm, Xmm> {
     }
 }
 
-pub struct Movsbl<Op0, Op1>(Op0, Op1);
+pub struct Movsbl<Op0, Op1>(pub Op0, pub Op1);
 
 /// movsbl r32 r8: Move byte to doubleword with sign-extension.
-impl WriteInst for Movsbl<Gpr32, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movsbl<Gpr32, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F BE /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -11363,8 +11363,8 @@ impl WriteInst for Movsbl<Gpr32, Gpr8> {
 }
 
 /// movsbl r32 m8: Move byte to doubleword with sign-extension.
-impl WriteInst for Movsbl<Gpr32, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movsbl<Gpr32, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F BE /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -11377,11 +11377,11 @@ impl WriteInst for Movsbl<Gpr32, Memory> {
     }
 }
 
-pub struct Movsbq<Op0, Op1>(Op0, Op1);
+pub struct Movsbq<Op0, Op1>(pub Op0, pub Op1);
 
 /// movsbq r64 r8: Move byte to quadword with sign-extension.
-impl WriteInst for Movsbq<Gpr64, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movsbq<Gpr64, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F BE /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -11395,8 +11395,8 @@ impl WriteInst for Movsbq<Gpr64, Gpr8> {
 }
 
 /// movsbq r64 m8: Move byte to quadword with sign-extension.
-impl WriteInst for Movsbq<Gpr64, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movsbq<Gpr64, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F BE /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -11409,11 +11409,11 @@ impl WriteInst for Movsbq<Gpr64, Memory> {
     }
 }
 
-pub struct Movsbw<Op0, Op1>(Op0, Op1);
+pub struct Movsbw<Op0, Op1>(pub Op0, pub Op1);
 
 /// movsbw r16 r8: Move byte to word with sign-extension.
-impl WriteInst for Movsbw<Gpr16, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movsbw<Gpr16, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F BE /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -11428,8 +11428,8 @@ impl WriteInst for Movsbw<Gpr16, Gpr8> {
 }
 
 /// movsbw r16 m8: Move byte to word with sign-extension.
-impl WriteInst for Movsbw<Gpr16, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movsbw<Gpr16, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F BE /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -11443,11 +11443,11 @@ impl WriteInst for Movsbw<Gpr16, Memory> {
     }
 }
 
-pub struct Movsd<Op0, Op1>(Op0, Op1);
+pub struct Movsd<Op0, Op1>(pub Op0, pub Op1);
 
 /// movsd xmm xmm: Move scalar double-precision floating-point value from xmm2/m64 to xmm1 register.
-impl WriteInst for Movsd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movsd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 10 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -11462,8 +11462,8 @@ impl WriteInst for Movsd<Xmm, Xmm> {
 }
 
 /// movsd xmm m64: Move scalar double-precision floating-point value from xmm2/m64 to xmm1 register.
-impl WriteInst for Movsd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movsd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 10 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -11478,8 +11478,8 @@ impl WriteInst for Movsd<Xmm, Memory> {
 }
 
 /// movsd m64 xmm: Move scalar double-precision floating-point value from xmm1 register to xmm2/m64.
-impl WriteInst for Movsd<Memory, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movsd<Memory, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 11 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0xF2)?;
@@ -11496,19 +11496,19 @@ impl WriteInst for Movsd<Memory, Xmm> {
 pub struct Movsl();
 
 /// movsl: For legacy mode, move dword from address DS:(E)SI to ES:(E)DI. For 64-bit mode move dword from address (R|E)SI to (R|E)DI.
-impl WriteInst for Movsl {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movsl {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // A5
         put(w, 0xA5)?;
         Ok(())
     }
 }
 
-pub struct Movswl<Op0, Op1>(Op0, Op1);
+pub struct Movswl<Op0, Op1>(pub Op0, pub Op1);
 
 /// movswl r32 r16: Move word to doubleword, with sign-extension.
-impl WriteInst for Movswl<Gpr32, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movswl<Gpr32, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F BF /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -11522,8 +11522,8 @@ impl WriteInst for Movswl<Gpr32, Gpr16> {
 }
 
 /// movswl r32 m16: Move word to doubleword, with sign-extension.
-impl WriteInst for Movswl<Gpr32, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movswl<Gpr32, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F BF /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -11536,11 +11536,11 @@ impl WriteInst for Movswl<Gpr32, Memory> {
     }
 }
 
-pub struct Movswq<Op0, Op1>(Op0, Op1);
+pub struct Movswq<Op0, Op1>(pub Op0, pub Op1);
 
 /// movswq r64 r16: Move word to quadword with sign-extension.
-impl WriteInst for Movswq<Gpr64, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movswq<Gpr64, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F BF /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -11554,8 +11554,8 @@ impl WriteInst for Movswq<Gpr64, Gpr16> {
 }
 
 /// movswq r64 m16: Move word to quadword with sign-extension.
-impl WriteInst for Movswq<Gpr64, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movswq<Gpr64, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F BF /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -11568,11 +11568,11 @@ impl WriteInst for Movswq<Gpr64, Memory> {
     }
 }
 
-pub struct Movupd<Op0, Op1>(Op0, Op1);
+pub struct Movupd<Op0, Op1>(pub Op0, pub Op1);
 
 /// movupd xmm xmm: Move packed double-precision floating-point values from xmm2/m128 to xmm1.
-impl WriteInst for Movupd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movupd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 10 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -11587,8 +11587,8 @@ impl WriteInst for Movupd<Xmm, Xmm> {
 }
 
 /// movupd xmm m128: Move packed double-precision floating-point values from xmm2/m128 to xmm1.
-impl WriteInst for Movupd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movupd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 10 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -11603,8 +11603,8 @@ impl WriteInst for Movupd<Xmm, Memory> {
 }
 
 /// movupd m128 xmm: Move packed double-precision floating-point values from xmm1 to xmm2/m128.
-impl WriteInst for Movupd<Memory, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movupd<Memory, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 11 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -11618,11 +11618,11 @@ impl WriteInst for Movupd<Memory, Xmm> {
     }
 }
 
-pub struct Movups<Op0, Op1>(Op0, Op1);
+pub struct Movups<Op0, Op1>(pub Op0, pub Op1);
 
 /// movups xmm xmm: Move packed single-precision floating-point values from xmm2/m128 to xmm1.
-impl WriteInst for Movups<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movups<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 10 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -11636,8 +11636,8 @@ impl WriteInst for Movups<Xmm, Xmm> {
 }
 
 /// movups xmm m128: Move packed single-precision floating-point values from xmm2/m128 to xmm1.
-impl WriteInst for Movups<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movups<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 10 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -11651,8 +11651,8 @@ impl WriteInst for Movups<Xmm, Memory> {
 }
 
 /// movups m128 xmm: Move packed single-precision floating-point values from xmm1 to xmm2/m128.
-impl WriteInst for Movups<Memory, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movups<Memory, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 11 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -11665,11 +11665,11 @@ impl WriteInst for Movups<Memory, Xmm> {
     }
 }
 
-pub struct Movw<Op0, Op1>(Op0, Op1);
+pub struct Movw<Op0, Op1>(pub Op0, pub Op1);
 
 /// movw r16 imm16: Move imm16 to r16.
-impl WriteInst for Movw<Gpr16, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movw<Gpr16, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 B8 +rw iw
         let rio = RegInOpcode::from(self.0);
         put(w, 0x66)?;
@@ -11681,8 +11681,8 @@ impl WriteInst for Movw<Gpr16, i16> {
 }
 
 /// movw r16 r16: Move r/m16 to r16.
-impl WriteInst for Movw<Gpr16, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movw<Gpr16, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 8B /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -11696,8 +11696,8 @@ impl WriteInst for Movw<Gpr16, Gpr16> {
 }
 
 /// movw r16 m16: Move r/m16 to r16.
-impl WriteInst for Movw<Gpr16, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movw<Gpr16, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 8B /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -11711,8 +11711,8 @@ impl WriteInst for Movw<Gpr16, Memory> {
 }
 
 /// movw m16 r16: Move r16 to r/m16.
-impl WriteInst for Movw<Memory, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movw<Memory, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 89 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -11726,8 +11726,8 @@ impl WriteInst for Movw<Memory, Gpr16> {
 }
 
 /// movw m16 imm16: Move imm16 to r/m16.
-impl WriteInst for Movw<Memory, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movw<Memory, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 C7 /0 iw
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         put(w, 0x66)?;
@@ -11741,11 +11741,11 @@ impl WriteInst for Movw<Memory, i16> {
     }
 }
 
-pub struct Movzbl<Op0, Op1>(Op0, Op1);
+pub struct Movzbl<Op0, Op1>(pub Op0, pub Op1);
 
 /// movzbl r32 r8: Move byte to doubleword, zero-extension.
-impl WriteInst for Movzbl<Gpr32, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movzbl<Gpr32, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F B6 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -11759,8 +11759,8 @@ impl WriteInst for Movzbl<Gpr32, Gpr8> {
 }
 
 /// movzbl r32 m8: Move byte to doubleword, zero-extension.
-impl WriteInst for Movzbl<Gpr32, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movzbl<Gpr32, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F B6 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -11773,11 +11773,11 @@ impl WriteInst for Movzbl<Gpr32, Memory> {
     }
 }
 
-pub struct Movzbq<Op0, Op1>(Op0, Op1);
+pub struct Movzbq<Op0, Op1>(pub Op0, pub Op1);
 
 /// movzbq r64 r8: Move byte to quadword, zero-extension.
-impl WriteInst for Movzbq<Gpr64, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movzbq<Gpr64, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F B6 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -11791,8 +11791,8 @@ impl WriteInst for Movzbq<Gpr64, Gpr8> {
 }
 
 /// movzbq r64 m8: Move byte to quadword, zero-extension.
-impl WriteInst for Movzbq<Gpr64, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movzbq<Gpr64, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F B6 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -11805,11 +11805,11 @@ impl WriteInst for Movzbq<Gpr64, Memory> {
     }
 }
 
-pub struct Movzbw<Op0, Op1>(Op0, Op1);
+pub struct Movzbw<Op0, Op1>(pub Op0, pub Op1);
 
 /// movzbw r16 r8: Move byte to word with zero-extension.
-impl WriteInst for Movzbw<Gpr16, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movzbw<Gpr16, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F B6 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -11824,8 +11824,8 @@ impl WriteInst for Movzbw<Gpr16, Gpr8> {
 }
 
 /// movzbw r16 m8: Move byte to word with zero-extension.
-impl WriteInst for Movzbw<Gpr16, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movzbw<Gpr16, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F B6 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -11839,11 +11839,11 @@ impl WriteInst for Movzbw<Gpr16, Memory> {
     }
 }
 
-pub struct Movzwl<Op0, Op1>(Op0, Op1);
+pub struct Movzwl<Op0, Op1>(pub Op0, pub Op1);
 
 /// movzwl r32 r16: Move word to doubleword, zero-extension.
-impl WriteInst for Movzwl<Gpr32, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movzwl<Gpr32, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F B7 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -11857,8 +11857,8 @@ impl WriteInst for Movzwl<Gpr32, Gpr16> {
 }
 
 /// movzwl r32 m16: Move word to doubleword, zero-extension.
-impl WriteInst for Movzwl<Gpr32, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movzwl<Gpr32, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F B7 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -11871,11 +11871,11 @@ impl WriteInst for Movzwl<Gpr32, Memory> {
     }
 }
 
-pub struct Movzwq<Op0, Op1>(Op0, Op1);
+pub struct Movzwq<Op0, Op1>(pub Op0, pub Op1);
 
 /// movzwq r64 r16: Move word to quadword, zero-extension.
-impl WriteInst for Movzwq<Gpr64, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movzwq<Gpr64, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F B7 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -11889,8 +11889,8 @@ impl WriteInst for Movzwq<Gpr64, Gpr16> {
 }
 
 /// movzwq r64 m16: Move word to quadword, zero-extension.
-impl WriteInst for Movzwq<Gpr64, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Movzwq<Gpr64, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F B7 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -11903,11 +11903,11 @@ impl WriteInst for Movzwq<Gpr64, Memory> {
     }
 }
 
-pub struct Mpsadbw<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Mpsadbw<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// mpsadbw xmm xmm imm8: Sums absolute 8-bit integer difference of adjacent groups of 4 byte integers in xmm1 and xmm2/m128 and writes the results in xmm1. Starting offsets within xmm1 and xmm2/m128 are determined by imm8.
-impl WriteInst for Mpsadbw<Xmm, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Mpsadbw<Xmm, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 42 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -11924,8 +11924,8 @@ impl WriteInst for Mpsadbw<Xmm, Xmm, i8> {
 }
 
 /// mpsadbw xmm m128 imm8: Sums absolute 8-bit integer difference of adjacent groups of 4 byte integers in xmm1 and xmm2/m128 and writes the results in xmm1. Starting offsets within xmm1 and xmm2/m128 are determined by imm8.
-impl WriteInst for Mpsadbw<Xmm, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Mpsadbw<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 42 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -11941,11 +11941,11 @@ impl WriteInst for Mpsadbw<Xmm, Memory, i8> {
     }
 }
 
-pub struct Mulb<Op0>(Op0);
+pub struct Mulb<Op0>(pub Op0);
 
 /// mulb r8: Unsigned multiply (AX = AL * r/m8).
-impl WriteInst for Mulb<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Mulb<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F6 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -11958,8 +11958,8 @@ impl WriteInst for Mulb<Gpr8> {
 }
 
 /// mulb m8: Unsigned multiply (AX = AL * r/m8).
-impl WriteInst for Mulb<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Mulb<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F6 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -11971,11 +11971,11 @@ impl WriteInst for Mulb<Memory> {
     }
 }
 
-pub struct Mull<Op0>(Op0);
+pub struct Mull<Op0>(pub Op0);
 
 /// mull r32: Unsigned multiply (EDX:EAX = EAX * r/m32).
-impl WriteInst for Mull<Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Mull<Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F7 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -11988,8 +11988,8 @@ impl WriteInst for Mull<Gpr32> {
 }
 
 /// mull m32: Unsigned multiply (EDX:EAX = EAX * r/m32).
-impl WriteInst for Mull<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Mull<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F7 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -12001,11 +12001,11 @@ impl WriteInst for Mull<Memory> {
     }
 }
 
-pub struct Mulpd<Op0, Op1>(Op0, Op1);
+pub struct Mulpd<Op0, Op1>(pub Op0, pub Op1);
 
 /// mulpd xmm xmm: Multiply packed double-precision floating-point values in xmm2/m128 by xmm1.
-impl WriteInst for Mulpd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Mulpd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 59 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -12020,8 +12020,8 @@ impl WriteInst for Mulpd<Xmm, Xmm> {
 }
 
 /// mulpd xmm m128: Multiply packed double-precision floating-point values in xmm2/m128 by xmm1.
-impl WriteInst for Mulpd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Mulpd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 59 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -12035,11 +12035,11 @@ impl WriteInst for Mulpd<Xmm, Memory> {
     }
 }
 
-pub struct Mulps<Op0, Op1>(Op0, Op1);
+pub struct Mulps<Op0, Op1>(pub Op0, pub Op1);
 
 /// mulps xmm xmm: Multiply packed single-precision floating-point values in xmm2/mem by xmm1.
-impl WriteInst for Mulps<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Mulps<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 59 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -12053,8 +12053,8 @@ impl WriteInst for Mulps<Xmm, Xmm> {
 }
 
 /// mulps xmm m128: Multiply packed single-precision floating-point values in xmm2/mem by xmm1.
-impl WriteInst for Mulps<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Mulps<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 59 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -12067,11 +12067,11 @@ impl WriteInst for Mulps<Xmm, Memory> {
     }
 }
 
-pub struct Mulq<Op0>(Op0);
+pub struct Mulq<Op0>(pub Op0);
 
 /// mulq r64: Unsigned multiply (RDX:RAX = RAX * r/m64.
-impl WriteInst for Mulq<Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Mulq<Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ F7 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -12084,8 +12084,8 @@ impl WriteInst for Mulq<Gpr64> {
 }
 
 /// mulq m64: Unsigned multiply (RDX:RAX = RAX * r/m64.
-impl WriteInst for Mulq<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Mulq<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ F7 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -12097,11 +12097,11 @@ impl WriteInst for Mulq<Memory> {
     }
 }
 
-pub struct Mulsd<Op0, Op1>(Op0, Op1);
+pub struct Mulsd<Op0, Op1>(pub Op0, pub Op1);
 
 /// mulsd xmm xmm: Multiply the low double-precision floating-point value in xmm2/mem64 by low double-precision floating-point value in xmm1.
-impl WriteInst for Mulsd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Mulsd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 59 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -12116,8 +12116,8 @@ impl WriteInst for Mulsd<Xmm, Xmm> {
 }
 
 /// mulsd xmm m64: Multiply the low double-precision floating-point value in xmm2/mem64 by low double-precision floating-point value in xmm1.
-impl WriteInst for Mulsd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Mulsd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 59 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -12131,11 +12131,11 @@ impl WriteInst for Mulsd<Xmm, Memory> {
     }
 }
 
-pub struct Mulss<Op0, Op1>(Op0, Op1);
+pub struct Mulss<Op0, Op1>(pub Op0, pub Op1);
 
 /// mulss xmm xmm: Multiply the low single-precision floating-point value in xmm2/mem by the low single-precision floating-point value in xmm1.
-impl WriteInst for Mulss<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Mulss<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 59 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -12150,8 +12150,8 @@ impl WriteInst for Mulss<Xmm, Xmm> {
 }
 
 /// mulss xmm m32: Multiply the low single-precision floating-point value in xmm2/mem by the low single-precision floating-point value in xmm1.
-impl WriteInst for Mulss<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Mulss<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 59 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -12165,11 +12165,11 @@ impl WriteInst for Mulss<Xmm, Memory> {
     }
 }
 
-pub struct Mulw<Op0>(Op0);
+pub struct Mulw<Op0>(pub Op0);
 
 /// mulw r16: Unsigned multiply (DX:AX = AX * r/m16).
-impl WriteInst for Mulw<Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Mulw<Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 F7 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         put(w, 0x66)?;
@@ -12183,8 +12183,8 @@ impl WriteInst for Mulw<Gpr16> {
 }
 
 /// mulw m16: Unsigned multiply (DX:AX = AX * r/m16).
-impl WriteInst for Mulw<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Mulw<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 F7 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         put(w, 0x66)?;
@@ -12197,11 +12197,11 @@ impl WriteInst for Mulw<Memory> {
     }
 }
 
-pub struct Negb<Op0>(Op0);
+pub struct Negb<Op0>(pub Op0);
 
 /// negb r8: Two's complement negate r/m8.
-impl WriteInst for Negb<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Negb<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F6 /3
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -12214,8 +12214,8 @@ impl WriteInst for Negb<Gpr8> {
 }
 
 /// negb m8: Two's complement negate r/m8.
-impl WriteInst for Negb<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Negb<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F6 /3
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -12227,11 +12227,11 @@ impl WriteInst for Negb<Memory> {
     }
 }
 
-pub struct Negl<Op0>(Op0);
+pub struct Negl<Op0>(pub Op0);
 
 /// negl r32: Two's complement negate r/m32.
-impl WriteInst for Negl<Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Negl<Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F7 /3
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -12244,8 +12244,8 @@ impl WriteInst for Negl<Gpr32> {
 }
 
 /// negl m32: Two's complement negate r/m32.
-impl WriteInst for Negl<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Negl<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F7 /3
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -12257,11 +12257,11 @@ impl WriteInst for Negl<Memory> {
     }
 }
 
-pub struct Negq<Op0>(Op0);
+pub struct Negq<Op0>(pub Op0);
 
 /// negq r64: Two's complement negate r/m64.
-impl WriteInst for Negq<Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Negq<Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ F7 /3
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -12274,8 +12274,8 @@ impl WriteInst for Negq<Gpr64> {
 }
 
 /// negq m64: Two's complement negate r/m64.
-impl WriteInst for Negq<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Negq<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ F7 /3
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -12287,11 +12287,11 @@ impl WriteInst for Negq<Memory> {
     }
 }
 
-pub struct Negw<Op0>(Op0);
+pub struct Negw<Op0>(pub Op0);
 
 /// negw r16: Two's complement negate r/m16.
-impl WriteInst for Negw<Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Negw<Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 F7 /3
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         put(w, 0x66)?;
@@ -12305,8 +12305,8 @@ impl WriteInst for Negw<Gpr16> {
 }
 
 /// negw m16: Two's complement negate r/m16.
-impl WriteInst for Negw<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Negw<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 F7 /3
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         put(w, 0x66)?;
@@ -12322,19 +12322,19 @@ impl WriteInst for Negw<Memory> {
 pub struct Nop();
 
 /// nop: One byte no-operation instruction.
-impl WriteInst for Nop {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Nop {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 90
         put(w, 0x90)?;
         Ok(())
     }
 }
 
-pub struct Notb<Op0>(Op0);
+pub struct Notb<Op0>(pub Op0);
 
 /// notb r8: Reverse each bit of r/m8.
-impl WriteInst for Notb<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Notb<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F6 /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -12347,8 +12347,8 @@ impl WriteInst for Notb<Gpr8> {
 }
 
 /// notb m8: Reverse each bit of r/m8.
-impl WriteInst for Notb<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Notb<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F6 /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -12360,11 +12360,11 @@ impl WriteInst for Notb<Memory> {
     }
 }
 
-pub struct Notl<Op0>(Op0);
+pub struct Notl<Op0>(pub Op0);
 
 /// notl r32: Reverse each bit of r/m32.
-impl WriteInst for Notl<Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Notl<Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F7 /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -12377,8 +12377,8 @@ impl WriteInst for Notl<Gpr32> {
 }
 
 /// notl m32: Reverse each bit of r/m32.
-impl WriteInst for Notl<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Notl<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F7 /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -12390,11 +12390,11 @@ impl WriteInst for Notl<Memory> {
     }
 }
 
-pub struct Notq<Op0>(Op0);
+pub struct Notq<Op0>(pub Op0);
 
 /// notq r64: Reverse each bit of r/m64.
-impl WriteInst for Notq<Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Notq<Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ F7 /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -12407,8 +12407,8 @@ impl WriteInst for Notq<Gpr64> {
 }
 
 /// notq m64: Reverse each bit of r/m64.
-impl WriteInst for Notq<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Notq<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ F7 /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -12420,11 +12420,11 @@ impl WriteInst for Notq<Memory> {
     }
 }
 
-pub struct Notw<Op0>(Op0);
+pub struct Notw<Op0>(pub Op0);
 
 /// notw r16: Reverse each bit of r/m16.
-impl WriteInst for Notw<Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Notw<Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 F7 /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         put(w, 0x66)?;
@@ -12438,8 +12438,8 @@ impl WriteInst for Notw<Gpr16> {
 }
 
 /// notw m16: Reverse each bit of r/m16.
-impl WriteInst for Notw<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Notw<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 F7 /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         put(w, 0x66)?;
@@ -12452,11 +12452,11 @@ impl WriteInst for Notw<Memory> {
     }
 }
 
-pub struct Orb<Op0, Op1>(Op0, Op1);
+pub struct Orb<Op0, Op1>(pub Op0, pub Op1);
 
 /// orb r8 r8: r8 OR r/m8.
-impl WriteInst for Orb<Gpr8, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orb<Gpr8, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0A /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -12469,8 +12469,8 @@ impl WriteInst for Orb<Gpr8, Gpr8> {
 }
 
 /// orb r8 m8: r8 OR r/m8.
-impl WriteInst for Orb<Gpr8, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orb<Gpr8, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0A /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -12483,8 +12483,8 @@ impl WriteInst for Orb<Gpr8, Memory> {
 }
 
 /// orb m8 r8: r/m8 OR r8.
-impl WriteInst for Orb<Memory, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orb<Memory, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 08 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -12497,8 +12497,8 @@ impl WriteInst for Orb<Memory, Gpr8> {
 }
 
 /// orb r8 imm8: r/m8 OR imm8.
-impl WriteInst for Orb<Gpr8, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orb<Gpr8, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 80 /1 ib
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -12512,8 +12512,8 @@ impl WriteInst for Orb<Gpr8, i8> {
 }
 
 /// orb m8 imm8: r/m8 OR imm8.
-impl WriteInst for Orb<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orb<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 80 /1 ib
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -12527,8 +12527,8 @@ impl WriteInst for Orb<Memory, i8> {
 }
 
 /// orb _Al imm8: AL OR imm8.
-impl WriteInst for Orb<_Al, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orb<_Al, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0C ib
         put(w, 0x0C)?;
         puts(w, self.1.to_le_bytes())?;
@@ -12536,11 +12536,11 @@ impl WriteInst for Orb<_Al, i8> {
     }
 }
 
-pub struct Orl<Op0, Op1>(Op0, Op1);
+pub struct Orl<Op0, Op1>(pub Op0, pub Op1);
 
 /// orl r32 r32: r32 OR r/m32.
-impl WriteInst for Orl<Gpr32, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orl<Gpr32, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0B /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -12553,8 +12553,8 @@ impl WriteInst for Orl<Gpr32, Gpr32> {
 }
 
 /// orl r32 m32: r32 OR r/m32.
-impl WriteInst for Orl<Gpr32, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orl<Gpr32, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0B /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -12567,8 +12567,8 @@ impl WriteInst for Orl<Gpr32, Memory> {
 }
 
 /// orl m32 r32: r/m32 OR r32.
-impl WriteInst for Orl<Memory, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orl<Memory, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 09 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -12581,8 +12581,8 @@ impl WriteInst for Orl<Memory, Gpr32> {
 }
 
 /// orl r32 imm8: r/m32 OR imm8 (sign-extended).
-impl WriteInst for Orl<Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orl<Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 83 /1 ib
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -12596,8 +12596,8 @@ impl WriteInst for Orl<Gpr32, i8> {
 }
 
 /// orl m32 imm8: r/m32 OR imm8 (sign-extended).
-impl WriteInst for Orl<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orl<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 83 /1 ib
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -12611,8 +12611,8 @@ impl WriteInst for Orl<Memory, i8> {
 }
 
 /// orl r32 imm32: r/m32 OR imm32.
-impl WriteInst for Orl<Gpr32, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orl<Gpr32, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 81 /1 id
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -12626,8 +12626,8 @@ impl WriteInst for Orl<Gpr32, i32> {
 }
 
 /// orl m32 imm32: r/m32 OR imm32.
-impl WriteInst for Orl<Memory, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orl<Memory, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 81 /1 id
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -12641,8 +12641,8 @@ impl WriteInst for Orl<Memory, i32> {
 }
 
 /// orl _Eax imm32: EAX OR imm32.
-impl WriteInst for Orl<_Eax, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orl<_Eax, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0D id
         put(w, 0x0D)?;
         puts(w, self.1.to_le_bytes())?;
@@ -12650,11 +12650,11 @@ impl WriteInst for Orl<_Eax, i32> {
     }
 }
 
-pub struct Orpd<Op0, Op1>(Op0, Op1);
+pub struct Orpd<Op0, Op1>(pub Op0, pub Op1);
 
 /// orpd xmm xmm: Bitwise OR of xmm2/m128 and xmm1.
-impl WriteInst for Orpd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orpd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 56 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -12669,8 +12669,8 @@ impl WriteInst for Orpd<Xmm, Xmm> {
 }
 
 /// orpd xmm m128: Bitwise OR of xmm2/m128 and xmm1.
-impl WriteInst for Orpd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orpd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 56 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -12684,11 +12684,11 @@ impl WriteInst for Orpd<Xmm, Memory> {
     }
 }
 
-pub struct Orps<Op0, Op1>(Op0, Op1);
+pub struct Orps<Op0, Op1>(pub Op0, pub Op1);
 
 /// orps xmm xmm: Bitwise OR of xmm1 and xmm2/m128.
-impl WriteInst for Orps<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orps<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 56 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -12702,8 +12702,8 @@ impl WriteInst for Orps<Xmm, Xmm> {
 }
 
 /// orps xmm m128: Bitwise OR of xmm1 and xmm2/m128.
-impl WriteInst for Orps<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orps<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 56 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -12716,11 +12716,11 @@ impl WriteInst for Orps<Xmm, Memory> {
     }
 }
 
-pub struct Orq<Op0, Op1>(Op0, Op1);
+pub struct Orq<Op0, Op1>(pub Op0, pub Op1);
 
 /// orq r64 r64: r64 OR r/m64.
-impl WriteInst for Orq<Gpr64, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orq<Gpr64, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0B /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -12733,8 +12733,8 @@ impl WriteInst for Orq<Gpr64, Gpr64> {
 }
 
 /// orq r64 m64: r64 OR r/m64.
-impl WriteInst for Orq<Gpr64, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orq<Gpr64, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0B /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -12747,8 +12747,8 @@ impl WriteInst for Orq<Gpr64, Memory> {
 }
 
 /// orq m64 r64: r/m64 OR r64.
-impl WriteInst for Orq<Memory, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orq<Memory, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 09 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -12761,8 +12761,8 @@ impl WriteInst for Orq<Memory, Gpr64> {
 }
 
 /// orq r64 imm8: r/m64 OR imm8 (sign-extended).
-impl WriteInst for Orq<Gpr64, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orq<Gpr64, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 83 /1 ib
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -12776,8 +12776,8 @@ impl WriteInst for Orq<Gpr64, i8> {
 }
 
 /// orq m64 imm8: r/m64 OR imm8 (sign-extended).
-impl WriteInst for Orq<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orq<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 83 /1 ib
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -12791,8 +12791,8 @@ impl WriteInst for Orq<Memory, i8> {
 }
 
 /// orq r64 imm32: r/m64 OR imm32 (sign-extended).
-impl WriteInst for Orq<Gpr64, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orq<Gpr64, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 81 /1 id
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -12806,8 +12806,8 @@ impl WriteInst for Orq<Gpr64, i32> {
 }
 
 /// orq m64 imm32: r/m64 OR imm32 (sign-extended).
-impl WriteInst for Orq<Memory, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orq<Memory, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 81 /1 id
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -12821,8 +12821,8 @@ impl WriteInst for Orq<Memory, i32> {
 }
 
 /// orq _Rax imm32: RAX OR imm32 (sign-extended).
-impl WriteInst for Orq<_Rax, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orq<_Rax, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0D id
         puts(w, rex_byte(false, true, false, false, false))?;
         put(w, 0x0D)?;
@@ -12831,11 +12831,11 @@ impl WriteInst for Orq<_Rax, i32> {
     }
 }
 
-pub struct Orw<Op0, Op1>(Op0, Op1);
+pub struct Orw<Op0, Op1>(pub Op0, pub Op1);
 
 /// orw r16 r16: r16 OR r/m16.
-impl WriteInst for Orw<Gpr16, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orw<Gpr16, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0B /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -12849,8 +12849,8 @@ impl WriteInst for Orw<Gpr16, Gpr16> {
 }
 
 /// orw r16 m16: r16 OR r/m16.
-impl WriteInst for Orw<Gpr16, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orw<Gpr16, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0B /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -12864,8 +12864,8 @@ impl WriteInst for Orw<Gpr16, Memory> {
 }
 
 /// orw m16 r16: r/m16 OR r16.
-impl WriteInst for Orw<Memory, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orw<Memory, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 09 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -12879,8 +12879,8 @@ impl WriteInst for Orw<Memory, Gpr16> {
 }
 
 /// orw r16 imm8: r/m16 OR imm8 (sign-extended).
-impl WriteInst for Orw<Gpr16, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orw<Gpr16, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 83 /1 ib
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         put(w, 0x66)?;
@@ -12895,8 +12895,8 @@ impl WriteInst for Orw<Gpr16, i8> {
 }
 
 /// orw m16 imm8: r/m16 OR imm8 (sign-extended).
-impl WriteInst for Orw<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orw<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 83 /1 ib
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         put(w, 0x66)?;
@@ -12911,8 +12911,8 @@ impl WriteInst for Orw<Memory, i8> {
 }
 
 /// orw r16 imm16: r/m16 OR imm16.
-impl WriteInst for Orw<Gpr16, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orw<Gpr16, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 81 /1 iw
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         put(w, 0x66)?;
@@ -12927,8 +12927,8 @@ impl WriteInst for Orw<Gpr16, i16> {
 }
 
 /// orw m16 imm16: r/m16 OR imm16.
-impl WriteInst for Orw<Memory, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orw<Memory, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 81 /1 iw
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         put(w, 0x66)?;
@@ -12943,8 +12943,8 @@ impl WriteInst for Orw<Memory, i16> {
 }
 
 /// orw _Ax imm16: AX OR imm16.
-impl WriteInst for Orw<_Ax, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Orw<_Ax, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0D iw
         put(w, 0x66)?;
         put(w, 0x0D)?;
@@ -12953,11 +12953,11 @@ impl WriteInst for Orw<_Ax, i16> {
     }
 }
 
-pub struct Outb<Op0, Op1>(Op0, Op1);
+pub struct Outb<Op0, Op1>(pub Op0, pub Op1);
 
 /// outb imm8 _Al: Output byte in AL to I/O port address imm8.
-impl WriteInst for Outb<i8, _Al> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Outb<i8, _Al> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // E6 ib
         put(w, 0xE6)?;
         puts(w, self.0.to_le_bytes())?;
@@ -12966,19 +12966,19 @@ impl WriteInst for Outb<i8, _Al> {
 }
 
 /// outb _Dx _Al: Output byte in AL to I/O port address in DX.
-impl WriteInst for Outb<_Dx, _Al> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Outb<_Dx, _Al> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // EE
         put(w, 0xEE)?;
         Ok(())
     }
 }
 
-pub struct Outl<Op0, Op1>(Op0, Op1);
+pub struct Outl<Op0, Op1>(pub Op0, pub Op1);
 
 /// outl imm8 _Eax: Output doubleword in EAX to I/O port address imm8.
-impl WriteInst for Outl<i8, _Eax> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Outl<i8, _Eax> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // E7 ib
         put(w, 0xE7)?;
         puts(w, self.0.to_le_bytes())?;
@@ -12987,19 +12987,19 @@ impl WriteInst for Outl<i8, _Eax> {
 }
 
 /// outl _Dx _Eax: Output doubleword in EAX to I/O port address in DX.
-impl WriteInst for Outl<_Dx, _Eax> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Outl<_Dx, _Eax> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // EF
         put(w, 0xEF)?;
         Ok(())
     }
 }
 
-pub struct Outw<Op0, Op1>(Op0, Op1);
+pub struct Outw<Op0, Op1>(pub Op0, pub Op1);
 
 /// outw imm8 _Ax: Output word in AX to I/O port address imm8.
-impl WriteInst for Outw<i8, _Ax> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Outw<i8, _Ax> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 E7 ib
         put(w, 0x66)?;
         put(w, 0xE7)?;
@@ -13009,8 +13009,8 @@ impl WriteInst for Outw<i8, _Ax> {
 }
 
 /// outw _Dx _Ax: Output word in AX to I/O port address in DX.
-impl WriteInst for Outw<_Dx, _Ax> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Outw<_Dx, _Ax> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 EF
         put(w, 0x66)?;
         put(w, 0xEF)?;
@@ -13018,11 +13018,11 @@ impl WriteInst for Outw<_Dx, _Ax> {
     }
 }
 
-pub struct Packssdw<Op0, Op1>(Op0, Op1);
+pub struct Packssdw<Op0, Op1>(pub Op0, pub Op1);
 
 /// packssdw xmm xmm: Converts 4 packed signed doubleword integers from xmm1 and from xxm2/m128 into 8 packed signed word integers in xxm1 using signed saturation.
-impl WriteInst for Packssdw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Packssdw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 6B /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13037,8 +13037,8 @@ impl WriteInst for Packssdw<Xmm, Xmm> {
 }
 
 /// packssdw xmm m128: Converts 4 packed signed doubleword integers from xmm1 and from xxm2/m128 into 8 packed signed word integers in xxm1 using signed saturation.
-impl WriteInst for Packssdw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Packssdw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 6B /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13052,11 +13052,11 @@ impl WriteInst for Packssdw<Xmm, Memory> {
     }
 }
 
-pub struct Packsswb<Op0, Op1>(Op0, Op1);
+pub struct Packsswb<Op0, Op1>(pub Op0, pub Op1);
 
 /// packsswb xmm xmm: Converts 8 packed signed word integers from xmm1 and from xxm2/m128 into 16 packed signed byte integers in xxm1 using signed saturation.
-impl WriteInst for Packsswb<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Packsswb<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 63 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13071,8 +13071,8 @@ impl WriteInst for Packsswb<Xmm, Xmm> {
 }
 
 /// packsswb xmm m128: Converts 8 packed signed word integers from xmm1 and from xxm2/m128 into 16 packed signed byte integers in xxm1 using signed saturation.
-impl WriteInst for Packsswb<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Packsswb<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 63 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13086,11 +13086,11 @@ impl WriteInst for Packsswb<Xmm, Memory> {
     }
 }
 
-pub struct Packusdw<Op0, Op1>(Op0, Op1);
+pub struct Packusdw<Op0, Op1>(pub Op0, pub Op1);
 
 /// packusdw xmm xmm: Convert 4 packed signed doubleword integers from xmm1 and 4 packed signed doubleword integers from xmm2/m128 into 8 packed unsigned word integers in xmm1 using unsigned saturation.
-impl WriteInst for Packusdw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Packusdw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 2B /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13106,8 +13106,8 @@ impl WriteInst for Packusdw<Xmm, Xmm> {
 }
 
 /// packusdw xmm m128: Convert 4 packed signed doubleword integers from xmm1 and 4 packed signed doubleword integers from xmm2/m128 into 8 packed unsigned word integers in xmm1 using unsigned saturation.
-impl WriteInst for Packusdw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Packusdw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 2B /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13122,11 +13122,11 @@ impl WriteInst for Packusdw<Xmm, Memory> {
     }
 }
 
-pub struct Packuswb<Op0, Op1>(Op0, Op1);
+pub struct Packuswb<Op0, Op1>(pub Op0, pub Op1);
 
 /// packuswb xmm xmm: Converts 8 signed word integers from xmm1 and 8 signed word integers from xmm2/m128 into 16 unsigned byte integers in xmm1 using unsigned saturation.
-impl WriteInst for Packuswb<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Packuswb<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 67 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13141,8 +13141,8 @@ impl WriteInst for Packuswb<Xmm, Xmm> {
 }
 
 /// packuswb xmm m128: Converts 8 signed word integers from xmm1 and 8 signed word integers from xmm2/m128 into 16 unsigned byte integers in xmm1 using unsigned saturation.
-impl WriteInst for Packuswb<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Packuswb<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 67 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13156,11 +13156,11 @@ impl WriteInst for Packuswb<Xmm, Memory> {
     }
 }
 
-pub struct Paddb<Op0, Op1>(Op0, Op1);
+pub struct Paddb<Op0, Op1>(pub Op0, pub Op1);
 
 /// paddb xmm xmm: Add packed byte integers from xmm2/m128 and xmm1.
-impl WriteInst for Paddb<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Paddb<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F FC /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13175,8 +13175,8 @@ impl WriteInst for Paddb<Xmm, Xmm> {
 }
 
 /// paddb xmm m128: Add packed byte integers from xmm2/m128 and xmm1.
-impl WriteInst for Paddb<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Paddb<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F FC /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13190,11 +13190,11 @@ impl WriteInst for Paddb<Xmm, Memory> {
     }
 }
 
-pub struct Paddd<Op0, Op1>(Op0, Op1);
+pub struct Paddd<Op0, Op1>(pub Op0, pub Op1);
 
 /// paddd xmm xmm: Add packed doubleword integers from xmm2/m128 and xmm1.
-impl WriteInst for Paddd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Paddd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F FE /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13209,8 +13209,8 @@ impl WriteInst for Paddd<Xmm, Xmm> {
 }
 
 /// paddd xmm m128: Add packed doubleword integers from xmm2/m128 and xmm1.
-impl WriteInst for Paddd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Paddd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F FE /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13224,11 +13224,11 @@ impl WriteInst for Paddd<Xmm, Memory> {
     }
 }
 
-pub struct Paddq<Op0, Op1>(Op0, Op1);
+pub struct Paddq<Op0, Op1>(pub Op0, pub Op1);
 
 /// paddq xmm xmm: Add packed quadword integers xmm2/m128 to xmm1.
-impl WriteInst for Paddq<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Paddq<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F D4 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13243,8 +13243,8 @@ impl WriteInst for Paddq<Xmm, Xmm> {
 }
 
 /// paddq xmm m128: Add packed quadword integers xmm2/m128 to xmm1.
-impl WriteInst for Paddq<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Paddq<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F D4 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13258,11 +13258,11 @@ impl WriteInst for Paddq<Xmm, Memory> {
     }
 }
 
-pub struct Paddsb<Op0, Op1>(Op0, Op1);
+pub struct Paddsb<Op0, Op1>(pub Op0, pub Op1);
 
 /// paddsb xmm xmm: Add packed signed byte integers from xmm2/m128 and xmm1 saturate the results.
-impl WriteInst for Paddsb<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Paddsb<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F EC /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13277,8 +13277,8 @@ impl WriteInst for Paddsb<Xmm, Xmm> {
 }
 
 /// paddsb xmm m128: Add packed signed byte integers from xmm2/m128 and xmm1 saturate the results.
-impl WriteInst for Paddsb<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Paddsb<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F EC /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13292,11 +13292,11 @@ impl WriteInst for Paddsb<Xmm, Memory> {
     }
 }
 
-pub struct Paddsw<Op0, Op1>(Op0, Op1);
+pub struct Paddsw<Op0, Op1>(pub Op0, pub Op1);
 
 /// paddsw xmm xmm: Add packed signed word integers from xmm2/m128 and xmm1 and saturate the results.
-impl WriteInst for Paddsw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Paddsw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F ED /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13311,8 +13311,8 @@ impl WriteInst for Paddsw<Xmm, Xmm> {
 }
 
 /// paddsw xmm m128: Add packed signed word integers from xmm2/m128 and xmm1 and saturate the results.
-impl WriteInst for Paddsw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Paddsw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F ED /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13326,11 +13326,11 @@ impl WriteInst for Paddsw<Xmm, Memory> {
     }
 }
 
-pub struct Paddusb<Op0, Op1>(Op0, Op1);
+pub struct Paddusb<Op0, Op1>(pub Op0, pub Op1);
 
 /// paddusb xmm xmm: Add packed unsigned byte integers from xmm2/m128 and xmm1 saturate the results.
-impl WriteInst for Paddusb<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Paddusb<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F DC /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13345,8 +13345,8 @@ impl WriteInst for Paddusb<Xmm, Xmm> {
 }
 
 /// paddusb xmm m128: Add packed unsigned byte integers from xmm2/m128 and xmm1 saturate the results.
-impl WriteInst for Paddusb<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Paddusb<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F DC /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13360,11 +13360,11 @@ impl WriteInst for Paddusb<Xmm, Memory> {
     }
 }
 
-pub struct Paddusw<Op0, Op1>(Op0, Op1);
+pub struct Paddusw<Op0, Op1>(pub Op0, pub Op1);
 
 /// paddusw xmm xmm: Add packed unsigned word integers from xmm2/m128 to xmm1 and saturate the results.
-impl WriteInst for Paddusw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Paddusw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F DD /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13379,8 +13379,8 @@ impl WriteInst for Paddusw<Xmm, Xmm> {
 }
 
 /// paddusw xmm m128: Add packed unsigned word integers from xmm2/m128 to xmm1 and saturate the results.
-impl WriteInst for Paddusw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Paddusw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F DD /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13394,11 +13394,11 @@ impl WriteInst for Paddusw<Xmm, Memory> {
     }
 }
 
-pub struct Paddw<Op0, Op1>(Op0, Op1);
+pub struct Paddw<Op0, Op1>(pub Op0, pub Op1);
 
 /// paddw xmm xmm: Add packed word integers from xmm2/m128 and xmm1.
-impl WriteInst for Paddw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Paddw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F FD /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13413,8 +13413,8 @@ impl WriteInst for Paddw<Xmm, Xmm> {
 }
 
 /// paddw xmm m128: Add packed word integers from xmm2/m128 and xmm1.
-impl WriteInst for Paddw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Paddw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F FD /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13428,11 +13428,11 @@ impl WriteInst for Paddw<Xmm, Memory> {
     }
 }
 
-pub struct Pand<Op0, Op1>(Op0, Op1);
+pub struct Pand<Op0, Op1>(pub Op0, pub Op1);
 
 /// pand xmm xmm: Bitwise AND of xmm2/m128 and xmm1.
-impl WriteInst for Pand<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pand<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F DB /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13447,8 +13447,8 @@ impl WriteInst for Pand<Xmm, Xmm> {
 }
 
 /// pand xmm m128: Bitwise AND of xmm2/m128 and xmm1.
-impl WriteInst for Pand<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pand<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F DB /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13462,11 +13462,11 @@ impl WriteInst for Pand<Xmm, Memory> {
     }
 }
 
-pub struct Pandn<Op0, Op1>(Op0, Op1);
+pub struct Pandn<Op0, Op1>(pub Op0, pub Op1);
 
 /// pandn xmm xmm: Bitwise AND NOT of xmm2/m128 and xmm1.
-impl WriteInst for Pandn<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pandn<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F DF /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13481,8 +13481,8 @@ impl WriteInst for Pandn<Xmm, Xmm> {
 }
 
 /// pandn xmm m128: Bitwise AND NOT of xmm2/m128 and xmm1.
-impl WriteInst for Pandn<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pandn<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F DF /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13499,8 +13499,8 @@ impl WriteInst for Pandn<Xmm, Memory> {
 pub struct Pause();
 
 /// pause: Gives hint to processor that improves performance of spin-wait loops.
-impl WriteInst for Pause {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pause {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 90
         put(w, 0xF3)?;
         put(w, 0x90)?;
@@ -13508,11 +13508,11 @@ impl WriteInst for Pause {
     }
 }
 
-pub struct Pavgb<Op0, Op1>(Op0, Op1);
+pub struct Pavgb<Op0, Op1>(pub Op0, pub Op1);
 
 /// pavgb xmm xmm: Average packed unsigned byte integers from xmm2/m128 and xmm1 with rounding.
-impl WriteInst for Pavgb<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pavgb<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F E0 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13527,8 +13527,8 @@ impl WriteInst for Pavgb<Xmm, Xmm> {
 }
 
 /// pavgb xmm m128: Average packed unsigned byte integers from xmm2/m128 and xmm1 with rounding.
-impl WriteInst for Pavgb<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pavgb<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F E0 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13542,11 +13542,11 @@ impl WriteInst for Pavgb<Xmm, Memory> {
     }
 }
 
-pub struct Pavgw<Op0, Op1>(Op0, Op1);
+pub struct Pavgw<Op0, Op1>(pub Op0, pub Op1);
 
 /// pavgw xmm xmm: Average packed unsigned word integers from xmm2/m128 and xmm1 with rounding.
-impl WriteInst for Pavgw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pavgw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F E3 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13561,8 +13561,8 @@ impl WriteInst for Pavgw<Xmm, Xmm> {
 }
 
 /// pavgw xmm m128: Average packed unsigned word integers from xmm2/m128 and xmm1 with rounding.
-impl WriteInst for Pavgw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pavgw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F E3 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13576,11 +13576,11 @@ impl WriteInst for Pavgw<Xmm, Memory> {
     }
 }
 
-pub struct Pblendvb<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Pblendvb<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// pblendvb xmm xmm _Xmm0: Select byte values from xmm1 and xmm2/m128 from mask specified in the high bit of each byte in XMM0 and store the values into xmm1.
-impl WriteInst for Pblendvb<Xmm, Xmm, _Xmm0> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pblendvb<Xmm, Xmm, _Xmm0> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 10 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13596,8 +13596,8 @@ impl WriteInst for Pblendvb<Xmm, Xmm, _Xmm0> {
 }
 
 /// pblendvb xmm m128 _Xmm0: Select byte values from xmm1 and xmm2/m128 from mask specified in the high bit of each byte in XMM0 and store the values into xmm1.
-impl WriteInst for Pblendvb<Xmm, Memory, _Xmm0> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pblendvb<Xmm, Memory, _Xmm0> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 10 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13612,11 +13612,11 @@ impl WriteInst for Pblendvb<Xmm, Memory, _Xmm0> {
     }
 }
 
-pub struct Pblendw<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Pblendw<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// pblendw xmm xmm imm8: Select words from xmm1 and xmm2/m128 from mask specified in imm8 and store the values into xmm1.
-impl WriteInst for Pblendw<Xmm, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pblendw<Xmm, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 0E /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13633,8 +13633,8 @@ impl WriteInst for Pblendw<Xmm, Xmm, i8> {
 }
 
 /// pblendw xmm m128 imm8: Select words from xmm1 and xmm2/m128 from mask specified in imm8 and store the values into xmm1.
-impl WriteInst for Pblendw<Xmm, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pblendw<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 0E /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13650,11 +13650,11 @@ impl WriteInst for Pblendw<Xmm, Memory, i8> {
     }
 }
 
-pub struct Pcmpeqb<Op0, Op1>(Op0, Op1);
+pub struct Pcmpeqb<Op0, Op1>(pub Op0, pub Op1);
 
 /// pcmpeqb xmm xmm: Compare packed bytes in xmm2/m128 and xmm1 for equality.
-impl WriteInst for Pcmpeqb<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pcmpeqb<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 74 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13669,8 +13669,8 @@ impl WriteInst for Pcmpeqb<Xmm, Xmm> {
 }
 
 /// pcmpeqb xmm m128: Compare packed bytes in xmm2/m128 and xmm1 for equality.
-impl WriteInst for Pcmpeqb<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pcmpeqb<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 74 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13684,11 +13684,11 @@ impl WriteInst for Pcmpeqb<Xmm, Memory> {
     }
 }
 
-pub struct Pcmpeqd<Op0, Op1>(Op0, Op1);
+pub struct Pcmpeqd<Op0, Op1>(pub Op0, pub Op1);
 
 /// pcmpeqd xmm xmm: Compare packed doublewords in xmm2/m128 and xmm1 for equality.
-impl WriteInst for Pcmpeqd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pcmpeqd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 76 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13703,8 +13703,8 @@ impl WriteInst for Pcmpeqd<Xmm, Xmm> {
 }
 
 /// pcmpeqd xmm m128: Compare packed doublewords in xmm2/m128 and xmm1 for equality.
-impl WriteInst for Pcmpeqd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pcmpeqd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 76 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13718,11 +13718,11 @@ impl WriteInst for Pcmpeqd<Xmm, Memory> {
     }
 }
 
-pub struct Pcmpeqq<Op0, Op1>(Op0, Op1);
+pub struct Pcmpeqq<Op0, Op1>(pub Op0, pub Op1);
 
 /// pcmpeqq xmm xmm: Compare packed qwords in xmm2/m128 and xmm1 for equality.
-impl WriteInst for Pcmpeqq<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pcmpeqq<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 29 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13738,8 +13738,8 @@ impl WriteInst for Pcmpeqq<Xmm, Xmm> {
 }
 
 /// pcmpeqq xmm m128: Compare packed qwords in xmm2/m128 and xmm1 for equality.
-impl WriteInst for Pcmpeqq<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pcmpeqq<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 29 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13754,11 +13754,11 @@ impl WriteInst for Pcmpeqq<Xmm, Memory> {
     }
 }
 
-pub struct Pcmpeqw<Op0, Op1>(Op0, Op1);
+pub struct Pcmpeqw<Op0, Op1>(pub Op0, pub Op1);
 
 /// pcmpeqw xmm xmm: Compare packed words in xmm2/m128 and xmm1 for equality.
-impl WriteInst for Pcmpeqw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pcmpeqw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 75 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13773,8 +13773,8 @@ impl WriteInst for Pcmpeqw<Xmm, Xmm> {
 }
 
 /// pcmpeqw xmm m128: Compare packed words in xmm2/m128 and xmm1 for equality.
-impl WriteInst for Pcmpeqw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pcmpeqw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 75 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13788,11 +13788,11 @@ impl WriteInst for Pcmpeqw<Xmm, Memory> {
     }
 }
 
-pub struct Pcmpestri<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Pcmpestri<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// pcmpestri xmm xmm imm8: Perform a packed comparison of string data with explicit lengths, generating an index, and storing the result in ECX.
-impl WriteInst for Pcmpestri<Xmm, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pcmpestri<Xmm, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 61 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13809,8 +13809,8 @@ impl WriteInst for Pcmpestri<Xmm, Xmm, i8> {
 }
 
 /// pcmpestri xmm m128 imm8: Perform a packed comparison of string data with explicit lengths, generating an index, and storing the result in ECX.
-impl WriteInst for Pcmpestri<Xmm, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pcmpestri<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 61 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13826,11 +13826,11 @@ impl WriteInst for Pcmpestri<Xmm, Memory, i8> {
     }
 }
 
-pub struct Pcmpestrm<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Pcmpestrm<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// pcmpestrm xmm xmm imm8: Perform a packed comparison of string data with explicit lengths, generating a mask, and storing the result in XMM0
-impl WriteInst for Pcmpestrm<Xmm, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pcmpestrm<Xmm, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 60 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13847,8 +13847,8 @@ impl WriteInst for Pcmpestrm<Xmm, Xmm, i8> {
 }
 
 /// pcmpestrm xmm m128 imm8: Perform a packed comparison of string data with explicit lengths, generating a mask, and storing the result in XMM0
-impl WriteInst for Pcmpestrm<Xmm, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pcmpestrm<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 60 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13864,11 +13864,11 @@ impl WriteInst for Pcmpestrm<Xmm, Memory, i8> {
     }
 }
 
-pub struct Pcmpgtb<Op0, Op1>(Op0, Op1);
+pub struct Pcmpgtb<Op0, Op1>(pub Op0, pub Op1);
 
 /// pcmpgtb xmm xmm: Compare packed signed byte integers in xmm1 and xmm2/m128 for greater than.
-impl WriteInst for Pcmpgtb<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pcmpgtb<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 64 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13883,8 +13883,8 @@ impl WriteInst for Pcmpgtb<Xmm, Xmm> {
 }
 
 /// pcmpgtb xmm m128: Compare packed signed byte integers in xmm1 and xmm2/m128 for greater than.
-impl WriteInst for Pcmpgtb<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pcmpgtb<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 64 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13898,11 +13898,11 @@ impl WriteInst for Pcmpgtb<Xmm, Memory> {
     }
 }
 
-pub struct Pcmpgtd<Op0, Op1>(Op0, Op1);
+pub struct Pcmpgtd<Op0, Op1>(pub Op0, pub Op1);
 
 /// pcmpgtd xmm xmm: Compare packed signed doubleword integers in xmm1 and xmm2/m128 for greater than.
-impl WriteInst for Pcmpgtd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pcmpgtd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 66 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13917,8 +13917,8 @@ impl WriteInst for Pcmpgtd<Xmm, Xmm> {
 }
 
 /// pcmpgtd xmm m128: Compare packed signed doubleword integers in xmm1 and xmm2/m128 for greater than.
-impl WriteInst for Pcmpgtd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pcmpgtd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 66 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13932,11 +13932,11 @@ impl WriteInst for Pcmpgtd<Xmm, Memory> {
     }
 }
 
-pub struct Pcmpgtq<Op0, Op1>(Op0, Op1);
+pub struct Pcmpgtq<Op0, Op1>(pub Op0, pub Op1);
 
 /// pcmpgtq xmm xmm: Compare packed signed qwords in xmm2/m128 and xmm1 for greater than.
-impl WriteInst for Pcmpgtq<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pcmpgtq<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 37 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13952,8 +13952,8 @@ impl WriteInst for Pcmpgtq<Xmm, Xmm> {
 }
 
 /// pcmpgtq xmm m128: Compare packed signed qwords in xmm2/m128 and xmm1 for greater than.
-impl WriteInst for Pcmpgtq<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pcmpgtq<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 37 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13968,11 +13968,11 @@ impl WriteInst for Pcmpgtq<Xmm, Memory> {
     }
 }
 
-pub struct Pcmpgtw<Op0, Op1>(Op0, Op1);
+pub struct Pcmpgtw<Op0, Op1>(pub Op0, pub Op1);
 
 /// pcmpgtw xmm xmm: Compare packed signed word integers in xmm1 and xmm2/m128 for greater than.
-impl WriteInst for Pcmpgtw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pcmpgtw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 65 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -13987,8 +13987,8 @@ impl WriteInst for Pcmpgtw<Xmm, Xmm> {
 }
 
 /// pcmpgtw xmm m128: Compare packed signed word integers in xmm1 and xmm2/m128 for greater than.
-impl WriteInst for Pcmpgtw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pcmpgtw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 65 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14002,11 +14002,11 @@ impl WriteInst for Pcmpgtw<Xmm, Memory> {
     }
 }
 
-pub struct Pcmpistri<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Pcmpistri<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// pcmpistri xmm xmm imm8: Perform a packed comparison of string data with implicit lengths, generating an index, and storing the result in ECX.
-impl WriteInst for Pcmpistri<Xmm, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pcmpistri<Xmm, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 63 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14023,8 +14023,8 @@ impl WriteInst for Pcmpistri<Xmm, Xmm, i8> {
 }
 
 /// pcmpistri xmm m128 imm8: Perform a packed comparison of string data with implicit lengths, generating an index, and storing the result in ECX.
-impl WriteInst for Pcmpistri<Xmm, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pcmpistri<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 63 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14040,11 +14040,11 @@ impl WriteInst for Pcmpistri<Xmm, Memory, i8> {
     }
 }
 
-pub struct Pcmpistrm<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Pcmpistrm<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// pcmpistrm xmm xmm imm8: Perform a packed comparison of string data with implicit lengths, generating a mask, and storing the result in XMM0.
-impl WriteInst for Pcmpistrm<Xmm, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pcmpistrm<Xmm, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 62 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14061,8 +14061,8 @@ impl WriteInst for Pcmpistrm<Xmm, Xmm, i8> {
 }
 
 /// pcmpistrm xmm m128 imm8: Perform a packed comparison of string data with implicit lengths, generating a mask, and storing the result in XMM0.
-impl WriteInst for Pcmpistrm<Xmm, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pcmpistrm<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 62 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14078,11 +14078,11 @@ impl WriteInst for Pcmpistrm<Xmm, Memory, i8> {
     }
 }
 
-pub struct Pextrb<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Pextrb<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// pextrb reg xmm imm8: Extract a byte integer value from xmm2 at the source byte offset specified by imm8 into rreg or m8. The upper bits of r32 or r64 are zeroed.
-impl WriteInst for Pextrb<Gpr64, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pextrb<Gpr64, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 14 /r ib
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -14099,8 +14099,8 @@ impl WriteInst for Pextrb<Gpr64, Xmm, i8> {
 }
 
 /// pextrb m8 xmm imm8: Extract a byte integer value from xmm2 at the source byte offset specified by imm8 into rreg or m8. The upper bits of r32 or r64 are zeroed.
-impl WriteInst for Pextrb<Memory, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pextrb<Memory, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 14 /r ib
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -14116,11 +14116,11 @@ impl WriteInst for Pextrb<Memory, Xmm, i8> {
     }
 }
 
-pub struct Pextrd<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Pextrd<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// pextrd r32 xmm imm8: Extract a dword integer value from xmm2 at the source dword offset specified by imm8 into r/m32.
-impl WriteInst for Pextrd<Gpr32, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pextrd<Gpr32, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 16 /r ib
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -14137,8 +14137,8 @@ impl WriteInst for Pextrd<Gpr32, Xmm, i8> {
 }
 
 /// pextrd m32 xmm imm8: Extract a dword integer value from xmm2 at the source dword offset specified by imm8 into r/m32.
-impl WriteInst for Pextrd<Memory, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pextrd<Memory, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 16 /r ib
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -14154,11 +14154,11 @@ impl WriteInst for Pextrd<Memory, Xmm, i8> {
     }
 }
 
-pub struct Pextrq<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Pextrq<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// pextrq r64 xmm imm8: Extract a qword integer value from xmm2 at the source qword offset specified by imm8 into r/m64.
-impl WriteInst for Pextrq<Gpr64, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pextrq<Gpr64, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 REX.W+ 0F 3A 16 /r ib
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -14175,8 +14175,8 @@ impl WriteInst for Pextrq<Gpr64, Xmm, i8> {
 }
 
 /// pextrq m64 xmm imm8: Extract a qword integer value from xmm2 at the source qword offset specified by imm8 into r/m64.
-impl WriteInst for Pextrq<Memory, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pextrq<Memory, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 REX.W+ 0F 3A 16 /r ib
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -14192,11 +14192,11 @@ impl WriteInst for Pextrq<Memory, Xmm, i8> {
     }
 }
 
-pub struct Pextrw<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Pextrw<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// pextrw reg xmm imm8: Extract the word specified by imm8 from xmm and move it to reg, bits 15-0. The upper bits of r32 or r64 is zeroed.
-impl WriteInst for Pextrw<Gpr64, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pextrw<Gpr64, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F C5 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14212,8 +14212,8 @@ impl WriteInst for Pextrw<Gpr64, Xmm, i8> {
 }
 
 /// pextrw m16 xmm imm8: Extract the word specified by imm8 from xmm and copy it to lowest 16 bits of reg or m16. Zero-extend the result in the destination, r32 or r64.
-impl WriteInst for Pextrw<Memory, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pextrw<Memory, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 15 /r ib
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -14229,11 +14229,11 @@ impl WriteInst for Pextrw<Memory, Xmm, i8> {
     }
 }
 
-pub struct Phminposuw<Op0, Op1>(Op0, Op1);
+pub struct Phminposuw<Op0, Op1>(pub Op0, pub Op1);
 
 /// phminposuw xmm xmm: Find the minimum unsigned word in xmm2/m128 and place its value in the low word of xmm1 and its index in the second-lowest word of xmm1.
-impl WriteInst for Phminposuw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Phminposuw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 41 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14249,8 +14249,8 @@ impl WriteInst for Phminposuw<Xmm, Xmm> {
 }
 
 /// phminposuw xmm m128: Find the minimum unsigned word in xmm2/m128 and place its value in the low word of xmm1 and its index in the second-lowest word of xmm1.
-impl WriteInst for Phminposuw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Phminposuw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 41 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14265,11 +14265,11 @@ impl WriteInst for Phminposuw<Xmm, Memory> {
     }
 }
 
-pub struct Pinsrb<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Pinsrb<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// pinsrb xmm r32 imm8: Insert a byte integer value from r32/m8 into xmm1 at the destination element in xmm1 specified by imm8.
-impl WriteInst for Pinsrb<Xmm, Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pinsrb<Xmm, Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 20 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14286,8 +14286,8 @@ impl WriteInst for Pinsrb<Xmm, Gpr32, i8> {
 }
 
 /// pinsrb xmm m8 imm8: Insert a byte integer value from r32/m8 into xmm1 at the destination element in xmm1 specified by imm8.
-impl WriteInst for Pinsrb<Xmm, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pinsrb<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 20 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14303,11 +14303,11 @@ impl WriteInst for Pinsrb<Xmm, Memory, i8> {
     }
 }
 
-pub struct Pinsrd<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Pinsrd<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// pinsrd xmm r32 imm8: Insert a dword integer value from r/m32 into the xmm1 at the destination element specified by imm8.
-impl WriteInst for Pinsrd<Xmm, Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pinsrd<Xmm, Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 22 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14324,8 +14324,8 @@ impl WriteInst for Pinsrd<Xmm, Gpr32, i8> {
 }
 
 /// pinsrd xmm m32 imm8: Insert a dword integer value from r/m32 into the xmm1 at the destination element specified by imm8.
-impl WriteInst for Pinsrd<Xmm, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pinsrd<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 22 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14341,11 +14341,11 @@ impl WriteInst for Pinsrd<Xmm, Memory, i8> {
     }
 }
 
-pub struct Pinsrw<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Pinsrw<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// pinsrw xmm r32 imm8: Move the low word of r32 or from m16 into xmm at the word position specified by imm8.
-impl WriteInst for Pinsrw<Xmm, Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pinsrw<Xmm, Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F C4 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14361,8 +14361,8 @@ impl WriteInst for Pinsrw<Xmm, Gpr32, i8> {
 }
 
 /// pinsrw xmm m16 imm8: Move the low word of r32 or from m16 into xmm at the word position specified by imm8.
-impl WriteInst for Pinsrw<Xmm, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pinsrw<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F C4 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14377,11 +14377,11 @@ impl WriteInst for Pinsrw<Xmm, Memory, i8> {
     }
 }
 
-pub struct Pmaddwd<Op0, Op1>(Op0, Op1);
+pub struct Pmaddwd<Op0, Op1>(pub Op0, pub Op1);
 
 /// pmaddwd xmm xmm: Multiply the packed word integers in xmm1 by the packed word integers in xmm2/m128, add adjacent doubleword results, and store in xmm1.
-impl WriteInst for Pmaddwd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmaddwd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F F5 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14396,8 +14396,8 @@ impl WriteInst for Pmaddwd<Xmm, Xmm> {
 }
 
 /// pmaddwd xmm m128: Multiply the packed word integers in xmm1 by the packed word integers in xmm2/m128, add adjacent doubleword results, and store in xmm1.
-impl WriteInst for Pmaddwd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmaddwd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F F5 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14411,11 +14411,11 @@ impl WriteInst for Pmaddwd<Xmm, Memory> {
     }
 }
 
-pub struct Pmaxsb<Op0, Op1>(Op0, Op1);
+pub struct Pmaxsb<Op0, Op1>(pub Op0, pub Op1);
 
 /// pmaxsb xmm xmm: Compare packed signed byte integers in xmm1 and xmm2/m128 and store packed maximum values in xmm1.
-impl WriteInst for Pmaxsb<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmaxsb<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 3C /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14431,8 +14431,8 @@ impl WriteInst for Pmaxsb<Xmm, Xmm> {
 }
 
 /// pmaxsb xmm m128: Compare packed signed byte integers in xmm1 and xmm2/m128 and store packed maximum values in xmm1.
-impl WriteInst for Pmaxsb<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmaxsb<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 3C /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14447,11 +14447,11 @@ impl WriteInst for Pmaxsb<Xmm, Memory> {
     }
 }
 
-pub struct Pmaxsd<Op0, Op1>(Op0, Op1);
+pub struct Pmaxsd<Op0, Op1>(pub Op0, pub Op1);
 
 /// pmaxsd xmm xmm: Compare packed signed dword integers in xmm1 and xmm2/m128 and store packed maximum values in xmm1.
-impl WriteInst for Pmaxsd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmaxsd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 3D /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14467,8 +14467,8 @@ impl WriteInst for Pmaxsd<Xmm, Xmm> {
 }
 
 /// pmaxsd xmm m128: Compare packed signed dword integers in xmm1 and xmm2/m128 and store packed maximum values in xmm1.
-impl WriteInst for Pmaxsd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmaxsd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 3D /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14483,11 +14483,11 @@ impl WriteInst for Pmaxsd<Xmm, Memory> {
     }
 }
 
-pub struct Pmaxsw<Op0, Op1>(Op0, Op1);
+pub struct Pmaxsw<Op0, Op1>(pub Op0, pub Op1);
 
 /// pmaxsw xmm xmm: Compare signed word integers in xmm2/m128 and xmm1 and return maximum values.
-impl WriteInst for Pmaxsw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmaxsw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F EE /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14502,8 +14502,8 @@ impl WriteInst for Pmaxsw<Xmm, Xmm> {
 }
 
 /// pmaxsw xmm m128: Compare signed word integers in xmm2/m128 and xmm1 and return maximum values.
-impl WriteInst for Pmaxsw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmaxsw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F EE /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14517,11 +14517,11 @@ impl WriteInst for Pmaxsw<Xmm, Memory> {
     }
 }
 
-pub struct Pmaxub<Op0, Op1>(Op0, Op1);
+pub struct Pmaxub<Op0, Op1>(pub Op0, pub Op1);
 
 /// pmaxub xmm xmm: Compare unsigned byte integers in xmm2/m128 and xmm1 and returns maximum values.
-impl WriteInst for Pmaxub<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmaxub<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F DE /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14536,8 +14536,8 @@ impl WriteInst for Pmaxub<Xmm, Xmm> {
 }
 
 /// pmaxub xmm m128: Compare unsigned byte integers in xmm2/m128 and xmm1 and returns maximum values.
-impl WriteInst for Pmaxub<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmaxub<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F DE /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14551,11 +14551,11 @@ impl WriteInst for Pmaxub<Xmm, Memory> {
     }
 }
 
-pub struct Pmaxud<Op0, Op1>(Op0, Op1);
+pub struct Pmaxud<Op0, Op1>(pub Op0, pub Op1);
 
 /// pmaxud xmm xmm: Compare packed unsigned dword integers in xmm1 and xmm2/m128 and store packed maximum values in xmm1.
-impl WriteInst for Pmaxud<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmaxud<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 3F /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14571,8 +14571,8 @@ impl WriteInst for Pmaxud<Xmm, Xmm> {
 }
 
 /// pmaxud xmm m128: Compare packed unsigned dword integers in xmm1 and xmm2/m128 and store packed maximum values in xmm1.
-impl WriteInst for Pmaxud<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmaxud<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 3F /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14587,11 +14587,11 @@ impl WriteInst for Pmaxud<Xmm, Memory> {
     }
 }
 
-pub struct Pmaxuw<Op0, Op1>(Op0, Op1);
+pub struct Pmaxuw<Op0, Op1>(pub Op0, pub Op1);
 
 /// pmaxuw xmm xmm: Compare packed unsigned word integers in xmm1 and xmm2/m128 and store packed maximum values in xmm1.
-impl WriteInst for Pmaxuw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmaxuw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 3E /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14607,8 +14607,8 @@ impl WriteInst for Pmaxuw<Xmm, Xmm> {
 }
 
 /// pmaxuw xmm m128: Compare packed unsigned word integers in xmm1 and xmm2/m128 and store packed maximum values in xmm1.
-impl WriteInst for Pmaxuw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmaxuw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 3E /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14623,11 +14623,11 @@ impl WriteInst for Pmaxuw<Xmm, Memory> {
     }
 }
 
-pub struct Pminsb<Op0, Op1>(Op0, Op1);
+pub struct Pminsb<Op0, Op1>(pub Op0, pub Op1);
 
 /// pminsb xmm xmm: Compare packed signed byte integers in xmm1 and xmm2/m128 and store packed minimum values in xmm1.
-impl WriteInst for Pminsb<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pminsb<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14642,8 +14642,8 @@ impl WriteInst for Pminsb<Xmm, Xmm> {
 }
 
 /// pminsb xmm m128: Compare packed signed byte integers in xmm1 and xmm2/m128 and store packed minimum values in xmm1.
-impl WriteInst for Pminsb<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pminsb<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14657,11 +14657,11 @@ impl WriteInst for Pminsb<Xmm, Memory> {
     }
 }
 
-pub struct Pminsd<Op0, Op1>(Op0, Op1);
+pub struct Pminsd<Op0, Op1>(pub Op0, pub Op1);
 
 /// pminsd xmm xmm: Compare packed signed dword integers in xmm1 and xmm2/m128 and store packed minimum values in xmm1.
-impl WriteInst for Pminsd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pminsd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 39 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14677,8 +14677,8 @@ impl WriteInst for Pminsd<Xmm, Xmm> {
 }
 
 /// pminsd xmm m128: Compare packed signed dword integers in xmm1 and xmm2/m128 and store packed minimum values in xmm1.
-impl WriteInst for Pminsd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pminsd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 39 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14693,11 +14693,11 @@ impl WriteInst for Pminsd<Xmm, Memory> {
     }
 }
 
-pub struct Pminsw<Op0, Op1>(Op0, Op1);
+pub struct Pminsw<Op0, Op1>(pub Op0, pub Op1);
 
 /// pminsw xmm xmm: Compare signed word integers in xmm2/m128 and xmm1 and return minimum values.
-impl WriteInst for Pminsw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pminsw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F EA /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14712,8 +14712,8 @@ impl WriteInst for Pminsw<Xmm, Xmm> {
 }
 
 /// pminsw xmm m128: Compare signed word integers in xmm2/m128 and xmm1 and return minimum values.
-impl WriteInst for Pminsw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pminsw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F EA /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14727,11 +14727,11 @@ impl WriteInst for Pminsw<Xmm, Memory> {
     }
 }
 
-pub struct Pminub<Op0, Op1>(Op0, Op1);
+pub struct Pminub<Op0, Op1>(pub Op0, pub Op1);
 
 /// pminub xmm xmm: Compare unsigned byte integers in xmm2/m128 and xmm1 and returns minimum values.
-impl WriteInst for Pminub<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pminub<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F DA /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14746,8 +14746,8 @@ impl WriteInst for Pminub<Xmm, Xmm> {
 }
 
 /// pminub xmm m128: Compare unsigned byte integers in xmm2/m128 and xmm1 and returns minimum values.
-impl WriteInst for Pminub<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pminub<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F DA /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14761,11 +14761,11 @@ impl WriteInst for Pminub<Xmm, Memory> {
     }
 }
 
-pub struct Pminud<Op0, Op1>(Op0, Op1);
+pub struct Pminud<Op0, Op1>(pub Op0, pub Op1);
 
 /// pminud xmm xmm: Compare packed unsigned dword integers in xmm1 and xmm2/m128 and store packed minimum values in xmm1.
-impl WriteInst for Pminud<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pminud<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 3B /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14781,8 +14781,8 @@ impl WriteInst for Pminud<Xmm, Xmm> {
 }
 
 /// pminud xmm m128: Compare packed unsigned dword integers in xmm1 and xmm2/m128 and store packed minimum values in xmm1.
-impl WriteInst for Pminud<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pminud<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 3B /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14797,11 +14797,11 @@ impl WriteInst for Pminud<Xmm, Memory> {
     }
 }
 
-pub struct Pminuw<Op0, Op1>(Op0, Op1);
+pub struct Pminuw<Op0, Op1>(pub Op0, pub Op1);
 
 /// pminuw xmm xmm: Compare packed unsigned word integers in xmm1 and xmm2/m128 and store packed minimum values in xmm1.
-impl WriteInst for Pminuw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pminuw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 3A /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14817,8 +14817,8 @@ impl WriteInst for Pminuw<Xmm, Xmm> {
 }
 
 /// pminuw xmm m128: Compare packed unsigned word integers in xmm1 and xmm2/m128 and store packed minimum values in xmm1.
-impl WriteInst for Pminuw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pminuw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 3A /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14833,11 +14833,11 @@ impl WriteInst for Pminuw<Xmm, Memory> {
     }
 }
 
-pub struct Pmovmskb<Op0, Op1>(Op0, Op1);
+pub struct Pmovmskb<Op0, Op1>(pub Op0, pub Op1);
 
 /// pmovmskb reg xmm: Move a byte mask of xmm to reg. The upper bits of r32 or r64 are zeroed
-impl WriteInst for Pmovmskb<Gpr64, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmovmskb<Gpr64, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F D7 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14851,11 +14851,11 @@ impl WriteInst for Pmovmskb<Gpr64, Xmm> {
     }
 }
 
-pub struct Pmovsxbd<Op0, Op1>(Op0, Op1);
+pub struct Pmovsxbd<Op0, Op1>(pub Op0, pub Op1);
 
 /// pmovsxbd xmm xmm: Sign extend 4 packed signed 8-bit integers in the low 4 bytes of xmm2/m32 to 4 packed signed 32-bit integers in xmm1.
-impl WriteInst for Pmovsxbd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmovsxbd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 21 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14871,8 +14871,8 @@ impl WriteInst for Pmovsxbd<Xmm, Xmm> {
 }
 
 /// pmovsxbd xmm m32: Sign extend 4 packed signed 8-bit integers in the low 4 bytes of xmm2/m32 to 4 packed signed 32-bit integers in xmm1.
-impl WriteInst for Pmovsxbd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmovsxbd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 21 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14887,11 +14887,11 @@ impl WriteInst for Pmovsxbd<Xmm, Memory> {
     }
 }
 
-pub struct Pmovsxbq<Op0, Op1>(Op0, Op1);
+pub struct Pmovsxbq<Op0, Op1>(pub Op0, pub Op1);
 
 /// pmovsxbq xmm xmm: Sign extend 2 packed signed 8-bit integers in the low 2 bytes of xmm2/m16 to 2 packed signed 64-bit integers in xmm1.
-impl WriteInst for Pmovsxbq<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmovsxbq<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 22 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14907,8 +14907,8 @@ impl WriteInst for Pmovsxbq<Xmm, Xmm> {
 }
 
 /// pmovsxbq xmm m16: Sign extend 2 packed signed 8-bit integers in the low 2 bytes of xmm2/m16 to 2 packed signed 64-bit integers in xmm1.
-impl WriteInst for Pmovsxbq<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmovsxbq<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 22 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14923,11 +14923,11 @@ impl WriteInst for Pmovsxbq<Xmm, Memory> {
     }
 }
 
-pub struct Pmovsxbw<Op0, Op1>(Op0, Op1);
+pub struct Pmovsxbw<Op0, Op1>(pub Op0, pub Op1);
 
 /// pmovsxbw xmm xmm: Sign extend 8 packed signed 8-bit integers in the low 8 bytes of xmm2/m64 to 8 packed signed 16-bit integers in xmm1.
-impl WriteInst for Pmovsxbw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmovsxbw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 20 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14943,8 +14943,8 @@ impl WriteInst for Pmovsxbw<Xmm, Xmm> {
 }
 
 /// pmovsxbw xmm m64: Sign extend 8 packed signed 8-bit integers in the low 8 bytes of xmm2/m64 to 8 packed signed 16-bit integers in xmm1.
-impl WriteInst for Pmovsxbw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmovsxbw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 20 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14959,11 +14959,11 @@ impl WriteInst for Pmovsxbw<Xmm, Memory> {
     }
 }
 
-pub struct Pmovsxdq<Op0, Op1>(Op0, Op1);
+pub struct Pmovsxdq<Op0, Op1>(pub Op0, pub Op1);
 
 /// pmovsxdq xmm xmm: Sign extend 2 packed signed 32-bit integers in the low 8 bytes of xmm2/m64 to 2 packed signed 64-bit integers in xmm1.
-impl WriteInst for Pmovsxdq<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmovsxdq<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 25 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14979,8 +14979,8 @@ impl WriteInst for Pmovsxdq<Xmm, Xmm> {
 }
 
 /// pmovsxdq xmm m64: Sign extend 2 packed signed 32-bit integers in the low 8 bytes of xmm2/m64 to 2 packed signed 64-bit integers in xmm1.
-impl WriteInst for Pmovsxdq<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmovsxdq<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 25 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -14995,11 +14995,11 @@ impl WriteInst for Pmovsxdq<Xmm, Memory> {
     }
 }
 
-pub struct Pmovsxwd<Op0, Op1>(Op0, Op1);
+pub struct Pmovsxwd<Op0, Op1>(pub Op0, pub Op1);
 
 /// pmovsxwd xmm xmm: Sign extend 4 packed signed 16-bit integers in the low 8 bytes of xmm2/m64 to 4 packed signed 32-bit integers in xmm1.
-impl WriteInst for Pmovsxwd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmovsxwd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 23 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15015,8 +15015,8 @@ impl WriteInst for Pmovsxwd<Xmm, Xmm> {
 }
 
 /// pmovsxwd xmm m64: Sign extend 4 packed signed 16-bit integers in the low 8 bytes of xmm2/m64 to 4 packed signed 32-bit integers in xmm1.
-impl WriteInst for Pmovsxwd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmovsxwd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 23 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15031,11 +15031,11 @@ impl WriteInst for Pmovsxwd<Xmm, Memory> {
     }
 }
 
-pub struct Pmovsxwq<Op0, Op1>(Op0, Op1);
+pub struct Pmovsxwq<Op0, Op1>(pub Op0, pub Op1);
 
 /// pmovsxwq xmm xmm: Sign extend 2 packed signed 16-bit integers in the low 4 bytes of xmm2/m32 to 2 packed signed 64-bit integers in xmm1.
-impl WriteInst for Pmovsxwq<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmovsxwq<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 24 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15051,8 +15051,8 @@ impl WriteInst for Pmovsxwq<Xmm, Xmm> {
 }
 
 /// pmovsxwq xmm m32: Sign extend 2 packed signed 16-bit integers in the low 4 bytes of xmm2/m32 to 2 packed signed 64-bit integers in xmm1.
-impl WriteInst for Pmovsxwq<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmovsxwq<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 24 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15067,11 +15067,11 @@ impl WriteInst for Pmovsxwq<Xmm, Memory> {
     }
 }
 
-pub struct Pmovzxbd<Op0, Op1>(Op0, Op1);
+pub struct Pmovzxbd<Op0, Op1>(pub Op0, pub Op1);
 
 /// pmovzxbd xmm xmm: Zero extend 4 packed 8-bit integers in the low 4 bytes of xmm2/m32 to 4 packed 32-bit integers in xmm1.
-impl WriteInst for Pmovzxbd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmovzxbd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 31 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15087,8 +15087,8 @@ impl WriteInst for Pmovzxbd<Xmm, Xmm> {
 }
 
 /// pmovzxbd xmm m32: Zero extend 4 packed 8-bit integers in the low 4 bytes of xmm2/m32 to 4 packed 32-bit integers in xmm1.
-impl WriteInst for Pmovzxbd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmovzxbd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 31 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15103,11 +15103,11 @@ impl WriteInst for Pmovzxbd<Xmm, Memory> {
     }
 }
 
-pub struct Pmovzxbq<Op0, Op1>(Op0, Op1);
+pub struct Pmovzxbq<Op0, Op1>(pub Op0, pub Op1);
 
 /// pmovzxbq xmm xmm: Zero extend 2 packed 8-bit integers in the low 2 bytes of xmm2/m16 to 2 packed 64-bit integers in xmm1.
-impl WriteInst for Pmovzxbq<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmovzxbq<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 32 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15123,8 +15123,8 @@ impl WriteInst for Pmovzxbq<Xmm, Xmm> {
 }
 
 /// pmovzxbq xmm m16: Zero extend 2 packed 8-bit integers in the low 2 bytes of xmm2/m16 to 2 packed 64-bit integers in xmm1.
-impl WriteInst for Pmovzxbq<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmovzxbq<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 32 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15139,11 +15139,11 @@ impl WriteInst for Pmovzxbq<Xmm, Memory> {
     }
 }
 
-pub struct Pmovzxbw<Op0, Op1>(Op0, Op1);
+pub struct Pmovzxbw<Op0, Op1>(pub Op0, pub Op1);
 
 /// pmovzxbw xmm xmm: Zero extend 8 packed 8-bit integers in the low 8 bytes of xmm2/m64 to 8 packed 16-bit integers in xmm1.
-impl WriteInst for Pmovzxbw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmovzxbw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 30 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15159,8 +15159,8 @@ impl WriteInst for Pmovzxbw<Xmm, Xmm> {
 }
 
 /// pmovzxbw xmm m64: Zero extend 8 packed 8-bit integers in the low 8 bytes of xmm2/m64 to 8 packed 16-bit integers in xmm1.
-impl WriteInst for Pmovzxbw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmovzxbw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 30 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15175,11 +15175,11 @@ impl WriteInst for Pmovzxbw<Xmm, Memory> {
     }
 }
 
-pub struct Pmovzxdq<Op0, Op1>(Op0, Op1);
+pub struct Pmovzxdq<Op0, Op1>(pub Op0, pub Op1);
 
 /// pmovzxdq xmm xmm: Zero extend 2 packed 32-bit integers in the low 8 bytes of xmm2/m64 to 2 packed 64-bit integers in xmm1.
-impl WriteInst for Pmovzxdq<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmovzxdq<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 35 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15195,8 +15195,8 @@ impl WriteInst for Pmovzxdq<Xmm, Xmm> {
 }
 
 /// pmovzxdq xmm m64: Zero extend 2 packed 32-bit integers in the low 8 bytes of xmm2/m64 to 2 packed 64-bit integers in xmm1.
-impl WriteInst for Pmovzxdq<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmovzxdq<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 35 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15211,11 +15211,11 @@ impl WriteInst for Pmovzxdq<Xmm, Memory> {
     }
 }
 
-pub struct Pmovzxwd<Op0, Op1>(Op0, Op1);
+pub struct Pmovzxwd<Op0, Op1>(pub Op0, pub Op1);
 
 /// pmovzxwd xmm xmm: Zero extend 4 packed 16-bit integers in the low 8 bytes of xmm2/m64 to 4 packed 32-bit integers in xmm1.
-impl WriteInst for Pmovzxwd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmovzxwd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 33 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15231,8 +15231,8 @@ impl WriteInst for Pmovzxwd<Xmm, Xmm> {
 }
 
 /// pmovzxwd xmm m64: Zero extend 4 packed 16-bit integers in the low 8 bytes of xmm2/m64 to 4 packed 32-bit integers in xmm1.
-impl WriteInst for Pmovzxwd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmovzxwd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 33 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15247,11 +15247,11 @@ impl WriteInst for Pmovzxwd<Xmm, Memory> {
     }
 }
 
-pub struct Pmovzxwq<Op0, Op1>(Op0, Op1);
+pub struct Pmovzxwq<Op0, Op1>(pub Op0, pub Op1);
 
 /// pmovzxwq xmm xmm: Zero extend 2 packed 16-bit integers in the low 4 bytes of xmm2/m32 to 2 packed 64-bit integers in xmm1.
-impl WriteInst for Pmovzxwq<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmovzxwq<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 34 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15267,8 +15267,8 @@ impl WriteInst for Pmovzxwq<Xmm, Xmm> {
 }
 
 /// pmovzxwq xmm m32: Zero extend 2 packed 16-bit integers in the low 4 bytes of xmm2/m32 to 2 packed 64-bit integers in xmm1.
-impl WriteInst for Pmovzxwq<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmovzxwq<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 34 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15283,11 +15283,11 @@ impl WriteInst for Pmovzxwq<Xmm, Memory> {
     }
 }
 
-pub struct Pmuldq<Op0, Op1>(Op0, Op1);
+pub struct Pmuldq<Op0, Op1>(pub Op0, pub Op1);
 
 /// pmuldq xmm xmm: Multiply the packed signed dword integers in xmm1 and xmm2/m128 and store the quadword product in xmm1.
-impl WriteInst for Pmuldq<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmuldq<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 28 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15303,8 +15303,8 @@ impl WriteInst for Pmuldq<Xmm, Xmm> {
 }
 
 /// pmuldq xmm m128: Multiply the packed signed dword integers in xmm1 and xmm2/m128 and store the quadword product in xmm1.
-impl WriteInst for Pmuldq<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmuldq<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 28 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15319,11 +15319,11 @@ impl WriteInst for Pmuldq<Xmm, Memory> {
     }
 }
 
-pub struct Pmulhuw<Op0, Op1>(Op0, Op1);
+pub struct Pmulhuw<Op0, Op1>(pub Op0, pub Op1);
 
 /// pmulhuw xmm xmm: Multiply the packed unsigned word integers in xmm1 and xmm2/m128, and store the high 16 bits of the results in xmm1.
-impl WriteInst for Pmulhuw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmulhuw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F E4 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15338,8 +15338,8 @@ impl WriteInst for Pmulhuw<Xmm, Xmm> {
 }
 
 /// pmulhuw xmm m128: Multiply the packed unsigned word integers in xmm1 and xmm2/m128, and store the high 16 bits of the results in xmm1.
-impl WriteInst for Pmulhuw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmulhuw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F E4 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15353,11 +15353,11 @@ impl WriteInst for Pmulhuw<Xmm, Memory> {
     }
 }
 
-pub struct Pmulhw<Op0, Op1>(Op0, Op1);
+pub struct Pmulhw<Op0, Op1>(pub Op0, pub Op1);
 
 /// pmulhw xmm xmm: Multiply the packed signed word integers in xmm1 and xmm2/m128, and store the high 16 bits of the results in xmm1.
-impl WriteInst for Pmulhw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmulhw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F E5 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15372,8 +15372,8 @@ impl WriteInst for Pmulhw<Xmm, Xmm> {
 }
 
 /// pmulhw xmm m128: Multiply the packed signed word integers in xmm1 and xmm2/m128, and store the high 16 bits of the results in xmm1.
-impl WriteInst for Pmulhw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmulhw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F E5 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15387,11 +15387,11 @@ impl WriteInst for Pmulhw<Xmm, Memory> {
     }
 }
 
-pub struct Pmulld<Op0, Op1>(Op0, Op1);
+pub struct Pmulld<Op0, Op1>(pub Op0, pub Op1);
 
 /// pmulld xmm xmm: Multiply the packed dword signed integers in xmm1 and xmm2/m128 and store the low 32 bits of each product in xmm1.
-impl WriteInst for Pmulld<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmulld<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 40 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15407,8 +15407,8 @@ impl WriteInst for Pmulld<Xmm, Xmm> {
 }
 
 /// pmulld xmm m128: Multiply the packed dword signed integers in xmm1 and xmm2/m128 and store the low 32 bits of each product in xmm1.
-impl WriteInst for Pmulld<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmulld<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 40 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15423,11 +15423,11 @@ impl WriteInst for Pmulld<Xmm, Memory> {
     }
 }
 
-pub struct Pmullw<Op0, Op1>(Op0, Op1);
+pub struct Pmullw<Op0, Op1>(pub Op0, pub Op1);
 
 /// pmullw xmm xmm: Multiply the packed signed word integers in xmm1 and xmm2/m128, and store the low 16 bits of the results in xmm1.
-impl WriteInst for Pmullw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmullw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F D5 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15442,8 +15442,8 @@ impl WriteInst for Pmullw<Xmm, Xmm> {
 }
 
 /// pmullw xmm m128: Multiply the packed signed word integers in xmm1 and xmm2/m128, and store the low 16 bits of the results in xmm1.
-impl WriteInst for Pmullw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmullw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F D5 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15457,11 +15457,11 @@ impl WriteInst for Pmullw<Xmm, Memory> {
     }
 }
 
-pub struct Pmuludq<Op0, Op1>(Op0, Op1);
+pub struct Pmuludq<Op0, Op1>(pub Op0, pub Op1);
 
 /// pmuludq xmm xmm: Multiply packed unsigned doubleword integers in xmm1 by packed unsigned doubleword integers in xmm2/m128, and store the quadword results in xmm1.
-impl WriteInst for Pmuludq<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmuludq<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F F4 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15476,8 +15476,8 @@ impl WriteInst for Pmuludq<Xmm, Xmm> {
 }
 
 /// pmuludq xmm m128: Multiply packed unsigned doubleword integers in xmm1 by packed unsigned doubleword integers in xmm2/m128, and store the quadword results in xmm1.
-impl WriteInst for Pmuludq<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pmuludq<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F F4 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15494,8 +15494,8 @@ impl WriteInst for Pmuludq<Xmm, Memory> {
 pub struct Popfq();
 
 /// popfq: Pop top of stack and zero-extend into RFLAGS.
-impl WriteInst for Popfq {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Popfq {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 9D
         put(w, 0x9D)?;
         Ok(())
@@ -15505,8 +15505,8 @@ impl WriteInst for Popfq {
 pub struct Popfw();
 
 /// popfw: Pop top of stack into lower 16 bits of EFLAGS.
-impl WriteInst for Popfw {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Popfw {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 9D
         put(w, 0x66)?;
         put(w, 0x9D)?;
@@ -15514,11 +15514,11 @@ impl WriteInst for Popfw {
     }
 }
 
-pub struct Popq<Op0>(Op0);
+pub struct Popq<Op0>(pub Op0);
 
 /// popq r64: Pop top of stack into r64; increment stack pointer. Cannot encode 32-bit operand size.
-impl WriteInst for Popq<Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Popq<Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 58 +ro
         let rio = RegInOpcode::from(self.0);
         puts(w, rio.rex_byte(false))?;
@@ -15528,8 +15528,8 @@ impl WriteInst for Popq<Gpr64> {
 }
 
 /// popq m64: Pop top of stack into m64; increment stack pointer. Cannot encode 32-bit operand size.
-impl WriteInst for Popq<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Popq<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 8F /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -15541,11 +15541,11 @@ impl WriteInst for Popq<Memory> {
     }
 }
 
-pub struct Popw<Op0>(Op0);
+pub struct Popw<Op0>(pub Op0);
 
 /// popw r16: Pop top of stack into r16; increment stack pointer.
-impl WriteInst for Popw<Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Popw<Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 58 +rw
         let rio = RegInOpcode::from(self.0);
         put(w, 0x66)?;
@@ -15556,8 +15556,8 @@ impl WriteInst for Popw<Gpr16> {
 }
 
 /// popw m16: Pop top of stack into m16; increment stack pointer.
-impl WriteInst for Popw<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Popw<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 8F /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         put(w, 0x66)?;
@@ -15570,11 +15570,11 @@ impl WriteInst for Popw<Memory> {
     }
 }
 
-pub struct Por<Op0, Op1>(Op0, Op1);
+pub struct Por<Op0, Op1>(pub Op0, pub Op1);
 
 /// por xmm xmm: Bitwise OR of xmm2/m128 and xmm1.
-impl WriteInst for Por<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Por<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F EB /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15589,8 +15589,8 @@ impl WriteInst for Por<Xmm, Xmm> {
 }
 
 /// por xmm m128: Bitwise OR of xmm2/m128 and xmm1.
-impl WriteInst for Por<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Por<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F EB /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15604,11 +15604,11 @@ impl WriteInst for Por<Xmm, Memory> {
     }
 }
 
-pub struct Psadbw<Op0, Op1>(Op0, Op1);
+pub struct Psadbw<Op0, Op1>(pub Op0, pub Op1);
 
 /// psadbw xmm xmm: Computes the absolute differences of the packed unsigned byte integers from xmm2 /m128 and xmm1; the 8 low differences and 8 high differences are then summed separately to produce two unsigned word integer results.
-impl WriteInst for Psadbw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psadbw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F F6 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15623,8 +15623,8 @@ impl WriteInst for Psadbw<Xmm, Xmm> {
 }
 
 /// psadbw xmm m128: Computes the absolute differences of the packed unsigned byte integers from xmm2 /m128 and xmm1; the 8 low differences and 8 high differences are then summed separately to produce two unsigned word integer results.
-impl WriteInst for Psadbw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psadbw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F F6 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15638,11 +15638,11 @@ impl WriteInst for Psadbw<Xmm, Memory> {
     }
 }
 
-pub struct Pshufd<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Pshufd<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// pshufd xmm xmm imm8: Shuffle the doublewords in xmm2/m128 based on the encoding in imm8 and store the result in xmm1.
-impl WriteInst for Pshufd<Xmm, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pshufd<Xmm, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 70 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15658,8 +15658,8 @@ impl WriteInst for Pshufd<Xmm, Xmm, i8> {
 }
 
 /// pshufd xmm m128 imm8: Shuffle the doublewords in xmm2/m128 based on the encoding in imm8 and store the result in xmm1.
-impl WriteInst for Pshufd<Xmm, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pshufd<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 70 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15674,11 +15674,11 @@ impl WriteInst for Pshufd<Xmm, Memory, i8> {
     }
 }
 
-pub struct Pshufhw<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Pshufhw<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// pshufhw xmm xmm imm8: Shuffle the high words in xmm2/m128 based on the encoding in imm8 and store the result in xmm1.
-impl WriteInst for Pshufhw<Xmm, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pshufhw<Xmm, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 70 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -15694,8 +15694,8 @@ impl WriteInst for Pshufhw<Xmm, Xmm, i8> {
 }
 
 /// pshufhw xmm m128 imm8: Shuffle the high words in xmm2/m128 based on the encoding in imm8 and store the result in xmm1.
-impl WriteInst for Pshufhw<Xmm, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pshufhw<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 70 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -15710,11 +15710,11 @@ impl WriteInst for Pshufhw<Xmm, Memory, i8> {
     }
 }
 
-pub struct Pshuflw<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Pshuflw<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// pshuflw xmm xmm imm8: Shuffle the low words in xmm2/m128 based on the encoding in imm8 and store the result in xmm1.
-impl WriteInst for Pshuflw<Xmm, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pshuflw<Xmm, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 70 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -15730,8 +15730,8 @@ impl WriteInst for Pshuflw<Xmm, Xmm, i8> {
 }
 
 /// pshuflw xmm m128 imm8: Shuffle the low words in xmm2/m128 based on the encoding in imm8 and store the result in xmm1.
-impl WriteInst for Pshuflw<Xmm, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pshuflw<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 70 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -15746,11 +15746,11 @@ impl WriteInst for Pshuflw<Xmm, Memory, i8> {
     }
 }
 
-pub struct Pslld<Op0, Op1>(Op0, Op1);
+pub struct Pslld<Op0, Op1>(pub Op0, pub Op1);
 
 /// pslld xmm imm8: Shift doublewords in xmm1 left by imm8 while shifting in 0s.
-impl WriteInst for Pslld<Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pslld<Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 72 /6 ib
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         put(w, 0x66)?;
@@ -15766,8 +15766,8 @@ impl WriteInst for Pslld<Xmm, i8> {
 }
 
 /// pslld xmm xmm: Shift doublewords in xmm1 left by xmm2/m128 while shifting in 0s.
-impl WriteInst for Pslld<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pslld<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F F2 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15782,8 +15782,8 @@ impl WriteInst for Pslld<Xmm, Xmm> {
 }
 
 /// pslld xmm m128: Shift doublewords in xmm1 left by xmm2/m128 while shifting in 0s.
-impl WriteInst for Pslld<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pslld<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F F2 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15797,11 +15797,11 @@ impl WriteInst for Pslld<Xmm, Memory> {
     }
 }
 
-pub struct Pslldq<Op0, Op1>(Op0, Op1);
+pub struct Pslldq<Op0, Op1>(pub Op0, pub Op1);
 
 /// pslldq xmm imm8: Shift xmm1 left by imm8 bytes while shifting in 0s.
-impl WriteInst for Pslldq<Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pslldq<Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 73 /7 ib
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         put(w, 0x66)?;
@@ -15816,11 +15816,11 @@ impl WriteInst for Pslldq<Xmm, i8> {
     }
 }
 
-pub struct Psllq<Op0, Op1>(Op0, Op1);
+pub struct Psllq<Op0, Op1>(pub Op0, pub Op1);
 
 /// psllq xmm imm8: Shift quadwords in xmm1 left by imm8 while shifting in 0s.
-impl WriteInst for Psllq<Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psllq<Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 73 /6 ib
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         put(w, 0x66)?;
@@ -15836,8 +15836,8 @@ impl WriteInst for Psllq<Xmm, i8> {
 }
 
 /// psllq xmm xmm: Shift quadwords in xmm1 left by xmm2/m128 while shifting in 0s.
-impl WriteInst for Psllq<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psllq<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F F3 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15852,8 +15852,8 @@ impl WriteInst for Psllq<Xmm, Xmm> {
 }
 
 /// psllq xmm m128: Shift quadwords in xmm1 left by xmm2/m128 while shifting in 0s.
-impl WriteInst for Psllq<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psllq<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F F3 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15867,11 +15867,11 @@ impl WriteInst for Psllq<Xmm, Memory> {
     }
 }
 
-pub struct Psllw<Op0, Op1>(Op0, Op1);
+pub struct Psllw<Op0, Op1>(pub Op0, pub Op1);
 
 /// psllw xmm imm8: Shift words in xmm1 left by imm8 while shifting in 0s.
-impl WriteInst for Psllw<Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psllw<Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 71 /6 ib
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         put(w, 0x66)?;
@@ -15887,8 +15887,8 @@ impl WriteInst for Psllw<Xmm, i8> {
 }
 
 /// psllw xmm xmm: Shift words in xmm1 left by xmm2/m128 while shifting in 0s.
-impl WriteInst for Psllw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psllw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F F1 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15903,8 +15903,8 @@ impl WriteInst for Psllw<Xmm, Xmm> {
 }
 
 /// psllw xmm m128: Shift words in xmm1 left by xmm2/m128 while shifting in 0s.
-impl WriteInst for Psllw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psllw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F F1 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15918,11 +15918,11 @@ impl WriteInst for Psllw<Xmm, Memory> {
     }
 }
 
-pub struct Psrad<Op0, Op1>(Op0, Op1);
+pub struct Psrad<Op0, Op1>(pub Op0, pub Op1);
 
 /// psrad xmm imm8: Shift doublewords in xmm1 right by imm8 while shifting in sign bits.
-impl WriteInst for Psrad<Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psrad<Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 72 /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         put(w, 0x66)?;
@@ -15938,8 +15938,8 @@ impl WriteInst for Psrad<Xmm, i8> {
 }
 
 /// psrad xmm xmm: Shift doubleword in xmm1 right by xmm2 /m128 while shifting in sign bits.
-impl WriteInst for Psrad<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psrad<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F E2 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15954,8 +15954,8 @@ impl WriteInst for Psrad<Xmm, Xmm> {
 }
 
 /// psrad xmm m128: Shift doubleword in xmm1 right by xmm2 /m128 while shifting in sign bits.
-impl WriteInst for Psrad<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psrad<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F E2 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -15969,11 +15969,11 @@ impl WriteInst for Psrad<Xmm, Memory> {
     }
 }
 
-pub struct Psraw<Op0, Op1>(Op0, Op1);
+pub struct Psraw<Op0, Op1>(pub Op0, pub Op1);
 
 /// psraw xmm imm8: Shift words in xmm1 right by imm8 while shifting in sign bits
-impl WriteInst for Psraw<Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psraw<Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 71 /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         put(w, 0x66)?;
@@ -15989,8 +15989,8 @@ impl WriteInst for Psraw<Xmm, i8> {
 }
 
 /// psraw xmm xmm: Shift words in xmm1 right by xmm2/m128 while shifting in sign bits.
-impl WriteInst for Psraw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psraw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F E1 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16005,8 +16005,8 @@ impl WriteInst for Psraw<Xmm, Xmm> {
 }
 
 /// psraw xmm m128: Shift words in xmm1 right by xmm2/m128 while shifting in sign bits.
-impl WriteInst for Psraw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psraw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F E1 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16020,11 +16020,11 @@ impl WriteInst for Psraw<Xmm, Memory> {
     }
 }
 
-pub struct Psrld<Op0, Op1>(Op0, Op1);
+pub struct Psrld<Op0, Op1>(pub Op0, pub Op1);
 
 /// psrld xmm imm8: Shift doublewords in xmm1 right by imm8 while shifting in 0s.
-impl WriteInst for Psrld<Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psrld<Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 72 /2 ib
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         put(w, 0x66)?;
@@ -16040,8 +16040,8 @@ impl WriteInst for Psrld<Xmm, i8> {
 }
 
 /// psrld xmm xmm: Shift doublewords in xmm1 right by amount specified in xmm2 /m128 while shifting in 0s.
-impl WriteInst for Psrld<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psrld<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F D2 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16056,8 +16056,8 @@ impl WriteInst for Psrld<Xmm, Xmm> {
 }
 
 /// psrld xmm m128: Shift doublewords in xmm1 right by amount specified in xmm2 /m128 while shifting in 0s.
-impl WriteInst for Psrld<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psrld<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F D2 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16071,11 +16071,11 @@ impl WriteInst for Psrld<Xmm, Memory> {
     }
 }
 
-pub struct Psrldq<Op0, Op1>(Op0, Op1);
+pub struct Psrldq<Op0, Op1>(pub Op0, pub Op1);
 
 /// psrldq xmm imm8: Shift xmm1 right by imm8 while shifting in 0s.
-impl WriteInst for Psrldq<Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psrldq<Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 73 /3 ib
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         put(w, 0x66)?;
@@ -16090,11 +16090,11 @@ impl WriteInst for Psrldq<Xmm, i8> {
     }
 }
 
-pub struct Psrlq<Op0, Op1>(Op0, Op1);
+pub struct Psrlq<Op0, Op1>(pub Op0, pub Op1);
 
 /// psrlq xmm imm8: Shift quadwords in xmm1 right by imm8 while shifting in 0s.
-impl WriteInst for Psrlq<Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psrlq<Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 73 /2 ib
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         put(w, 0x66)?;
@@ -16110,8 +16110,8 @@ impl WriteInst for Psrlq<Xmm, i8> {
 }
 
 /// psrlq xmm xmm: Shift quadwords in xmm1 right by amount specified in xmm2/m128 while shifting in 0s.
-impl WriteInst for Psrlq<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psrlq<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F D3 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16126,8 +16126,8 @@ impl WriteInst for Psrlq<Xmm, Xmm> {
 }
 
 /// psrlq xmm m128: Shift quadwords in xmm1 right by amount specified in xmm2/m128 while shifting in 0s.
-impl WriteInst for Psrlq<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psrlq<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F D3 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16141,11 +16141,11 @@ impl WriteInst for Psrlq<Xmm, Memory> {
     }
 }
 
-pub struct Psrlw<Op0, Op1>(Op0, Op1);
+pub struct Psrlw<Op0, Op1>(pub Op0, pub Op1);
 
 /// psrlw xmm imm8: Shift words in xmm1 right by imm8 while shifting in 0s.
-impl WriteInst for Psrlw<Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psrlw<Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 71 /2 ib
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         put(w, 0x66)?;
@@ -16161,8 +16161,8 @@ impl WriteInst for Psrlw<Xmm, i8> {
 }
 
 /// psrlw xmm xmm: Shift words in xmm1 right by amount specified in xmm2/m128 while shifting in 0s.
-impl WriteInst for Psrlw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psrlw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F D1 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16177,8 +16177,8 @@ impl WriteInst for Psrlw<Xmm, Xmm> {
 }
 
 /// psrlw xmm m128: Shift words in xmm1 right by amount specified in xmm2/m128 while shifting in 0s.
-impl WriteInst for Psrlw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psrlw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F D1 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16192,11 +16192,11 @@ impl WriteInst for Psrlw<Xmm, Memory> {
     }
 }
 
-pub struct Psubb<Op0, Op1>(Op0, Op1);
+pub struct Psubb<Op0, Op1>(pub Op0, pub Op1);
 
 /// psubb xmm xmm: Subtract packed byte integers in xmm2/m128 from packed byte integers in xmm1.
-impl WriteInst for Psubb<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psubb<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F F8 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16211,8 +16211,8 @@ impl WriteInst for Psubb<Xmm, Xmm> {
 }
 
 /// psubb xmm m128: Subtract packed byte integers in xmm2/m128 from packed byte integers in xmm1.
-impl WriteInst for Psubb<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psubb<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F F8 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16226,11 +16226,11 @@ impl WriteInst for Psubb<Xmm, Memory> {
     }
 }
 
-pub struct Psubd<Op0, Op1>(Op0, Op1);
+pub struct Psubd<Op0, Op1>(pub Op0, pub Op1);
 
 /// psubd xmm xmm: Subtract packed doubleword integers in xmm2/mem128 from packed doubleword integers in xmm1.
-impl WriteInst for Psubd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psubd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F FA /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16245,8 +16245,8 @@ impl WriteInst for Psubd<Xmm, Xmm> {
 }
 
 /// psubd xmm m128: Subtract packed doubleword integers in xmm2/mem128 from packed doubleword integers in xmm1.
-impl WriteInst for Psubd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psubd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F FA /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16260,11 +16260,11 @@ impl WriteInst for Psubd<Xmm, Memory> {
     }
 }
 
-pub struct Psubq<Op0, Op1>(Op0, Op1);
+pub struct Psubq<Op0, Op1>(pub Op0, pub Op1);
 
 /// psubq xmm xmm: Subtract packed quadword integers in xmm1 from xmm2 /m128.
-impl WriteInst for Psubq<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psubq<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F FB /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16279,8 +16279,8 @@ impl WriteInst for Psubq<Xmm, Xmm> {
 }
 
 /// psubq xmm m128: Subtract packed quadword integers in xmm1 from xmm2 /m128.
-impl WriteInst for Psubq<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psubq<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F FB /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16294,11 +16294,11 @@ impl WriteInst for Psubq<Xmm, Memory> {
     }
 }
 
-pub struct Psubsb<Op0, Op1>(Op0, Op1);
+pub struct Psubsb<Op0, Op1>(pub Op0, pub Op1);
 
 /// psubsb xmm xmm: Subtract packed signed byte integers in xmm2/m128 from packed signed byte integers in xmm1 and saturate results.
-impl WriteInst for Psubsb<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psubsb<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F E8 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16313,8 +16313,8 @@ impl WriteInst for Psubsb<Xmm, Xmm> {
 }
 
 /// psubsb xmm m128: Subtract packed signed byte integers in xmm2/m128 from packed signed byte integers in xmm1 and saturate results.
-impl WriteInst for Psubsb<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psubsb<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F E8 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16328,11 +16328,11 @@ impl WriteInst for Psubsb<Xmm, Memory> {
     }
 }
 
-pub struct Psubsw<Op0, Op1>(Op0, Op1);
+pub struct Psubsw<Op0, Op1>(pub Op0, pub Op1);
 
 /// psubsw xmm xmm: Subtract packed signed word integers in xmm2/m128 from packed signed word integers in xmm1 and saturate results.
-impl WriteInst for Psubsw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psubsw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F E9 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16347,8 +16347,8 @@ impl WriteInst for Psubsw<Xmm, Xmm> {
 }
 
 /// psubsw xmm m128: Subtract packed signed word integers in xmm2/m128 from packed signed word integers in xmm1 and saturate results.
-impl WriteInst for Psubsw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psubsw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F E9 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16362,11 +16362,11 @@ impl WriteInst for Psubsw<Xmm, Memory> {
     }
 }
 
-pub struct Psubusb<Op0, Op1>(Op0, Op1);
+pub struct Psubusb<Op0, Op1>(pub Op0, pub Op1);
 
 /// psubusb xmm xmm: Subtract packed unsigned byte integers in xmm2/m128 from packed unsigned byte integers in xmm1 and saturate result.
-impl WriteInst for Psubusb<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psubusb<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F D8 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16381,8 +16381,8 @@ impl WriteInst for Psubusb<Xmm, Xmm> {
 }
 
 /// psubusb xmm m128: Subtract packed unsigned byte integers in xmm2/m128 from packed unsigned byte integers in xmm1 and saturate result.
-impl WriteInst for Psubusb<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psubusb<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F D8 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16396,11 +16396,11 @@ impl WriteInst for Psubusb<Xmm, Memory> {
     }
 }
 
-pub struct Psubusw<Op0, Op1>(Op0, Op1);
+pub struct Psubusw<Op0, Op1>(pub Op0, pub Op1);
 
 /// psubusw xmm xmm: Subtract packed unsigned word integers in xmm2/m128 from packed unsigned word integers in xmm1 and saturate result.
-impl WriteInst for Psubusw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psubusw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F D9 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16415,8 +16415,8 @@ impl WriteInst for Psubusw<Xmm, Xmm> {
 }
 
 /// psubusw xmm m128: Subtract packed unsigned word integers in xmm2/m128 from packed unsigned word integers in xmm1 and saturate result.
-impl WriteInst for Psubusw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psubusw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F D9 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16430,11 +16430,11 @@ impl WriteInst for Psubusw<Xmm, Memory> {
     }
 }
 
-pub struct Psubw<Op0, Op1>(Op0, Op1);
+pub struct Psubw<Op0, Op1>(pub Op0, pub Op1);
 
 /// psubw xmm xmm: Subtract packed word integers in xmm2/m128 from packed word integers in xmm1.
-impl WriteInst for Psubw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psubw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F F9 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16449,8 +16449,8 @@ impl WriteInst for Psubw<Xmm, Xmm> {
 }
 
 /// psubw xmm m128: Subtract packed word integers in xmm2/m128 from packed word integers in xmm1.
-impl WriteInst for Psubw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Psubw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F F9 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16464,11 +16464,11 @@ impl WriteInst for Psubw<Xmm, Memory> {
     }
 }
 
-pub struct Ptest<Op0, Op1>(Op0, Op1);
+pub struct Ptest<Op0, Op1>(pub Op0, pub Op1);
 
 /// ptest xmm xmm: Set ZF if xmm2/m128 AND xmm1 result is all 0s. Set CF if xmm2/m128 AND NOT xmm1 result is all 0s.
-impl WriteInst for Ptest<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Ptest<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 17 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16484,8 +16484,8 @@ impl WriteInst for Ptest<Xmm, Xmm> {
 }
 
 /// ptest xmm m128: Set ZF if xmm2/m128 AND xmm1 result is all 0s. Set CF if xmm2/m128 AND NOT xmm1 result is all 0s.
-impl WriteInst for Ptest<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Ptest<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 38 17 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16500,11 +16500,11 @@ impl WriteInst for Ptest<Xmm, Memory> {
     }
 }
 
-pub struct Punpckhbw<Op0, Op1>(Op0, Op1);
+pub struct Punpckhbw<Op0, Op1>(pub Op0, pub Op1);
 
 /// punpckhbw xmm xmm: Unpack and interleave high-order bytes from xmm1 and xmm2/m128 into xmm1.
-impl WriteInst for Punpckhbw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Punpckhbw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 68 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16519,8 +16519,8 @@ impl WriteInst for Punpckhbw<Xmm, Xmm> {
 }
 
 /// punpckhbw xmm m128: Unpack and interleave high-order bytes from xmm1 and xmm2/m128 into xmm1.
-impl WriteInst for Punpckhbw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Punpckhbw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 68 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16534,11 +16534,11 @@ impl WriteInst for Punpckhbw<Xmm, Memory> {
     }
 }
 
-pub struct Punpckhdq<Op0, Op1>(Op0, Op1);
+pub struct Punpckhdq<Op0, Op1>(pub Op0, pub Op1);
 
 /// punpckhdq xmm xmm: Unpack and interleave high-order doublewords from xmm1 and xmm2/m128 into xmm1.
-impl WriteInst for Punpckhdq<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Punpckhdq<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 6A /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16553,8 +16553,8 @@ impl WriteInst for Punpckhdq<Xmm, Xmm> {
 }
 
 /// punpckhdq xmm m128: Unpack and interleave high-order doublewords from xmm1 and xmm2/m128 into xmm1.
-impl WriteInst for Punpckhdq<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Punpckhdq<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 6A /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16568,11 +16568,11 @@ impl WriteInst for Punpckhdq<Xmm, Memory> {
     }
 }
 
-pub struct Punpckhqdq<Op0, Op1>(Op0, Op1);
+pub struct Punpckhqdq<Op0, Op1>(pub Op0, pub Op1);
 
 /// punpckhqdq xmm xmm: Unpack and interleave high-order quadwords from xmm1 and xmm2/m128 into xmm1.
-impl WriteInst for Punpckhqdq<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Punpckhqdq<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 6D /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16587,8 +16587,8 @@ impl WriteInst for Punpckhqdq<Xmm, Xmm> {
 }
 
 /// punpckhqdq xmm m128: Unpack and interleave high-order quadwords from xmm1 and xmm2/m128 into xmm1.
-impl WriteInst for Punpckhqdq<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Punpckhqdq<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 6D /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16602,11 +16602,11 @@ impl WriteInst for Punpckhqdq<Xmm, Memory> {
     }
 }
 
-pub struct Punpckhwd<Op0, Op1>(Op0, Op1);
+pub struct Punpckhwd<Op0, Op1>(pub Op0, pub Op1);
 
 /// punpckhwd xmm xmm: Unpack and interleave high-order words from xmm1 and xmm2/m128 into xmm1.
-impl WriteInst for Punpckhwd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Punpckhwd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 69 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16621,8 +16621,8 @@ impl WriteInst for Punpckhwd<Xmm, Xmm> {
 }
 
 /// punpckhwd xmm m128: Unpack and interleave high-order words from xmm1 and xmm2/m128 into xmm1.
-impl WriteInst for Punpckhwd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Punpckhwd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 69 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16636,11 +16636,11 @@ impl WriteInst for Punpckhwd<Xmm, Memory> {
     }
 }
 
-pub struct Punpcklbw<Op0, Op1>(Op0, Op1);
+pub struct Punpcklbw<Op0, Op1>(pub Op0, pub Op1);
 
 /// punpcklbw xmm xmm: Interleave low-order bytes from xmm1 and xmm2/m128 into xmm1.
-impl WriteInst for Punpcklbw<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Punpcklbw<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 60 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16655,8 +16655,8 @@ impl WriteInst for Punpcklbw<Xmm, Xmm> {
 }
 
 /// punpcklbw xmm m128: Interleave low-order bytes from xmm1 and xmm2/m128 into xmm1.
-impl WriteInst for Punpcklbw<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Punpcklbw<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 60 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16670,11 +16670,11 @@ impl WriteInst for Punpcklbw<Xmm, Memory> {
     }
 }
 
-pub struct Punpckldq<Op0, Op1>(Op0, Op1);
+pub struct Punpckldq<Op0, Op1>(pub Op0, pub Op1);
 
 /// punpckldq xmm xmm: Interleave low-order doublewords from xmm1 and xmm2/m128 into xmm1.
-impl WriteInst for Punpckldq<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Punpckldq<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 62 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16689,8 +16689,8 @@ impl WriteInst for Punpckldq<Xmm, Xmm> {
 }
 
 /// punpckldq xmm m128: Interleave low-order doublewords from xmm1 and xmm2/m128 into xmm1.
-impl WriteInst for Punpckldq<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Punpckldq<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 62 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16704,11 +16704,11 @@ impl WriteInst for Punpckldq<Xmm, Memory> {
     }
 }
 
-pub struct Punpcklqdq<Op0, Op1>(Op0, Op1);
+pub struct Punpcklqdq<Op0, Op1>(pub Op0, pub Op1);
 
 /// punpcklqdq xmm xmm: Interleave low-order quadword from xmm1 and xmm2/m128 into xmm1 register.
-impl WriteInst for Punpcklqdq<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Punpcklqdq<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 6C /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16723,8 +16723,8 @@ impl WriteInst for Punpcklqdq<Xmm, Xmm> {
 }
 
 /// punpcklqdq xmm m128: Interleave low-order quadword from xmm1 and xmm2/m128 into xmm1 register.
-impl WriteInst for Punpcklqdq<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Punpcklqdq<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 6C /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16738,11 +16738,11 @@ impl WriteInst for Punpcklqdq<Xmm, Memory> {
     }
 }
 
-pub struct Punpcklwd<Op0, Op1>(Op0, Op1);
+pub struct Punpcklwd<Op0, Op1>(pub Op0, pub Op1);
 
 /// punpcklwd xmm xmm: Interleave low-order words from xmm1 and xmm2/m128 into xmm1.
-impl WriteInst for Punpcklwd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Punpcklwd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 61 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16757,8 +16757,8 @@ impl WriteInst for Punpcklwd<Xmm, Xmm> {
 }
 
 /// punpcklwd xmm m128: Interleave low-order words from xmm1 and xmm2/m128 into xmm1.
-impl WriteInst for Punpcklwd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Punpcklwd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 61 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16775,8 +16775,8 @@ impl WriteInst for Punpcklwd<Xmm, Memory> {
 pub struct Pushfq();
 
 /// pushfq: Push RFLAGS.
-impl WriteInst for Pushfq {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pushfq {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 9C
         put(w, 0x9C)?;
         Ok(())
@@ -16786,8 +16786,8 @@ impl WriteInst for Pushfq {
 pub struct Pushfw();
 
 /// pushfw: Push lower 16 bits of EFLAGS.
-impl WriteInst for Pushfw {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pushfw {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 9C
         put(w, 0x66)?;
         put(w, 0x9C)?;
@@ -16795,11 +16795,11 @@ impl WriteInst for Pushfw {
     }
 }
 
-pub struct Pushq<Op0>(Op0);
+pub struct Pushq<Op0>(pub Op0);
 
 /// pushq r64: Push r64.
-impl WriteInst for Pushq<Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pushq<Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 50 +ro
         let rio = RegInOpcode::from(self.0);
         puts(w, rio.rex_byte(false))?;
@@ -16809,8 +16809,8 @@ impl WriteInst for Pushq<Gpr64> {
 }
 
 /// pushq imm8: Push imm8 (sign-extended to 64-bits).
-impl WriteInst for Pushq<i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pushq<i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 6A ib
         put(w, 0x6A)?;
         puts(w, self.0.to_le_bytes())?;
@@ -16819,8 +16819,8 @@ impl WriteInst for Pushq<i8> {
 }
 
 /// pushq imm16: Push imm16 (sign-extended to 64-bits).
-impl WriteInst for Pushq<i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pushq<i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 68 iw
         put(w, 0x66)?;
         put(w, 0x68)?;
@@ -16830,8 +16830,8 @@ impl WriteInst for Pushq<i16> {
 }
 
 /// pushq imm32: Push imm32 (sign-extended to 64-bits).
-impl WriteInst for Pushq<i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pushq<i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 68 id
         put(w, 0x68)?;
         puts(w, self.0.to_le_bytes())?;
@@ -16840,8 +16840,8 @@ impl WriteInst for Pushq<i32> {
 }
 
 /// pushq m64: Push r/m64.
-impl WriteInst for Pushq<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pushq<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // FF /6
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -16853,11 +16853,11 @@ impl WriteInst for Pushq<Memory> {
     }
 }
 
-pub struct Pushw<Op0>(Op0);
+pub struct Pushw<Op0>(pub Op0);
 
 /// pushw r16: Push r16.
-impl WriteInst for Pushw<Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pushw<Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 50 +rw
         let rio = RegInOpcode::from(self.0);
         put(w, 0x66)?;
@@ -16868,8 +16868,8 @@ impl WriteInst for Pushw<Gpr16> {
 }
 
 /// pushw m16: Push r/m16.
-impl WriteInst for Pushw<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pushw<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 FF /6
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         put(w, 0x66)?;
@@ -16882,11 +16882,11 @@ impl WriteInst for Pushw<Memory> {
     }
 }
 
-pub struct Pxor<Op0, Op1>(Op0, Op1);
+pub struct Pxor<Op0, Op1>(pub Op0, pub Op1);
 
 /// pxor xmm xmm: Bitwise XOR of xmm2/m128 and xmm1.
-impl WriteInst for Pxor<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pxor<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F EF /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16901,8 +16901,8 @@ impl WriteInst for Pxor<Xmm, Xmm> {
 }
 
 /// pxor xmm m128: Bitwise XOR of xmm2/m128 and xmm1.
-impl WriteInst for Pxor<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Pxor<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F EF /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -16916,11 +16916,11 @@ impl WriteInst for Pxor<Xmm, Memory> {
     }
 }
 
-pub struct Rclb<Op0, Op1>(Op0, Op1);
+pub struct Rclb<Op0, Op1>(pub Op0, pub Op1);
 
 /// rclb r8 imm8: Rotate 9 bits (CF, r/m8) left imm8 times.
-impl WriteInst for Rclb<Gpr8, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rclb<Gpr8, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C0 /2 ib
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -16934,8 +16934,8 @@ impl WriteInst for Rclb<Gpr8, i8> {
 }
 
 /// rclb m8 imm8: Rotate 9 bits (CF, r/m8) left imm8 times.
-impl WriteInst for Rclb<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rclb<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C0 /2 ib
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -16949,8 +16949,8 @@ impl WriteInst for Rclb<Memory, i8> {
 }
 
 /// rclb r8 _1: Rotate 9 bits (CF, r/m8) left once.
-impl WriteInst for Rclb<Gpr8, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rclb<Gpr8, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D0 /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -16963,8 +16963,8 @@ impl WriteInst for Rclb<Gpr8, _1> {
 }
 
 /// rclb m8 _1: Rotate 9 bits (CF, r/m8) left once.
-impl WriteInst for Rclb<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rclb<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D0 /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -16977,8 +16977,8 @@ impl WriteInst for Rclb<Memory, _1> {
 }
 
 /// rclb r8 _Cl: Rotate 9 bits (CF, r/m8) left CL times.
-impl WriteInst for Rclb<Gpr8, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rclb<Gpr8, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D2 /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -16991,8 +16991,8 @@ impl WriteInst for Rclb<Gpr8, _Cl> {
 }
 
 /// rclb m8 _Cl: Rotate 9 bits (CF, r/m8) left CL times.
-impl WriteInst for Rclb<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rclb<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D2 /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17004,11 +17004,11 @@ impl WriteInst for Rclb<Memory, _Cl> {
     }
 }
 
-pub struct Rcll<Op0, Op1>(Op0, Op1);
+pub struct Rcll<Op0, Op1>(pub Op0, pub Op1);
 
 /// rcll r32 imm8: Rotate 33 bits (CF, r/m32) left imm8 times.
-impl WriteInst for Rcll<Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcll<Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C1 /2 ib
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17022,8 +17022,8 @@ impl WriteInst for Rcll<Gpr32, i8> {
 }
 
 /// rcll m32 imm8: Rotate 33 bits (CF, r/m32) left imm8 times.
-impl WriteInst for Rcll<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcll<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C1 /2 ib
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17037,8 +17037,8 @@ impl WriteInst for Rcll<Memory, i8> {
 }
 
 /// rcll r32 _1: Rotate 33 bits (CF, r/m32) left once.
-impl WriteInst for Rcll<Gpr32, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcll<Gpr32, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D1 /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17051,8 +17051,8 @@ impl WriteInst for Rcll<Gpr32, _1> {
 }
 
 /// rcll m32 _1: Rotate 33 bits (CF, r/m32) left once.
-impl WriteInst for Rcll<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcll<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D1 /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17065,8 +17065,8 @@ impl WriteInst for Rcll<Memory, _1> {
 }
 
 /// rcll r32 _Cl: Rotate 33 bits (CF, r/m32) left CL times.
-impl WriteInst for Rcll<Gpr32, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcll<Gpr32, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D3 /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17079,8 +17079,8 @@ impl WriteInst for Rcll<Gpr32, _Cl> {
 }
 
 /// rcll m32 _Cl: Rotate 33 bits (CF, r/m32) left CL times.
-impl WriteInst for Rcll<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcll<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D3 /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17092,11 +17092,11 @@ impl WriteInst for Rcll<Memory, _Cl> {
     }
 }
 
-pub struct Rclq<Op0, Op1>(Op0, Op1);
+pub struct Rclq<Op0, Op1>(pub Op0, pub Op1);
 
 /// rclq r64 imm8: Rotate 65 bits (CF, r/m64) left imm8 times. Uses a 6 bit count.
-impl WriteInst for Rclq<Gpr64, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rclq<Gpr64, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ C1 /2 ib
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -17110,8 +17110,8 @@ impl WriteInst for Rclq<Gpr64, i8> {
 }
 
 /// rclq m64 imm8: Rotate 65 bits (CF, r/m64) left imm8 times. Uses a 6 bit count.
-impl WriteInst for Rclq<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rclq<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ C1 /2 ib
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -17125,8 +17125,8 @@ impl WriteInst for Rclq<Memory, i8> {
 }
 
 /// rclq r64 _1: Rotate 65 bits (CF, r/m64) left once. Uses a 6 bit count.
-impl WriteInst for Rclq<Gpr64, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rclq<Gpr64, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D1 /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -17139,8 +17139,8 @@ impl WriteInst for Rclq<Gpr64, _1> {
 }
 
 /// rclq m64 _1: Rotate 65 bits (CF, r/m64) left once. Uses a 6 bit count.
-impl WriteInst for Rclq<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rclq<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D1 /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -17153,8 +17153,8 @@ impl WriteInst for Rclq<Memory, _1> {
 }
 
 /// rclq r64 _Cl: Rotate 65 bits (CF, r/m64) left CL times. Uses a 6 bit count.
-impl WriteInst for Rclq<Gpr64, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rclq<Gpr64, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D3 /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -17167,8 +17167,8 @@ impl WriteInst for Rclq<Gpr64, _Cl> {
 }
 
 /// rclq m64 _Cl: Rotate 65 bits (CF, r/m64) left CL times. Uses a 6 bit count.
-impl WriteInst for Rclq<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rclq<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D3 /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -17180,11 +17180,11 @@ impl WriteInst for Rclq<Memory, _Cl> {
     }
 }
 
-pub struct Rclw<Op0, Op1>(Op0, Op1);
+pub struct Rclw<Op0, Op1>(pub Op0, pub Op1);
 
 /// rclw r16 imm8: Rotate 17 bits (CF, r/m16) left imm8 times.
-impl WriteInst for Rclw<Gpr16, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rclw<Gpr16, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 C1 /2 ib
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         put(w, 0x66)?;
@@ -17199,8 +17199,8 @@ impl WriteInst for Rclw<Gpr16, i8> {
 }
 
 /// rclw m16 imm8: Rotate 17 bits (CF, r/m16) left imm8 times.
-impl WriteInst for Rclw<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rclw<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 C1 /2 ib
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         put(w, 0x66)?;
@@ -17215,8 +17215,8 @@ impl WriteInst for Rclw<Memory, i8> {
 }
 
 /// rclw r16 _1: Rotate 17 bits (CF, r/m16) left once.
-impl WriteInst for Rclw<Gpr16, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rclw<Gpr16, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D1 /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         put(w, 0x66)?;
@@ -17230,8 +17230,8 @@ impl WriteInst for Rclw<Gpr16, _1> {
 }
 
 /// rclw m16 _1: Rotate 17 bits (CF, r/m16) left once.
-impl WriteInst for Rclw<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rclw<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D1 /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         put(w, 0x66)?;
@@ -17245,8 +17245,8 @@ impl WriteInst for Rclw<Memory, _1> {
 }
 
 /// rclw r16 _Cl: Rotate 17 bits (CF, r/m16) left CL times.
-impl WriteInst for Rclw<Gpr16, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rclw<Gpr16, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D3 /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         put(w, 0x66)?;
@@ -17260,8 +17260,8 @@ impl WriteInst for Rclw<Gpr16, _Cl> {
 }
 
 /// rclw m16 _Cl: Rotate 17 bits (CF, r/m16) left CL times.
-impl WriteInst for Rclw<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rclw<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D3 /2
         let modrm = ModRM::new(PartOfOpcode(2), self.0);
         put(w, 0x66)?;
@@ -17274,11 +17274,11 @@ impl WriteInst for Rclw<Memory, _Cl> {
     }
 }
 
-pub struct Rcpps<Op0, Op1>(Op0, Op1);
+pub struct Rcpps<Op0, Op1>(pub Op0, pub Op1);
 
 /// rcpps xmm xmm: Computes the approximate reciprocals of the packed single-precision floating-point values in xmm2/m128 and stores the results in xmm1.
-impl WriteInst for Rcpps<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcpps<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 53 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -17292,8 +17292,8 @@ impl WriteInst for Rcpps<Xmm, Xmm> {
 }
 
 /// rcpps xmm m128: Computes the approximate reciprocals of the packed single-precision floating-point values in xmm2/m128 and stores the results in xmm1.
-impl WriteInst for Rcpps<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcpps<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 53 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -17306,11 +17306,11 @@ impl WriteInst for Rcpps<Xmm, Memory> {
     }
 }
 
-pub struct Rcpss<Op0, Op1>(Op0, Op1);
+pub struct Rcpss<Op0, Op1>(pub Op0, pub Op1);
 
 /// rcpss xmm xmm: Computes the approximate reciprocal of the scalar single-precision floating-point value in xmm2/m32 and stores the result in xmm1.
-impl WriteInst for Rcpss<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcpss<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 53 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -17325,8 +17325,8 @@ impl WriteInst for Rcpss<Xmm, Xmm> {
 }
 
 /// rcpss xmm m32: Computes the approximate reciprocal of the scalar single-precision floating-point value in xmm2/m32 and stores the result in xmm1.
-impl WriteInst for Rcpss<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcpss<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 53 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -17340,11 +17340,11 @@ impl WriteInst for Rcpss<Xmm, Memory> {
     }
 }
 
-pub struct Rcrb<Op0, Op1>(Op0, Op1);
+pub struct Rcrb<Op0, Op1>(pub Op0, pub Op1);
 
 /// rcrb r8 imm8: Rotate 9 bits (CF, r/m8) right imm8 times.
-impl WriteInst for Rcrb<Gpr8, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcrb<Gpr8, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C0 /3 ib
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17358,8 +17358,8 @@ impl WriteInst for Rcrb<Gpr8, i8> {
 }
 
 /// rcrb m8 imm8: Rotate 9 bits (CF, r/m8) right imm8 times.
-impl WriteInst for Rcrb<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcrb<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C0 /3 ib
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17373,8 +17373,8 @@ impl WriteInst for Rcrb<Memory, i8> {
 }
 
 /// rcrb r8 _1: Rotate 9 bits (CF, r/m8) right once.
-impl WriteInst for Rcrb<Gpr8, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcrb<Gpr8, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D0 /3
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17387,8 +17387,8 @@ impl WriteInst for Rcrb<Gpr8, _1> {
 }
 
 /// rcrb m8 _1: Rotate 9 bits (CF, r/m8) right once.
-impl WriteInst for Rcrb<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcrb<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D0 /3
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17401,8 +17401,8 @@ impl WriteInst for Rcrb<Memory, _1> {
 }
 
 /// rcrb r8 _Cl: Rotate 9 bits (CF, r/m8) right CL times.
-impl WriteInst for Rcrb<Gpr8, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcrb<Gpr8, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D2 /3
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17415,8 +17415,8 @@ impl WriteInst for Rcrb<Gpr8, _Cl> {
 }
 
 /// rcrb m8 _Cl: Rotate 9 bits (CF, r/m8) right CL times.
-impl WriteInst for Rcrb<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcrb<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D2 /3
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17428,11 +17428,11 @@ impl WriteInst for Rcrb<Memory, _Cl> {
     }
 }
 
-pub struct Rcrl<Op0, Op1>(Op0, Op1);
+pub struct Rcrl<Op0, Op1>(pub Op0, pub Op1);
 
 /// rcrl r32 imm8: Rotate 33 bits (CF, r/m32) right imm8 times.
-impl WriteInst for Rcrl<Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcrl<Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C1 /3 ib
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17446,8 +17446,8 @@ impl WriteInst for Rcrl<Gpr32, i8> {
 }
 
 /// rcrl m32 imm8: Rotate 33 bits (CF, r/m32) right imm8 times.
-impl WriteInst for Rcrl<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcrl<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C1 /3 ib
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17461,8 +17461,8 @@ impl WriteInst for Rcrl<Memory, i8> {
 }
 
 /// rcrl r32 _1: Rotate 33 bits (CF, r/m32) right once. Uses a 6 bit count.
-impl WriteInst for Rcrl<Gpr32, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcrl<Gpr32, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D1 /3
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17475,8 +17475,8 @@ impl WriteInst for Rcrl<Gpr32, _1> {
 }
 
 /// rcrl m32 _1: Rotate 33 bits (CF, r/m32) right once. Uses a 6 bit count.
-impl WriteInst for Rcrl<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcrl<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D1 /3
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17489,8 +17489,8 @@ impl WriteInst for Rcrl<Memory, _1> {
 }
 
 /// rcrl r32 _Cl: Rotate 33 bits (CF, r/m32) right CL times.
-impl WriteInst for Rcrl<Gpr32, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcrl<Gpr32, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D3 /3
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17503,8 +17503,8 @@ impl WriteInst for Rcrl<Gpr32, _Cl> {
 }
 
 /// rcrl m32 _Cl: Rotate 33 bits (CF, r/m32) right CL times.
-impl WriteInst for Rcrl<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcrl<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D3 /3
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17516,11 +17516,11 @@ impl WriteInst for Rcrl<Memory, _Cl> {
     }
 }
 
-pub struct Rcrq<Op0, Op1>(Op0, Op1);
+pub struct Rcrq<Op0, Op1>(pub Op0, pub Op1);
 
 /// rcrq r64 imm8: Rotate 65 bits (CF, r/m64) right imm8 times. Uses a 6 bit count.
-impl WriteInst for Rcrq<Gpr64, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcrq<Gpr64, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ C1 /3 ib
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -17534,8 +17534,8 @@ impl WriteInst for Rcrq<Gpr64, i8> {
 }
 
 /// rcrq m64 imm8: Rotate 65 bits (CF, r/m64) right imm8 times. Uses a 6 bit count.
-impl WriteInst for Rcrq<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcrq<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ C1 /3 ib
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -17549,8 +17549,8 @@ impl WriteInst for Rcrq<Memory, i8> {
 }
 
 /// rcrq r64 _1: Rotate 65 bits (CF, r/m64) right once. Uses a 6 bit count.
-impl WriteInst for Rcrq<Gpr64, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcrq<Gpr64, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D1 /3
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -17563,8 +17563,8 @@ impl WriteInst for Rcrq<Gpr64, _1> {
 }
 
 /// rcrq m64 _1: Rotate 65 bits (CF, r/m64) right once. Uses a 6 bit count.
-impl WriteInst for Rcrq<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcrq<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D1 /3
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -17577,8 +17577,8 @@ impl WriteInst for Rcrq<Memory, _1> {
 }
 
 /// rcrq r64 _Cl: Rotate 65 bits (CF, r/m64) right CL times. Uses a 6 bit count.
-impl WriteInst for Rcrq<Gpr64, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcrq<Gpr64, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D3 /3
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -17591,8 +17591,8 @@ impl WriteInst for Rcrq<Gpr64, _Cl> {
 }
 
 /// rcrq m64 _Cl: Rotate 65 bits (CF, r/m64) right CL times. Uses a 6 bit count.
-impl WriteInst for Rcrq<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcrq<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D3 /3
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -17604,11 +17604,11 @@ impl WriteInst for Rcrq<Memory, _Cl> {
     }
 }
 
-pub struct Rcrw<Op0, Op1>(Op0, Op1);
+pub struct Rcrw<Op0, Op1>(pub Op0, pub Op1);
 
 /// rcrw r16 imm8: Rotate 17 bits (CF, r/m16) right imm8 times.
-impl WriteInst for Rcrw<Gpr16, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcrw<Gpr16, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 C1 /3 ib
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         put(w, 0x66)?;
@@ -17623,8 +17623,8 @@ impl WriteInst for Rcrw<Gpr16, i8> {
 }
 
 /// rcrw m16 imm8: Rotate 17 bits (CF, r/m16) right imm8 times.
-impl WriteInst for Rcrw<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcrw<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 C1 /3 ib
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         put(w, 0x66)?;
@@ -17639,8 +17639,8 @@ impl WriteInst for Rcrw<Memory, i8> {
 }
 
 /// rcrw r16 _1: Rotate 17 bits (CF, r/m16) right once.
-impl WriteInst for Rcrw<Gpr16, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcrw<Gpr16, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D1 /3
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         put(w, 0x66)?;
@@ -17654,8 +17654,8 @@ impl WriteInst for Rcrw<Gpr16, _1> {
 }
 
 /// rcrw m16 _1: Rotate 17 bits (CF, r/m16) right once.
-impl WriteInst for Rcrw<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcrw<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D1 /3
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         put(w, 0x66)?;
@@ -17669,8 +17669,8 @@ impl WriteInst for Rcrw<Memory, _1> {
 }
 
 /// rcrw r16 _Cl: Rotate 17 bits (CF, r/m16) right CL times.
-impl WriteInst for Rcrw<Gpr16, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcrw<Gpr16, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D3 /3
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         put(w, 0x66)?;
@@ -17684,8 +17684,8 @@ impl WriteInst for Rcrw<Gpr16, _Cl> {
 }
 
 /// rcrw m16 _Cl: Rotate 17 bits (CF, r/m16) right CL times.
-impl WriteInst for Rcrw<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rcrw<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D3 /3
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         put(w, 0x66)?;
@@ -17701,19 +17701,19 @@ impl WriteInst for Rcrw<Memory, _Cl> {
 pub struct Retq();
 
 /// retq: Near return to calling procedure.
-impl WriteInst for Retq {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Retq {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C3
         put(w, 0xC3)?;
         Ok(())
     }
 }
 
-pub struct Retq1<Op0>(Op0);
+pub struct Retq1<Op0>(pub Op0);
 
 /// retq imm16: Near return to calling procedure and pop imm16 bytes from stack.
-impl WriteInst for Retq1<i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Retq1<i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C2 iw
         put(w, 0xC2)?;
         puts(w, self.0.to_le_bytes())?;
@@ -17721,11 +17721,11 @@ impl WriteInst for Retq1<i16> {
     }
 }
 
-pub struct Rolb<Op0, Op1>(Op0, Op1);
+pub struct Rolb<Op0, Op1>(pub Op0, pub Op1);
 
 /// rolb r8 imm8: Rotate 8 bits r/m8 left imm8 times.
-impl WriteInst for Rolb<Gpr8, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rolb<Gpr8, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C0 /0 ib
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17739,8 +17739,8 @@ impl WriteInst for Rolb<Gpr8, i8> {
 }
 
 /// rolb m8 imm8: Rotate 8 bits r/m8 left imm8 times.
-impl WriteInst for Rolb<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rolb<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C0 /0 ib
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17754,8 +17754,8 @@ impl WriteInst for Rolb<Memory, i8> {
 }
 
 /// rolb r8 _1: Rotate 8 bits r/m8 left once.
-impl WriteInst for Rolb<Gpr8, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rolb<Gpr8, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D0 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17768,8 +17768,8 @@ impl WriteInst for Rolb<Gpr8, _1> {
 }
 
 /// rolb m8 _1: Rotate 8 bits r/m8 left once.
-impl WriteInst for Rolb<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rolb<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D0 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17782,8 +17782,8 @@ impl WriteInst for Rolb<Memory, _1> {
 }
 
 /// rolb r8 _Cl: Rotate 8 bits r/m8 left CL times.
-impl WriteInst for Rolb<Gpr8, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rolb<Gpr8, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D2 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17796,8 +17796,8 @@ impl WriteInst for Rolb<Gpr8, _Cl> {
 }
 
 /// rolb m8 _Cl: Rotate 8 bits r/m8 left CL times.
-impl WriteInst for Rolb<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rolb<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D2 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17809,11 +17809,11 @@ impl WriteInst for Rolb<Memory, _Cl> {
     }
 }
 
-pub struct Roll<Op0, Op1>(Op0, Op1);
+pub struct Roll<Op0, Op1>(pub Op0, pub Op1);
 
 /// roll r32 imm8: Rotate 32 bits r/m32 left imm8 times.
-impl WriteInst for Roll<Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Roll<Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C1 /0 ib
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17827,8 +17827,8 @@ impl WriteInst for Roll<Gpr32, i8> {
 }
 
 /// roll m32 imm8: Rotate 32 bits r/m32 left imm8 times.
-impl WriteInst for Roll<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Roll<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C1 /0 ib
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17842,8 +17842,8 @@ impl WriteInst for Roll<Memory, i8> {
 }
 
 /// roll r32 _1: Rotate 32 bits r/m32 left once.
-impl WriteInst for Roll<Gpr32, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Roll<Gpr32, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D1 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17856,8 +17856,8 @@ impl WriteInst for Roll<Gpr32, _1> {
 }
 
 /// roll m32 _1: Rotate 32 bits r/m32 left once.
-impl WriteInst for Roll<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Roll<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D1 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17870,8 +17870,8 @@ impl WriteInst for Roll<Memory, _1> {
 }
 
 /// roll r32 _Cl: Rotate 32 bits r/m32 left CL times.
-impl WriteInst for Roll<Gpr32, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Roll<Gpr32, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D3 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17884,8 +17884,8 @@ impl WriteInst for Roll<Gpr32, _Cl> {
 }
 
 /// roll m32 _Cl: Rotate 32 bits r/m32 left CL times.
-impl WriteInst for Roll<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Roll<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D3 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -17897,11 +17897,11 @@ impl WriteInst for Roll<Memory, _Cl> {
     }
 }
 
-pub struct Rolq<Op0, Op1>(Op0, Op1);
+pub struct Rolq<Op0, Op1>(pub Op0, pub Op1);
 
 /// rolq r64 imm8: Rotate 64 bits r/m64 left imm8 times. Uses a 6 bit count.
-impl WriteInst for Rolq<Gpr64, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rolq<Gpr64, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ C1 /0 ib
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -17915,8 +17915,8 @@ impl WriteInst for Rolq<Gpr64, i8> {
 }
 
 /// rolq m64 imm8: Rotate 64 bits r/m64 left imm8 times. Uses a 6 bit count.
-impl WriteInst for Rolq<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rolq<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ C1 /0 ib
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -17930,8 +17930,8 @@ impl WriteInst for Rolq<Memory, i8> {
 }
 
 /// rolq r64 _1: Rotate 64 bits r/m64 left once. Uses a 6 bit count.
-impl WriteInst for Rolq<Gpr64, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rolq<Gpr64, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D1 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -17944,8 +17944,8 @@ impl WriteInst for Rolq<Gpr64, _1> {
 }
 
 /// rolq m64 _1: Rotate 64 bits r/m64 left once. Uses a 6 bit count.
-impl WriteInst for Rolq<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rolq<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D1 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -17958,8 +17958,8 @@ impl WriteInst for Rolq<Memory, _1> {
 }
 
 /// rolq r64 _Cl: Rotate 64 bits r/m64 left CL times. Uses a 6 bit count.
-impl WriteInst for Rolq<Gpr64, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rolq<Gpr64, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D3 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -17972,8 +17972,8 @@ impl WriteInst for Rolq<Gpr64, _Cl> {
 }
 
 /// rolq m64 _Cl: Rotate 64 bits r/m64 left CL times. Uses a 6 bit count.
-impl WriteInst for Rolq<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rolq<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D3 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -17985,11 +17985,11 @@ impl WriteInst for Rolq<Memory, _Cl> {
     }
 }
 
-pub struct Rolw<Op0, Op1>(Op0, Op1);
+pub struct Rolw<Op0, Op1>(pub Op0, pub Op1);
 
 /// rolw r16 imm8: Rotate 16 bits r/m16 left imm8 times.
-impl WriteInst for Rolw<Gpr16, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rolw<Gpr16, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 C1 /0 ib
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         put(w, 0x66)?;
@@ -18004,8 +18004,8 @@ impl WriteInst for Rolw<Gpr16, i8> {
 }
 
 /// rolw m16 imm8: Rotate 16 bits r/m16 left imm8 times.
-impl WriteInst for Rolw<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rolw<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 C1 /0 ib
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         put(w, 0x66)?;
@@ -18020,8 +18020,8 @@ impl WriteInst for Rolw<Memory, i8> {
 }
 
 /// rolw r16 _1: Rotate 16 bits r/m16 left once.
-impl WriteInst for Rolw<Gpr16, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rolw<Gpr16, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D1 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         put(w, 0x66)?;
@@ -18035,8 +18035,8 @@ impl WriteInst for Rolw<Gpr16, _1> {
 }
 
 /// rolw m16 _1: Rotate 16 bits r/m16 left once.
-impl WriteInst for Rolw<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rolw<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D1 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         put(w, 0x66)?;
@@ -18050,8 +18050,8 @@ impl WriteInst for Rolw<Memory, _1> {
 }
 
 /// rolw r16 _Cl: Rotate 16 bits r/m16 left CL times.
-impl WriteInst for Rolw<Gpr16, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rolw<Gpr16, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D3 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         put(w, 0x66)?;
@@ -18065,8 +18065,8 @@ impl WriteInst for Rolw<Gpr16, _Cl> {
 }
 
 /// rolw m16 _Cl: Rotate 16 bits r/m16 left CL times.
-impl WriteInst for Rolw<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rolw<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D3 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         put(w, 0x66)?;
@@ -18079,11 +18079,11 @@ impl WriteInst for Rolw<Memory, _Cl> {
     }
 }
 
-pub struct Rorb<Op0, Op1>(Op0, Op1);
+pub struct Rorb<Op0, Op1>(pub Op0, pub Op1);
 
 /// rorb r8 imm8: Rotate 8 bits r/m16 right imm8 times.
-impl WriteInst for Rorb<Gpr8, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rorb<Gpr8, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C0 /1 ib
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -18097,8 +18097,8 @@ impl WriteInst for Rorb<Gpr8, i8> {
 }
 
 /// rorb m8 imm8: Rotate 8 bits r/m16 right imm8 times.
-impl WriteInst for Rorb<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rorb<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C0 /1 ib
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -18112,8 +18112,8 @@ impl WriteInst for Rorb<Memory, i8> {
 }
 
 /// rorb r8 _1: Rotate 8 bits r/m8 right once.
-impl WriteInst for Rorb<Gpr8, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rorb<Gpr8, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D0 /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -18126,8 +18126,8 @@ impl WriteInst for Rorb<Gpr8, _1> {
 }
 
 /// rorb m8 _1: Rotate 8 bits r/m8 right once.
-impl WriteInst for Rorb<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rorb<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D0 /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -18140,8 +18140,8 @@ impl WriteInst for Rorb<Memory, _1> {
 }
 
 /// rorb r8 _Cl: Rotate 8 bits r/m8 right CL times.
-impl WriteInst for Rorb<Gpr8, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rorb<Gpr8, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D2 /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -18154,8 +18154,8 @@ impl WriteInst for Rorb<Gpr8, _Cl> {
 }
 
 /// rorb m8 _Cl: Rotate 8 bits r/m8 right CL times.
-impl WriteInst for Rorb<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rorb<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D2 /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -18167,11 +18167,11 @@ impl WriteInst for Rorb<Memory, _Cl> {
     }
 }
 
-pub struct Rorl<Op0, Op1>(Op0, Op1);
+pub struct Rorl<Op0, Op1>(pub Op0, pub Op1);
 
 /// rorl r32 imm8: Rotate 32 bits r/m32 right imm8 times.
-impl WriteInst for Rorl<Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rorl<Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C1 /1 ib
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -18185,8 +18185,8 @@ impl WriteInst for Rorl<Gpr32, i8> {
 }
 
 /// rorl m32 imm8: Rotate 32 bits r/m32 right imm8 times.
-impl WriteInst for Rorl<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rorl<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C1 /1 ib
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -18200,8 +18200,8 @@ impl WriteInst for Rorl<Memory, i8> {
 }
 
 /// rorl r32 _1: Rotate 32 bits r/m32 right once.
-impl WriteInst for Rorl<Gpr32, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rorl<Gpr32, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D1 /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -18214,8 +18214,8 @@ impl WriteInst for Rorl<Gpr32, _1> {
 }
 
 /// rorl m32 _1: Rotate 32 bits r/m32 right once.
-impl WriteInst for Rorl<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rorl<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D1 /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -18228,8 +18228,8 @@ impl WriteInst for Rorl<Memory, _1> {
 }
 
 /// rorl r32 _Cl: Rotate 32 bits r/m32 right CL times.
-impl WriteInst for Rorl<Gpr32, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rorl<Gpr32, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D3 /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -18242,8 +18242,8 @@ impl WriteInst for Rorl<Gpr32, _Cl> {
 }
 
 /// rorl m32 _Cl: Rotate 32 bits r/m32 right CL times.
-impl WriteInst for Rorl<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rorl<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D3 /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -18255,11 +18255,11 @@ impl WriteInst for Rorl<Memory, _Cl> {
     }
 }
 
-pub struct Rorq<Op0, Op1>(Op0, Op1);
+pub struct Rorq<Op0, Op1>(pub Op0, pub Op1);
 
 /// rorq r64 imm8: Rotate 64 bits r/m64 right imm8 times. Uses a 6 bit count.
-impl WriteInst for Rorq<Gpr64, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rorq<Gpr64, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ C1 /1 ib
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -18273,8 +18273,8 @@ impl WriteInst for Rorq<Gpr64, i8> {
 }
 
 /// rorq m64 imm8: Rotate 64 bits r/m64 right imm8 times. Uses a 6 bit count.
-impl WriteInst for Rorq<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rorq<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ C1 /1 ib
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -18288,8 +18288,8 @@ impl WriteInst for Rorq<Memory, i8> {
 }
 
 /// rorq r64 _1: Rotate 64 bits r/m64 right once. Uses a 6 bit count.
-impl WriteInst for Rorq<Gpr64, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rorq<Gpr64, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D1 /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -18302,8 +18302,8 @@ impl WriteInst for Rorq<Gpr64, _1> {
 }
 
 /// rorq m64 _1: Rotate 64 bits r/m64 right once. Uses a 6 bit count.
-impl WriteInst for Rorq<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rorq<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D1 /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -18316,8 +18316,8 @@ impl WriteInst for Rorq<Memory, _1> {
 }
 
 /// rorq r64 _Cl: Rotate 64 bits r/m64 right CL times. Uses a 6 bit count.
-impl WriteInst for Rorq<Gpr64, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rorq<Gpr64, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D3 /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -18330,8 +18330,8 @@ impl WriteInst for Rorq<Gpr64, _Cl> {
 }
 
 /// rorq m64 _Cl: Rotate 64 bits r/m64 right CL times. Uses a 6 bit count.
-impl WriteInst for Rorq<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rorq<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D3 /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -18343,11 +18343,11 @@ impl WriteInst for Rorq<Memory, _Cl> {
     }
 }
 
-pub struct Rorw<Op0, Op1>(Op0, Op1);
+pub struct Rorw<Op0, Op1>(pub Op0, pub Op1);
 
 /// rorw r16 imm8: Rotate 16 bits r/m16 right imm8 times.
-impl WriteInst for Rorw<Gpr16, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rorw<Gpr16, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 C1 /1 ib
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         put(w, 0x66)?;
@@ -18362,8 +18362,8 @@ impl WriteInst for Rorw<Gpr16, i8> {
 }
 
 /// rorw m16 imm8: Rotate 16 bits r/m16 right imm8 times.
-impl WriteInst for Rorw<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rorw<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 C1 /1 ib
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         put(w, 0x66)?;
@@ -18378,8 +18378,8 @@ impl WriteInst for Rorw<Memory, i8> {
 }
 
 /// rorw r16 _1: Rotate 16 bits r/m16 right once.
-impl WriteInst for Rorw<Gpr16, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rorw<Gpr16, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D1 /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         put(w, 0x66)?;
@@ -18393,8 +18393,8 @@ impl WriteInst for Rorw<Gpr16, _1> {
 }
 
 /// rorw m16 _1: Rotate 16 bits r/m16 right once.
-impl WriteInst for Rorw<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rorw<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D1 /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         put(w, 0x66)?;
@@ -18408,8 +18408,8 @@ impl WriteInst for Rorw<Memory, _1> {
 }
 
 /// rorw r16 _Cl: Rotate 16 bits r/m16 right CL times.
-impl WriteInst for Rorw<Gpr16, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rorw<Gpr16, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D3 /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         put(w, 0x66)?;
@@ -18423,8 +18423,8 @@ impl WriteInst for Rorw<Gpr16, _Cl> {
 }
 
 /// rorw m16 _Cl: Rotate 16 bits r/m16 right CL times.
-impl WriteInst for Rorw<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rorw<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D3 /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         put(w, 0x66)?;
@@ -18437,11 +18437,11 @@ impl WriteInst for Rorw<Memory, _Cl> {
     }
 }
 
-pub struct Roundpd<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Roundpd<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// roundpd xmm xmm imm8: Round packed double precision floating-point values in xmm2/m128 and place the result in xmm1. The rounding mode is determined by imm8.
-impl WriteInst for Roundpd<Xmm, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Roundpd<Xmm, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 09 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -18458,8 +18458,8 @@ impl WriteInst for Roundpd<Xmm, Xmm, i8> {
 }
 
 /// roundpd xmm m128 imm8: Round packed double precision floating-point values in xmm2/m128 and place the result in xmm1. The rounding mode is determined by imm8.
-impl WriteInst for Roundpd<Xmm, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Roundpd<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 09 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -18475,11 +18475,11 @@ impl WriteInst for Roundpd<Xmm, Memory, i8> {
     }
 }
 
-pub struct Roundps<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Roundps<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// roundps xmm xmm imm8: Round packed single precision floating-point values in xmm2/m128 and place the result in xmm1. The rounding mode is determined by imm8.
-impl WriteInst for Roundps<Xmm, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Roundps<Xmm, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 08 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -18496,8 +18496,8 @@ impl WriteInst for Roundps<Xmm, Xmm, i8> {
 }
 
 /// roundps xmm m128 imm8: Round packed single precision floating-point values in xmm2/m128 and place the result in xmm1. The rounding mode is determined by imm8.
-impl WriteInst for Roundps<Xmm, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Roundps<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 08 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -18513,11 +18513,11 @@ impl WriteInst for Roundps<Xmm, Memory, i8> {
     }
 }
 
-pub struct Roundsd<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Roundsd<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// roundsd xmm xmm imm8: Round the low packed double precision floating-point value in xmm2/m64 and place the result in xmm1. The rounding mode is determined by imm8.
-impl WriteInst for Roundsd<Xmm, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Roundsd<Xmm, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 0B /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -18534,8 +18534,8 @@ impl WriteInst for Roundsd<Xmm, Xmm, i8> {
 }
 
 /// roundsd xmm m64 imm8: Round the low packed double precision floating-point value in xmm2/m64 and place the result in xmm1. The rounding mode is determined by imm8.
-impl WriteInst for Roundsd<Xmm, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Roundsd<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 0B /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -18551,11 +18551,11 @@ impl WriteInst for Roundsd<Xmm, Memory, i8> {
     }
 }
 
-pub struct Roundss<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Roundss<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// roundss xmm xmm imm8: Round the low packed single precision floating-point value in xmm2/m32 and place the result in xmm1. The rounding mode is determined by imm8.
-impl WriteInst for Roundss<Xmm, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Roundss<Xmm, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 0A /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -18572,8 +18572,8 @@ impl WriteInst for Roundss<Xmm, Xmm, i8> {
 }
 
 /// roundss xmm m32 imm8: Round the low packed single precision floating-point value in xmm2/m32 and place the result in xmm1. The rounding mode is determined by imm8.
-impl WriteInst for Roundss<Xmm, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Roundss<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 3A 0A /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -18589,11 +18589,11 @@ impl WriteInst for Roundss<Xmm, Memory, i8> {
     }
 }
 
-pub struct Rsqrtps<Op0, Op1>(Op0, Op1);
+pub struct Rsqrtps<Op0, Op1>(pub Op0, pub Op1);
 
 /// rsqrtps xmm xmm: Computes the approximate reciprocals of the square roots of the packed single-precision floating-point values in xmm2/m128 and stores the results in xmm1.
-impl WriteInst for Rsqrtps<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rsqrtps<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 52 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -18607,8 +18607,8 @@ impl WriteInst for Rsqrtps<Xmm, Xmm> {
 }
 
 /// rsqrtps xmm m128: Computes the approximate reciprocals of the square roots of the packed single-precision floating-point values in xmm2/m128 and stores the results in xmm1.
-impl WriteInst for Rsqrtps<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rsqrtps<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 52 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -18621,11 +18621,11 @@ impl WriteInst for Rsqrtps<Xmm, Memory> {
     }
 }
 
-pub struct Rsqrtss<Op0, Op1>(Op0, Op1);
+pub struct Rsqrtss<Op0, Op1>(pub Op0, pub Op1);
 
 /// rsqrtss xmm xmm: Computes the approximate reciprocal of the square root of the low single-precision floating-point value in xmm2/m32 and stores the results in xmm1.
-impl WriteInst for Rsqrtss<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rsqrtss<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 52 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -18640,8 +18640,8 @@ impl WriteInst for Rsqrtss<Xmm, Xmm> {
 }
 
 /// rsqrtss xmm m32: Computes the approximate reciprocal of the square root of the low single-precision floating-point value in xmm2/m32 and stores the results in xmm1.
-impl WriteInst for Rsqrtss<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Rsqrtss<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 52 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -18655,11 +18655,11 @@ impl WriteInst for Rsqrtss<Xmm, Memory> {
     }
 }
 
-pub struct Salb<Op0, Op1>(Op0, Op1);
+pub struct Salb<Op0, Op1>(pub Op0, pub Op1);
 
 /// salb r8 imm8: Multiply r/m8 by 2, imm8 times.
-impl WriteInst for Salb<Gpr8, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Salb<Gpr8, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C0 /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -18673,8 +18673,8 @@ impl WriteInst for Salb<Gpr8, i8> {
 }
 
 /// salb m8 imm8: Multiply r/m8 by 2, imm8 times.
-impl WriteInst for Salb<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Salb<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C0 /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -18688,8 +18688,8 @@ impl WriteInst for Salb<Memory, i8> {
 }
 
 /// salb r8 _1: Multiply r/m8 by 2, once.
-impl WriteInst for Salb<Gpr8, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Salb<Gpr8, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D0 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -18702,8 +18702,8 @@ impl WriteInst for Salb<Gpr8, _1> {
 }
 
 /// salb m8 _1: Multiply r/m8 by 2, once.
-impl WriteInst for Salb<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Salb<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D0 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -18716,8 +18716,8 @@ impl WriteInst for Salb<Memory, _1> {
 }
 
 /// salb r8 _Cl: Multiply r/m8 by 2, CL times.
-impl WriteInst for Salb<Gpr8, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Salb<Gpr8, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D2 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -18730,8 +18730,8 @@ impl WriteInst for Salb<Gpr8, _Cl> {
 }
 
 /// salb m8 _Cl: Multiply r/m8 by 2, CL times.
-impl WriteInst for Salb<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Salb<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D2 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -18743,11 +18743,11 @@ impl WriteInst for Salb<Memory, _Cl> {
     }
 }
 
-pub struct Sall<Op0, Op1>(Op0, Op1);
+pub struct Sall<Op0, Op1>(pub Op0, pub Op1);
 
 /// sall r32 imm8: Multiply r/m32 by 2, imm8 times.
-impl WriteInst for Sall<Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sall<Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C1 /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -18761,8 +18761,8 @@ impl WriteInst for Sall<Gpr32, i8> {
 }
 
 /// sall m32 imm8: Multiply r/m32 by 2, imm8 times.
-impl WriteInst for Sall<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sall<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C1 /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -18776,8 +18776,8 @@ impl WriteInst for Sall<Memory, i8> {
 }
 
 /// sall r32 _1: Multiply r/m32 by 2, once.
-impl WriteInst for Sall<Gpr32, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sall<Gpr32, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D1 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -18790,8 +18790,8 @@ impl WriteInst for Sall<Gpr32, _1> {
 }
 
 /// sall m32 _1: Multiply r/m32 by 2, once.
-impl WriteInst for Sall<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sall<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D1 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -18804,8 +18804,8 @@ impl WriteInst for Sall<Memory, _1> {
 }
 
 /// sall r32 _Cl: Multiply r/m32 by 2, CL times.
-impl WriteInst for Sall<Gpr32, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sall<Gpr32, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D3 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -18818,8 +18818,8 @@ impl WriteInst for Sall<Gpr32, _Cl> {
 }
 
 /// sall m32 _Cl: Multiply r/m32 by 2, CL times.
-impl WriteInst for Sall<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sall<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D3 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -18831,11 +18831,11 @@ impl WriteInst for Sall<Memory, _Cl> {
     }
 }
 
-pub struct Salq<Op0, Op1>(Op0, Op1);
+pub struct Salq<Op0, Op1>(pub Op0, pub Op1);
 
 /// salq r64 imm8: Multiply r/m64 by 2, imm8 times.
-impl WriteInst for Salq<Gpr64, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Salq<Gpr64, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ C1 /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -18849,8 +18849,8 @@ impl WriteInst for Salq<Gpr64, i8> {
 }
 
 /// salq m64 imm8: Multiply r/m64 by 2, imm8 times.
-impl WriteInst for Salq<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Salq<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ C1 /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -18864,8 +18864,8 @@ impl WriteInst for Salq<Memory, i8> {
 }
 
 /// salq r64 _1: Multiply r/m64 by 2, once.
-impl WriteInst for Salq<Gpr64, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Salq<Gpr64, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D1 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -18878,8 +18878,8 @@ impl WriteInst for Salq<Gpr64, _1> {
 }
 
 /// salq m64 _1: Multiply r/m64 by 2, once.
-impl WriteInst for Salq<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Salq<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D1 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -18892,8 +18892,8 @@ impl WriteInst for Salq<Memory, _1> {
 }
 
 /// salq r64 _Cl: Multiply r/m64 by 2, CL times.
-impl WriteInst for Salq<Gpr64, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Salq<Gpr64, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D3 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -18906,8 +18906,8 @@ impl WriteInst for Salq<Gpr64, _Cl> {
 }
 
 /// salq m64 _Cl: Multiply r/m64 by 2, CL times.
-impl WriteInst for Salq<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Salq<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D3 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -18919,11 +18919,11 @@ impl WriteInst for Salq<Memory, _Cl> {
     }
 }
 
-pub struct Salw<Op0, Op1>(Op0, Op1);
+pub struct Salw<Op0, Op1>(pub Op0, pub Op1);
 
 /// salw r16 imm8: Multiply r/m16 by 2, imm8 times.
-impl WriteInst for Salw<Gpr16, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Salw<Gpr16, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 C1 /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         put(w, 0x66)?;
@@ -18938,8 +18938,8 @@ impl WriteInst for Salw<Gpr16, i8> {
 }
 
 /// salw m16 imm8: Multiply r/m16 by 2, imm8 times.
-impl WriteInst for Salw<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Salw<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 C1 /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         put(w, 0x66)?;
@@ -18954,8 +18954,8 @@ impl WriteInst for Salw<Memory, i8> {
 }
 
 /// salw r16 _1: Multiply r/m16 by 2, once.
-impl WriteInst for Salw<Gpr16, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Salw<Gpr16, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D1 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         put(w, 0x66)?;
@@ -18969,8 +18969,8 @@ impl WriteInst for Salw<Gpr16, _1> {
 }
 
 /// salw m16 _1: Multiply r/m16 by 2, once.
-impl WriteInst for Salw<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Salw<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D1 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         put(w, 0x66)?;
@@ -18984,8 +18984,8 @@ impl WriteInst for Salw<Memory, _1> {
 }
 
 /// salw r16 _Cl: Multiply r/m16 by 2, CL times.
-impl WriteInst for Salw<Gpr16, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Salw<Gpr16, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D3 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         put(w, 0x66)?;
@@ -18999,8 +18999,8 @@ impl WriteInst for Salw<Gpr16, _Cl> {
 }
 
 /// salw m16 _Cl: Multiply r/m16 by 2, CL times.
-impl WriteInst for Salw<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Salw<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D3 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         put(w, 0x66)?;
@@ -19013,11 +19013,11 @@ impl WriteInst for Salw<Memory, _Cl> {
     }
 }
 
-pub struct Sarb<Op0, Op1>(Op0, Op1);
+pub struct Sarb<Op0, Op1>(pub Op0, pub Op1);
 
 /// sarb r8 imm8: Signed divide r/m8 by 2, imm8 time.
-impl WriteInst for Sarb<Gpr8, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sarb<Gpr8, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C0 /7 ib
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19031,8 +19031,8 @@ impl WriteInst for Sarb<Gpr8, i8> {
 }
 
 /// sarb m8 imm8: Signed divide r/m8 by 2, imm8 time.
-impl WriteInst for Sarb<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sarb<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C0 /7 ib
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19046,8 +19046,8 @@ impl WriteInst for Sarb<Memory, i8> {
 }
 
 /// sarb r8 _1: Signed divide r/m8 by 2, once.
-impl WriteInst for Sarb<Gpr8, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sarb<Gpr8, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D0 /7
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19060,8 +19060,8 @@ impl WriteInst for Sarb<Gpr8, _1> {
 }
 
 /// sarb m8 _1: Signed divide r/m8 by 2, once.
-impl WriteInst for Sarb<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sarb<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D0 /7
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19074,8 +19074,8 @@ impl WriteInst for Sarb<Memory, _1> {
 }
 
 /// sarb r8 _Cl: Signed divide r/m8 by 2, CL times.
-impl WriteInst for Sarb<Gpr8, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sarb<Gpr8, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D2 /7
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19088,8 +19088,8 @@ impl WriteInst for Sarb<Gpr8, _Cl> {
 }
 
 /// sarb m8 _Cl: Signed divide r/m8 by 2, CL times.
-impl WriteInst for Sarb<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sarb<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D2 /7
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19101,11 +19101,11 @@ impl WriteInst for Sarb<Memory, _Cl> {
     }
 }
 
-pub struct Sarl<Op0, Op1>(Op0, Op1);
+pub struct Sarl<Op0, Op1>(pub Op0, pub Op1);
 
 /// sarl r32 imm8: Signed divide r/m32 by 2, imm8 times.
-impl WriteInst for Sarl<Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sarl<Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C1 /7 ib
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19119,8 +19119,8 @@ impl WriteInst for Sarl<Gpr32, i8> {
 }
 
 /// sarl m32 imm8: Signed divide r/m32 by 2, imm8 times.
-impl WriteInst for Sarl<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sarl<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C1 /7 ib
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19134,8 +19134,8 @@ impl WriteInst for Sarl<Memory, i8> {
 }
 
 /// sarl r32 _1: Signed divide r/m32 by 2, once.
-impl WriteInst for Sarl<Gpr32, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sarl<Gpr32, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D1 /7
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19148,8 +19148,8 @@ impl WriteInst for Sarl<Gpr32, _1> {
 }
 
 /// sarl m32 _1: Signed divide r/m32 by 2, once.
-impl WriteInst for Sarl<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sarl<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D1 /7
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19162,8 +19162,8 @@ impl WriteInst for Sarl<Memory, _1> {
 }
 
 /// sarl r32 _Cl: Signed divide r/m32 by 2, CL times.
-impl WriteInst for Sarl<Gpr32, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sarl<Gpr32, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D3 /7
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19176,8 +19176,8 @@ impl WriteInst for Sarl<Gpr32, _Cl> {
 }
 
 /// sarl m32 _Cl: Signed divide r/m32 by 2, CL times.
-impl WriteInst for Sarl<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sarl<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D3 /7
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19189,11 +19189,11 @@ impl WriteInst for Sarl<Memory, _Cl> {
     }
 }
 
-pub struct Sarq<Op0, Op1>(Op0, Op1);
+pub struct Sarq<Op0, Op1>(pub Op0, pub Op1);
 
 /// sarq r64 imm8: Signed divide r/m32 by 2, imm8 times.
-impl WriteInst for Sarq<Gpr64, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sarq<Gpr64, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ C1 /7 ib
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -19207,8 +19207,8 @@ impl WriteInst for Sarq<Gpr64, i8> {
 }
 
 /// sarq m64 imm8: Signed divide r/m32 by 2, imm8 times.
-impl WriteInst for Sarq<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sarq<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ C1 /7 ib
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -19222,8 +19222,8 @@ impl WriteInst for Sarq<Memory, i8> {
 }
 
 /// sarq r64 _1: Signed divide r/m32 by 2, once.
-impl WriteInst for Sarq<Gpr64, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sarq<Gpr64, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D1 /7
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -19236,8 +19236,8 @@ impl WriteInst for Sarq<Gpr64, _1> {
 }
 
 /// sarq m64 _1: Signed divide r/m32 by 2, once.
-impl WriteInst for Sarq<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sarq<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D1 /7
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -19250,8 +19250,8 @@ impl WriteInst for Sarq<Memory, _1> {
 }
 
 /// sarq r64 _Cl: Signed divide r/m32 by 2, CL times.
-impl WriteInst for Sarq<Gpr64, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sarq<Gpr64, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D3 /7
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -19264,8 +19264,8 @@ impl WriteInst for Sarq<Gpr64, _Cl> {
 }
 
 /// sarq m64 _Cl: Signed divide r/m32 by 2, CL times.
-impl WriteInst for Sarq<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sarq<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D3 /7
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -19277,11 +19277,11 @@ impl WriteInst for Sarq<Memory, _Cl> {
     }
 }
 
-pub struct Sarw<Op0, Op1>(Op0, Op1);
+pub struct Sarw<Op0, Op1>(pub Op0, pub Op1);
 
 /// sarw r16 imm8: Signed divide r/m16 by 2, imm8 times.
-impl WriteInst for Sarw<Gpr16, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sarw<Gpr16, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 C1 /7 ib
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         put(w, 0x66)?;
@@ -19296,8 +19296,8 @@ impl WriteInst for Sarw<Gpr16, i8> {
 }
 
 /// sarw m16 imm8: Signed divide r/m16 by 2, imm8 times.
-impl WriteInst for Sarw<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sarw<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 C1 /7 ib
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         put(w, 0x66)?;
@@ -19312,8 +19312,8 @@ impl WriteInst for Sarw<Memory, i8> {
 }
 
 /// sarw r16 _1: Signed divide r/m16 by 2, once.
-impl WriteInst for Sarw<Gpr16, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sarw<Gpr16, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D1 /7
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         put(w, 0x66)?;
@@ -19327,8 +19327,8 @@ impl WriteInst for Sarw<Gpr16, _1> {
 }
 
 /// sarw m16 _1: Signed divide r/m16 by 2, once.
-impl WriteInst for Sarw<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sarw<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D1 /7
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         put(w, 0x66)?;
@@ -19342,8 +19342,8 @@ impl WriteInst for Sarw<Memory, _1> {
 }
 
 /// sarw r16 _Cl: Signed divide r/m16 by 2, CL times.
-impl WriteInst for Sarw<Gpr16, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sarw<Gpr16, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D3 /7
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         put(w, 0x66)?;
@@ -19357,8 +19357,8 @@ impl WriteInst for Sarw<Gpr16, _Cl> {
 }
 
 /// sarw m16 _Cl: Signed divide r/m16 by 2, CL times.
-impl WriteInst for Sarw<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sarw<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D3 /7
         let modrm = ModRM::new(PartOfOpcode(7), self.0);
         put(w, 0x66)?;
@@ -19371,11 +19371,11 @@ impl WriteInst for Sarw<Memory, _Cl> {
     }
 }
 
-pub struct Sbbb<Op0, Op1>(Op0, Op1);
+pub struct Sbbb<Op0, Op1>(pub Op0, pub Op1);
 
 /// sbbb r8 r8: Subtract with borrow r/m8 from r8.
-impl WriteInst for Sbbb<Gpr8, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbb<Gpr8, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 1A /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -19388,8 +19388,8 @@ impl WriteInst for Sbbb<Gpr8, Gpr8> {
 }
 
 /// sbbb r8 m8: Subtract with borrow r/m8 from r8.
-impl WriteInst for Sbbb<Gpr8, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbb<Gpr8, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 1A /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -19402,8 +19402,8 @@ impl WriteInst for Sbbb<Gpr8, Memory> {
 }
 
 /// sbbb m8 r8: Subtract with borrow r8 from r/m8.
-impl WriteInst for Sbbb<Memory, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbb<Memory, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 18 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19416,8 +19416,8 @@ impl WriteInst for Sbbb<Memory, Gpr8> {
 }
 
 /// sbbb r8 imm8: Subtract with borrow imm8 from r/m8.
-impl WriteInst for Sbbb<Gpr8, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbb<Gpr8, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 80 /3 ib
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19431,8 +19431,8 @@ impl WriteInst for Sbbb<Gpr8, i8> {
 }
 
 /// sbbb m8 imm8: Subtract with borrow imm8 from r/m8.
-impl WriteInst for Sbbb<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbb<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 80 /3 ib
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19446,8 +19446,8 @@ impl WriteInst for Sbbb<Memory, i8> {
 }
 
 /// sbbb _Al imm8: Subtract with borrow imm8 from AL.
-impl WriteInst for Sbbb<_Al, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbb<_Al, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 1C ib
         put(w, 0x1C)?;
         puts(w, self.1.to_le_bytes())?;
@@ -19455,11 +19455,11 @@ impl WriteInst for Sbbb<_Al, i8> {
     }
 }
 
-pub struct Sbbl<Op0, Op1>(Op0, Op1);
+pub struct Sbbl<Op0, Op1>(pub Op0, pub Op1);
 
 /// sbbl r32 r32: Subtract with borrow r/m32 from r32.
-impl WriteInst for Sbbl<Gpr32, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbl<Gpr32, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 1B /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -19472,8 +19472,8 @@ impl WriteInst for Sbbl<Gpr32, Gpr32> {
 }
 
 /// sbbl r32 m32: Subtract with borrow r/m32 from r32.
-impl WriteInst for Sbbl<Gpr32, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbl<Gpr32, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 1B /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -19486,8 +19486,8 @@ impl WriteInst for Sbbl<Gpr32, Memory> {
 }
 
 /// sbbl m32 r32: Subtract with borrow r32 from r/m32.
-impl WriteInst for Sbbl<Memory, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbl<Memory, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 19 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19500,8 +19500,8 @@ impl WriteInst for Sbbl<Memory, Gpr32> {
 }
 
 /// sbbl r32 imm8: Subtract with borrow sign-extended imm8 from r/m32.
-impl WriteInst for Sbbl<Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbl<Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 83 /3 ib
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19515,8 +19515,8 @@ impl WriteInst for Sbbl<Gpr32, i8> {
 }
 
 /// sbbl m32 imm8: Subtract with borrow sign-extended imm8 from r/m32.
-impl WriteInst for Sbbl<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbl<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 83 /3 ib
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19530,8 +19530,8 @@ impl WriteInst for Sbbl<Memory, i8> {
 }
 
 /// sbbl r32 imm32: Subtract with borrow imm32 from r/m32.
-impl WriteInst for Sbbl<Gpr32, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbl<Gpr32, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 81 /3 id
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19545,8 +19545,8 @@ impl WriteInst for Sbbl<Gpr32, i32> {
 }
 
 /// sbbl m32 imm32: Subtract with borrow imm32 from r/m32.
-impl WriteInst for Sbbl<Memory, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbl<Memory, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 81 /3 id
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19560,8 +19560,8 @@ impl WriteInst for Sbbl<Memory, i32> {
 }
 
 /// sbbl _Eax imm32: Subtract with borrow imm32 from EAX.
-impl WriteInst for Sbbl<_Eax, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbl<_Eax, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 1D id
         put(w, 0x1D)?;
         puts(w, self.1.to_le_bytes())?;
@@ -19569,11 +19569,11 @@ impl WriteInst for Sbbl<_Eax, i32> {
     }
 }
 
-pub struct Sbbq<Op0, Op1>(Op0, Op1);
+pub struct Sbbq<Op0, Op1>(pub Op0, pub Op1);
 
 /// sbbq r64 r64: Subtract with borrow r/m64 from r64.
-impl WriteInst for Sbbq<Gpr64, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbq<Gpr64, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 1B /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -19586,8 +19586,8 @@ impl WriteInst for Sbbq<Gpr64, Gpr64> {
 }
 
 /// sbbq r64 m64: Subtract with borrow r/m64 from r64.
-impl WriteInst for Sbbq<Gpr64, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbq<Gpr64, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 1B /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -19600,8 +19600,8 @@ impl WriteInst for Sbbq<Gpr64, Memory> {
 }
 
 /// sbbq m64 r64: Subtract with borrow r64 from r/m64.
-impl WriteInst for Sbbq<Memory, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbq<Memory, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 19 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -19614,8 +19614,8 @@ impl WriteInst for Sbbq<Memory, Gpr64> {
 }
 
 /// sbbq r64 imm8: Subtract with borrow sign-extended imm8 from r/m64.
-impl WriteInst for Sbbq<Gpr64, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbq<Gpr64, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 83 /3 ib
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -19629,8 +19629,8 @@ impl WriteInst for Sbbq<Gpr64, i8> {
 }
 
 /// sbbq m64 imm8: Subtract with borrow sign-extended imm8 from r/m64.
-impl WriteInst for Sbbq<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbq<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 83 /3 ib
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -19644,8 +19644,8 @@ impl WriteInst for Sbbq<Memory, i8> {
 }
 
 /// sbbq r64 imm32: Subtract with borrow sign-extended imm32 to 64-bits from r/m64.
-impl WriteInst for Sbbq<Gpr64, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbq<Gpr64, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 81 /3 id
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -19659,8 +19659,8 @@ impl WriteInst for Sbbq<Gpr64, i32> {
 }
 
 /// sbbq m64 imm32: Subtract with borrow sign-extended imm32 to 64-bits from r/m64.
-impl WriteInst for Sbbq<Memory, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbq<Memory, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 81 /3 id
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -19674,8 +19674,8 @@ impl WriteInst for Sbbq<Memory, i32> {
 }
 
 /// sbbq _Rax imm32: Subtract with borrow sign-extended imm.32 to 64-bits from RAX.
-impl WriteInst for Sbbq<_Rax, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbq<_Rax, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 1D id
         puts(w, rex_byte(false, true, false, false, false))?;
         put(w, 0x1D)?;
@@ -19684,11 +19684,11 @@ impl WriteInst for Sbbq<_Rax, i32> {
     }
 }
 
-pub struct Sbbw<Op0, Op1>(Op0, Op1);
+pub struct Sbbw<Op0, Op1>(pub Op0, pub Op1);
 
 /// sbbw r16 r16: Subtract with borrow r/m16 from r16.
-impl WriteInst for Sbbw<Gpr16, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbw<Gpr16, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 1B /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -19702,8 +19702,8 @@ impl WriteInst for Sbbw<Gpr16, Gpr16> {
 }
 
 /// sbbw r16 m16: Subtract with borrow r/m16 from r16.
-impl WriteInst for Sbbw<Gpr16, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbw<Gpr16, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 1B /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -19717,8 +19717,8 @@ impl WriteInst for Sbbw<Gpr16, Memory> {
 }
 
 /// sbbw m16 r16: Subtract with borrow r16 from r/m16.
-impl WriteInst for Sbbw<Memory, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbw<Memory, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 19 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -19732,8 +19732,8 @@ impl WriteInst for Sbbw<Memory, Gpr16> {
 }
 
 /// sbbw r16 imm8: Subtract with borrow sign-extended imm8 from r/m16.
-impl WriteInst for Sbbw<Gpr16, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbw<Gpr16, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 83 /3 ib
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         put(w, 0x66)?;
@@ -19748,8 +19748,8 @@ impl WriteInst for Sbbw<Gpr16, i8> {
 }
 
 /// sbbw m16 imm8: Subtract with borrow sign-extended imm8 from r/m16.
-impl WriteInst for Sbbw<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbw<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 83 /3 ib
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         put(w, 0x66)?;
@@ -19764,8 +19764,8 @@ impl WriteInst for Sbbw<Memory, i8> {
 }
 
 /// sbbw r16 imm16: Subtract with borrow imm16 from r/m16.
-impl WriteInst for Sbbw<Gpr16, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbw<Gpr16, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 81 /3 iw
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         put(w, 0x66)?;
@@ -19780,8 +19780,8 @@ impl WriteInst for Sbbw<Gpr16, i16> {
 }
 
 /// sbbw m16 imm16: Subtract with borrow imm16 from r/m16.
-impl WriteInst for Sbbw<Memory, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbw<Memory, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 81 /3 iw
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         put(w, 0x66)?;
@@ -19796,8 +19796,8 @@ impl WriteInst for Sbbw<Memory, i16> {
 }
 
 /// sbbw _Ax imm16: Subtract with borrow imm16 from AX.
-impl WriteInst for Sbbw<_Ax, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sbbw<_Ax, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 1D iw
         put(w, 0x66)?;
         put(w, 0x1D)?;
@@ -19806,11 +19806,11 @@ impl WriteInst for Sbbw<_Ax, i16> {
     }
 }
 
-pub struct Seta<Op0>(Op0);
+pub struct Seta<Op0>(pub Op0);
 
 /// seta r8: Set byte if above (CF=0 and ZF=0).
-impl WriteInst for Seta<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Seta<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 97 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19824,8 +19824,8 @@ impl WriteInst for Seta<Gpr8> {
 }
 
 /// seta m8: Set byte if above (CF=0 and ZF=0).
-impl WriteInst for Seta<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Seta<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 97 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19838,11 +19838,11 @@ impl WriteInst for Seta<Memory> {
     }
 }
 
-pub struct Setae<Op0>(Op0);
+pub struct Setae<Op0>(pub Op0);
 
 /// setae r8: Set byte if above or equal (CF=0).
-impl WriteInst for Setae<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setae<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 93 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19856,8 +19856,8 @@ impl WriteInst for Setae<Gpr8> {
 }
 
 /// setae m8: Set byte if above or equal (CF=0).
-impl WriteInst for Setae<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setae<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 93 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19870,11 +19870,11 @@ impl WriteInst for Setae<Memory> {
     }
 }
 
-pub struct Setb<Op0>(Op0);
+pub struct Setb<Op0>(pub Op0);
 
 /// setb r8: Set byte if below (CF=1).
-impl WriteInst for Setb<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setb<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 92 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19888,8 +19888,8 @@ impl WriteInst for Setb<Gpr8> {
 }
 
 /// setb m8: Set byte if below (CF=1).
-impl WriteInst for Setb<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setb<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 92 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19902,11 +19902,11 @@ impl WriteInst for Setb<Memory> {
     }
 }
 
-pub struct Setbe<Op0>(Op0);
+pub struct Setbe<Op0>(pub Op0);
 
 /// setbe r8: Set byte if below or equal (CF=1 or ZF=1).
-impl WriteInst for Setbe<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setbe<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 96 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19920,8 +19920,8 @@ impl WriteInst for Setbe<Gpr8> {
 }
 
 /// setbe m8: Set byte if below or equal (CF=1 or ZF=1).
-impl WriteInst for Setbe<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setbe<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 96 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19934,11 +19934,11 @@ impl WriteInst for Setbe<Memory> {
     }
 }
 
-pub struct Setc<Op0>(Op0);
+pub struct Setc<Op0>(pub Op0);
 
 /// setc r8: Set byte if carry (CF=1).
-impl WriteInst for Setc<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setc<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 92 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19952,8 +19952,8 @@ impl WriteInst for Setc<Gpr8> {
 }
 
 /// setc m8: Set byte if carry (CF=1).
-impl WriteInst for Setc<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setc<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 92 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19966,11 +19966,11 @@ impl WriteInst for Setc<Memory> {
     }
 }
 
-pub struct Sete<Op0>(Op0);
+pub struct Sete<Op0>(pub Op0);
 
 /// sete r8: Set byte if equal (ZF=1).
-impl WriteInst for Sete<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sete<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 94 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19984,8 +19984,8 @@ impl WriteInst for Sete<Gpr8> {
 }
 
 /// sete m8: Set byte if equal (ZF=1).
-impl WriteInst for Sete<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sete<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 94 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -19998,11 +19998,11 @@ impl WriteInst for Sete<Memory> {
     }
 }
 
-pub struct Setg<Op0>(Op0);
+pub struct Setg<Op0>(pub Op0);
 
 /// setg r8: Set byte if greater (ZF=0 and SF=OF).
-impl WriteInst for Setg<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setg<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 9F /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20016,8 +20016,8 @@ impl WriteInst for Setg<Gpr8> {
 }
 
 /// setg m8: Set byte if greater (ZF=0 and SF=OF).
-impl WriteInst for Setg<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setg<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 9F /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20030,11 +20030,11 @@ impl WriteInst for Setg<Memory> {
     }
 }
 
-pub struct Setge<Op0>(Op0);
+pub struct Setge<Op0>(pub Op0);
 
 /// setge r8: Set byte if greater or equal (SF=OF).
-impl WriteInst for Setge<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setge<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 9D /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20048,8 +20048,8 @@ impl WriteInst for Setge<Gpr8> {
 }
 
 /// setge m8: Set byte if greater or equal (SF=OF).
-impl WriteInst for Setge<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setge<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 9D /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20062,11 +20062,11 @@ impl WriteInst for Setge<Memory> {
     }
 }
 
-pub struct Setl<Op0>(Op0);
+pub struct Setl<Op0>(pub Op0);
 
 /// setl r8: Set byte if less (SF!= OF).
-impl WriteInst for Setl<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setl<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 9C /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20080,8 +20080,8 @@ impl WriteInst for Setl<Gpr8> {
 }
 
 /// setl m8: Set byte if less (SF!= OF).
-impl WriteInst for Setl<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setl<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 9C /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20094,11 +20094,11 @@ impl WriteInst for Setl<Memory> {
     }
 }
 
-pub struct Setle<Op0>(Op0);
+pub struct Setle<Op0>(pub Op0);
 
 /// setle r8: Set byte if less or equal (ZF=1 or SF!= OF).
-impl WriteInst for Setle<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setle<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 9E /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20112,8 +20112,8 @@ impl WriteInst for Setle<Gpr8> {
 }
 
 /// setle m8: Set byte if less or equal (ZF=1 or SF!= OF).
-impl WriteInst for Setle<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setle<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 9E /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20126,11 +20126,11 @@ impl WriteInst for Setle<Memory> {
     }
 }
 
-pub struct Setna<Op0>(Op0);
+pub struct Setna<Op0>(pub Op0);
 
 /// setna r8: Set byte if not above (CF=1 or ZF=1).
-impl WriteInst for Setna<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setna<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 96 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20144,8 +20144,8 @@ impl WriteInst for Setna<Gpr8> {
 }
 
 /// setna m8: Set byte if not above (CF=1 or ZF=1).
-impl WriteInst for Setna<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setna<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 96 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20158,11 +20158,11 @@ impl WriteInst for Setna<Memory> {
     }
 }
 
-pub struct Setnae<Op0>(Op0);
+pub struct Setnae<Op0>(pub Op0);
 
 /// setnae r8: Set byte if not above or equal (CF=1).
-impl WriteInst for Setnae<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setnae<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 92 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20176,8 +20176,8 @@ impl WriteInst for Setnae<Gpr8> {
 }
 
 /// setnae m8: Set byte if not above or equal (CF=1).
-impl WriteInst for Setnae<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setnae<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 92 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20190,11 +20190,11 @@ impl WriteInst for Setnae<Memory> {
     }
 }
 
-pub struct Setnb<Op0>(Op0);
+pub struct Setnb<Op0>(pub Op0);
 
 /// setnb r8: Set byte if not below (CF=0).
-impl WriteInst for Setnb<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setnb<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 93 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20208,8 +20208,8 @@ impl WriteInst for Setnb<Gpr8> {
 }
 
 /// setnb m8: Set byte if not below (CF=0).
-impl WriteInst for Setnb<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setnb<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 93 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20222,11 +20222,11 @@ impl WriteInst for Setnb<Memory> {
     }
 }
 
-pub struct Setnbe<Op0>(Op0);
+pub struct Setnbe<Op0>(pub Op0);
 
 /// setnbe r8: Set byte if not below or equal (CF=0 and ZF=0).
-impl WriteInst for Setnbe<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setnbe<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 97 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20240,8 +20240,8 @@ impl WriteInst for Setnbe<Gpr8> {
 }
 
 /// setnbe m8: Set byte if not below or equal (CF=0 and ZF=0).
-impl WriteInst for Setnbe<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setnbe<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 97 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20254,11 +20254,11 @@ impl WriteInst for Setnbe<Memory> {
     }
 }
 
-pub struct Setnc<Op0>(Op0);
+pub struct Setnc<Op0>(pub Op0);
 
 /// setnc r8: Set byte if not carry (CF=0).
-impl WriteInst for Setnc<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setnc<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 93 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20272,8 +20272,8 @@ impl WriteInst for Setnc<Gpr8> {
 }
 
 /// setnc m8: Set byte if not carry (CF=0).
-impl WriteInst for Setnc<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setnc<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 93 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20286,11 +20286,11 @@ impl WriteInst for Setnc<Memory> {
     }
 }
 
-pub struct Setne<Op0>(Op0);
+pub struct Setne<Op0>(pub Op0);
 
 /// setne r8: Set byte if not equal (ZF=0).
-impl WriteInst for Setne<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setne<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 95 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20304,8 +20304,8 @@ impl WriteInst for Setne<Gpr8> {
 }
 
 /// setne m8: Set byte if not equal (ZF=0).
-impl WriteInst for Setne<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setne<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 95 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20318,11 +20318,11 @@ impl WriteInst for Setne<Memory> {
     }
 }
 
-pub struct Setng<Op0>(Op0);
+pub struct Setng<Op0>(pub Op0);
 
 /// setng r8: Set byte if not greater (ZF=1 or SF!= OF)
-impl WriteInst for Setng<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setng<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 9E /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20336,8 +20336,8 @@ impl WriteInst for Setng<Gpr8> {
 }
 
 /// setng m8: Set byte if not greater (ZF=1 or SF!= OF)
-impl WriteInst for Setng<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setng<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 9E /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20350,11 +20350,11 @@ impl WriteInst for Setng<Memory> {
     }
 }
 
-pub struct Setnge<Op0>(Op0);
+pub struct Setnge<Op0>(pub Op0);
 
 /// setnge r8: Set byte if not greater or equal (SF!= OF).
-impl WriteInst for Setnge<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setnge<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 9C /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20368,8 +20368,8 @@ impl WriteInst for Setnge<Gpr8> {
 }
 
 /// setnge m8: Set byte if not greater or equal (SF!= OF).
-impl WriteInst for Setnge<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setnge<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 9C /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20382,11 +20382,11 @@ impl WriteInst for Setnge<Memory> {
     }
 }
 
-pub struct Setnl<Op0>(Op0);
+pub struct Setnl<Op0>(pub Op0);
 
 /// setnl r8: Set byte if not less (SF=OF).
-impl WriteInst for Setnl<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setnl<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 9D /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20400,8 +20400,8 @@ impl WriteInst for Setnl<Gpr8> {
 }
 
 /// setnl m8: Set byte if not less (SF=OF).
-impl WriteInst for Setnl<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setnl<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 9D /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20414,11 +20414,11 @@ impl WriteInst for Setnl<Memory> {
     }
 }
 
-pub struct Setnle<Op0>(Op0);
+pub struct Setnle<Op0>(pub Op0);
 
 /// setnle r8: Set byte if not less or equal (ZF=0 and SF=OF).
-impl WriteInst for Setnle<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setnle<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 9F /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20432,8 +20432,8 @@ impl WriteInst for Setnle<Gpr8> {
 }
 
 /// setnle m8: Set byte if not less or equal (ZF=0 and SF=OF).
-impl WriteInst for Setnle<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setnle<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 9F /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20446,11 +20446,11 @@ impl WriteInst for Setnle<Memory> {
     }
 }
 
-pub struct Setno<Op0>(Op0);
+pub struct Setno<Op0>(pub Op0);
 
 /// setno r8: Set byte if not overflow (OF=0).
-impl WriteInst for Setno<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setno<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 91 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20464,8 +20464,8 @@ impl WriteInst for Setno<Gpr8> {
 }
 
 /// setno m8: Set byte if not overflow (OF=0).
-impl WriteInst for Setno<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setno<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 91 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20478,11 +20478,11 @@ impl WriteInst for Setno<Memory> {
     }
 }
 
-pub struct Setnp<Op0>(Op0);
+pub struct Setnp<Op0>(pub Op0);
 
 /// setnp r8: Set byte if not parity (PF=0).
-impl WriteInst for Setnp<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setnp<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 9B /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20496,8 +20496,8 @@ impl WriteInst for Setnp<Gpr8> {
 }
 
 /// setnp m8: Set byte if not parity (PF=0).
-impl WriteInst for Setnp<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setnp<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 9B /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20510,11 +20510,11 @@ impl WriteInst for Setnp<Memory> {
     }
 }
 
-pub struct Setns<Op0>(Op0);
+pub struct Setns<Op0>(pub Op0);
 
 /// setns r8: Set byte if not sign (SF=0).
-impl WriteInst for Setns<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setns<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 99 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20528,8 +20528,8 @@ impl WriteInst for Setns<Gpr8> {
 }
 
 /// setns m8: Set byte if not sign (SF=0).
-impl WriteInst for Setns<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setns<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 99 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20542,11 +20542,11 @@ impl WriteInst for Setns<Memory> {
     }
 }
 
-pub struct Setnz<Op0>(Op0);
+pub struct Setnz<Op0>(pub Op0);
 
 /// setnz r8: Set byte if not zero (ZF=0).
-impl WriteInst for Setnz<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setnz<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 95 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20560,8 +20560,8 @@ impl WriteInst for Setnz<Gpr8> {
 }
 
 /// setnz m8: Set byte if not zero (ZF=0).
-impl WriteInst for Setnz<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setnz<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 95 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20574,11 +20574,11 @@ impl WriteInst for Setnz<Memory> {
     }
 }
 
-pub struct Seto<Op0>(Op0);
+pub struct Seto<Op0>(pub Op0);
 
 /// seto r8: Set byte if overflow (OF=1)
-impl WriteInst for Seto<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Seto<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 90 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20592,8 +20592,8 @@ impl WriteInst for Seto<Gpr8> {
 }
 
 /// seto m8: Set byte if overflow (OF=1)
-impl WriteInst for Seto<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Seto<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 90 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20606,11 +20606,11 @@ impl WriteInst for Seto<Memory> {
     }
 }
 
-pub struct Setp<Op0>(Op0);
+pub struct Setp<Op0>(pub Op0);
 
 /// setp r8: Set byte if parity (PF=1).
-impl WriteInst for Setp<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setp<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 9A /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20624,8 +20624,8 @@ impl WriteInst for Setp<Gpr8> {
 }
 
 /// setp m8: Set byte if parity (PF=1).
-impl WriteInst for Setp<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setp<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 9A /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20638,11 +20638,11 @@ impl WriteInst for Setp<Memory> {
     }
 }
 
-pub struct Setpe<Op0>(Op0);
+pub struct Setpe<Op0>(pub Op0);
 
 /// setpe r8: Set byte if parity even (PF=1).
-impl WriteInst for Setpe<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setpe<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 9A /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20656,8 +20656,8 @@ impl WriteInst for Setpe<Gpr8> {
 }
 
 /// setpe m8: Set byte if parity even (PF=1).
-impl WriteInst for Setpe<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setpe<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 9A /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20670,11 +20670,11 @@ impl WriteInst for Setpe<Memory> {
     }
 }
 
-pub struct Setpo<Op0>(Op0);
+pub struct Setpo<Op0>(pub Op0);
 
 /// setpo r8: Set byte if parity odd (PF=0).
-impl WriteInst for Setpo<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setpo<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 9B /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20688,8 +20688,8 @@ impl WriteInst for Setpo<Gpr8> {
 }
 
 /// setpo m8: Set byte if parity odd (PF=0).
-impl WriteInst for Setpo<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setpo<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 9B /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20702,11 +20702,11 @@ impl WriteInst for Setpo<Memory> {
     }
 }
 
-pub struct Sets<Op0>(Op0);
+pub struct Sets<Op0>(pub Op0);
 
 /// sets r8: Set byte if sign (SF=1).
-impl WriteInst for Sets<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sets<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 98 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20720,8 +20720,8 @@ impl WriteInst for Sets<Gpr8> {
 }
 
 /// sets m8: Set byte if sign (SF=1).
-impl WriteInst for Sets<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sets<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 98 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20734,11 +20734,11 @@ impl WriteInst for Sets<Memory> {
     }
 }
 
-pub struct Setz<Op0>(Op0);
+pub struct Setz<Op0>(pub Op0);
 
 /// setz r8: Set byte if zero (ZF=1).
-impl WriteInst for Setz<Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setz<Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 94 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20752,8 +20752,8 @@ impl WriteInst for Setz<Gpr8> {
 }
 
 /// setz m8: Set byte if zero (ZF=1).
-impl WriteInst for Setz<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Setz<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 94 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20769,8 +20769,8 @@ impl WriteInst for Setz<Memory> {
 pub struct Sfence();
 
 /// sfence: Serializes store operations.
-impl WriteInst for Sfence {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sfence {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F AE F8
         put(w, 0x0F)?;
         put(w, 0xAE)?;
@@ -20779,11 +20779,11 @@ impl WriteInst for Sfence {
     }
 }
 
-pub struct Sgdt<Op0>(Op0);
+pub struct Sgdt<Op0>(pub Op0);
 
 /// sgdt m: Store GDTR to m.
-impl WriteInst for Sgdt<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sgdt<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 01 /0
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20796,11 +20796,11 @@ impl WriteInst for Sgdt<Memory> {
     }
 }
 
-pub struct Shlb<Op0, Op1>(Op0, Op1);
+pub struct Shlb<Op0, Op1>(pub Op0, pub Op1);
 
 /// shlb r8 imm8: Multiply r/m8 by 2, imm8 times.
-impl WriteInst for Shlb<Gpr8, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shlb<Gpr8, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C0 /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20814,8 +20814,8 @@ impl WriteInst for Shlb<Gpr8, i8> {
 }
 
 /// shlb m8 imm8: Multiply r/m8 by 2, imm8 times.
-impl WriteInst for Shlb<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shlb<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C0 /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20829,8 +20829,8 @@ impl WriteInst for Shlb<Memory, i8> {
 }
 
 /// shlb r8 _1: Multiply r/m8 by 2, once.
-impl WriteInst for Shlb<Gpr8, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shlb<Gpr8, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D0 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20843,8 +20843,8 @@ impl WriteInst for Shlb<Gpr8, _1> {
 }
 
 /// shlb m8 _1: Multiply r/m8 by 2, once.
-impl WriteInst for Shlb<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shlb<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D0 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20857,8 +20857,8 @@ impl WriteInst for Shlb<Memory, _1> {
 }
 
 /// shlb r8 _Cl: Multiply r/m8 by 2, CL times.
-impl WriteInst for Shlb<Gpr8, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shlb<Gpr8, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D2 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20871,8 +20871,8 @@ impl WriteInst for Shlb<Gpr8, _Cl> {
 }
 
 /// shlb m8 _Cl: Multiply r/m8 by 2, CL times.
-impl WriteInst for Shlb<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shlb<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D2 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20884,11 +20884,11 @@ impl WriteInst for Shlb<Memory, _Cl> {
     }
 }
 
-pub struct Shldl<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Shldl<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// shldl r32 r32 imm8: Shift r/m32 to left imm8 places while shifting bits from r32 in from the right.
-impl WriteInst for Shldl<Gpr32, Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shldl<Gpr32, Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F A4 /r ib
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20903,8 +20903,8 @@ impl WriteInst for Shldl<Gpr32, Gpr32, i8> {
 }
 
 /// shldl m32 r32 imm8: Shift r/m32 to left imm8 places while shifting bits from r32 in from the right.
-impl WriteInst for Shldl<Memory, Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shldl<Memory, Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F A4 /r ib
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20919,8 +20919,8 @@ impl WriteInst for Shldl<Memory, Gpr32, i8> {
 }
 
 /// shldl r32 r32 _Cl: Shift r/m32 to left CL places while shifting bits from r32 in from the right.
-impl WriteInst for Shldl<Gpr32, Gpr32, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shldl<Gpr32, Gpr32, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F A5 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20934,8 +20934,8 @@ impl WriteInst for Shldl<Gpr32, Gpr32, _Cl> {
 }
 
 /// shldl m32 r32 _Cl: Shift r/m32 to left CL places while shifting bits from r32 in from the right.
-impl WriteInst for Shldl<Memory, Gpr32, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shldl<Memory, Gpr32, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F A5 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -20948,11 +20948,11 @@ impl WriteInst for Shldl<Memory, Gpr32, _Cl> {
     }
 }
 
-pub struct Shldq<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Shldq<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// shldq r64 r64 imm8: Shift r/m64 to left imm8 places while shifting bits from r64 in from the right.
-impl WriteInst for Shldq<Gpr64, Gpr64, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shldq<Gpr64, Gpr64, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F A4 /r ib
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -20967,8 +20967,8 @@ impl WriteInst for Shldq<Gpr64, Gpr64, i8> {
 }
 
 /// shldq m64 r64 imm8: Shift r/m64 to left imm8 places while shifting bits from r64 in from the right.
-impl WriteInst for Shldq<Memory, Gpr64, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shldq<Memory, Gpr64, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F A4 /r ib
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -20983,8 +20983,8 @@ impl WriteInst for Shldq<Memory, Gpr64, i8> {
 }
 
 /// shldq r64 r64 _Cl: Shift r/m64 to left CL places while shifting bits from r64 in from the right.
-impl WriteInst for Shldq<Gpr64, Gpr64, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shldq<Gpr64, Gpr64, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F A5 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -20998,8 +20998,8 @@ impl WriteInst for Shldq<Gpr64, Gpr64, _Cl> {
 }
 
 /// shldq m64 r64 _Cl: Shift r/m64 to left CL places while shifting bits from r64 in from the right.
-impl WriteInst for Shldq<Memory, Gpr64, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shldq<Memory, Gpr64, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F A5 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -21012,11 +21012,11 @@ impl WriteInst for Shldq<Memory, Gpr64, _Cl> {
     }
 }
 
-pub struct Shldw<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Shldw<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// shldw r16 r16 imm8: Shift r/m16 to left imm8 places while shifting bits from r16 in from the right.
-impl WriteInst for Shldw<Gpr16, Gpr16, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shldw<Gpr16, Gpr16, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F A4 /r ib
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -21032,8 +21032,8 @@ impl WriteInst for Shldw<Gpr16, Gpr16, i8> {
 }
 
 /// shldw m16 r16 imm8: Shift r/m16 to left imm8 places while shifting bits from r16 in from the right.
-impl WriteInst for Shldw<Memory, Gpr16, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shldw<Memory, Gpr16, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F A4 /r ib
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -21049,8 +21049,8 @@ impl WriteInst for Shldw<Memory, Gpr16, i8> {
 }
 
 /// shldw r16 r16 _Cl: Shift r/m16 to left CL places while shifting bits from r16 in from the right.
-impl WriteInst for Shldw<Gpr16, Gpr16, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shldw<Gpr16, Gpr16, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F A5 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -21065,8 +21065,8 @@ impl WriteInst for Shldw<Gpr16, Gpr16, _Cl> {
 }
 
 /// shldw m16 r16 _Cl: Shift r/m16 to left CL places while shifting bits from r16 in from the right.
-impl WriteInst for Shldw<Memory, Gpr16, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shldw<Memory, Gpr16, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F A5 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -21080,11 +21080,11 @@ impl WriteInst for Shldw<Memory, Gpr16, _Cl> {
     }
 }
 
-pub struct Shll<Op0, Op1>(Op0, Op1);
+pub struct Shll<Op0, Op1>(pub Op0, pub Op1);
 
 /// shll r32 imm8: Multiply r/m32 by 2, imm8 times.
-impl WriteInst for Shll<Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shll<Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C1 /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -21098,8 +21098,8 @@ impl WriteInst for Shll<Gpr32, i8> {
 }
 
 /// shll m32 imm8: Multiply r/m32 by 2, imm8 times.
-impl WriteInst for Shll<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shll<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C1 /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -21113,8 +21113,8 @@ impl WriteInst for Shll<Memory, i8> {
 }
 
 /// shll r32 _1: Multiply r/m32 by 2, once.
-impl WriteInst for Shll<Gpr32, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shll<Gpr32, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D1 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -21127,8 +21127,8 @@ impl WriteInst for Shll<Gpr32, _1> {
 }
 
 /// shll m32 _1: Multiply r/m32 by 2, once.
-impl WriteInst for Shll<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shll<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D1 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -21141,8 +21141,8 @@ impl WriteInst for Shll<Memory, _1> {
 }
 
 /// shll r32 _Cl: Multiply r/m32 by 2, CL times.
-impl WriteInst for Shll<Gpr32, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shll<Gpr32, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D3 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -21155,8 +21155,8 @@ impl WriteInst for Shll<Gpr32, _Cl> {
 }
 
 /// shll m32 _Cl: Multiply r/m32 by 2, CL times.
-impl WriteInst for Shll<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shll<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D3 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -21168,11 +21168,11 @@ impl WriteInst for Shll<Memory, _Cl> {
     }
 }
 
-pub struct Shlq<Op0, Op1>(Op0, Op1);
+pub struct Shlq<Op0, Op1>(pub Op0, pub Op1);
 
 /// shlq r64 imm8: Multiply r/m32 by 2, imm8 times.
-impl WriteInst for Shlq<Gpr64, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shlq<Gpr64, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ C1 /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -21186,8 +21186,8 @@ impl WriteInst for Shlq<Gpr64, i8> {
 }
 
 /// shlq m64 imm8: Multiply r/m32 by 2, imm8 times.
-impl WriteInst for Shlq<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shlq<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ C1 /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -21201,8 +21201,8 @@ impl WriteInst for Shlq<Memory, i8> {
 }
 
 /// shlq r64 _1: Multiply r/m64 by 2, once.
-impl WriteInst for Shlq<Gpr64, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shlq<Gpr64, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D1 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -21215,8 +21215,8 @@ impl WriteInst for Shlq<Gpr64, _1> {
 }
 
 /// shlq m64 _1: Multiply r/m64 by 2, once.
-impl WriteInst for Shlq<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shlq<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D1 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -21229,8 +21229,8 @@ impl WriteInst for Shlq<Memory, _1> {
 }
 
 /// shlq r64 _Cl: Multiply r/m32 by 2, CL times.
-impl WriteInst for Shlq<Gpr64, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shlq<Gpr64, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D3 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -21243,8 +21243,8 @@ impl WriteInst for Shlq<Gpr64, _Cl> {
 }
 
 /// shlq m64 _Cl: Multiply r/m32 by 2, CL times.
-impl WriteInst for Shlq<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shlq<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D3 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -21256,11 +21256,11 @@ impl WriteInst for Shlq<Memory, _Cl> {
     }
 }
 
-pub struct Shlw<Op0, Op1>(Op0, Op1);
+pub struct Shlw<Op0, Op1>(pub Op0, pub Op1);
 
 /// shlw r16 imm8: Multiply r/m16 by 2, imm8 times.
-impl WriteInst for Shlw<Gpr16, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shlw<Gpr16, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 C1 /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         put(w, 0x66)?;
@@ -21275,8 +21275,8 @@ impl WriteInst for Shlw<Gpr16, i8> {
 }
 
 /// shlw m16 imm8: Multiply r/m16 by 2, imm8 times.
-impl WriteInst for Shlw<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shlw<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 C1 /4 ib
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         put(w, 0x66)?;
@@ -21291,8 +21291,8 @@ impl WriteInst for Shlw<Memory, i8> {
 }
 
 /// shlw r16 _1: Multiply r/m16 by 2, once.
-impl WriteInst for Shlw<Gpr16, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shlw<Gpr16, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D1 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         put(w, 0x66)?;
@@ -21306,8 +21306,8 @@ impl WriteInst for Shlw<Gpr16, _1> {
 }
 
 /// shlw m16 _1: Multiply r/m16 by 2, once.
-impl WriteInst for Shlw<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shlw<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D1 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         put(w, 0x66)?;
@@ -21321,8 +21321,8 @@ impl WriteInst for Shlw<Memory, _1> {
 }
 
 /// shlw r16 _Cl: Multiply r/m16 by 2, CL times.
-impl WriteInst for Shlw<Gpr16, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shlw<Gpr16, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D3 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         put(w, 0x66)?;
@@ -21336,8 +21336,8 @@ impl WriteInst for Shlw<Gpr16, _Cl> {
 }
 
 /// shlw m16 _Cl: Multiply r/m16 by 2, CL times.
-impl WriteInst for Shlw<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shlw<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D3 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         put(w, 0x66)?;
@@ -21350,11 +21350,11 @@ impl WriteInst for Shlw<Memory, _Cl> {
     }
 }
 
-pub struct Shrb<Op0, Op1>(Op0, Op1);
+pub struct Shrb<Op0, Op1>(pub Op0, pub Op1);
 
 /// shrb r8 imm8: Unsigned divide r/m8 by 2, imm8 times.
-impl WriteInst for Shrb<Gpr8, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrb<Gpr8, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C0 /5 ib
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -21368,8 +21368,8 @@ impl WriteInst for Shrb<Gpr8, i8> {
 }
 
 /// shrb m8 imm8: Unsigned divide r/m8 by 2, imm8 times.
-impl WriteInst for Shrb<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrb<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C0 /5 ib
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -21383,8 +21383,8 @@ impl WriteInst for Shrb<Memory, i8> {
 }
 
 /// shrb r8 _1: Unsigned divide r/m8 by 2, once.
-impl WriteInst for Shrb<Gpr8, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrb<Gpr8, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D0 /5
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -21397,8 +21397,8 @@ impl WriteInst for Shrb<Gpr8, _1> {
 }
 
 /// shrb m8 _1: Unsigned divide r/m8 by 2, once.
-impl WriteInst for Shrb<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrb<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D0 /5
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -21411,8 +21411,8 @@ impl WriteInst for Shrb<Memory, _1> {
 }
 
 /// shrb r8 _Cl: Unsigned divide r/m8 by 2, CL times.
-impl WriteInst for Shrb<Gpr8, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrb<Gpr8, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D2 /5
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -21425,8 +21425,8 @@ impl WriteInst for Shrb<Gpr8, _Cl> {
 }
 
 /// shrb m8 _Cl: Unsigned divide r/m8 by 2, CL times.
-impl WriteInst for Shrb<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrb<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D2 /5
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -21438,11 +21438,11 @@ impl WriteInst for Shrb<Memory, _Cl> {
     }
 }
 
-pub struct Shrdl<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Shrdl<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// shrdl r32 r32 imm8: Shift r/m32 to right imm8 places while shifting bits from r32 in from the left.
-impl WriteInst for Shrdl<Gpr32, Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrdl<Gpr32, Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F AC /r ib
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -21457,8 +21457,8 @@ impl WriteInst for Shrdl<Gpr32, Gpr32, i8> {
 }
 
 /// shrdl m32 r32 imm8: Shift r/m32 to right imm8 places while shifting bits from r32 in from the left.
-impl WriteInst for Shrdl<Memory, Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrdl<Memory, Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F AC /r ib
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -21473,8 +21473,8 @@ impl WriteInst for Shrdl<Memory, Gpr32, i8> {
 }
 
 /// shrdl r32 r32 _Cl: Shift r/m32 to right CL places while shifting bits from r32 in from the left.
-impl WriteInst for Shrdl<Gpr32, Gpr32, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrdl<Gpr32, Gpr32, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F AD /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -21488,8 +21488,8 @@ impl WriteInst for Shrdl<Gpr32, Gpr32, _Cl> {
 }
 
 /// shrdl m32 r32 _Cl: Shift r/m32 to right CL places while shifting bits from r32 in from the left.
-impl WriteInst for Shrdl<Memory, Gpr32, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrdl<Memory, Gpr32, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F AD /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -21502,11 +21502,11 @@ impl WriteInst for Shrdl<Memory, Gpr32, _Cl> {
     }
 }
 
-pub struct Shrdq<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Shrdq<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// shrdq r64 r64 imm8: Shift r/m64 to right imm8 places while shifting bits from r64 in from the left.
-impl WriteInst for Shrdq<Gpr64, Gpr64, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrdq<Gpr64, Gpr64, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F AC /r ib
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -21521,8 +21521,8 @@ impl WriteInst for Shrdq<Gpr64, Gpr64, i8> {
 }
 
 /// shrdq m64 r64 imm8: Shift r/m64 to right imm8 places while shifting bits from r64 in from the left.
-impl WriteInst for Shrdq<Memory, Gpr64, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrdq<Memory, Gpr64, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F AC /r ib
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -21537,8 +21537,8 @@ impl WriteInst for Shrdq<Memory, Gpr64, i8> {
 }
 
 /// shrdq r64 r64 _Cl: Shift r/m64 to right CL places while shifting bits from r64 in from the left.
-impl WriteInst for Shrdq<Gpr64, Gpr64, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrdq<Gpr64, Gpr64, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F AD /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -21552,8 +21552,8 @@ impl WriteInst for Shrdq<Gpr64, Gpr64, _Cl> {
 }
 
 /// shrdq m64 r64 _Cl: Shift r/m64 to right CL places while shifting bits from r64 in from the left.
-impl WriteInst for Shrdq<Memory, Gpr64, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrdq<Memory, Gpr64, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F AD /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -21566,11 +21566,11 @@ impl WriteInst for Shrdq<Memory, Gpr64, _Cl> {
     }
 }
 
-pub struct Shrdw<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Shrdw<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// shrdw r16 r16 imm8: Shift r/m16 to right imm8 places while shifting bits from r16 in from the left.
-impl WriteInst for Shrdw<Gpr16, Gpr16, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrdw<Gpr16, Gpr16, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F AC /r ib
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -21586,8 +21586,8 @@ impl WriteInst for Shrdw<Gpr16, Gpr16, i8> {
 }
 
 /// shrdw m16 r16 imm8: Shift r/m16 to right imm8 places while shifting bits from r16 in from the left.
-impl WriteInst for Shrdw<Memory, Gpr16, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrdw<Memory, Gpr16, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F AC /r ib
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -21603,8 +21603,8 @@ impl WriteInst for Shrdw<Memory, Gpr16, i8> {
 }
 
 /// shrdw r16 r16 _Cl: Shift r/m16 to right CL places while shifting bits from r16 in from the left.
-impl WriteInst for Shrdw<Gpr16, Gpr16, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrdw<Gpr16, Gpr16, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F AD /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -21619,8 +21619,8 @@ impl WriteInst for Shrdw<Gpr16, Gpr16, _Cl> {
 }
 
 /// shrdw m16 r16 _Cl: Shift r/m16 to right CL places while shifting bits from r16 in from the left.
-impl WriteInst for Shrdw<Memory, Gpr16, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrdw<Memory, Gpr16, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F AD /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -21634,11 +21634,11 @@ impl WriteInst for Shrdw<Memory, Gpr16, _Cl> {
     }
 }
 
-pub struct Shrl<Op0, Op1>(Op0, Op1);
+pub struct Shrl<Op0, Op1>(pub Op0, pub Op1);
 
 /// shrl r32 imm8: Unsigned divide r/m32 by 2, imm8 times.
-impl WriteInst for Shrl<Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrl<Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C1 /5 ib
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -21652,8 +21652,8 @@ impl WriteInst for Shrl<Gpr32, i8> {
 }
 
 /// shrl m32 imm8: Unsigned divide r/m32 by 2, imm8 times.
-impl WriteInst for Shrl<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrl<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // C1 /5 ib
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -21667,8 +21667,8 @@ impl WriteInst for Shrl<Memory, i8> {
 }
 
 /// shrl r32 _1: Unsigned divide r/m32 by 2, once.
-impl WriteInst for Shrl<Gpr32, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrl<Gpr32, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D1 /5
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -21681,8 +21681,8 @@ impl WriteInst for Shrl<Gpr32, _1> {
 }
 
 /// shrl m32 _1: Unsigned divide r/m32 by 2, once.
-impl WriteInst for Shrl<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrl<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D1 /5
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -21695,8 +21695,8 @@ impl WriteInst for Shrl<Memory, _1> {
 }
 
 /// shrl r32 _Cl: Unsigned divide r/m32 by 2, CL times.
-impl WriteInst for Shrl<Gpr32, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrl<Gpr32, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D3 /5
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -21709,8 +21709,8 @@ impl WriteInst for Shrl<Gpr32, _Cl> {
 }
 
 /// shrl m32 _Cl: Unsigned divide r/m32 by 2, CL times.
-impl WriteInst for Shrl<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrl<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // D3 /5
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -21722,11 +21722,11 @@ impl WriteInst for Shrl<Memory, _Cl> {
     }
 }
 
-pub struct Shrq<Op0, Op1>(Op0, Op1);
+pub struct Shrq<Op0, Op1>(pub Op0, pub Op1);
 
 /// shrq r64 imm8: Unsigned divide r/m32 by 2, imm8 times.
-impl WriteInst for Shrq<Gpr64, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrq<Gpr64, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ C1 /5 ib
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -21740,8 +21740,8 @@ impl WriteInst for Shrq<Gpr64, i8> {
 }
 
 /// shrq m64 imm8: Unsigned divide r/m32 by 2, imm8 times.
-impl WriteInst for Shrq<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrq<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ C1 /5 ib
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -21755,8 +21755,8 @@ impl WriteInst for Shrq<Memory, i8> {
 }
 
 /// shrq r64 _1: Unsigned divide r/m32 by 2, once.
-impl WriteInst for Shrq<Gpr64, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrq<Gpr64, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D1 /5
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -21769,8 +21769,8 @@ impl WriteInst for Shrq<Gpr64, _1> {
 }
 
 /// shrq m64 _1: Unsigned divide r/m32 by 2, once.
-impl WriteInst for Shrq<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrq<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D1 /5
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -21783,8 +21783,8 @@ impl WriteInst for Shrq<Memory, _1> {
 }
 
 /// shrq r64 _Cl: Unsigned divide r/m32 by 2, CL times.
-impl WriteInst for Shrq<Gpr64, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrq<Gpr64, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D3 /5
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -21797,8 +21797,8 @@ impl WriteInst for Shrq<Gpr64, _Cl> {
 }
 
 /// shrq m64 _Cl: Unsigned divide r/m32 by 2, CL times.
-impl WriteInst for Shrq<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrq<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ D3 /5
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -21810,11 +21810,11 @@ impl WriteInst for Shrq<Memory, _Cl> {
     }
 }
 
-pub struct Shrw<Op0, Op1>(Op0, Op1);
+pub struct Shrw<Op0, Op1>(pub Op0, pub Op1);
 
 /// shrw r16 imm8: Unsigned divide r/m16 by 2, imm8 times.
-impl WriteInst for Shrw<Gpr16, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrw<Gpr16, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 C1 /5 ib
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         put(w, 0x66)?;
@@ -21829,8 +21829,8 @@ impl WriteInst for Shrw<Gpr16, i8> {
 }
 
 /// shrw m16 imm8: Unsigned divide r/m16 by 2, imm8 times.
-impl WriteInst for Shrw<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrw<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 C1 /5 ib
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         put(w, 0x66)?;
@@ -21845,8 +21845,8 @@ impl WriteInst for Shrw<Memory, i8> {
 }
 
 /// shrw r16 _1: Unsigned divide r/m16 by 2, once.
-impl WriteInst for Shrw<Gpr16, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrw<Gpr16, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D1 /5
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         put(w, 0x66)?;
@@ -21860,8 +21860,8 @@ impl WriteInst for Shrw<Gpr16, _1> {
 }
 
 /// shrw m16 _1: Unsigned divide r/m16 by 2, once.
-impl WriteInst for Shrw<Memory, _1> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrw<Memory, _1> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D1 /5
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         put(w, 0x66)?;
@@ -21875,8 +21875,8 @@ impl WriteInst for Shrw<Memory, _1> {
 }
 
 /// shrw r16 _Cl: Unsigned divide r/m16 by 2, CL times
-impl WriteInst for Shrw<Gpr16, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrw<Gpr16, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D3 /5
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         put(w, 0x66)?;
@@ -21890,8 +21890,8 @@ impl WriteInst for Shrw<Gpr16, _Cl> {
 }
 
 /// shrw m16 _Cl: Unsigned divide r/m16 by 2, CL times
-impl WriteInst for Shrw<Memory, _Cl> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shrw<Memory, _Cl> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 D3 /5
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         put(w, 0x66)?;
@@ -21904,11 +21904,11 @@ impl WriteInst for Shrw<Memory, _Cl> {
     }
 }
 
-pub struct Shufpd<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Shufpd<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// shufpd xmm xmm imm8: Shuffle packed double-precision floating- point values selected by imm8 from xmm1 and xmm2/m128 to xmm1.
-impl WriteInst for Shufpd<Xmm, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shufpd<Xmm, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F C6 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -21924,8 +21924,8 @@ impl WriteInst for Shufpd<Xmm, Xmm, i8> {
 }
 
 /// shufpd xmm m128 imm8: Shuffle packed double-precision floating- point values selected by imm8 from xmm1 and xmm2/m128 to xmm1.
-impl WriteInst for Shufpd<Xmm, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shufpd<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F C6 /r ib
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -21940,11 +21940,11 @@ impl WriteInst for Shufpd<Xmm, Memory, i8> {
     }
 }
 
-pub struct Shufps<Op0, Op1, Op2>(Op0, Op1, Op2);
+pub struct Shufps<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
 
 /// shufps xmm xmm imm8: Shuffle packed single-precision floating-point values selected by imm8 from xmm1 and xmm1/m128 to xmm1.
-impl WriteInst for Shufps<Xmm, Xmm, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shufps<Xmm, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F C6 /r ib
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -21959,8 +21959,8 @@ impl WriteInst for Shufps<Xmm, Xmm, i8> {
 }
 
 /// shufps xmm m128 imm8: Shuffle packed single-precision floating-point values selected by imm8 from xmm1 and xmm1/m128 to xmm1.
-impl WriteInst for Shufps<Xmm, Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Shufps<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F C6 /r ib
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -21974,11 +21974,11 @@ impl WriteInst for Shufps<Xmm, Memory, i8> {
     }
 }
 
-pub struct Sidt<Op0>(Op0);
+pub struct Sidt<Op0>(pub Op0);
 
 /// sidt m: Store IDTR to m.
-impl WriteInst for Sidt<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sidt<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 01 /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -21991,11 +21991,11 @@ impl WriteInst for Sidt<Memory> {
     }
 }
 
-pub struct Sqrtpd<Op0, Op1>(Op0, Op1);
+pub struct Sqrtpd<Op0, Op1>(pub Op0, pub Op1);
 
 /// sqrtpd xmm xmm: Computes square roots of the packed double- precision floating-point values in xmm2/m128 and stores the results in xmm1.
-impl WriteInst for Sqrtpd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sqrtpd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 51 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -22010,8 +22010,8 @@ impl WriteInst for Sqrtpd<Xmm, Xmm> {
 }
 
 /// sqrtpd xmm m128: Computes square roots of the packed double- precision floating-point values in xmm2/m128 and stores the results in xmm1.
-impl WriteInst for Sqrtpd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sqrtpd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 51 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -22025,11 +22025,11 @@ impl WriteInst for Sqrtpd<Xmm, Memory> {
     }
 }
 
-pub struct Sqrtps<Op0, Op1>(Op0, Op1);
+pub struct Sqrtps<Op0, Op1>(pub Op0, pub Op1);
 
 /// sqrtps xmm xmm: Computes square roots of the packed single- precision floating-point values in xmm2/m128 and stores the results in xmm1.
-impl WriteInst for Sqrtps<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sqrtps<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 51 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -22043,8 +22043,8 @@ impl WriteInst for Sqrtps<Xmm, Xmm> {
 }
 
 /// sqrtps xmm m128: Computes square roots of the packed single- precision floating-point values in xmm2/m128 and stores the results in xmm1.
-impl WriteInst for Sqrtps<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sqrtps<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 51 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -22057,11 +22057,11 @@ impl WriteInst for Sqrtps<Xmm, Memory> {
     }
 }
 
-pub struct Sqrtsd<Op0, Op1>(Op0, Op1);
+pub struct Sqrtsd<Op0, Op1>(pub Op0, pub Op1);
 
 /// sqrtsd xmm xmm: Computes square root of the low double- precision floating-point value in xmm2/m64 and stores the results in xmm1.
-impl WriteInst for Sqrtsd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sqrtsd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 51 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -22076,8 +22076,8 @@ impl WriteInst for Sqrtsd<Xmm, Xmm> {
 }
 
 /// sqrtsd xmm m64: Computes square root of the low double- precision floating-point value in xmm2/m64 and stores the results in xmm1.
-impl WriteInst for Sqrtsd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sqrtsd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 51 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -22091,11 +22091,11 @@ impl WriteInst for Sqrtsd<Xmm, Memory> {
     }
 }
 
-pub struct Sqrtss<Op0, Op1>(Op0, Op1);
+pub struct Sqrtss<Op0, Op1>(pub Op0, pub Op1);
 
 /// sqrtss xmm xmm: Computes square root of the low single- precision floating-point value in xmm2/m32 and stores the results in xmm1.
-impl WriteInst for Sqrtss<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sqrtss<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 51 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -22110,8 +22110,8 @@ impl WriteInst for Sqrtss<Xmm, Xmm> {
 }
 
 /// sqrtss xmm m32: Computes square root of the low single- precision floating-point value in xmm2/m32 and stores the results in xmm1.
-impl WriteInst for Sqrtss<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sqrtss<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 51 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -22128,8 +22128,8 @@ impl WriteInst for Sqrtss<Xmm, Memory> {
 pub struct Stc();
 
 /// stc: Set CF flag.
-impl WriteInst for Stc {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Stc {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F9
         put(w, 0xF9)?;
         Ok(())
@@ -22139,8 +22139,8 @@ impl WriteInst for Stc {
 pub struct Std();
 
 /// std: Set DF flag.
-impl WriteInst for Std {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Std {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // FD
         put(w, 0xFD)?;
         Ok(())
@@ -22150,19 +22150,19 @@ impl WriteInst for Std {
 pub struct Sti();
 
 /// sti: Set interrupt flag; external, maskable interrupts enabled at the end of the next instruction.
-impl WriteInst for Sti {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Sti {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // FB
         put(w, 0xFB)?;
         Ok(())
     }
 }
 
-pub struct Stmxcsr<Op0>(Op0);
+pub struct Stmxcsr<Op0>(pub Op0);
 
 /// stmxcsr m32: Store contents of MXCSR register to m32.
-impl WriteInst for Stmxcsr<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Stmxcsr<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F AE /3
         let modrm = ModRM::new(PartOfOpcode(3), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -22175,11 +22175,11 @@ impl WriteInst for Stmxcsr<Memory> {
     }
 }
 
-pub struct Str<Op0>(Op0);
+pub struct Str<Op0>(pub Op0);
 
 /// str r16: Stores segment selector from TR in r/m16.
-impl WriteInst for Str<Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Str<Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 00 /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         put(w, 0x66)?;
@@ -22194,8 +22194,8 @@ impl WriteInst for Str<Gpr16> {
 }
 
 /// str m16: Stores segment selector from TR in r/m16.
-impl WriteInst for Str<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Str<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 00 /1
         let modrm = ModRM::new(PartOfOpcode(1), self.0);
         put(w, 0x66)?;
@@ -22209,11 +22209,11 @@ impl WriteInst for Str<Memory> {
     }
 }
 
-pub struct Subb<Op0, Op1>(Op0, Op1);
+pub struct Subb<Op0, Op1>(pub Op0, pub Op1);
 
 /// subb r8 r8: Subtract r/m8 from r8.
-impl WriteInst for Subb<Gpr8, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subb<Gpr8, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 2A /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -22226,8 +22226,8 @@ impl WriteInst for Subb<Gpr8, Gpr8> {
 }
 
 /// subb r8 m8: Subtract r/m8 from r8.
-impl WriteInst for Subb<Gpr8, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subb<Gpr8, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 2A /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -22240,8 +22240,8 @@ impl WriteInst for Subb<Gpr8, Memory> {
 }
 
 /// subb m8 r8: Subtract r8 from r/m8.
-impl WriteInst for Subb<Memory, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subb<Memory, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 28 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -22254,8 +22254,8 @@ impl WriteInst for Subb<Memory, Gpr8> {
 }
 
 /// subb r8 imm8: Subtract imm8 from r/m8.
-impl WriteInst for Subb<Gpr8, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subb<Gpr8, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 80 /5 ib
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -22269,8 +22269,8 @@ impl WriteInst for Subb<Gpr8, i8> {
 }
 
 /// subb m8 imm8: Subtract imm8 from r/m8.
-impl WriteInst for Subb<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subb<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 80 /5 ib
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -22284,8 +22284,8 @@ impl WriteInst for Subb<Memory, i8> {
 }
 
 /// subb _Al imm8: Subtract imm8 from AL.
-impl WriteInst for Subb<_Al, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subb<_Al, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 2C ib
         put(w, 0x2C)?;
         puts(w, self.1.to_le_bytes())?;
@@ -22293,11 +22293,11 @@ impl WriteInst for Subb<_Al, i8> {
     }
 }
 
-pub struct Subl<Op0, Op1>(Op0, Op1);
+pub struct Subl<Op0, Op1>(pub Op0, pub Op1);
 
 /// subl r32 r32: Subtract r/m32 from r32.
-impl WriteInst for Subl<Gpr32, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subl<Gpr32, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 2B /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -22310,8 +22310,8 @@ impl WriteInst for Subl<Gpr32, Gpr32> {
 }
 
 /// subl r32 m32: Subtract r/m32 from r32.
-impl WriteInst for Subl<Gpr32, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subl<Gpr32, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 2B /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -22324,8 +22324,8 @@ impl WriteInst for Subl<Gpr32, Memory> {
 }
 
 /// subl m32 r32: Subtract r32 from r/m32.
-impl WriteInst for Subl<Memory, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subl<Memory, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 29 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -22338,8 +22338,8 @@ impl WriteInst for Subl<Memory, Gpr32> {
 }
 
 /// subl r32 imm8: Subtract sign-extended imm8 from r/m32.
-impl WriteInst for Subl<Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subl<Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 83 /5 ib
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -22353,8 +22353,8 @@ impl WriteInst for Subl<Gpr32, i8> {
 }
 
 /// subl m32 imm8: Subtract sign-extended imm8 from r/m32.
-impl WriteInst for Subl<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subl<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 83 /5 ib
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -22368,8 +22368,8 @@ impl WriteInst for Subl<Memory, i8> {
 }
 
 /// subl r32 imm32: Subtract imm32 from r/m32.
-impl WriteInst for Subl<Gpr32, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subl<Gpr32, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 81 /5 id
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -22383,8 +22383,8 @@ impl WriteInst for Subl<Gpr32, i32> {
 }
 
 /// subl m32 imm32: Subtract imm32 from r/m32.
-impl WriteInst for Subl<Memory, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subl<Memory, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 81 /5 id
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -22398,8 +22398,8 @@ impl WriteInst for Subl<Memory, i32> {
 }
 
 /// subl _Eax imm32: Subtract imm32 from EAX.
-impl WriteInst for Subl<_Eax, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subl<_Eax, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 2D id
         put(w, 0x2D)?;
         puts(w, self.1.to_le_bytes())?;
@@ -22407,11 +22407,11 @@ impl WriteInst for Subl<_Eax, i32> {
     }
 }
 
-pub struct Subpd<Op0, Op1>(Op0, Op1);
+pub struct Subpd<Op0, Op1>(pub Op0, pub Op1);
 
 /// subpd xmm xmm: Subtract packed double-precision floating- point values in xmm2/m128 from xmm1.
-impl WriteInst for Subpd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subpd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 5C /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -22426,8 +22426,8 @@ impl WriteInst for Subpd<Xmm, Xmm> {
 }
 
 /// subpd xmm m128: Subtract packed double-precision floating- point values in xmm2/m128 from xmm1.
-impl WriteInst for Subpd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subpd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 5C /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -22441,11 +22441,11 @@ impl WriteInst for Subpd<Xmm, Memory> {
     }
 }
 
-pub struct Subps<Op0, Op1>(Op0, Op1);
+pub struct Subps<Op0, Op1>(pub Op0, pub Op1);
 
 /// subps xmm xmm: Subtract packed single-precision floating-point values in xmm2/mem from xmm1.
-impl WriteInst for Subps<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subps<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 5C /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -22459,8 +22459,8 @@ impl WriteInst for Subps<Xmm, Xmm> {
 }
 
 /// subps xmm m128: Subtract packed single-precision floating-point values in xmm2/mem from xmm1.
-impl WriteInst for Subps<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subps<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 5C /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -22473,11 +22473,11 @@ impl WriteInst for Subps<Xmm, Memory> {
     }
 }
 
-pub struct Subq<Op0, Op1>(Op0, Op1);
+pub struct Subq<Op0, Op1>(pub Op0, pub Op1);
 
 /// subq r64 r64: Subtract r/m64 from r64.
-impl WriteInst for Subq<Gpr64, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subq<Gpr64, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 2B /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -22490,8 +22490,8 @@ impl WriteInst for Subq<Gpr64, Gpr64> {
 }
 
 /// subq r64 m64: Subtract r/m64 from r64.
-impl WriteInst for Subq<Gpr64, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subq<Gpr64, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 2B /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -22504,8 +22504,8 @@ impl WriteInst for Subq<Gpr64, Memory> {
 }
 
 /// subq m64 r64: Subtract r64 from r/m64.
-impl WriteInst for Subq<Memory, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subq<Memory, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 29 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -22518,8 +22518,8 @@ impl WriteInst for Subq<Memory, Gpr64> {
 }
 
 /// subq r64 imm8: Subtract sign-extended imm8 from r/m64.
-impl WriteInst for Subq<Gpr64, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subq<Gpr64, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 83 /5 ib
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -22533,8 +22533,8 @@ impl WriteInst for Subq<Gpr64, i8> {
 }
 
 /// subq m64 imm8: Subtract sign-extended imm8 from r/m64.
-impl WriteInst for Subq<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subq<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 83 /5 ib
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -22548,8 +22548,8 @@ impl WriteInst for Subq<Memory, i8> {
 }
 
 /// subq r64 imm32: Subtract imm32 sign-extended to 64-bits from r/m64.
-impl WriteInst for Subq<Gpr64, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subq<Gpr64, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 81 /5 id
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -22563,8 +22563,8 @@ impl WriteInst for Subq<Gpr64, i32> {
 }
 
 /// subq m64 imm32: Subtract imm32 sign-extended to 64-bits from r/m64.
-impl WriteInst for Subq<Memory, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subq<Memory, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 81 /5 id
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -22578,8 +22578,8 @@ impl WriteInst for Subq<Memory, i32> {
 }
 
 /// subq _Rax imm32: Subtract imm32 sign-extended to 64-bits from RAX.
-impl WriteInst for Subq<_Rax, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subq<_Rax, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 2D id
         puts(w, rex_byte(false, true, false, false, false))?;
         put(w, 0x2D)?;
@@ -22588,11 +22588,11 @@ impl WriteInst for Subq<_Rax, i32> {
     }
 }
 
-pub struct Subsd<Op0, Op1>(Op0, Op1);
+pub struct Subsd<Op0, Op1>(pub Op0, pub Op1);
 
 /// subsd xmm xmm: Subtracts the low double-precision floating- point values in xmm2/mem64 from xmm1.
-impl WriteInst for Subsd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subsd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 5C /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -22607,8 +22607,8 @@ impl WriteInst for Subsd<Xmm, Xmm> {
 }
 
 /// subsd xmm m64: Subtracts the low double-precision floating- point values in xmm2/mem64 from xmm1.
-impl WriteInst for Subsd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subsd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F2 0F 5C /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF2)?;
@@ -22622,11 +22622,11 @@ impl WriteInst for Subsd<Xmm, Memory> {
     }
 }
 
-pub struct Subss<Op0, Op1>(Op0, Op1);
+pub struct Subss<Op0, Op1>(pub Op0, pub Op1);
 
 /// subss xmm xmm: Subtract the lower single-precision floating- point values in xmm2/m32 from xmm1.
-impl WriteInst for Subss<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subss<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 5C /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -22641,8 +22641,8 @@ impl WriteInst for Subss<Xmm, Xmm> {
 }
 
 /// subss xmm m32: Subtract the lower single-precision floating- point values in xmm2/m32 from xmm1.
-impl WriteInst for Subss<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subss<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F3 0F 5C /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0xF3)?;
@@ -22656,11 +22656,11 @@ impl WriteInst for Subss<Xmm, Memory> {
     }
 }
 
-pub struct Subw<Op0, Op1>(Op0, Op1);
+pub struct Subw<Op0, Op1>(pub Op0, pub Op1);
 
 /// subw r16 r16: Subtract r/m16 from r16.
-impl WriteInst for Subw<Gpr16, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subw<Gpr16, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 2B /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -22674,8 +22674,8 @@ impl WriteInst for Subw<Gpr16, Gpr16> {
 }
 
 /// subw r16 m16: Subtract r/m16 from r16.
-impl WriteInst for Subw<Gpr16, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subw<Gpr16, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 2B /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -22689,8 +22689,8 @@ impl WriteInst for Subw<Gpr16, Memory> {
 }
 
 /// subw m16 r16: Subtract r16 from r/m16.
-impl WriteInst for Subw<Memory, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subw<Memory, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 29 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -22704,8 +22704,8 @@ impl WriteInst for Subw<Memory, Gpr16> {
 }
 
 /// subw r16 imm8: Subtract sign-extended imm8 from r/m16.
-impl WriteInst for Subw<Gpr16, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subw<Gpr16, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 83 /5 ib
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         put(w, 0x66)?;
@@ -22720,8 +22720,8 @@ impl WriteInst for Subw<Gpr16, i8> {
 }
 
 /// subw m16 imm8: Subtract sign-extended imm8 from r/m16.
-impl WriteInst for Subw<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subw<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 83 /5 ib
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         put(w, 0x66)?;
@@ -22736,8 +22736,8 @@ impl WriteInst for Subw<Memory, i8> {
 }
 
 /// subw r16 imm16: Subtract imm16 from r/m16.
-impl WriteInst for Subw<Gpr16, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subw<Gpr16, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 81 /5 iw
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         put(w, 0x66)?;
@@ -22752,8 +22752,8 @@ impl WriteInst for Subw<Gpr16, i16> {
 }
 
 /// subw m16 imm16: Subtract imm16 from r/m16.
-impl WriteInst for Subw<Memory, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subw<Memory, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 81 /5 iw
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         put(w, 0x66)?;
@@ -22768,8 +22768,8 @@ impl WriteInst for Subw<Memory, i16> {
 }
 
 /// subw _Ax imm16: Subtract imm16 from AX.
-impl WriteInst for Subw<_Ax, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Subw<_Ax, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 2D iw
         put(w, 0x66)?;
         put(w, 0x2D)?;
@@ -22781,8 +22781,8 @@ impl WriteInst for Subw<_Ax, i16> {
 pub struct Swapgs();
 
 /// swapgs: Exchanges the current GS base register value with the value contained in MSR address C0000102H.
-impl WriteInst for Swapgs {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Swapgs {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 01 F8
         put(w, 0x0F)?;
         put(w, 0x01)?;
@@ -22791,11 +22791,11 @@ impl WriteInst for Swapgs {
     }
 }
 
-pub struct Testb<Op0, Op1>(Op0, Op1);
+pub struct Testb<Op0, Op1>(pub Op0, pub Op1);
 
 /// testb r8 r8: AND r8 with r/m8; set SF, ZF, PF according to result.
-impl WriteInst for Testb<Gpr8, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Testb<Gpr8, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 84 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -22808,8 +22808,8 @@ impl WriteInst for Testb<Gpr8, Gpr8> {
 }
 
 /// testb m8 r8: AND r8 with r/m8; set SF, ZF, PF according to result.
-impl WriteInst for Testb<Memory, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Testb<Memory, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 84 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -22822,8 +22822,8 @@ impl WriteInst for Testb<Memory, Gpr8> {
 }
 
 /// testb r8 imm8: AND imm8 with r/m8; set SF, ZF, PF according to result.
-impl WriteInst for Testb<Gpr8, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Testb<Gpr8, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F6 /0 ib
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -22837,8 +22837,8 @@ impl WriteInst for Testb<Gpr8, i8> {
 }
 
 /// testb m8 imm8: AND imm8 with r/m8; set SF, ZF, PF according to result.
-impl WriteInst for Testb<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Testb<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F6 /0 ib
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -22852,8 +22852,8 @@ impl WriteInst for Testb<Memory, i8> {
 }
 
 /// testb _Al imm8: AND imm8 with AL; set SF, ZF, PF according to result.
-impl WriteInst for Testb<_Al, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Testb<_Al, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // A8 ib
         put(w, 0xA8)?;
         puts(w, self.1.to_le_bytes())?;
@@ -22861,11 +22861,11 @@ impl WriteInst for Testb<_Al, i8> {
     }
 }
 
-pub struct Testl<Op0, Op1>(Op0, Op1);
+pub struct Testl<Op0, Op1>(pub Op0, pub Op1);
 
 /// testl r32 r32: AND r32 with r/m32; set SF, ZF, PF according to result.
-impl WriteInst for Testl<Gpr32, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Testl<Gpr32, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 85 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -22878,8 +22878,8 @@ impl WriteInst for Testl<Gpr32, Gpr32> {
 }
 
 /// testl m32 r32: AND r32 with r/m32; set SF, ZF, PF according to result.
-impl WriteInst for Testl<Memory, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Testl<Memory, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 85 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -22892,8 +22892,8 @@ impl WriteInst for Testl<Memory, Gpr32> {
 }
 
 /// testl r32 imm32: AND imm32 with r/m32; set SF, ZF, PF according to result.
-impl WriteInst for Testl<Gpr32, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Testl<Gpr32, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F7 /0 id
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -22907,8 +22907,8 @@ impl WriteInst for Testl<Gpr32, i32> {
 }
 
 /// testl m32 imm32: AND imm32 with r/m32; set SF, ZF, PF according to result.
-impl WriteInst for Testl<Memory, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Testl<Memory, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // F7 /0 id
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -22922,8 +22922,8 @@ impl WriteInst for Testl<Memory, i32> {
 }
 
 /// testl _Eax imm32: AND imm32 with EAX; set SF, ZF, PF according to result.
-impl WriteInst for Testl<_Eax, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Testl<_Eax, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // A9 id
         put(w, 0xA9)?;
         puts(w, self.1.to_le_bytes())?;
@@ -22931,11 +22931,11 @@ impl WriteInst for Testl<_Eax, i32> {
     }
 }
 
-pub struct Testq<Op0, Op1>(Op0, Op1);
+pub struct Testq<Op0, Op1>(pub Op0, pub Op1);
 
 /// testq r64 r64: AND r64 with r/m64; set SF, ZF, PF according to result.
-impl WriteInst for Testq<Gpr64, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Testq<Gpr64, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 85 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -22948,8 +22948,8 @@ impl WriteInst for Testq<Gpr64, Gpr64> {
 }
 
 /// testq m64 r64: AND r64 with r/m64; set SF, ZF, PF according to result.
-impl WriteInst for Testq<Memory, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Testq<Memory, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 85 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -22962,8 +22962,8 @@ impl WriteInst for Testq<Memory, Gpr64> {
 }
 
 /// testq r64 imm32: AND imm32 sign-extended to 64-bits with r/m64; set SF, ZF, PF according to result.
-impl WriteInst for Testq<Gpr64, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Testq<Gpr64, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ F7 /0 id
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -22977,8 +22977,8 @@ impl WriteInst for Testq<Gpr64, i32> {
 }
 
 /// testq m64 imm32: AND imm32 sign-extended to 64-bits with r/m64; set SF, ZF, PF according to result.
-impl WriteInst for Testq<Memory, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Testq<Memory, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ F7 /0 id
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -22992,8 +22992,8 @@ impl WriteInst for Testq<Memory, i32> {
 }
 
 /// testq _Rax imm32: AND imm32 sign-extended to 64-bits with RAX; set SF, ZF, PF according to result.
-impl WriteInst for Testq<_Rax, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Testq<_Rax, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ A9 id
         puts(w, rex_byte(false, true, false, false, false))?;
         put(w, 0xA9)?;
@@ -23002,11 +23002,11 @@ impl WriteInst for Testq<_Rax, i32> {
     }
 }
 
-pub struct Testw<Op0, Op1>(Op0, Op1);
+pub struct Testw<Op0, Op1>(pub Op0, pub Op1);
 
 /// testw r16 r16: AND r16 with r/m16; set SF, ZF, PF according to result.
-impl WriteInst for Testw<Gpr16, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Testw<Gpr16, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 85 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -23020,8 +23020,8 @@ impl WriteInst for Testw<Gpr16, Gpr16> {
 }
 
 /// testw m16 r16: AND r16 with r/m16; set SF, ZF, PF according to result.
-impl WriteInst for Testw<Memory, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Testw<Memory, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 85 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -23035,8 +23035,8 @@ impl WriteInst for Testw<Memory, Gpr16> {
 }
 
 /// testw r16 imm16: AND imm16 with r/m16; set SF, ZF, PF according to result.
-impl WriteInst for Testw<Gpr16, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Testw<Gpr16, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 F7 /0 iw
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         put(w, 0x66)?;
@@ -23051,8 +23051,8 @@ impl WriteInst for Testw<Gpr16, i16> {
 }
 
 /// testw m16 imm16: AND imm16 with r/m16; set SF, ZF, PF according to result.
-impl WriteInst for Testw<Memory, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Testw<Memory, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 F7 /0 iw
         let modrm = ModRM::new(PartOfOpcode(0), self.0);
         put(w, 0x66)?;
@@ -23067,8 +23067,8 @@ impl WriteInst for Testw<Memory, i16> {
 }
 
 /// testw _Ax imm16: AND imm16 with AX; set SF, ZF, PF according to result.
-impl WriteInst for Testw<_Ax, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Testw<_Ax, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 A9 iw
         put(w, 0x66)?;
         put(w, 0xA9)?;
@@ -23077,11 +23077,11 @@ impl WriteInst for Testw<_Ax, i16> {
     }
 }
 
-pub struct Ucomisd<Op0, Op1>(Op0, Op1);
+pub struct Ucomisd<Op0, Op1>(pub Op0, pub Op1);
 
 /// ucomisd xmm xmm: Compares (unordered) the low double- precision floating-point values in xmm1 and xmm2/m64 and set the EFLAGS accordingly.
-impl WriteInst for Ucomisd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Ucomisd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 2E /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -23096,8 +23096,8 @@ impl WriteInst for Ucomisd<Xmm, Xmm> {
 }
 
 /// ucomisd xmm m64: Compares (unordered) the low double- precision floating-point values in xmm1 and xmm2/m64 and set the EFLAGS accordingly.
-impl WriteInst for Ucomisd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Ucomisd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 2E /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -23111,11 +23111,11 @@ impl WriteInst for Ucomisd<Xmm, Memory> {
     }
 }
 
-pub struct Ucomiss<Op0, Op1>(Op0, Op1);
+pub struct Ucomiss<Op0, Op1>(pub Op0, pub Op1);
 
 /// ucomiss xmm xmm: Compare lower single-precision floating-point value in xmm1 register with lower single- precision floating-point value in xmm2/mem and set the status flags accordingly.
-impl WriteInst for Ucomiss<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Ucomiss<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 2E /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -23129,8 +23129,8 @@ impl WriteInst for Ucomiss<Xmm, Xmm> {
 }
 
 /// ucomiss xmm m32: Compare lower single-precision floating-point value in xmm1 register with lower single- precision floating-point value in xmm2/mem and set the status flags accordingly.
-impl WriteInst for Ucomiss<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Ucomiss<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 2E /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -23146,8 +23146,8 @@ impl WriteInst for Ucomiss<Xmm, Memory> {
 pub struct Ud2();
 
 /// ud2: Raise invalid opcode exception.
-impl WriteInst for Ud2 {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Ud2 {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 0B
         put(w, 0x0F)?;
         put(w, 0x0B)?;
@@ -23155,11 +23155,11 @@ impl WriteInst for Ud2 {
     }
 }
 
-pub struct Unpckhpd<Op0, Op1>(Op0, Op1);
+pub struct Unpckhpd<Op0, Op1>(pub Op0, pub Op1);
 
 /// unpckhpd xmm xmm: Unpacks and Interleaves double-precision floating-point values from high quadwords of xmm1 and xmm2/m128.
-impl WriteInst for Unpckhpd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Unpckhpd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 15 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -23174,8 +23174,8 @@ impl WriteInst for Unpckhpd<Xmm, Xmm> {
 }
 
 /// unpckhpd xmm m128: Unpacks and Interleaves double-precision floating-point values from high quadwords of xmm1 and xmm2/m128.
-impl WriteInst for Unpckhpd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Unpckhpd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 15 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -23189,11 +23189,11 @@ impl WriteInst for Unpckhpd<Xmm, Memory> {
     }
 }
 
-pub struct Unpckhps<Op0, Op1>(Op0, Op1);
+pub struct Unpckhps<Op0, Op1>(pub Op0, pub Op1);
 
 /// unpckhps xmm xmm: Unpacks and Interleaves single-precision floating-point values from high quadwords of xmm1 and xmm2/mem into xmm1.
-impl WriteInst for Unpckhps<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Unpckhps<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 15 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -23207,8 +23207,8 @@ impl WriteInst for Unpckhps<Xmm, Xmm> {
 }
 
 /// unpckhps xmm m128: Unpacks and Interleaves single-precision floating-point values from high quadwords of xmm1 and xmm2/mem into xmm1.
-impl WriteInst for Unpckhps<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Unpckhps<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 15 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -23221,11 +23221,11 @@ impl WriteInst for Unpckhps<Xmm, Memory> {
     }
 }
 
-pub struct Unpcklpd<Op0, Op1>(Op0, Op1);
+pub struct Unpcklpd<Op0, Op1>(pub Op0, pub Op1);
 
 /// unpcklpd xmm xmm: Unpacks and Interleaves double-precision floating-point values from low quadwords of xmm1 and xmm2/m128.
-impl WriteInst for Unpcklpd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Unpcklpd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 14 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -23240,8 +23240,8 @@ impl WriteInst for Unpcklpd<Xmm, Xmm> {
 }
 
 /// unpcklpd xmm m128: Unpacks and Interleaves double-precision floating-point values from low quadwords of xmm1 and xmm2/m128.
-impl WriteInst for Unpcklpd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Unpcklpd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 14 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -23255,11 +23255,11 @@ impl WriteInst for Unpcklpd<Xmm, Memory> {
     }
 }
 
-pub struct Unpcklps<Op0, Op1>(Op0, Op1);
+pub struct Unpcklps<Op0, Op1>(pub Op0, pub Op1);
 
 /// unpcklps xmm xmm: Unpacks and Interleaves single-precision floating-point values from low quadwords of xmm1 and xmm2/mem into xmm1.
-impl WriteInst for Unpcklps<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Unpcklps<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 14 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -23273,8 +23273,8 @@ impl WriteInst for Unpcklps<Xmm, Xmm> {
 }
 
 /// unpcklps xmm m128: Unpacks and Interleaves single-precision floating-point values from low quadwords of xmm1 and xmm2/mem into xmm1.
-impl WriteInst for Unpcklps<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Unpcklps<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 14 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -23287,11 +23287,11 @@ impl WriteInst for Unpcklps<Xmm, Memory> {
     }
 }
 
-pub struct Verr<Op0>(Op0);
+pub struct Verr<Op0>(pub Op0);
 
 /// verr r16: Set ZF=1 if segment specified with r/m16 can be read.
-impl WriteInst for Verr<Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Verr<Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 00 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -23305,8 +23305,8 @@ impl WriteInst for Verr<Gpr16> {
 }
 
 /// verr m16: Set ZF=1 if segment specified with r/m16 can be read.
-impl WriteInst for Verr<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Verr<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 00 /4
         let modrm = ModRM::new(PartOfOpcode(4), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -23319,11 +23319,11 @@ impl WriteInst for Verr<Memory> {
     }
 }
 
-pub struct Verw<Op0>(Op0);
+pub struct Verw<Op0>(pub Op0);
 
 /// verw r16: Set ZF=1 if segment specified with r/m16 can be written.
-impl WriteInst for Verw<Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Verw<Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 00 /5
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -23337,8 +23337,8 @@ impl WriteInst for Verw<Gpr16> {
 }
 
 /// verw m16: Set ZF=1 if segment specified with r/m16 can be written.
-impl WriteInst for Verw<Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Verw<Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 00 /5
         let modrm = ModRM::new(PartOfOpcode(5), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -23354,8 +23354,8 @@ impl WriteInst for Verw<Memory> {
 pub struct Wbinvd();
 
 /// wbinvd: Write back and flush Internal caches; initiate writing-back and flushing of external caches.
-impl WriteInst for Wbinvd {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Wbinvd {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 09
         put(w, 0x0F)?;
         put(w, 0x09)?;
@@ -23366,8 +23366,8 @@ impl WriteInst for Wbinvd {
 pub struct Wrmsr();
 
 /// wrmsr: Write the value in EDX:EAX to MSR specified by ECX.
-impl WriteInst for Wrmsr {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Wrmsr {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 30
         put(w, 0x0F)?;
         put(w, 0x30)?;
@@ -23375,11 +23375,11 @@ impl WriteInst for Wrmsr {
     }
 }
 
-pub struct Xaddb<Op0, Op1>(Op0, Op1);
+pub struct Xaddb<Op0, Op1>(pub Op0, pub Op1);
 
 /// xaddb r8 r8: Exchange r8 and r/m8; load sum into r/m8.
-impl WriteInst for Xaddb<Gpr8, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xaddb<Gpr8, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F C0 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -23393,8 +23393,8 @@ impl WriteInst for Xaddb<Gpr8, Gpr8> {
 }
 
 /// xaddb m8 r8: Exchange r8 and r/m8; load sum into r/m8.
-impl WriteInst for Xaddb<Memory, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xaddb<Memory, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F C0 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -23407,11 +23407,11 @@ impl WriteInst for Xaddb<Memory, Gpr8> {
     }
 }
 
-pub struct Xaddl<Op0, Op1>(Op0, Op1);
+pub struct Xaddl<Op0, Op1>(pub Op0, pub Op1);
 
 /// xaddl r32 r32: Exchange r32 and r/m32; load sum into r/m32.
-impl WriteInst for Xaddl<Gpr32, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xaddl<Gpr32, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F C1 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -23425,8 +23425,8 @@ impl WriteInst for Xaddl<Gpr32, Gpr32> {
 }
 
 /// xaddl m32 r32: Exchange r32 and r/m32; load sum into r/m32.
-impl WriteInst for Xaddl<Memory, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xaddl<Memory, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F C1 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -23439,11 +23439,11 @@ impl WriteInst for Xaddl<Memory, Gpr32> {
     }
 }
 
-pub struct Xaddq<Op0, Op1>(Op0, Op1);
+pub struct Xaddq<Op0, Op1>(pub Op0, pub Op1);
 
 /// xaddq r64 r64: Exchange r64 and r/m64; load sum into r/m64.
-impl WriteInst for Xaddq<Gpr64, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xaddq<Gpr64, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F C1 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -23457,8 +23457,8 @@ impl WriteInst for Xaddq<Gpr64, Gpr64> {
 }
 
 /// xaddq m64 r64: Exchange r64 and r/m64; load sum into r/m64.
-impl WriteInst for Xaddq<Memory, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xaddq<Memory, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0F C1 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -23471,11 +23471,11 @@ impl WriteInst for Xaddq<Memory, Gpr64> {
     }
 }
 
-pub struct Xaddw<Op0, Op1>(Op0, Op1);
+pub struct Xaddw<Op0, Op1>(pub Op0, pub Op1);
 
 /// xaddw r16 r16: Exchange r16 and r/m16; load sum into r/m16.
-impl WriteInst for Xaddw<Gpr16, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xaddw<Gpr16, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F C1 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -23490,8 +23490,8 @@ impl WriteInst for Xaddw<Gpr16, Gpr16> {
 }
 
 /// xaddw m16 r16: Exchange r16 and r/m16; load sum into r/m16.
-impl WriteInst for Xaddw<Memory, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xaddw<Memory, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F C1 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -23505,11 +23505,11 @@ impl WriteInst for Xaddw<Memory, Gpr16> {
     }
 }
 
-pub struct Xchgb<Op0, Op1>(Op0, Op1);
+pub struct Xchgb<Op0, Op1>(pub Op0, pub Op1);
 
 /// xchgb r8 r8: Exchange byte from r/m8 with r8 (byte register).
-impl WriteInst for Xchgb<Gpr8, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xchgb<Gpr8, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 86 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -23522,8 +23522,8 @@ impl WriteInst for Xchgb<Gpr8, Gpr8> {
 }
 
 /// xchgb r8 m8: Exchange byte from r/m8 with r8 (byte register).
-impl WriteInst for Xchgb<Gpr8, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xchgb<Gpr8, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 86 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -23536,8 +23536,8 @@ impl WriteInst for Xchgb<Gpr8, Memory> {
 }
 
 /// xchgb m8 r8: Exchange r8 (byte register) with byte from r/m8.
-impl WriteInst for Xchgb<Memory, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xchgb<Memory, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 86 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -23549,11 +23549,11 @@ impl WriteInst for Xchgb<Memory, Gpr8> {
     }
 }
 
-pub struct Xchgl<Op0, Op1>(Op0, Op1);
+pub struct Xchgl<Op0, Op1>(pub Op0, pub Op1);
 
 /// xchgl r32 r32: Exchange doubleword from r/m32 with r32.
-impl WriteInst for Xchgl<Gpr32, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xchgl<Gpr32, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 87 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -23566,8 +23566,8 @@ impl WriteInst for Xchgl<Gpr32, Gpr32> {
 }
 
 /// xchgl r32 m32: Exchange doubleword from r/m32 with r32.
-impl WriteInst for Xchgl<Gpr32, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xchgl<Gpr32, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 87 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -23580,8 +23580,8 @@ impl WriteInst for Xchgl<Gpr32, Memory> {
 }
 
 /// xchgl r32 _Eax: Exchange EAX with r32.
-impl WriteInst for Xchgl<Gpr32, _Eax> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xchgl<Gpr32, _Eax> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 90 +rd
         let rio = RegInOpcode::from(self.0);
         puts(w, rio.rex_byte(false))?;
@@ -23591,8 +23591,8 @@ impl WriteInst for Xchgl<Gpr32, _Eax> {
 }
 
 /// xchgl m32 r32: Exchange r32 with doubleword from r/m32.
-impl WriteInst for Xchgl<Memory, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xchgl<Memory, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 87 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -23605,8 +23605,8 @@ impl WriteInst for Xchgl<Memory, Gpr32> {
 }
 
 /// xchgl _Eax r32: Exchange r32 with EAX.
-impl WriteInst for Xchgl<_Eax, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xchgl<_Eax, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 90 +rd
         let rio = RegInOpcode::from(self.1);
         puts(w, rio.rex_byte(false))?;
@@ -23615,11 +23615,11 @@ impl WriteInst for Xchgl<_Eax, Gpr32> {
     }
 }
 
-pub struct Xchgq<Op0, Op1>(Op0, Op1);
+pub struct Xchgq<Op0, Op1>(pub Op0, pub Op1);
 
 /// xchgq r64 r64: Exchange quadword from r/m64 with r64.
-impl WriteInst for Xchgq<Gpr64, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xchgq<Gpr64, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 87 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -23632,8 +23632,8 @@ impl WriteInst for Xchgq<Gpr64, Gpr64> {
 }
 
 /// xchgq r64 m64: Exchange quadword from r/m64 with r64.
-impl WriteInst for Xchgq<Gpr64, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xchgq<Gpr64, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 87 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -23646,8 +23646,8 @@ impl WriteInst for Xchgq<Gpr64, Memory> {
 }
 
 /// xchgq r64 _Rax: Exchange RAX with r64.
-impl WriteInst for Xchgq<Gpr64, _Rax> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xchgq<Gpr64, _Rax> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 90 +ro
         let rio = RegInOpcode::from(self.0);
         puts(w, rio.rex_byte(true))?;
@@ -23657,8 +23657,8 @@ impl WriteInst for Xchgq<Gpr64, _Rax> {
 }
 
 /// xchgq m64 r64: Exchange r64 with quadword from r/m64.
-impl WriteInst for Xchgq<Memory, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xchgq<Memory, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 87 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -23671,8 +23671,8 @@ impl WriteInst for Xchgq<Memory, Gpr64> {
 }
 
 /// xchgq _Rax r64: Exchange r64 with RAX.
-impl WriteInst for Xchgq<_Rax, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xchgq<_Rax, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 90 +ro
         let rio = RegInOpcode::from(self.1);
         puts(w, rio.rex_byte(true))?;
@@ -23681,11 +23681,11 @@ impl WriteInst for Xchgq<_Rax, Gpr64> {
     }
 }
 
-pub struct Xchgw<Op0, Op1>(Op0, Op1);
+pub struct Xchgw<Op0, Op1>(pub Op0, pub Op1);
 
 /// xchgw r16 r16: Exchange word from r/m16 with r16.
-impl WriteInst for Xchgw<Gpr16, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xchgw<Gpr16, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 87 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -23699,8 +23699,8 @@ impl WriteInst for Xchgw<Gpr16, Gpr16> {
 }
 
 /// xchgw r16 m16: Exchange word from r/m16 with r16.
-impl WriteInst for Xchgw<Gpr16, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xchgw<Gpr16, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 87 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -23714,8 +23714,8 @@ impl WriteInst for Xchgw<Gpr16, Memory> {
 }
 
 /// xchgw r16 _Ax: Exchange AX with r16.
-impl WriteInst for Xchgw<Gpr16, _Ax> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xchgw<Gpr16, _Ax> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 90 +rw
         let rio = RegInOpcode::from(self.0);
         put(w, 0x66)?;
@@ -23726,8 +23726,8 @@ impl WriteInst for Xchgw<Gpr16, _Ax> {
 }
 
 /// xchgw m16 r16: Exchange r16 with word from r/m16.
-impl WriteInst for Xchgw<Memory, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xchgw<Memory, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 87 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -23741,8 +23741,8 @@ impl WriteInst for Xchgw<Memory, Gpr16> {
 }
 
 /// xchgw _Ax r16: Exchange r16 with AX.
-impl WriteInst for Xchgw<_Ax, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xchgw<_Ax, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 90 +rw
         let rio = RegInOpcode::from(self.1);
         put(w, 0x66)?;
@@ -23752,11 +23752,11 @@ impl WriteInst for Xchgw<_Ax, Gpr16> {
     }
 }
 
-pub struct Xorb<Op0, Op1>(Op0, Op1);
+pub struct Xorb<Op0, Op1>(pub Op0, pub Op1);
 
 /// xorb r8 r8: r8 XOR r/m8.
-impl WriteInst for Xorb<Gpr8, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorb<Gpr8, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 32 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -23769,8 +23769,8 @@ impl WriteInst for Xorb<Gpr8, Gpr8> {
 }
 
 /// xorb r8 m8: r8 XOR r/m8.
-impl WriteInst for Xorb<Gpr8, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorb<Gpr8, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 32 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -23783,8 +23783,8 @@ impl WriteInst for Xorb<Gpr8, Memory> {
 }
 
 /// xorb m8 r8: r/m8 XOR r8.
-impl WriteInst for Xorb<Memory, Gpr8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorb<Memory, Gpr8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 30 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -23797,8 +23797,8 @@ impl WriteInst for Xorb<Memory, Gpr8> {
 }
 
 /// xorb r8 imm8: r/m8 XOR imm8.
-impl WriteInst for Xorb<Gpr8, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorb<Gpr8, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 80 /6 ib
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -23812,8 +23812,8 @@ impl WriteInst for Xorb<Gpr8, i8> {
 }
 
 /// xorb m8 imm8: r/m8 XOR imm8.
-impl WriteInst for Xorb<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorb<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 80 /6 ib
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -23827,8 +23827,8 @@ impl WriteInst for Xorb<Memory, i8> {
 }
 
 /// xorb _Al imm8: AL XOR imm8.
-impl WriteInst for Xorb<_Al, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorb<_Al, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 34 ib
         put(w, 0x34)?;
         puts(w, self.1.to_le_bytes())?;
@@ -23836,11 +23836,11 @@ impl WriteInst for Xorb<_Al, i8> {
     }
 }
 
-pub struct Xorl<Op0, Op1>(Op0, Op1);
+pub struct Xorl<Op0, Op1>(pub Op0, pub Op1);
 
 /// xorl r32 r32: r32 XOR r/m32.
-impl WriteInst for Xorl<Gpr32, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorl<Gpr32, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 33 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -23853,8 +23853,8 @@ impl WriteInst for Xorl<Gpr32, Gpr32> {
 }
 
 /// xorl r32 m32: r32 XOR r/m32.
-impl WriteInst for Xorl<Gpr32, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorl<Gpr32, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 33 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -23867,8 +23867,8 @@ impl WriteInst for Xorl<Gpr32, Memory> {
 }
 
 /// xorl m32 r32: r/m32 XOR r32.
-impl WriteInst for Xorl<Memory, Gpr32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorl<Memory, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 31 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -23881,8 +23881,8 @@ impl WriteInst for Xorl<Memory, Gpr32> {
 }
 
 /// xorl r32 imm8: r/m32 XOR imm8 (sign-extended).
-impl WriteInst for Xorl<Gpr32, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorl<Gpr32, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 83 /6 ib
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -23896,8 +23896,8 @@ impl WriteInst for Xorl<Gpr32, i8> {
 }
 
 /// xorl m32 imm8: r/m32 XOR imm8 (sign-extended).
-impl WriteInst for Xorl<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorl<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 83 /6 ib
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -23911,8 +23911,8 @@ impl WriteInst for Xorl<Memory, i8> {
 }
 
 /// xorl r32 imm32: r/m32 XOR imm32.
-impl WriteInst for Xorl<Gpr32, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorl<Gpr32, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 81 /6 id
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -23926,8 +23926,8 @@ impl WriteInst for Xorl<Gpr32, i32> {
 }
 
 /// xorl m32 imm32: r/m32 XOR imm32.
-impl WriteInst for Xorl<Memory, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorl<Memory, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 81 /6 id
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         puts(w, modrm.rex_byte(false))?;
@@ -23941,8 +23941,8 @@ impl WriteInst for Xorl<Memory, i32> {
 }
 
 /// xorl _Eax imm32: EAX XOR imm32.
-impl WriteInst for Xorl<_Eax, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorl<_Eax, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 35 id
         put(w, 0x35)?;
         puts(w, self.1.to_le_bytes())?;
@@ -23950,11 +23950,11 @@ impl WriteInst for Xorl<_Eax, i32> {
     }
 }
 
-pub struct Xorpd<Op0, Op1>(Op0, Op1);
+pub struct Xorpd<Op0, Op1>(pub Op0, pub Op1);
 
 /// xorpd xmm xmm: Bitwise exclusive-OR of xmm2/m128 and xmm1.
-impl WriteInst for Xorpd<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorpd<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 57 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -23969,8 +23969,8 @@ impl WriteInst for Xorpd<Xmm, Xmm> {
 }
 
 /// xorpd xmm m128: Bitwise exclusive-OR of xmm2/m128 and xmm1.
-impl WriteInst for Xorpd<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorpd<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 0F 57 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -23984,11 +23984,11 @@ impl WriteInst for Xorpd<Xmm, Memory> {
     }
 }
 
-pub struct Xorps<Op0, Op1>(Op0, Op1);
+pub struct Xorps<Op0, Op1>(pub Op0, pub Op1);
 
 /// xorps xmm xmm: Bitwise exclusive-OR of xmm2/m128 and xmm1.
-impl WriteInst for Xorps<Xmm, Xmm> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorps<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 57 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -24002,8 +24002,8 @@ impl WriteInst for Xorps<Xmm, Xmm> {
 }
 
 /// xorps xmm m128: Bitwise exclusive-OR of xmm2/m128 and xmm1.
-impl WriteInst for Xorps<Xmm, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorps<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 57 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(false))?;
@@ -24016,11 +24016,11 @@ impl WriteInst for Xorps<Xmm, Memory> {
     }
 }
 
-pub struct Xorq<Op0, Op1>(Op0, Op1);
+pub struct Xorq<Op0, Op1>(pub Op0, pub Op1);
 
 /// xorq r64 r64: r64 XOR r/m64.
-impl WriteInst for Xorq<Gpr64, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorq<Gpr64, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 33 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -24033,8 +24033,8 @@ impl WriteInst for Xorq<Gpr64, Gpr64> {
 }
 
 /// xorq r64 m64: r64 XOR r/m64.
-impl WriteInst for Xorq<Gpr64, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorq<Gpr64, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 33 /r
         let modrm = ModRM::new(self.0, self.1);
         puts(w, modrm.rex_byte(true))?;
@@ -24047,8 +24047,8 @@ impl WriteInst for Xorq<Gpr64, Memory> {
 }
 
 /// xorq m64 r64: r/m64 XOR r64.
-impl WriteInst for Xorq<Memory, Gpr64> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorq<Memory, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 31 /r
         let modrm = ModRM::new(self.1, self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -24061,8 +24061,8 @@ impl WriteInst for Xorq<Memory, Gpr64> {
 }
 
 /// xorq r64 imm8: r/m64 XOR imm8 (sign-extended).
-impl WriteInst for Xorq<Gpr64, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorq<Gpr64, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 83 /6 ib
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -24076,8 +24076,8 @@ impl WriteInst for Xorq<Gpr64, i8> {
 }
 
 /// xorq m64 imm8: r/m64 XOR imm8 (sign-extended).
-impl WriteInst for Xorq<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorq<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 83 /6 ib
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -24091,8 +24091,8 @@ impl WriteInst for Xorq<Memory, i8> {
 }
 
 /// xorq r64 imm32: r/m64 XOR imm32 (sign-extended).
-impl WriteInst for Xorq<Gpr64, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorq<Gpr64, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 81 /6 id
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -24106,8 +24106,8 @@ impl WriteInst for Xorq<Gpr64, i32> {
 }
 
 /// xorq m64 imm32: r/m64 XOR imm32 (sign-extended).
-impl WriteInst for Xorq<Memory, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorq<Memory, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 81 /6 id
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         puts(w, modrm.rex_byte(true))?;
@@ -24121,8 +24121,8 @@ impl WriteInst for Xorq<Memory, i32> {
 }
 
 /// xorq _Rax imm32: RAX XOR imm32 (sign-extended).
-impl WriteInst for Xorq<_Rax, i32> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorq<_Rax, i32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 35 id
         puts(w, rex_byte(false, true, false, false, false))?;
         put(w, 0x35)?;
@@ -24131,11 +24131,11 @@ impl WriteInst for Xorq<_Rax, i32> {
     }
 }
 
-pub struct Xorw<Op0, Op1>(Op0, Op1);
+pub struct Xorw<Op0, Op1>(pub Op0, pub Op1);
 
 /// xorw r16 r16: r16 XOR r/m16.
-impl WriteInst for Xorw<Gpr16, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorw<Gpr16, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 33 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -24149,8 +24149,8 @@ impl WriteInst for Xorw<Gpr16, Gpr16> {
 }
 
 /// xorw r16 m16: r16 XOR r/m16.
-impl WriteInst for Xorw<Gpr16, Memory> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorw<Gpr16, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 33 /r
         let modrm = ModRM::new(self.0, self.1);
         put(w, 0x66)?;
@@ -24164,8 +24164,8 @@ impl WriteInst for Xorw<Gpr16, Memory> {
 }
 
 /// xorw m16 r16: r/m16 XOR r16.
-impl WriteInst for Xorw<Memory, Gpr16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorw<Memory, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 31 /r
         let modrm = ModRM::new(self.1, self.0);
         put(w, 0x66)?;
@@ -24179,8 +24179,8 @@ impl WriteInst for Xorw<Memory, Gpr16> {
 }
 
 /// xorw r16 imm8: r/m16 XOR imm8 (sign-extended).
-impl WriteInst for Xorw<Gpr16, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorw<Gpr16, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 83 /6 ib
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         put(w, 0x66)?;
@@ -24195,8 +24195,8 @@ impl WriteInst for Xorw<Gpr16, i8> {
 }
 
 /// xorw m16 imm8: r/m16 XOR imm8 (sign-extended).
-impl WriteInst for Xorw<Memory, i8> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorw<Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 83 /6 ib
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         put(w, 0x66)?;
@@ -24211,8 +24211,8 @@ impl WriteInst for Xorw<Memory, i8> {
 }
 
 /// xorw r16 imm16: r/m16 XOR imm16.
-impl WriteInst for Xorw<Gpr16, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorw<Gpr16, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 81 /6 iw
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         put(w, 0x66)?;
@@ -24227,8 +24227,8 @@ impl WriteInst for Xorw<Gpr16, i16> {
 }
 
 /// xorw m16 imm16: r/m16 XOR imm16.
-impl WriteInst for Xorw<Memory, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorw<Memory, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 81 /6 iw
         let modrm = ModRM::new(PartOfOpcode(6), self.0);
         put(w, 0x66)?;
@@ -24243,8 +24243,8 @@ impl WriteInst for Xorw<Memory, i16> {
 }
 
 /// xorw _Ax imm16: AX XOR imm16.
-impl WriteInst for Xorw<_Ax, i16> {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xorw<_Ax, i16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 66 35 iw
         put(w, 0x66)?;
         put(w, 0x35)?;
@@ -24256,8 +24256,8 @@ impl WriteInst for Xorw<_Ax, i16> {
 pub struct Xsetbv();
 
 /// xsetbv: Write the value in EDX:EAX to the XCR specified by ECX.
-impl WriteInst for Xsetbv {
-    fn write_inst(&self, w: &mut (impl io::Write + ?Sized)) -> io::Result<()> {
+impl<W: io::Write + ?Sized> WriteInst<W> for Xsetbv {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // 0F 01 D1
         put(w, 0x0F)?;
         put(w, 0x01)?;
