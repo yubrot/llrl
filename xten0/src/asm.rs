@@ -6,9 +6,11 @@ mod gnu;
 
 mod encoding;
 mod inst;
+mod link;
 mod operand;
 
 pub use inst::WriteInstExt;
+pub use link::{Label, RelaEntry, Short, SymtabEntry, Writer};
 pub use operand::*;
 
 #[cfg(test)]
