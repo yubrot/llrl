@@ -9,13 +9,24 @@ use tempfile::tempdir;
 static DISASM_INSTRUCTION_PART: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"^\s*[0-9a-f]+:\s*(?:[0-9a-f][0-9a-f]\s)+\s*(.*)$").unwrap());
 
-fn exec(dir: impl AsRef<Path>, program: &str, args: &[&str]) {
-    let status = Command::new(program)
+fn exec(dir: impl AsRef<Path>, program: &str, args: &[&str]) -> String {
+    let output = Command::new(program)
         .current_dir(dir)
         .args(args)
-        .status()
+        .output()
         .unwrap();
-    assert!(status.success(), "{} failed with: {}", program, status);
+    assert!(
+        output.status.success(),
+        "{} failed({}): {}",
+        program,
+        output.status,
+        String::from_utf8_lossy(&output.stderr)
+    );
+    String::from_utf8_lossy(&output.stdout).to_string()
+}
+
+pub fn readelf(dir: impl AsRef<Path>, args: &[&str]) -> String {
+    exec(dir, "readelf", args)
 }
 
 pub fn asm(asm: &str) -> Vec<u8> {
@@ -50,12 +61,11 @@ pub fn disasm(mc: Vec<u8>) -> String {
     h.write_all(&mc).unwrap();
     h.flush().unwrap();
     // Disassemble mc.bin
-    let output = Command::new("objdump")
-        .current_dir(dir.path())
-        .args(&["-D", "-b", "binary", "-m", "i386:x86-64", "mc.bin"])
-        .output()
-        .unwrap();
-    let output = String::from_utf8(output.stdout).unwrap();
+    let output = exec(
+        dir.path(),
+        "objdump",
+        &["-D", "-b", "binary", "-m", "i386:x86-64", "mc.bin"],
+    );
     // Omit encoding parts
     output
         .lines()
@@ -72,8 +82,8 @@ macro_rules! assert_as {
     ($src:expr, $( $t:tt )*) => {
         let dest = format!($( $t )*);
         assert_eq!(
-            $crate::asm::gnu::disasm($src),
-            $crate::asm::gnu::disasm($crate::asm::gnu::asm(&dest)),
+            $crate::binutils::disasm($src),
+            $crate::binutils::disasm($crate::binutils::asm(&dest)),
         );
     };
 }

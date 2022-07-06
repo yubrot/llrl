@@ -1,9 +1,5 @@
 //! x64 assembler.
 
-#[cfg(test)]
-#[macro_use]
-mod gnu;
-
 mod encoding;
 mod inst;
 mod link;

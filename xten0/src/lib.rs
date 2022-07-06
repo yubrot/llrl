@@ -1,3 +1,6 @@
+#[cfg(test)]
+#[macro_use]
+mod binutils;
+
 pub mod asm;
-// TODO: elf
-pub(crate) mod bits;
+pub mod elf;
