@@ -23,10 +23,6 @@ fn main() -> io::Result<()> {
 
     for arg in env::args().skip(1) {
         match arg.as_str() {
-            "-d" => {
-                println!("{}", render::supported_instructions(&inst_set));
-                exit(0);
-            }
             "-h" => {
                 usage();
                 exit(0);
@@ -39,9 +35,17 @@ fn main() -> io::Result<()> {
         }
     }
 
+    let workspace = llrl_workspace_dir()?;
+
+    {
+        let mut path = workspace.clone();
+        path.extend(&["xtencg", "supported-instructions.md"]);
+        let mut file = File::create(path)?;
+        writeln!(&mut file, "{}", render::supported_instructions(&inst_set))?;
+    }
+
     monomorphise_instruction_set(&mut inst_set);
 
-    let workspace = llrl_workspace_dir()?;
     {
         let mut path = workspace;
         path.extend(&["xten0", "src", "asm", "inst.rs"]);
@@ -54,8 +58,7 @@ fn main() -> io::Result<()> {
 
 fn usage() {
     println!("Usage:");
-    println!("    xtencg         Generate assembler code for xten0");
-    println!("    xtencg -d      Show list of supported instructions in markdown");
+    println!("    xtencg         Perform code generation");
     println!("    xtencg -h      Show help");
 }
 
