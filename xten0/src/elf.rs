@@ -4,6 +4,7 @@ use byteorder::WriteBytesExt;
 use std::io;
 
 mod ident;
+mod obj;
 mod program;
 mod rela;
 mod section;
@@ -11,6 +12,7 @@ mod strtab;
 mod symtab;
 
 pub use byteorder::LittleEndian as Endian;
+pub use obj::write_relocatable_object;
 pub use program::Header as ProgramHeader;
 pub use rela::{Entry as RelaEntry, RelocationType, Writer as RelaWriter};
 pub use section::{
@@ -130,74 +132,40 @@ pub const VERSION: u32 = ident::VERSION as u32;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::asm::*;
     use crate::binutils::readelf;
     use once_cell::sync::Lazy;
     use regex::Regex;
     use std::collections::HashMap;
     use std::fs::File;
-    use std::io::{self, Seek, Write};
+    use std::io::{self, Write};
     use std::path::Path;
     use tempfile::tempdir;
 
-    fn create_test_elf(path: impl AsRef<Path>) -> io::Result<()> {
+    fn create_test_object() -> io::Result<Object> {
+        let mut w = Writer::new();
+
+        let hello_text = w.get_label("hello_text");
+        let puts_hello = w.get_label("puts_hello");
+        let puts = w.get_label("puts");
+
+        w.rodata().define(hello_text, false);
+        w.rodata().write_all(b"HELLO\0")?;
+
+        w.define(puts_hello, true);
+        w.subq(Rsp, 8i8)?;
+        w.leaq(Rdi, hello_text)?;
+        w.callq(AddressTable(puts))?;
+        w.addq(Rsp, 8i8)?;
+        w.retq()?;
+
+        w.produce()
+    }
+
+    fn create_test_elf_object(path: impl AsRef<Path>) -> io::Result<()> {
         let mut f = File::create(path)?;
-        let mut headers = SectionHeaders::new();
-
-        // prepare for ELF header
-        f.write_all(&[0; Header::SIZE as usize])?;
-
-        // [1] write .strtab
-        let mut strtab = StrtabWriter::new(&mut f)?;
-        let file_name = strtab.write("elf.o")?;
-        let strtab_name = strtab.write(".strtab")?;
-        let symtab_name = strtab.write(".symtab")?;
-        let text_name = strtab.write(".text")?;
-        let rodata_name = strtab.write(".rodata")?;
-        let bss_name = strtab.write(".bss")?;
-        let rela_text_name = strtab.write(".rela.text")?;
-        let foo_name = strtab.write("foo")?;
-        let bar_name = strtab.write("bar")?;
-        let strtab = headers.add(strtab.complete(strtab_name)?);
-
-        // [2] write .text
-        let mut text = SectionWriter::new(&mut f)?;
-        text.write_all(&[
-            0x55, 0x48, 0x89, 0xe5, 0x48, 0x8b, 0x05, 0, 0, 0, 0, 0x5d, 0xc3,
-        ])?;
-        let text = headers.add(text.complete(SectionHeader::text(text_name, 0))?);
-
-        // [3] write .rodata
-        let mut rodata = SectionWriter::new(&mut f)?;
-        let rodata = headers.add(rodata.complete(SectionHeader::rodata(rodata_name, 0))?);
-
-        // [4] write .bss
-        let _bss = headers.add(SectionHeader::bss(bss_name, 16, 0).offset_at(&mut f)?);
-
-        // [5] write .symtab
-        let mut symtab = SymtabWriter::new(&mut f)?;
-        symtab.write(SymtabEntry::file(file_name))?;
-        symtab.write(SymtabEntry::section(text_name, text))?;
-        symtab.write(SymtabEntry::section(rodata_name, rodata))?;
-        symtab.begin_global();
-        let foo = symtab.write(SymtabEntry::undef(foo_name))?;
-        let _bar = symtab.write(SymtabEntry::new(bar_name, text, 0))?;
-        let symtab = headers.add(symtab.complete(symtab_name, strtab)?);
-
-        // [6] write .rela.text
-        let mut rela_text = RelaWriter::new(&mut f)?;
-        rela_text.write(RelaEntry::new(7, foo, RelocationType::GotPcRel).addend(-4))?;
-        let _rela_text = headers.add(rela_text.complete(rela_text_name, symtab, text)?);
-
-        // write section headers
-        let headers = headers.write(&mut f)?;
-
-        // write ELF header
-        f.rewind()?;
-        Header::new(Type::Rel)
-            .section_headers(headers)
-            .shstrndx(strtab)
-            .write(&mut f)?;
-
+        let obj = create_test_object()?;
+        write_relocatable_object(&mut f, "elf.o", &obj)?;
         Ok(())
     }
 
@@ -213,10 +181,10 @@ mod tests {
     #[test]
     fn elf_format() {
         let dir = tempdir().unwrap();
-        assert!(create_test_elf(dir.path().join("test.o")).is_ok());
+        assert!(create_test_elf_object(dir.path().join("elf.o")).is_ok());
 
         // header
-        let header = readelf(dir.path(), &["-h", "test.o"]);
+        let header = readelf(dir.path(), &["-h", "elf.o"]);
         let header = header
             .lines()
             .filter_map(|line| {
@@ -226,11 +194,11 @@ mod tests {
             .collect::<HashMap<_, _>>();
         assert_eq!(header.get("Class"), Some(&"ELF64"));
         assert_eq!(header.get("Type"), Some(&"REL (Relocatable file)"));
-        assert_eq!(header.get("Number of section headers"), Some(&"7"));
+        assert_eq!(header.get("Number of section headers"), Some(&"11"));
         assert_eq!(header.get("Section header string table index"), Some(&"1"));
 
         // sections
-        let sections = readelf(dir.path(), &["-S", "test.o"]);
+        let sections = readelf(dir.path(), &["-S", "elf.o"]);
         let sections = sections
             .lines()
             .filter_map(|line| {
@@ -238,15 +206,15 @@ mod tests {
                 Some((c.get(1)?.as_str(), (c.get(2)?.as_str(), c.get(3)?.as_str())))
             })
             .collect::<HashMap<_, _>>();
-        assert_eq!(sections.get("1"), Some(&(".strtab", "STRTAB")));
-        assert_eq!(sections.get("2"), Some(&(".text", "PROGBITS")));
-        assert_eq!(sections.get("3"), Some(&(".rodata", "PROGBITS")));
-        assert_eq!(sections.get("4"), Some(&(".bss", "NOBITS")));
-        assert_eq!(sections.get("5"), Some(&(".symtab", "SYMTAB")));
-        assert_eq!(sections.get("6"), Some(&(".rela.text", "RELA")));
+        assert_eq!(sections.get("2"), Some(&(".strtab", "STRTAB")));
+        assert_eq!(sections.get("3"), Some(&(".text", "PROGBITS")));
+        assert_eq!(sections.get("5"), Some(&(".rodata", "PROGBITS")));
+        assert_eq!(sections.get("6"), Some(&(".bss", "NOBITS")));
+        assert_eq!(sections.get("7"), Some(&(".symtab", "SYMTAB")));
+        assert_eq!(sections.get("8"), Some(&(".rela.text", "RELA")));
 
         // symtab entries
-        let syms = readelf(dir.path(), &["-s", "test.o"]);
+        let syms = readelf(dir.path(), &["-s", "elf.o"]);
         let syms = syms
             .lines()
             .filter_map(|line| {
@@ -259,12 +227,13 @@ mod tests {
             })
             .collect::<HashMap<_, _>>();
         assert_eq!(syms.get("elf.o"), Some(&("FILE", "LOCAL", "ABS")));
-        assert_eq!(syms.get(".text"), Some(&("SECTION", "LOCAL", "2")));
-        assert_eq!(syms.get("foo"), Some(&("NOTYPE", "GLOBAL", "UND")));
-        assert_eq!(syms.get("bar"), Some(&("NOTYPE", "GLOBAL", "2")));
+        assert_eq!(syms.get(".text"), Some(&("SECTION", "LOCAL", "3")));
+        assert_eq!(syms.get("puts"), Some(&("NOTYPE", "GLOBAL", "UND")));
+        assert_eq!(syms.get("hello_text"), Some(&("NOTYPE", "LOCAL", "5")));
+        assert_eq!(syms.get("puts_hello"), Some(&("NOTYPE", "GLOBAL", "3")));
 
         // rela entries
-        let relocs = readelf(dir.path(), &["-r", "test.o"]);
+        let relocs = readelf(dir.path(), &["-r", "elf.o"]);
         let relocs = relocs
             .lines()
             .filter_map(|line| {
@@ -275,6 +244,7 @@ mod tests {
                 Some((offset, (ty, value)))
             })
             .collect::<HashMap<_, _>>();
-        assert_eq!(relocs.get("7"), Some(&("R_X86_64_GOTPCREL", "foo - 4")));
+        assert_eq!(relocs.get("7"), Some(&("R_X86_64_PC32", "hello_text - 4")));
+        assert_eq!(relocs.get("d"), Some(&("R_X86_64_GOTPCREL", "puts - 4")));
     }
 }

@@ -1,4 +1,5 @@
 use super::{Endian, SectionHeader, SectionHeaderIndex, SectionWriter, StrIndex, SymIndex};
+use crate::asm::RelocType;
 use byteorder::WriteBytesExt;
 use std::io;
 
@@ -106,4 +107,15 @@ relocation_type! {
    Relative: 8,
    Size32: 32, // Z+A
    Size64: 33,
+}
+
+impl From<RelocType> for RelocationType {
+    fn from(r: RelocType) -> Self {
+        match r {
+            RelocType::PcRel8 => RelocationType::Pc8,
+            RelocType::PcRel32 => RelocationType::Pc32,
+            RelocType::PcRelToAddressTable32 => RelocationType::GotPcRel,
+            RelocType::Abs64 => RelocationType::_64,
+        }
+    }
 }
