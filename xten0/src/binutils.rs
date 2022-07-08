@@ -53,12 +53,12 @@ pub fn asm(asm: &str) -> Vec<u8> {
     out
 }
 
-pub fn disasm(mc: Vec<u8>) -> String {
+pub fn disasm(mc: &[u8]) -> String {
     let dir = tempdir().unwrap();
 
     // Write to mc.bin
     let mut h = File::create(dir.path().join("mc.bin")).unwrap();
-    h.write_all(&mc).unwrap();
+    h.write_all(mc).unwrap();
     h.flush().unwrap();
     // Disassemble mc.bin
     let output = exec(
@@ -82,8 +82,8 @@ macro_rules! assert_as {
     ($src:expr, $( $t:tt )*) => {
         let dest = format!($( $t )*);
         assert_eq!(
-            $crate::binutils::disasm($src),
-            $crate::binutils::disasm($crate::binutils::asm(&dest)),
+            $crate::binutils::disasm(&$src),
+            $crate::binutils::disasm(&$crate::binutils::asm(&dest)),
         );
     };
 }
@@ -95,5 +95,5 @@ fn test_asm() {
 
 #[test]
 fn test_disasm() {
-    assert_eq!(disasm(vec![0x90]), "nop".to_string());
+    assert_eq!(disasm(&[0x90]), "nop".to_string());
 }

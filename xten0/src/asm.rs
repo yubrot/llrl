@@ -2,12 +2,14 @@
 
 mod encoding;
 mod inst;
-mod link;
+mod obj;
 mod operand;
+mod writer;
 
 pub use inst::WriteInstExt;
-pub use link::{Label, RelaEntry, Short, SymtabEntry, Writer};
+pub use obj::*;
 pub use operand::*;
+pub use writer::{AddressTable, Label, Short, WriteSection, Writer};
 
 #[cfg(test)]
 mod tests {
