@@ -86,6 +86,7 @@ impl Writer {
         let mut relocs = Vec::new();
         for u in self.uses {
             let mut target = None;
+            let mut offset = 0;
 
             if let Some(d) = self.defs[u.target.index] {
                 // If the definition is within the object, try to resolve the use with the definition.
@@ -104,16 +105,18 @@ impl Writer {
                 }
 
                 // If failed, we need a relocation for the use.
-                target = Some(RelocTarget::Location(d.location));
+                target = Some(RelocTarget::Section(d.location.section));
+                offset = d.location.pos as i64;
             }
 
             if let Some(symbol) = label_symbols.get(&u.target) {
-                // Prefer RelocTarget::Symbol to RelocTarget::Location.
+                // Prefer RelocTarget::Symbol to RelocTarget::Section.
                 target = Some(RelocTarget::Symbol(symbol.clone()));
+                offset = 0;
             }
 
             if let Some(target) = target {
-                relocs.push(Reloc::new(u.location, target, u.addend, u.ty));
+                relocs.push(Reloc::new(u.location, target, offset + u.addend, u.ty));
             } else {
                 Err(io::Error::new(
                     io::ErrorKind::Other,

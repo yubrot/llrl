@@ -110,11 +110,11 @@ where
 
     // Reloc -> RalaEntry
     let rela = move |r: &Reloc| {
-        let (index, offset) = match r.target {
-            RelocTarget::Symbol(ref s) => (sym_indices[&s.as_str()], 0),
-            RelocTarget::Location(loc) => (shsym(loc.section), loc.pos as i64),
+        let index = match r.target {
+            RelocTarget::Symbol(ref s) => sym_indices[&s.as_str()],
+            RelocTarget::Section(section) => shsym(section),
         };
-        RelaEntry::new(r.location.pos, index, r.ty.into()).addend(offset + r.addend)
+        RelaEntry::new(r.location.pos, index, r.ty.into()).addend(r.addend)
     };
 
     // [8] write .rela.text

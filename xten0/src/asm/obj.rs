@@ -63,7 +63,7 @@ pub struct Reloc {
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
 pub enum RelocTarget {
     Symbol(String),
-    Location(Location),
+    Section(LocationSection),
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy, Hash)]
