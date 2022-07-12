@@ -39,6 +39,30 @@ pub mod symbol_resolver {
     pub fn none(_: &str) -> Option<*const u8> {
         None
     }
+
+    #[cfg(all(unix, feature = "dl"))]
+    pub mod dl {
+        use libc::{c_char, c_void};
+        use std::ffi::CString;
+
+        pub fn default(sym: &str) -> Option<*const u8> {
+            let name = CString::new(sym).unwrap();
+            let ptr = unsafe { dlsym(RTLD_DEFAULT, name.as_ptr()) };
+
+            if !ptr.is_null() {
+                Some(ptr as *const u8)
+            } else {
+                None
+            }
+        }
+
+        const RTLD_DEFAULT: *mut c_void = 0 as *mut c_void;
+
+        #[link(name = "dl")]
+        extern "C" {
+            fn dlsym(handle: *mut c_void, symbol: *const c_char) -> *mut c_void;
+        }
+    }
 }
 
 /// A JIT execution engine.
@@ -446,6 +470,17 @@ mod tests {
         w.produce()
     }
 
+    // #include <math.h>
+    // double foo(double n) { return log10(n); }
+    fn test_object_dl() -> io::Result<Object> {
+        let mut w = Writer::new();
+        let log10 = w.get_label("log10");
+        let foo = w.get_label("foo");
+        w.define(foo, true);
+        w.jmpq(AddressTable(log10))?;
+        w.produce()
+    }
+
     #[test]
     fn jit() {
         let some_heap_space = Box::new(0u8);
@@ -499,5 +534,21 @@ mod tests {
         let bar = bar.unwrap() as *mut *const i32;
         unsafe { std::ptr::write(bar, &EXAMPLE_INT) };
         assert_eq!(baz(), 456);
+    }
+
+    #[test]
+    fn jit_dl() {
+        let some_heap_space = Box::new(0u8);
+        let some_heap_ptr = &*some_heap_space as *const u8;
+        let mut engine = Engine::new(some_heap_ptr, symbol_resolver::dl::default);
+
+        let obj = test_object_dl().unwrap();
+        assert_eq!(engine.add_object(&obj), Ok(()));
+
+        let fib = engine.get("foo");
+        assert!(fib.is_some());
+
+        let foo = unsafe { std::mem::transmute::<_, extern "C" fn(f64) -> f64>(fib.unwrap()) };
+        assert_eq!(foo(1000.0), 3.0);
     }
 }

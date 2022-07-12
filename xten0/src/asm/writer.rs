@@ -239,7 +239,7 @@ impl io::Write for Writer {
 //   by `AddressTable`. This may be necessary for linking shared objects.
 
 /// Wrapper type for address table, used to force `RelocType::PcRelToAddressTable32` relocation
-/// for call or mov instructions.
+/// for call, jmp, or mov instructions.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
 pub struct AddressTable<T>(pub T);
 
@@ -270,6 +270,15 @@ impl WriteInst<Writer> for super::inst::Jmpq<Label> {
     fn write_inst(&self, w: &mut Writer) -> io::Result<()> {
         w.jmpq(0i32)?;
         w.r#use(-4, self.0, -4, RelocType::PcRel32);
+        Ok(())
+    }
+}
+
+/// jmpq AddressTable<Label>
+impl WriteInst<Writer> for super::inst::Jmpq<AddressTable<Label>> {
+    fn write_inst(&self, w: &mut Writer) -> io::Result<()> {
+        w.jmpq(memory(Rip + 0i32))?;
+        w.r#use(-4, self.0 .0, -4, RelocType::PcRelToAddressTable32);
         Ok(())
     }
 }

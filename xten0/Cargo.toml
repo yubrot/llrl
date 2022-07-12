@@ -10,6 +10,10 @@ version = "0.1.0"
 [lib]
 name = "xten"
 
+[features]
+default = ["dl"]
+dl = []
+
 [dependencies]
 byteorder = "1"
 derive-new = "0.5"
