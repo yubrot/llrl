@@ -1,9 +1,11 @@
 mod mmap;
 mod segment;
+pub mod symbol_resolver;
 mod table;
 
 pub use mmap::{Error as MmapError, Mmap, Protect};
 pub use segment::Segment;
+pub use symbol_resolver::SymbolResolver;
 pub use table::Table;
 
 use crate::asm::{Binding, Location, LocationSection, Object, Reloc, RelocTarget, RelocType};
@@ -28,41 +30,6 @@ pub enum LinkError {
     OffsetOutOfRange(RelocType, isize),
     #[error("Relocation {0:?} against RelocTarget::Section is unsupported")]
     UnsupportedSectionRelocation(RelocType),
-}
-
-/// Alias of `FnMut(&str) -> Option<*const u8>`. This is used for resolving undefined symbols.
-pub trait SymbolResolver: FnMut(&str) -> Option<*const u8> {}
-
-impl<T: FnMut(&str) -> Option<*const u8>> SymbolResolver for T {}
-
-pub mod symbol_resolver {
-    pub fn none(_: &str) -> Option<*const u8> {
-        None
-    }
-
-    #[cfg(all(unix, feature = "dl"))]
-    pub mod dl {
-        use libc::{c_char, c_void};
-        use std::ffi::CString;
-
-        pub fn default(sym: &str) -> Option<*const u8> {
-            let name = CString::new(sym).unwrap();
-            let ptr = unsafe { dlsym(RTLD_DEFAULT, name.as_ptr()) };
-
-            if !ptr.is_null() {
-                Some(ptr as *const u8)
-            } else {
-                None
-            }
-        }
-
-        const RTLD_DEFAULT: *mut c_void = 0 as *mut c_void;
-
-        #[link(name = "dl")]
-        extern "C" {
-            fn dlsym(handle: *mut c_void, symbol: *const c_char) -> *mut c_void;
-        }
-    }
 }
 
 /// A JIT execution engine.
