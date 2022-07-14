@@ -5,10 +5,10 @@ static FAR_RETURN: Lazy<Regex> = Lazy::new(|| Regex::new(r"Far +return").unwrap(
 
 // Some operators including x87, string operators, and loop operators are unsupported
 static UNSUPPORTED_OPERATORS: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"^(INS|OUTS|LODS|SCAS|STOS|MOVS|CMPS|REP|LOOP|ENTER|LGDT|LIDT|LLDT|SLDT|SMSW|XLAT|LSL|LTR|LAR)").unwrap()
+    Regex::new(r"^(INS|OUTS|LODS|SCAS|STOS|MOVS|CMPS|REP|LOOP|LOOPN|ENTER|LGDT|LIDT|LLDT|SLDT|SMSW|XLAT|LSL|LTR|LAR).?$").unwrap()
 });
 static EXCEPTIONALLY_SUPPORTED_OPERATORS: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"^(MOVSD|MOVSX|CMPSD)$").unwrap());
+    Lazy::new(|| Regex::new(r"^(MOVSS|MOVSD|MOVSX|CMPSS|CMPSD)$").unwrap());
 
 // Some operands including segment registers, MMX registers, control registers, and debug registers are unsupported
 static UNSUPPORTED_OPERANDS: Lazy<Regex> =

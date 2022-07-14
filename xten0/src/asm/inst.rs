@@ -391,6 +391,13 @@ pub trait WriteInstExt: io::Write {
         Cmpsl().write_inst(self)
     }
 
+    fn cmpss<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
+    where
+        Cmpss<Op0, Op1, Op2>: WriteInst<Self>,
+    {
+        Cmpss(op0, op1, op2).write_inst(self)
+    }
+
     fn cmpw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
     where
         Cmpw<Op0, Op1>: WriteInst<Self>,
@@ -861,6 +868,13 @@ pub trait WriteInstExt: io::Write {
         Inl<Op0, Op1>: WriteInst<Self>,
     {
         Inl(op0, op1).write_inst(self)
+    }
+
+    fn insertps<Op0, Op1, Op2>(&mut self, op0: Op0, op1: Op1, op2: Op2) -> io::Result<()>
+    where
+        Insertps<Op0, Op1, Op2>: WriteInst<Self>,
+    {
+        Insertps(op0, op1, op2).write_inst(self)
     }
 
     fn int<Op0>(&mut self, op0: Op0) -> io::Result<()>
@@ -1426,6 +1440,20 @@ pub trait WriteInstExt: io::Write {
 
     fn movsl(&mut self) -> io::Result<()> {
         Movsl().write_inst(self)
+    }
+
+    fn movslq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
+    where
+        Movslq<Op0, Op1>: WriteInst<Self>,
+    {
+        Movslq(op0, op1).write_inst(self)
+    }
+
+    fn movss<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
+    where
+        Movss<Op0, Op1>: WriteInst<Self>,
+    {
+        Movss(op0, op1).write_inst(self)
     }
 
     fn movswl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
@@ -6661,6 +6689,42 @@ impl<W: io::Write + ?Sized> WriteInst<W> for Cmpsl {
     }
 }
 
+pub struct Cmpss<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
+
+/// cmpss xmm xmm imm8: Compare low single-precision floating-point value in xmm2/m32 and xmm1 using imm8 as comparison predicate.
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpss<Xmm, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
+        // F3 0F C2 /r ib
+        let modrm = ModRM::new(self.0, self.1);
+        put(w, 0xF3)?;
+        puts(w, modrm.rex_byte(false))?;
+        put(w, 0x0F)?;
+        put(w, 0xC2)?;
+        put(w, modrm.byte())?;
+        puts(w, modrm.sib_byte())?;
+        puts(w, modrm.disp_bytes().into_iter().flatten())?;
+        puts(w, self.2.to_le_bytes())?;
+        Ok(())
+    }
+}
+
+/// cmpss xmm m32 imm8: Compare low single-precision floating-point value in xmm2/m32 and xmm1 using imm8 as comparison predicate.
+impl<W: io::Write + ?Sized> WriteInst<W> for Cmpss<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
+        // F3 0F C2 /r ib
+        let modrm = ModRM::new(self.0, self.1);
+        put(w, 0xF3)?;
+        puts(w, modrm.rex_byte(false))?;
+        put(w, 0x0F)?;
+        put(w, 0xC2)?;
+        put(w, modrm.byte())?;
+        puts(w, modrm.sib_byte())?;
+        puts(w, modrm.disp_bytes().into_iter().flatten())?;
+        puts(w, self.2.to_le_bytes())?;
+        Ok(())
+    }
+}
+
 pub struct Cmpw<Op0, Op1>(pub Op0, pub Op1);
 
 /// cmpw r16 r16: Compare r/m16 with r16.
@@ -9153,6 +9217,44 @@ impl<W: io::Write + ?Sized> WriteInst<W> for Inl<_Eax, _Dx> {
     }
 }
 
+pub struct Insertps<Op0, Op1, Op2>(pub Op0, pub Op1, pub Op2);
+
+/// insertps xmm xmm imm8: Insert a single precision floating-point value selected by imm8 from xmm2/m32 into xmm1 at the specified destination element specified by imm8 and zero out destination elements in xmm1 as indicated in imm8.
+impl<W: io::Write + ?Sized> WriteInst<W> for Insertps<Xmm, Xmm, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
+        // 66 0F 3A 21 /r ib
+        let modrm = ModRM::new(self.0, self.1);
+        put(w, 0x66)?;
+        puts(w, modrm.rex_byte(false))?;
+        put(w, 0x0F)?;
+        put(w, 0x3A)?;
+        put(w, 0x21)?;
+        put(w, modrm.byte())?;
+        puts(w, modrm.sib_byte())?;
+        puts(w, modrm.disp_bytes().into_iter().flatten())?;
+        puts(w, self.2.to_le_bytes())?;
+        Ok(())
+    }
+}
+
+/// insertps xmm m32 imm8: Insert a single precision floating-point value selected by imm8 from xmm2/m32 into xmm1 at the specified destination element specified by imm8 and zero out destination elements in xmm1 as indicated in imm8.
+impl<W: io::Write + ?Sized> WriteInst<W> for Insertps<Xmm, Memory, i8> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
+        // 66 0F 3A 21 /r ib
+        let modrm = ModRM::new(self.0, self.1);
+        put(w, 0x66)?;
+        puts(w, modrm.rex_byte(false))?;
+        put(w, 0x0F)?;
+        put(w, 0x3A)?;
+        put(w, 0x21)?;
+        put(w, modrm.byte())?;
+        puts(w, modrm.sib_byte())?;
+        puts(w, modrm.disp_bytes().into_iter().flatten())?;
+        puts(w, self.2.to_le_bytes())?;
+        Ok(())
+    }
+}
+
 pub struct Int<Op0>(pub Op0);
 
 /// int imm8: Interrupt vector number specified by immediate byte.
@@ -11500,6 +11602,86 @@ impl<W: io::Write + ?Sized> WriteInst<W> for Movsl {
     fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // A5
         put(w, 0xA5)?;
+        Ok(())
+    }
+}
+
+pub struct Movslq<Op0, Op1>(pub Op0, pub Op1);
+
+/// movslq r64 r32: Move doubleword to quadword with sign-extension.
+impl<W: io::Write + ?Sized> WriteInst<W> for Movslq<Gpr64, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
+        // REX.W+ 63 /r
+        let modrm = ModRM::new(self.0, self.1);
+        puts(w, modrm.rex_byte(true))?;
+        put(w, 0x63)?;
+        put(w, modrm.byte())?;
+        puts(w, modrm.sib_byte())?;
+        puts(w, modrm.disp_bytes().into_iter().flatten())?;
+        Ok(())
+    }
+}
+
+/// movslq r64 m32: Move doubleword to quadword with sign-extension.
+impl<W: io::Write + ?Sized> WriteInst<W> for Movslq<Gpr64, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
+        // REX.W+ 63 /r
+        let modrm = ModRM::new(self.0, self.1);
+        puts(w, modrm.rex_byte(true))?;
+        put(w, 0x63)?;
+        put(w, modrm.byte())?;
+        puts(w, modrm.sib_byte())?;
+        puts(w, modrm.disp_bytes().into_iter().flatten())?;
+        Ok(())
+    }
+}
+
+pub struct Movss<Op0, Op1>(pub Op0, pub Op1);
+
+/// movss xmm xmm: Move scalar single-precision floating-point value from xmm2/m32 to xmm1 register.
+impl<W: io::Write + ?Sized> WriteInst<W> for Movss<Xmm, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
+        // F3 0F 10 /r
+        let modrm = ModRM::new(self.0, self.1);
+        put(w, 0xF3)?;
+        puts(w, modrm.rex_byte(false))?;
+        put(w, 0x0F)?;
+        put(w, 0x10)?;
+        put(w, modrm.byte())?;
+        puts(w, modrm.sib_byte())?;
+        puts(w, modrm.disp_bytes().into_iter().flatten())?;
+        Ok(())
+    }
+}
+
+/// movss xmm m32: Move scalar single-precision floating-point value from xmm2/m32 to xmm1 register.
+impl<W: io::Write + ?Sized> WriteInst<W> for Movss<Xmm, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
+        // F3 0F 10 /r
+        let modrm = ModRM::new(self.0, self.1);
+        put(w, 0xF3)?;
+        puts(w, modrm.rex_byte(false))?;
+        put(w, 0x0F)?;
+        put(w, 0x10)?;
+        put(w, modrm.byte())?;
+        puts(w, modrm.sib_byte())?;
+        puts(w, modrm.disp_bytes().into_iter().flatten())?;
+        Ok(())
+    }
+}
+
+/// movss m32 xmm: Move scalar single-precision floating-point value from xmm1 register to xmm2/m32.
+impl<W: io::Write + ?Sized> WriteInst<W> for Movss<Memory, Xmm> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
+        // F3 0F 11 /r
+        let modrm = ModRM::new(self.1, self.0);
+        put(w, 0xF3)?;
+        puts(w, modrm.rex_byte(false))?;
+        put(w, 0x0F)?;
+        put(w, 0x11)?;
+        put(w, modrm.byte())?;
+        puts(w, modrm.sib_byte())?;
+        puts(w, modrm.disp_bytes().into_iter().flatten())?;
         Ok(())
     }
 }

@@ -363,6 +363,11 @@
 | ----------- | -------- | ----------- |
 | cmpsl | `A7 []` | For legacy mode, compare dword at address DS:(E)SI with dword at address ES:(E)DI; For 64-bit mode compare dword at address (R\|E)SI with dword at address (R\|E)DI. The status flags are set accordingly. |
 
+# cmpss
+| Instruction | Encoding | Description |
+| ----------- | -------- | ----------- |
+| cmpss xmm xmm/m32 imm8 | `F3 0F C2 /r ib [reg=0, rm=1, i=2]` | Compare low single-precision floating-point value in xmm2/m32 and xmm1 using imm8 as comparison predicate. |
+
 # cmpw
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
@@ -726,6 +731,11 @@
 | ----------- | -------- | ----------- |
 | inl _Eax imm8 | `E5 ib [i=1]` | Input dword from imm8 I/O port address into EAX. |
 | inl _Eax _Dx | `ED []` | Input doubleword from I/O port in DX into EAX. |
+
+# insertps
+| Instruction | Encoding | Description |
+| ----------- | -------- | ----------- |
+| insertps xmm xmm/m32 imm8 | `66 0F 3A 21 /r ib [reg=0, rm=1, i=2]` | Insert a single precision floating-point value selected by imm8 from xmm2/m32 into xmm1 at the specified destination element specified by imm8 and zero out destination elements in xmm1 as indicated in imm8. |
 
 # int
 | Instruction | Encoding | Description |
@@ -1209,6 +1219,17 @@
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
 | movsl | `A5 []` | For legacy mode, move dword from address DS:(E)SI to ES:(E)DI. For 64-bit mode move dword from address (R\|E)SI to (R\|E)DI. |
+
+# movslq
+| Instruction | Encoding | Description |
+| ----------- | -------- | ----------- |
+| movslq r64 r/m32 | `REX.W+ 63 /r [reg=0, rm=1]` | Move doubleword to quadword with sign-extension. |
+
+# movss
+| Instruction | Encoding | Description |
+| ----------- | -------- | ----------- |
+| movss xmm xmm/m32 | `F3 0F 10 /r [reg=0, rm=1]` | Move scalar single-precision floating-point value from xmm2/m32 to xmm1 register. |
+| movss xmm/m32 xmm | `F3 0F 11 /r [reg=1, rm=0]` | Move scalar single-precision floating-point value from xmm1 register to xmm2/m32. |
 
 # movswl
 | Instruction | Encoding | Description |
@@ -2803,4 +2824,4 @@
 | xsetbv | `0F 01 D1 []` | Write the value in EDX:EAX to the XCR specified by ECX. |
 
 ---
-Total 498 mnemonics.
+Total 502 mnemonics.
