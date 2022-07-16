@@ -157,6 +157,7 @@ mod tests {
         };
     }
 
+    #[allow(unused_parens)]
     #[test]
     fn test_run() {
         // Unnecessary parens are for rust-analyzer

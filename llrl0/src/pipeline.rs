@@ -93,14 +93,13 @@ impl Pipeline {
         self.clang_options.push(clang_option.to_string());
     }
 
-    pub fn run<BB>(
+    pub fn run<B>(
         self,
         output: &path::Path,
         run_args: Option<Vec<&str>>,
     ) -> Result<Option<ExitStatus>>
     where
-        BB: BackendBuilder,
-        BB::Dest: Backend + ProduceExecutable,
+        B: Backend + ProduceExecutable + From<BackendOptions>,
     {
         let output = path::Path::new(".").join(output);
         let mut source_location_table = SourceLocationTable::new();
@@ -141,12 +140,11 @@ impl Pipeline {
             }
         }
 
-        let lowerizer = Lowerizer::new(
-            BB::new()
+        let lowerizer = Lowerizer::new(B::from(
+            BackendOptions::default()
                 .optimize(self.optimize)
-                .verbose(self.verbose)
-                .build(),
-        );
+                .verbose(self.verbose),
+        ));
 
         let entry_points = self.entry_source_paths.into_iter().collect();
         let (_, module_errors) = build_modules(sources, entry_points, &lowerizer, &mut report);

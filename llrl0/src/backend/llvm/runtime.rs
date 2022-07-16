@@ -21,35 +21,8 @@ impl<'ctx: 'm, 'm> Library<'ctx, 'm> {
     pub fn new(module: &'m LLVMModule<'ctx>) -> Self {
         static INIT_LIBRARY: Once = Once::new();
 
-        INIT_LIBRARY.call_once(|| unsafe {
-            use llrt::*;
-            llvm::add_symbol("llrt_init", llrt_init as *mut ());
-            llvm::add_symbol("llrt_args", llrt_args as *mut ());
-            llvm::add_symbol("llrt_panic", llrt_panic as *mut ());
-            llvm::add_symbol("llrt_exit", llrt_exit as *mut ());
-            llvm::add_symbol("llrt_spawn_process", llrt_spawn_process as *mut ());
-            llvm::add_symbol("llrt_execute_process", llrt_execute_process as *mut ());
-            llvm::add_symbol("llrt_wait", llrt_wait as *mut ());
-            llvm::add_symbol("llrt_time", llrt_time as *mut ());
-            llvm::add_symbol("llrt_getcwd", llrt_getcwd as *mut ());
-            llvm::add_symbol("llrt_string_genid", llrt_string_genid as *mut ());
-            llvm::add_symbol("llrt_string_eq", llrt_string_eq as *mut ());
-            llvm::add_symbol("llrt_string_cmp", llrt_string_cmp as *mut ());
-            llvm::add_symbol("llrt_string_concat", llrt_string_concat as *mut ());
-            llvm::add_symbol("llrt_f32_to_string", llrt_f32_to_string as *mut ());
-            llvm::add_symbol("llrt_f64_to_string", llrt_f64_to_string as *mut ());
-            llvm::add_symbol("llrt_i64_to_string", llrt_i64_to_string as *mut ());
-            llvm::add_symbol("llrt_u64_to_string", llrt_u64_to_string as *mut ());
-            llvm::add_symbol("llrt_string_to_i64", llrt_string_to_i64 as *mut ());
-            llvm::add_symbol("llrt_string_to_u64", llrt_string_to_u64 as *mut ());
-            llvm::add_symbol("llrt_string_to_f32", llrt_string_to_f32 as *mut ());
-            llvm::add_symbol("llrt_string_to_f64", llrt_string_to_f64 as *mut ());
-            llvm::add_symbol("llrt_readdir", llrt_readdir as *mut ());
-            llvm::add_symbol("llrt_stdin", llrt_stdin as *mut ());
-            llvm::add_symbol("llrt_stdout", llrt_stdout as *mut ());
-            llvm::add_symbol("llrt_stderr", llrt_stderr as *mut ());
-            llvm::add_symbol("llrt_current_errno", llrt_current_errno as *mut ());
-            llvm::add_symbol("llrt_xxh_seed", llrt_xxh_seed as *mut ());
+        INIT_LIBRARY.call_once(|| {
+            llrt::register_symbols(|name, addr| unsafe { llvm::add_symbol(name, addr) });
         });
 
         Self {

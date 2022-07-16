@@ -9,7 +9,6 @@ use crate::lowering::ir::*;
 
 pub unsafe fn native_macro(f: *const ()) -> impl Fn(Syntax<Sexp>) -> Result<Syntax<Sexp>, String> {
     type NativeMacro = extern "C" fn(
-        *const u8,
         NativeSyntax<NativeSexp>,
     ) -> NativeResult<NativeSyntax<NativeSexp>, NativeString>;
 
@@ -17,7 +16,7 @@ pub unsafe fn native_macro(f: *const ()) -> impl Fn(Syntax<Sexp>) -> Result<Synt
 
     move |sexp| {
         let sexp = NativeSyntax::<NativeSexp>::from_host(sexp);
-        f(std::ptr::null(), sexp).into_host()
+        f(sexp).into_host()
     }
 }
 

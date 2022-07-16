@@ -155,11 +155,11 @@ impl TestTarget {
             Self::Backend => {
                 let backend = InterpreterBackend::new();
                 self.run_backend(sources.clone(), cond, backend, ctx);
-                let backend = DefaultBackendBuilder::new().build();
+                let backend = DefaultBackend::from(BackendOptions::default());
                 self.run_backend(sources, cond, backend, ctx);
             }
             Self::Std => {
-                let backend = DefaultBackendBuilder::new().build();
+                let backend = DefaultBackend::from(BackendOptions::default());
                 self.run_backend(sources, cond, backend, ctx);
             }
         }

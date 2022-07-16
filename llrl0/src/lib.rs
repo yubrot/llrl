@@ -63,11 +63,9 @@ pub mod prelude {
 
     pub use super::lowering::{Backend, Lowerizer};
 
-    pub use super::backend::default::{
-        Backend as DefaultBackend, Builder as DefaultBackendBuilder,
-    };
+    pub use super::backend::default::Backend as DefaultBackend;
     pub use super::backend::interpreter::Backend as InterpreterBackend;
-    pub use super::backend::{Builder as BackendBuilder, ProduceExecutable};
+    pub use super::backend::{Options as BackendOptions, ProduceExecutable};
 
     pub use super::pipeline::{Error as PipelineError, Pipeline};
 }

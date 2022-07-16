@@ -5,11 +5,14 @@ use derive_new::new;
 use memoffset::offset_of;
 use std::mem::{size_of, ManuallyDrop};
 
+pub mod context;
 mod function;
 mod sexp;
+mod size_align;
 
 pub use function::*;
 pub use sexp::*;
+pub use size_align::{SizeAlign, SizeAlignResolver};
 
 /// Interconversion with the equivalent value representation in the host environment.
 pub trait NativeValue: Sized {
@@ -30,7 +33,7 @@ pub trait NativeData {
     }
 
     /// Traverse indirect references of the value. Each indirect reference is represented as
-    /// a pair of EdData and an offset on the data where the indirect reference is placed.
+    /// a pair of NativeData and an offset on the data where the indirect reference is placed.
     /// Therefore, each offset must be aligned with the alignment of pointers.
     fn traverse_indirect_data(&self, f: &mut dyn FnMut(usize, &dyn NativeData)) {
         self.traverse_indirect_data_(NativeIndirectDataHandler::new(0, f))

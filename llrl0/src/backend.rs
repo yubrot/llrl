@@ -20,11 +20,21 @@ pub trait ProduceExecutable {
     ) -> Result<String, String>;
 }
 
-/// Common backend builder trait.
-pub trait Builder: Sized {
-    type Dest;
-    fn new() -> Self;
-    fn optimize(self, optimize: bool) -> Self;
-    fn verbose(self, verbose: bool) -> Self;
-    fn build(self) -> Self::Dest;
+#[derive(Debug, Default, Clone, Copy)]
+pub struct Options {
+    pub optimize: Option<bool>,
+    pub verbose: bool,
+}
+
+impl Options {
+    pub fn optimize(self, optimize: bool) -> Self {
+        Self {
+            optimize: Some(optimize),
+            ..self
+        }
+    }
+
+    pub fn verbose(self, verbose: bool) -> Self {
+        Self { verbose, ..self }
+    }
 }

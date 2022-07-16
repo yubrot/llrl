@@ -1,9 +1,10 @@
+use super::native::context;
+use super::Options;
 use crate::lowering::{self, ir};
 use crate::report::{Phase, Report};
 use crossbeam_channel::{bounded, unbounded, Receiver, Sender};
 use itertools::Itertools;
 use llvm::prelude::*;
-use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::fs;
 use std::io::Write;
@@ -15,28 +16,22 @@ mod artifact;
 mod codegen;
 mod executor;
 mod optimizer;
-mod options;
 pub mod runtime;
-mod worker;
 
 pub use artifact::*;
 pub use executor::Executor;
 pub use optimizer::Optimizer;
-pub use options::Options;
-
-// To avoid concurrency issues of Boehm GC, we use worker thread for LLVM Backend.
-static BACKEND_WORKER: Lazy<worker::Thread> = Lazy::new(worker::Thread::spawn);
 
 #[derive(Debug)]
 pub struct Backend {
     sender: Sender<Request>,
-    handle: worker::JoinHandle<Report>,
+    handle: context::JoinHandle<Report>,
 }
 
 impl Backend {
     fn new(options: Options) -> Self {
         let (sender, receiver) = unbounded();
-        let handle = BACKEND_WORKER.run(move || process_requests(options, receiver));
+        let handle = context::dedicated_thread().run(move || process_requests(options, receiver));
         Self { sender, handle }
     }
 }
@@ -88,6 +83,12 @@ impl super::ProduceExecutable for Backend {
     }
 }
 
+impl From<Options> for Backend {
+    fn from(options: super::Options) -> Self {
+        Self::new(options)
+    }
+}
+
 #[derive(Debug)]
 enum Request {
     PutDef(ir::CtId, Arc<ir::CtDef>),
@@ -102,11 +103,16 @@ enum Request {
 }
 
 fn process_requests(options: Options, receiver: Receiver<Request>) -> Report {
+    let opt_level = options.optimize.map(|opt| match opt {
+        true => llvm::OptLevel::Default,
+        false => llvm::OptLevel::None,
+    });
+
     let mut report = Report::new();
 
     let context = LLVMContext::new();
-    let module_builder = ModuleBuilder::new(options);
-    let mut executor = Executor::new(&context, options);
+    let module_builder = ModuleBuilder::new(opt_level, options.verbose);
+    let mut executor = Executor::new(&context, opt_level, None);
 
     let mut artifact = ContextArtifact::new(&context, executor.data_layout());
     let mut defs = HashMap::new();
@@ -257,10 +263,10 @@ struct ModuleBuilder {
 }
 
 impl ModuleBuilder {
-    fn new(options: Options) -> Self {
+    fn new(opt_level: Option<llvm::OptLevel>, verbose: bool) -> Self {
         Self {
-            optimizer: Optimizer::new(options),
-            verbose: options.verbose,
+            optimizer: Optimizer::new(opt_level),
+            verbose,
         }
     }
 
@@ -315,28 +321,5 @@ impl ModuleBuilder {
         }
 
         module
-    }
-}
-
-#[derive(Debug)]
-pub struct Builder(Options);
-
-impl super::Builder for Builder {
-    type Dest = Backend;
-
-    fn new() -> Self {
-        Self(Options::new())
-    }
-
-    fn optimize(self, optimize: bool) -> Self {
-        Self(self.0.optimize(optimize))
-    }
-
-    fn verbose(self, verbose: bool) -> Self {
-        Self(self.0.verbose(verbose))
-    }
-
-    fn build(self) -> Self::Dest {
-        Backend::new(self.0)
     }
 }

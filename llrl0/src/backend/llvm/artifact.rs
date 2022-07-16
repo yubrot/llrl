@@ -4,14 +4,13 @@ use crate::lowering::ir::*;
 use derive_new::new;
 use llvm::prelude::*;
 use std::collections::HashMap;
-use std::mem::{align_of, size_of};
 use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct ContextArtifact<'ctx> {
     context: &'ctx LLVMContext,
     data_layout: LLVMBox<LLVMDataLayout>,
-    type_sizes: HashMap<CtId, Option<TypeSize>>,
+    sa_resolver: runtime::SizeAlignResolver,
     types: HashMap<CtId, LLVMType<'ctx>>,
     structs: HashMap<CtId, LLVMStructType<'ctx>>,
     unions: HashMap<CtId, LLVMArrayType<'ctx>>,
@@ -24,7 +23,7 @@ impl<'ctx> ContextArtifact<'ctx> {
         Self {
             context,
             data_layout: data_layout.to_owned(),
-            type_sizes: HashMap::new(),
+            sa_resolver: runtime::SizeAlignResolver::new(),
             types: HashMap::new(),
             structs: HashMap::new(),
             unions: HashMap::new(),
@@ -54,13 +53,13 @@ impl<'ctx> ContextArtifact<'ctx> {
         for (id, def) in defs {
             match **def {
                 CtDef::Struct(_) => {
-                    let _ = self.type_size(&Ct::Id(*id), defs);
+                    let _ = self.sa_resolver.get(&Ct::Id(*id), defs);
                     let ty = LLVMStructType::new(&id.index().to_string(), self.context);
                     self.structs.insert(*id, ty);
                     self.types.insert(*id, ty.as_type());
                 }
                 CtDef::Union(_) => {
-                    let type_size = self.type_size(&Ct::Id(*id), defs);
+                    let type_size = self.sa_resolver.get(&Ct::Id(*id), defs);
                     let ty = if type_size.align != 0 {
                         let bw = type_size.align * 8;
                         let len = (type_size.size / type_size.align) as usize;
@@ -120,101 +119,11 @@ impl<'ctx> ContextArtifact<'ctx> {
     pub fn llvm_type_all<'a>(&self, tys: impl IntoIterator<Item = &'a Ct>) -> Vec<LLVMType<'ctx>> {
         tys.into_iter().map(|ty| self.llvm_type(ty)).collect()
     }
-
-    fn type_size(&mut self, ty: &Ct, defs: &HashMap<CtId, Arc<CtDef>>) -> TypeSize {
-        match ty {
-            Ct::Id(id) => match self.type_sizes.get(id) {
-                Some(None) => panic!("Unsized type: {}", id),
-                Some(Some(size)) => *size,
-                None => {
-                    self.type_sizes.insert(*id, None);
-                    let ts = match defs.get(id).map(|def| &**def) {
-                        Some(CtDef::Struct(ty)) => {
-                            TypeSize::struct_(self.type_size_all(&ty.fields, defs))
-                        }
-                        Some(CtDef::Union(ty)) => {
-                            TypeSize::union(self.type_size_all(&ty.tys, defs))
-                        }
-                        Some(_) => panic!("Not a type: {}", id),
-                        None => panic!("Unknown type: {}", id),
-                    };
-                    self.type_sizes.insert(*id, Some(ts));
-                    ts
-                }
-            },
-            Ct::GenericInst(_) => panic!("Found Ct::GenericInst on TypeSizeCache::type_size"),
-            Ct::TableGet(_) => panic!("Found Ct::GenericInst on TypeSizeCache::type_size"),
-            Ct::Ptr(_) => TypeSize::pointer(),
-            Ct::Clos(_) => {
-                let ptr = TypeSize::pointer();
-                TypeSize::struct_(vec![ptr, ptr])
-            }
-            Ct::S(s) | Ct::U(s) => {
-                // TODO: To be precise, we need to follow the integer type specification of the DataLayout
-                let size = ((*s + 7) / 8).next_power_of_two();
-                TypeSize::new(size, size)
-            }
-            Ct::F32 => TypeSize::new(4, 4),
-            Ct::F64 => TypeSize::new(8, 8),
-            Ct::String => TypeSize::of::<runtime::NativeString>(),
-            Ct::Char => TypeSize::of::<runtime::NativeChar>(),
-            Ct::Array(_) => TypeSize::of::<runtime::NativeArray<u8>>(),
-            Ct::CapturedUse => TypeSize::of::<runtime::NativeCapturedUse>(),
-            Ct::Unit => TypeSize::new(0, 0),
-            Ct::Env => TypeSize::pointer(),
-            Ct::Syntax(_) => TypeSize::of::<runtime::NativeSyntax<u8>>(),
-            Ct::Hole => panic!("Found Ct::Hole on TypeSizeCache::type_size"),
-        }
-    }
-
-    fn type_size_all(&mut self, tys: &[Ct], defs: &HashMap<CtId, Arc<CtDef>>) -> Vec<TypeSize> {
-        tys.iter().map(|ty| self.type_size(ty, defs)).collect()
-    }
 }
 
 impl<'ctx> LLVMTypeBuilder<'ctx> for ContextArtifact<'ctx> {
     fn context(&self) -> &'ctx LLVMContext {
         self.context()
-    }
-}
-
-#[derive(Debug, Clone, Copy, new)]
-struct TypeSize {
-    size: usize,
-    align: usize,
-}
-
-impl TypeSize {
-    fn of<T>() -> Self {
-        Self::new(size_of::<T>(), align_of::<T>())
-    }
-
-    fn pointer() -> Self {
-        Self::new(std::mem::size_of::<usize>(), std::mem::align_of::<usize>())
-    }
-
-    fn struct_(tss: Vec<Self>) -> Self {
-        let align = tss.iter().map(|a| a.align).max().unwrap_or(0);
-        let mut size = 0;
-        for ts in tss {
-            if ts.align != 0 {
-                size += (ts.align - (size % ts.align)) % ts.align;
-            }
-            size += ts.size;
-        }
-        if align != 0 {
-            size += (align - (size % align)) % align;
-        }
-        Self::new(size, align)
-    }
-
-    fn union(tss: Vec<Self>) -> Self {
-        let align = tss.iter().map(|a| a.align).max().unwrap_or(0);
-        let mut size = tss.iter().map(|a| a.size).max().unwrap_or(0);
-        if align != 0 {
-            size += (align - (size % align)) % align;
-        }
-        Self::new(size, align)
     }
 }
 
@@ -229,14 +138,12 @@ impl<'ctx> FunctionSymbol<'ctx> {
     pub fn new(name: String, def: &Function, ctx: &ContextArtifact<'ctx>) -> Self {
         let kind = FunctionSymbolKind::new(def);
 
-        let param_tys = (if kind.takes_env_as_argument() {
-            Some(ctx.llvm_type(&Ct::Env))
-        } else {
-            None
-        })
-        .into_iter()
-        .chain(def.params.iter().map(|p| ctx.llvm_type(&p.ty)))
-        .collect::<Vec<_>>();
+        let param_tys = kind
+            .takes_env_as_argument()
+            .then(|| ctx.llvm_type(&Ct::Env))
+            .into_iter()
+            .chain(def.params.iter().map(|p| ctx.llvm_type(&p.ty)))
+            .collect::<Vec<_>>();
         let ret_ty = ctx.llvm_type(&def.ret);
 
         let ty = if kind.returns_by_pointer_store() {
@@ -294,7 +201,7 @@ impl FunctionSymbolKind {
     }
 
     pub fn takes_env_as_argument(&self) -> bool {
-        !matches!(self, Self::Main(_))
+        !matches!(self, Self::Main(_) | Self::Macro)
     }
 
     pub fn returns_by_pointer_store(&self) -> bool {

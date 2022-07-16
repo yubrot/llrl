@@ -1,5 +1,12 @@
 use crossbeam_channel::{bounded, unbounded, Receiver, Sender};
+use once_cell::sync::Lazy;
 use std::thread;
+
+/// To avoid concurrency issues of Boehm GC, we need a dedicated thread for backends.
+pub fn dedicated_thread() -> &'static Thread {
+    static THREAD: Lazy<Thread> = Lazy::new(Thread::spawn);
+    &*THREAD
+}
 
 #[derive(Debug)]
 pub struct Thread {
@@ -8,7 +15,7 @@ pub struct Thread {
 }
 
 impl Thread {
-    pub fn spawn() -> Self {
+    fn spawn() -> Self {
         let (sender, receiver) = unbounded();
         let _handle = thread::spawn(move || process_tasks(receiver));
         Self { _handle, sender }
@@ -41,7 +48,7 @@ impl<T> JoinHandle<T> {
     }
 }
 
-pub fn process_tasks(receiver: Receiver<Box<dyn FnOnce() + Send + 'static>>) {
+fn process_tasks(receiver: Receiver<Box<dyn FnOnce() + Send + 'static>>) {
     while let Ok(f) = receiver.recv() {
         f();
     }

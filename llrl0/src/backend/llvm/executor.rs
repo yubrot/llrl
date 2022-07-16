@@ -1,4 +1,4 @@
-use super::{FunctionSymbol, FunctionSymbolKind, Options};
+use super::{FunctionSymbol, FunctionSymbolKind};
 use crate::backend::native::{native_macro, native_main};
 use crate::lowering::ir::*;
 use llvm::prelude::*;
@@ -10,7 +10,11 @@ pub struct Executor<'ctx> {
 }
 
 impl<'ctx> Executor<'ctx> {
-    pub fn new(context: &'ctx LLVMContext, options: Options) -> Self {
+    pub fn new(
+        context: &'ctx LLVMContext,
+        opt_level: Option<llvm::OptLevel>,
+        code_model: Option<llvm::CodeModel>,
+    ) -> Self {
         static INIT_EXECUTION_CONTEXT: Once = Once::new();
 
         INIT_EXECUTION_CONTEXT.call_once(|| unsafe {
@@ -21,14 +25,8 @@ impl<'ctx> Executor<'ctx> {
             LLVMExecutionEngine::link_in_mcjit();
         });
 
-        let engine = LLVMExecutionEngine::new_mcjit(
-            context,
-            options.opt_level,
-            options.code_model,
-            None,
-            None,
-        )
-        .unwrap_or_else(|e| panic!("Failed to create execution engine: {}", e));
+        let engine = LLVMExecutionEngine::new_mcjit(context, opt_level, code_model, None, None)
+            .unwrap_or_else(|e| panic!("Failed to create execution engine: {}", e));
 
         assert_data_layout_matches_native_environment(engine.data_layout());
 
@@ -80,7 +78,7 @@ impl<'ctx> Executor<'ctx> {
 
 pub fn assert_data_layout_matches_native_environment(dl: &LLVMDataLayout) {
     // NOTE: llrl assumes that the native environment (i.e., at the time of executing
-    // the JIT function for macro expansion) and the target environment are the same.
+    // the JIT compiled function for macro expansion) and the target environment are the same.
     // The entire implementation of the LLVM backend is based on this assumption, so it is
     // likely that major changes will be required if we wish to support cross-compilation.
     use std::mem::{align_of, size_of};
