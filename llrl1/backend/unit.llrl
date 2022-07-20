@@ -2,13 +2,11 @@
 
 (import "~/lowering/ir" [ir/_ _])
 (import "~/lowering" Backend)
-(export Backend.unit)
+(export Backend.unit backend/_)
 
 (instance Backend.unit (Backend unit)
   (function (backend/put-def! id def b))
   (function (backend/put-main! init b))
   (function (backend/execute-macro! id s b)
     (err "Internal error: Unit backend does not support execute-macro"))
-  (function (backend/execute-main! b)
-    (err "Internal error: Unit backend does not support execute-main"))
   (function (backend/complete! report b)))

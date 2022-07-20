@@ -1,102 +1,10 @@
-(import "std/memory" size-of align-of)
 (import "std/ord-map" _)
-(import "std/hash-map" next-power-of-two) ; NOTE: This should be moved to the appropriate module
 (import "llvm" [llvm/_ _])
 (import "~/util" _)
 (import "~/lowering/ir" [ir/_ _])
+(import "~/backend/common/size-align" SizeAlign size-align:)
 (import "~/backend/llvm/runtime" _)
-(export TypeSize _.TypeSize type-size/_)
 (export TypeEnv type-env/_ BuildEnv build-env/_ codegen/_)
-
-(derive (Eq Ord DebugDisplay Hash) value-data TypeSize
-  (type-size: U64 U64))
-
-(getter type-size: type-size/size type-size/align)
-
-(assert-eq? (size-of (Ptr U8)) 8)
-(assert-eq? (align-of (Ptr U8)) 8)
-
-(function type-size/pointer {TypeSize}
-  (type-size: 8 8))
-
-(function (aligned size align) {(-> U64 U64 U64)}
-  (if (ne? align 0)
-    (+ size (% (- align (% size align)) align))
-    size))
-
-(function (type-size/struct tss) {(-> (Array TypeSize) TypeSize)}
-  (let* ([align (|> tss (it/map type-size/align) (it/fold [^2 (max %1 %2)] 0))]
-         [size (ref 0)])
-    (for (type-size: (let esize) (let ealign)) tss
-      (set! size (+ (aligned ~size ealign) esize)))
-    (type-size: (aligned ~size align) align)))
-
-(function (type-size/union tss) {(-> (Array TypeSize) TypeSize)}
-  (let* ([align (|> tss (it/map type-size/align) (it/fold [^2 (max %1 %2)] 0))]
-         [size (|> tss (it/map type-size/size) (it/fold [^2 (max %1 %2)] 0))])
-    (type-size: (aligned size align) align)))
-
-(function (codegen/type-size! defs known-type-sizes ty)
-  {(-> (OrdMap ir/CtId ir/CtDef) (OrdMap ir/CtId (Option TypeSize)) ir/Ct TypeSize)}
-  (match ty
-    [(ir/ct:id (let id))
-      (match (ord-map/get? id known-type-sizes)
-        [(some none)
-          (assert #f (string "Unsized type: " (debug id)))]
-        [(some (some (let ts)))
-          ts]
-        [none
-          (ord-map/insert! id none known-type-sizes)
-          (let1
-            ts
-            (match (ord-map/get? id defs)
-              [(some (ir/ct-def:struct (ir/struct: _ (let fields))))
-                (type-size/struct (|> fields (it/map [^1 (codegen/type-size! defs known-type-sizes %1)]) collect))]
-              [(some (ir/ct-def:union (ir/union: (let tys))))
-                (type-size/union (|> tys (it/map [^1 (codegen/type-size! defs known-type-sizes %1)]) collect))]
-              [(some _)
-                (assert #f (string "Not a type: " (debug id)))]
-              [none
-                (assert #f (string "Unknown type: " (debug id)))])
-            (ord-map/insert! id (some ts) known-type-sizes)
-            ts)])]
-      [(ir/ct:generic-inst _ _)
-        (assert #f "Found ct:generic-inst on codegen/type-size!")]
-      [(ir/ct:table-get _ _)
-        (assert #f "Found ct:table-get on codegen/type-size!")]
-      [(ir/ct:ptr _)
-        type-size/pointer]
-      [(ir/ct:clos _ _)
-        (type-size: 16 8)]
-
-      ; TODO: To be precise, we need to follow the integer type specification of the DataLayout
-      [(ir/ct:s (let n))
-        (let1 size (next-power-of-two (/ (+ n 7) 8))
-          (type-size: size size))]
-      [(ir/ct:u (let n))
-        (let1 size (next-power-of-two (/ (+ n 7) 8))
-          (type-size: size size))]
-      [ir/ct:f32
-        (type-size: 4 4)]
-      [ir/ct:f64
-        (type-size: 8 8)]
-
-      [ir/ct:string
-        (type-size: runtime/string/size runtime/string/align)]
-      [ir/ct:char
-        (type-size: runtime/char/size runtime/char/align)]
-      [(ir/ct:array _)
-        (type-size: runtime/array/size runtime/array/align)]
-      [ir/ct:captured-use
-        (type-size: runtime/captured-use/size runtime/captured-use/align)]
-      [ir/ct:unit
-        (type-size: 0 0)]
-      [ir/ct:env
-        type-size/pointer]
-      [(ir/ct:syntax _)
-        (type-size: runtime/syntax/size runtime/syntax/align)]
-      [ir/ct:hole
-        (assert #f "Found ct:hole at codegen/type-size!")]))
 
 (class (TypeEnv E) (where (Conv E llvm/Context))
   (function (type-env/get-type? id env) {(-> ir/CtId E (Option llvm/Type))}))
@@ -144,8 +52,8 @@
       [ir/ct:hole
         (assert #f "Found ct:hole on codegen/type")])))
 
-(function (codegen/union-type ts ctx) {(-> TypeSize llvm/Context llvm/Type)}
-  (with1 (type-size: (let size) (let align)) ts
+(function (codegen/union-type ts ctx) {(-> SizeAlign llvm/Context llvm/Type)}
+  (with1 (size-align: (let size) (let align)) ts
     (if (ne? align 0)
       (llvm/type ctx (array (integer ,(conv (* align 8))) ,(conv (/ size align))))
       (llvm/type ctx (array i1 0)))))

@@ -3,7 +3,7 @@
 (import "llvm" [llvm/_ _])
 (import "~/util" _)
 (import "~/lowering/ir" [ir/_ _])
-(import "~/backend/llvm/artifact" FunctionSymbol function-symbol/_ function-symbol-kind:_)
+(import "~/backend/llvm/artifact" FunctionSymbol function-symbol/_)
 (export Executor _.Executor executor/_)
 
 ; NOTE: Only native targets are supported. For more details, see
@@ -52,17 +52,17 @@
     (let1 closure-rep {(: U64 (Ptr U8))} (: address ptr:null)
       (reinterpret closure-rep))))
 
-(function (executor/call-main! symbol executor) {(-> FunctionSymbol Executor Bool)}
-  (assert-is? (function-symbol-kind:main (ir/ct:u 1)) (function-symbol/kind symbol))
+(function (executor/unsafe-call-main! symbol executor)
+  {(-> FunctionSymbol Executor Bool)}
   ((executor/unsafe-get-closure! (function-symbol/name symbol) (phantom (-> Bool)) executor)))
 
-(function (executor/call-macro! symbol s executor) {(-> FunctionSymbol (ir/S ir/CapturedUse) Executor (Result (ir/S ir/CapturedUse) String))}
-  (assert-is? function-symbol-kind:macro (function-symbol/kind symbol))
+(function (executor/unsafe-call-macro! symbol s executor)
+  {(-> FunctionSymbol (ir/S ir/CapturedUse) Executor (Result (ir/S ir/CapturedUse) String))}
   ((executor/unsafe-get-closure! (function-symbol/name symbol) (phantom (-> (ir/S ir/CapturedUse) (Result (ir/S ir/CapturedUse) String))) executor) s))
 
 (function (assert-data-layout-matches-native-environment dl)
   ; NOTE: llrl assumes that the native environment (i.e., at the time of executing
-  ; the JIT function for macro expansion) and the target environment are the same.
+  ; the JIT compiled function for macro expansion) and the target environment are the same.
   ; The entire implementation of the LLVM backend is based on this assumption, so it is
   ; likely that major changes will be required if we wish to support cross-compilation.
   (llvm/with-context (lambda (ctx)

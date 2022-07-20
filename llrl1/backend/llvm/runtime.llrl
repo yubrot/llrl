@@ -3,7 +3,7 @@
 (import "~/util" _)
 (import "~/sexp" [sexp/_ _])
 (import "~/lowering/ir" [ir/_ _])
-(import "~/backend/data" [data/_ _])
+(import "~/backend/common/data" [data/_ _])
 (export RuntimeBuildEnv runtime-build-env/_ runtime/_ RuntimeConst RuntimeConst._)
 
 <initialize-llvm-jit-library-binding>
@@ -79,12 +79,6 @@
   (function (runtime/const m a)
     (llvm/const (conv m) (: ,(runtime/string/const-body m a) (u64 ,(string/length a))))))
 
-(assert-eq? (size-of String) runtime/string/size)
-(assert-eq? (align-of String) runtime/string/align)
-
-(function runtime/string/size 16)
-(function runtime/string/align 8)
-
 (function (runtime/string/type ctx) {(-> llvm/Context llvm/Type)}
   (llvm/type ctx (: (pointer i8) i64)))
 
@@ -134,23 +128,11 @@
   (function (runtime/const m a)
     (llvm/const (conv m) (u32 ,(char/unicode-scalar a)))))
 
-(assert-eq? (size-of Char) runtime/char/size)
-(assert-eq? (align-of Char) runtime/char/align)
-
-(function runtime/char/size 4)
-(function runtime/char/align 4)
-
 (function (runtime/char/type ctx) {(-> llvm/Context llvm/Type)}
   (llvm/type ctx i32))
 
 (function (runtime/char/build-eq! builder a b) {(-> llvm/Builder llvm/Value llvm/Value llvm/Value)}
   (llvm/build! builder (ieq ,a ,b)))
-
-(assert-eq? (size-of (Array U8)) runtime/array/size)
-(assert-eq? (align-of (Array U8)) runtime/array/align)
-
-(function runtime/array/size 16)
-(function runtime/array/align 8)
 
 (function (runtime/array/type ctx elem-ty) {(-> llvm/Context llvm/Type llvm/Type)}
   (llvm/type ctx (: (pointer ,elem-ty) i64)))
@@ -169,12 +151,6 @@
 
 (function (runtime/array/build-store! builder index value array) {(-> llvm/Builder llvm/Value llvm/Value llvm/Value llvm/Value)}
   (llvm/build! builder (store ,value (gep (extract-value ,array 0) ,index))))
-
-(assert-eq? (size-of ir/CapturedUse) runtime/captured-use/size)
-(assert-eq? (align-of ir/CapturedUse) runtime/captured-use/align)
-
-(function runtime/captured-use/size 16)
-(function runtime/captured-use/align 8)
 
 ; Ensure that the reinterpret is OK (*1)
 (assert-eq? (size-of ir/CapturedUse) (size-of (: U64 U64)))
@@ -197,12 +173,6 @@
 
 (function (runtime/syntax-metadata/type ctx) {(-> llvm/Context llvm/Type)}
   (llvm/type ctx (: i32 i32)))
-
-(assert-eq? (size-of (Syntax unit)) runtime/syntax/size)
-(assert-eq? (align-of (Syntax unit)) runtime/syntax/align)
-
-(function runtime/syntax/size 8)
-(function runtime/syntax/align 8)
 
 (function (runtime/syntax/type ctx) {(-> llvm/Context llvm/Type)}
   (llvm/type ctx (pointer i8)))

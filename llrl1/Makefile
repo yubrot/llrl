@@ -2,7 +2,7 @@ FLAGS=-pllvm:../llvm1 -c../llvm1/support.c -c-I../rt -cbackend/llvm/jit_library_
 
 all: llrl1
 
-llrl1: FORCE
+llrl1:
 	make -C ../rt
 	llrl0 $(FLAGS) -O -o llrl1 main
 
@@ -30,4 +30,3 @@ self-hosting: llrl2 llrl3
 clean:
 	rm -f llrl1 llrl2 llrl3
 
-FORCE:

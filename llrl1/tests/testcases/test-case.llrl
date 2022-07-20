@@ -100,7 +100,7 @@
           (test-condition/run! slt (module/build! sources entry-points lowerizer report) condition)!
           (lowerizer/complete! report lowerizer)
           (when-match1 (test-condition:pass _) condition
-            (match (backend/execute-main! backend)
+            (match (default-backend/execute-main! backend)
               [(ok #t)]
               [(ok #f) (err "Expected #t but got #f")!]
               [(err (let error)) (err (string "Execution error:\n" error))!])))

@@ -33,27 +33,12 @@
     (vector/push! init (queued-main b)))
 
   (function (backend/execute-macro! id s b)
-    (when (not (ord-map/empty? (queued-defs b)))
-      (let1 generation ~(next-generation b)
-        (set! (next-generation b) (+ generation 1))
-        (executor/add-module!
-          (report/on (backend/report b) phase:codegen (backend/build! (string "gen" generation) #f b))
-          (executor b))))
+    (backend/codegen! #f b)
 
-      (if-match1 (some (let symbol)) (context-artifact/function-symbol? id (context-artifact b))
-        (executor/call-macro! symbol s (executor b))
-        (err (string "macro not found: " (debug id)))))
-
-  (function (backend/execute-main! b)
-    (when-match1 none (|> b context-artifact context-artifact/main-function-symbol?)
-      (executor/add-module!
-        (report/on (backend/report b) phase:codegen (backend/build! "entry" #t b))
-        (executor b)))
-
-    (report/on (backend/report b) phase:jit
-      (if-match1 (some (let symbol)) (|> b context-artifact context-artifact/main-function-symbol?)
-        (ok (executor/call-main! symbol (executor b)))
-        (err "main not found"))))
+    (if-match1 (some (let symbol)) (context-artifact/function-symbol? id (context-artifact b))
+      ; TODO: Verify that symbol is macro
+      (executor/unsafe-call-macro! symbol s (executor b))
+      (err (string "macro not found: " (debug id)))))
 
   (function (backend/complete! report b)
     (report/merge! (backend/report b) report)))
@@ -90,50 +75,63 @@
     (backend/dispose! backend)
     ret))
 
-(function (backend/build! name build-main? b) {(-> String Bool Backend llvm/Module)}
-  (context-artifact/add-types! (queued-defs b) (context-artifact b))
-  (let1 artifact (module-artifact/new name (context-artifact b))
+(function (backend/execute-main! b) {(-> Backend (Result Bool String))}
+  (backend/codegen! #t b)
 
-    (when (backend/verbose? b)
-      (eprintln! "### adding defs")
-      (for (: (let id) (let def)) (ord-map/elems (queued-defs b))
-        (eprintln! (debug id) " = " (debug def))))
+  (report/on (backend/report b) phase:jit
+    (if-match1 (some (let symbol)) (|> b context-artifact context-artifact/main-function-symbol?)
+      (ok (executor/unsafe-call-main! symbol (executor b)))
+      (err "main not found"))))
 
-    (module-artifact/add-functions! (queued-defs b) artifact)
-    (ord-map/clear! (queued-defs b))
+(function (backend/codegen! build-main? b) {(-> Bool Backend unit)}
+  (when (and (ord-map/empty? (queued-defs b)) (not build-main?)) (return))
+  (let* ([defs (queued-defs b)]
+         [main (when? build-main? (vector/consume-all! (queued-main b)))]
+         [name (string "gen" ~(next-generation b))]
+         [artifact (module-artifact/new name (context-artifact b))])
+    (set! (next-generation b) (+ ~(next-generation b) 1))
 
-    (when (backend/verbose? b)
-      (eprintln! "### added defs")
-      (eprintln! (module-artifact/llvm-module artifact)))
-
-    (when build-main?
-      (when (backend/verbose? b)
-        (eprintln! "### adding main")
-        (for (let init) (queued-main b) (eprintln! (debug init))))
-
-      (module-artifact/add-main! (vector/consume-all! (queued-main b)) artifact)
+    (report/on (backend/report b) phase:codegen
+      (context-artifact/add-types! defs (context-artifact b))
 
       (when (backend/verbose? b)
-        (eprintln! "### added main")
-        (eprintln! (|> artifact module-artifact/main-function? option/force function-artifact/value))))
+        (eprintln! "### adding defs")
+        (for (: (let id) (let def)) (ord-map/elems defs)
+          (eprintln! (debug id) " = " (debug def))))
 
-    (when-match1 (err (let msg)) (|> artifact module-artifact/llvm-module llvm/module/verify)
-      (assert #f (string "LLVM verify module failed: " msg)))
+      (module-artifact/add-functions! defs artifact)
 
-    (llvm/pass-manager/run! (module-artifact/llvm-module artifact) (llvm-pm b))
+      (when (backend/verbose? b)
+        (eprintln! "### added defs")
+        (eprintln! (module-artifact/llvm-module artifact)))
 
-    (when (backend/verbose? b)
-      (eprintln! "### optimized")
-      (eprintln! (module-artifact/llvm-module artifact)))
+      (ord-map/clear! (queued-defs b))
 
-    (module-artifact/complete! artifact)))
+      (when-match1 (some (let main)) main
+        (when (backend/verbose? b)
+          (eprintln! "### adding main")
+          (for (let init) main (eprintln! (debug init))))
+
+        (module-artifact/add-main! (ir/function/main main) artifact)
+
+        (when (backend/verbose? b)
+          (eprintln! "### added main")
+          (eprintln! (|> artifact module-artifact/main-function? option/force function-artifact/value))))
+
+      (when-match1 (err (let msg)) (|> artifact module-artifact/llvm-module llvm/module/verify)
+        (assert #f (string "LLVM verify module failed: " msg)))
+
+      (llvm/pass-manager/run! (module-artifact/llvm-module artifact) (llvm-pm b))
+
+      (when (backend/verbose? b)
+        (eprintln! "### optimized")
+        (eprintln! (module-artifact/llvm-module artifact)))
+
+        (executor/add-module! (module-artifact/complete! artifact) (executor b)))))
 
 (function (backend/produce-executable! dest clang-options b)
   {(-> String (Array String) Backend (Result unit String))}
-  (when-match1 none (|> b context-artifact context-artifact/main-function-symbol?)
-    (executor/add-module!
-      (report/on (backend/report b) phase:codegen (backend/build! "entry" #t b))
-      (executor b)))
+  (backend/codegen! #t b)
 
   (let1 artifact (module-artifact/new "c-main-adapter" (context-artifact b))
     (module-artifact/add-c-main-adapter! artifact)

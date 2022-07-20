@@ -3,11 +3,11 @@
 (import "llvm" [llvm/_ _])
 (import "~/util" _)
 (import "~/lowering/ir" [ir/_ _])
+(import "~/backend/common/size-align" SizeAlign _.SizeAlign size-align/_)
 (import "~/backend/llvm/runtime" RuntimeBuildEnv)
-(import "~/backend/llvm/codegen" TypeSize _.TypeSize TypeEnv type-env/_ BuildEnv codegen/_)
+(import "~/backend/llvm/codegen" TypeEnv type-env/_ BuildEnv codegen/_)
 (export ContextArtifact _.ContextArtifact context-artifact/_)
 (export FunctionSymbol _.FunctionSymbol function-symbol: function-symbol/_)
-(export FunctionSymbolKind _.FunctionSymbolKind function-symbol-kind:_)
 (export ModuleArtifact _.ModuleArtifact module-artifact/_)
 (export FunctionArtifact _.FunctionArtifact function-artifact/_)
 (export RawFunctionArtifact _.RawFunctionArtifact raw-function-artifact/_)
@@ -16,7 +16,7 @@
   (context-artifact:
     llvm/Context
     llvm/DataLayout
-    (OrdMap ir/CtId (Option TypeSize))
+    (OrdMap ir/CtId (Option SizeAlign))
     (OrdMap ir/CtId llvm/Type)
     (OrdMap ir/CtId FunctionSymbol)
     (Ref (Option FunctionSymbol))))
@@ -30,7 +30,7 @@
 (getter context-artifact:
   context-artifact/llvm-context
   context-artifact/data-layout
-  type-sizes
+  known-size-aligns
   llvm-types
   function-symbols
   main-function-symbol)
@@ -50,11 +50,11 @@
   (for (: (let id) (let def)) (ord-map/elems defs)
     (match def
       [(ir/ct-def:struct _)
-        (codegen/type-size! defs (type-sizes ca) (ir/ct:id id))
+        (size-align/get! defs (known-size-aligns ca) (ir/ct:id id))
         (ord-map/insert! id (llvm/type/named-struct (conv ca) (|> id ir/ct-id/index string)) (llvm-types ca))
         unit]
       [(ir/ct-def:union _)
-        (let1 ts (codegen/type-size! defs (type-sizes ca) (ir/ct:id id))
+        (let1 ts (size-align/get! defs (known-size-aligns ca) (ir/ct:id id))
           (ord-map/insert! id (codegen/union-type ts (conv ca)) (llvm-types ca)))
         unit]
       [_]))
@@ -69,9 +69,9 @@
         (|> ca llvm-types (ord-map/get? id) option/force)))))
 
 (derive (DebugDisplay) value-data FunctionSymbol
-  (function-symbol: String FunctionSymbolKind llvm/Type))
+  (function-symbol: String llvm/Type))
 
-(getter function-symbol: function-symbol/name function-symbol/kind function-symbol/ty)
+(getter function-symbol: function-symbol/name function-symbol/ty)
 
 (function (function-symbol/new name def ca) {(-> String ir/Function ContextArtifact FunctionSymbol)}
   (let* ([param-tys
@@ -82,20 +82,7 @@
          [ret-ty (codegen/type ca (ir/function/ret def))])
     (function-symbol:
       name
-      (conv def)
       (llvm/type (conv ca) (-> ,@(collect param-tys) ,ret-ty)))))
-
-(derive (DebugDisplay) value-data FunctionSymbolKind
-  function-symbol-kind:macro
-  (function-symbol-kind:main ir/Ct)
-  function-symbol-kind:other)
-
-(instance Conv.From.ir/Function.To.FunctionSymbolKind (Conv ir/Function FunctionSymbolKind)
-  (function (conv def)
-    (match (ir/function/kind def)
-      [ir/function-kind:main (function-symbol-kind:main (ir/function/ret def))]
-      [ir/function-kind:macro function-symbol-kind:macro]
-      [_ function-symbol-kind:other])))
 
 (derive (DebugDisplay) data ModuleArtifact
   (module-artifact:
@@ -169,21 +156,10 @@
       (with1 (function-artifact: (let symbol) (let value)) (module-artifact/capture-function! id ma)
         (codegen/function-body! (function-symbol/name symbol) value f ma)))))
 
-(function (module-artifact/add-main! main ma) {(-> (Array ir/Init) ModuleArtifact FunctionArtifact)}
+(function (module-artifact/add-main! f ma) {(-> ir/Function ModuleArtifact FunctionArtifact)}
+  (assert-is? ir/function-kind:main (ir/function/kind f))
   (assert-is? none ~(main-function-symbol (conv ma)))
-  (let* ([f
-           (with1
-             (: (let stmts) (let ret))
-             (if-match1 (some (: (let ret) (let stmts))) (array/split-last? main)
-               (: stmts ret)
-               (: main (ir/init: ir/ct:unit (ir/rt:const ir/const:unit))))
-             (ir/function:
-               ir/function-kind:main
-               none
-               array/empty
-               (ir/init/ty ret)
-               (ir/rt/seq (collect (it/map ir/init/expr stmts)) (ir/init/expr ret))))]
-         [symbol (function-symbol/new "llrl_main" f (conv ma))]
+  (let* ([symbol (function-symbol/new "llrl_main" f (conv ma))]
          [artifact (module-artifact/bind-function! symbol ma)])
     (codegen/function-body!
       (function-symbol/name symbol)
@@ -220,7 +196,7 @@
     (let* ([function-ty (tyf (conv ma))]
            [param-tys (llvm/type/param-types function-ty)]
            [ret-ty (llvm/type/return-type function-ty)])
-      ; TODO: This adjustment is not enough. We need to follow the System V ABI.
+      ; TODO: This adjustment is probably not enough. We need to follow the System V ABI.
       (with1
         (: (let ty) (let return-by-pointer-store?))
         (if (and adjust-to-c-abi?

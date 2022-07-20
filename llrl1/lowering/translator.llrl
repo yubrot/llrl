@@ -119,10 +119,8 @@
 (instance Translate.Macro (Translate ast/Macro CtDef)
   (function (translate! e src)
     (with1 (ast/macro: (let id) (let param) (let body)) src
-      (ct-def:function (function:
-        function-kind:macro
-        none
-        (array (translate! e (: param ast/macro/src-ty)))
+      (ct-def:function (function/macro
+        (translate! e (: param ast/macro/src-ty))
         (translate! e ast/macro/dest-ty)
         (translate! e body))))))
 

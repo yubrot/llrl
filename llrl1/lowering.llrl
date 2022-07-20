@@ -20,7 +20,6 @@
 (class (Backend B)
   (function (backend/put-def! id def b) {(-> CtId CtDef B unit)})
   (function (backend/put-main! init b) {(-> Init B unit)})
-  (function (backend/execute-main! b) {(-> B (Result Bool String))})
   (function (backend/execute-macro! id s b) {(-> CtId (S CapturedUse) B (Result (S CapturedUse) String))})
   (function (backend/complete! report b) {(-> Report B unit)}))
 
