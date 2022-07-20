@@ -99,7 +99,7 @@ This goal has been achieved and can be tested by `make self-hosting` in `llrl1/`
 Since `llrl0` is a standalone executable, you can simply run it with `cargo run` or `cargo build`.
 
 ```shell
-cargo install --path llrl0
+cargo install --path llrl0 --offline
 llrl0 --help
 llrl0 -O examples/fibonacci-numbers
 

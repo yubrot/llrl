@@ -250,13 +250,7 @@ impl Translate for ast::Macro {
         let param = FunctionParam::new(env.translate(&self.param), src_ty);
         let rt = env.translate(&self.body);
 
-        CtDef::Function(Function::new(
-            None,
-            vec![param],
-            dest_ty,
-            rt,
-            FunctionKind::Macro,
-        ))
+        CtDef::Function(Function::r#macro(param, dest_ty, rt))
     }
 }
 

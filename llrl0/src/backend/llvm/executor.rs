@@ -1,5 +1,5 @@
-use super::{FunctionSymbol, FunctionSymbolKind};
-use crate::backend::native::{native_macro, native_main};
+use super::FunctionSymbol;
+use crate::backend::native::{native_macro, native_main, CallConv};
 use crate::lowering::ir::*;
 use llvm::prelude::*;
 use std::sync::Once;
@@ -53,9 +53,9 @@ impl<'ctx> Executor<'ctx> {
 
     pub fn call_macro(&self, f: &FunctionSymbol, s: Syntax<Sexp>) -> Result<Syntax<Sexp>, String> {
         assert!(
-            matches!(f.kind, FunctionSymbolKind::Macro),
-            "Function kind mismatch: expected macro but got {:?}",
-            f.kind
+            matches!(f.call_conv, CallConv::Macro),
+            "Calling convention mismatch: expected macro but got {:?}",
+            f.call_conv
         );
         let address = self.engine.get_function_address(&f.name) as usize;
         assert!(address != 0, "Function not found: {}", f.name);
@@ -65,9 +65,9 @@ impl<'ctx> Executor<'ctx> {
 
     pub fn call_main(&self, f: &FunctionSymbol) -> bool {
         assert!(
-            matches!(f.kind, FunctionSymbolKind::Main(Ct::U(1))),
-            "Function kind mismatch: expected main(U1) but got {:?}",
-            f.kind
+            matches!(f.call_conv, CallConv::Main),
+            "Calling convention mismatch: expected main but got {:?}",
+            f.call_conv
         );
         let address = self.engine.get_function_address(&f.name) as usize;
         assert!(address != 0, "Function not found: {}", f.name);

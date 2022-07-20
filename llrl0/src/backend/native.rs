@@ -5,7 +5,7 @@ use derive_new::new;
 use memoffset::offset_of;
 use std::mem::{size_of, ManuallyDrop};
 
-pub mod context;
+pub mod execution;
 mod function;
 mod sexp;
 mod size_align;
@@ -29,7 +29,11 @@ pub trait NativeData {
     fn direct_data(&self) -> &[u8];
 
     fn has_indirect_data(&self) -> bool {
-        false
+        let mut has_indirect_data = false;
+        self.traverse_indirect_data(&mut |_, _| {
+            has_indirect_data = true;
+        });
+        has_indirect_data
     }
 
     /// Traverse indirect references of the value. Each indirect reference is represented as
@@ -79,11 +83,19 @@ impl NativeData for str {
     fn direct_data(&self) -> &[u8] {
         self.as_bytes()
     }
+
+    fn has_indirect_data(&self) -> bool {
+        false
+    }
 }
 
 impl NativeData for [u8] {
     fn direct_data(&self) -> &[u8] {
         self
+    }
+
+    fn has_indirect_data(&self) -> bool {
+        false
     }
 }
 
@@ -174,6 +186,10 @@ impl NativeData for NativeChar {
     fn direct_data(&self) -> &[u8] {
         sized_direct_data(self)
     }
+
+    fn has_indirect_data(&self) -> bool {
+        false
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -206,6 +222,10 @@ impl NativeValue for NativeCapturedUse {
 impl NativeData for NativeCapturedUse {
     fn direct_data(&self) -> &[u8] {
         sized_direct_data(self)
+    }
+
+    fn has_indirect_data(&self) -> bool {
+        false
     }
 }
 
@@ -398,5 +418,9 @@ impl NativeValue for NativeSyntaxMetadata {
 impl NativeData for NativeSyntaxMetadata {
     fn direct_data(&self) -> &[u8] {
         sized_direct_data(self)
+    }
+
+    fn has_indirect_data(&self) -> bool {
+        false
     }
 }

@@ -130,15 +130,15 @@ impl<'ctx> LLVMTypeBuilder<'ctx> for ContextArtifact<'ctx> {
 #[derive(Debug, Clone)]
 pub struct FunctionSymbol<'ctx> {
     pub name: String,
-    pub kind: FunctionSymbolKind,
+    pub call_conv: runtime::CallConv,
     pub ty: LLVMFunctionType<'ctx>,
 }
 
 impl<'ctx> FunctionSymbol<'ctx> {
     pub fn new(name: String, def: &Function, ctx: &ContextArtifact<'ctx>) -> Self {
-        let kind = FunctionSymbolKind::new(def);
+        let call_conv = runtime::CallConv::from(def.kind);
 
-        let param_tys = kind
+        let param_tys = call_conv
             .takes_env_as_argument()
             .then(|| ctx.llvm_type(&Ct::Env))
             .into_iter()
@@ -146,7 +146,7 @@ impl<'ctx> FunctionSymbol<'ctx> {
             .collect::<Vec<_>>();
         let ret_ty = ctx.llvm_type(&def.ret);
 
-        let ty = if kind.returns_by_pointer_store() {
+        let ty = if call_conv.returns_by_pointer_store() {
             let mut param_tys = param_tys;
             param_tys.insert(0, llvm_type!(*ctx, (ptr { ret_ty })).as_type());
             llvm_type!(*ctx, (function(...{param_tys}) void))
@@ -154,62 +154,11 @@ impl<'ctx> FunctionSymbol<'ctx> {
             llvm_type!(*ctx, (function(...{param_tys}) {ret_ty}))
         };
 
-        Self { name, kind, ty }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum FunctionSymbolKind {
-    Standard(Vec<Ct>, Ct), // (-> _ ... _)
-    Macro,                 // (-> Sexp (Result Sexp String))
-    Main(Ct),              // (-> I32 (Ptr (Ptr U8)) _)
-}
-
-impl FunctionSymbolKind {
-    fn new(def: &Function) -> Self {
-        match def.kind {
-            FunctionKind::Standard | FunctionKind::Transparent => Self::Standard(
-                def.params.iter().map(|p| p.ty.clone()).collect(),
-                def.ret.clone(),
-            ),
-            FunctionKind::Macro => {
-                assert!(
-                    def.env.is_none(),
-                    "Macro function cannot have an environment parameter"
-                );
-                assert!(
-                    matches!(def.params.as_slice(), [_]),
-                    "Macro function must take exactly one parameter"
-                );
-                // TODO: assert that the argument type is (Syntax Sexp)
-                // TODO: assert that the return type is (Result (Syntax Sexp) btring)
-                Self::Macro
-            }
-            FunctionKind::Main => {
-                assert!(
-                    def.params.len() == 2 && def.env.is_none(),
-                    "Main function must take argc and argv as arguments"
-                );
-                // TODO: assert that the arguments types are I32, (Ptr (Ptr U8))
-                Self::Main(def.ret.clone())
-            }
+        Self {
+            name,
+            call_conv,
+            ty,
         }
-    }
-
-    pub fn is_main(&self) -> bool {
-        matches!(self, Self::Main(_))
-    }
-
-    pub fn takes_env_as_argument(&self) -> bool {
-        !matches!(self, Self::Main(_) | Self::Macro)
-    }
-
-    pub fn returns_by_pointer_store(&self) -> bool {
-        // Macros are called from Rust code with C-compatible ABI, so the result of the macro functions
-        // must be returned through pointers. The main function is also called from Rust in tests,
-        // but the type of the return value used in tests is bool (i8), which can be returned
-        // directly as C-compatible form.
-        matches!(self, Self::Macro)
     }
 }
 
@@ -285,38 +234,30 @@ impl<'ctx: 'm, 'm> ModuleArtifact<'ctx, 'm> {
         for (id, def) in defs {
             if let CtDef::Function(ref def) = **def {
                 let function = self.capture_function(*id, ctx).clone();
-                codegen::run(&function, def, self, ctx);
+                codegen::function_body(&function, def, self, ctx);
             }
         }
     }
 
-    pub fn add_main(&mut self, mut main: Vec<Init>, ctx: &mut ContextArtifact<'ctx>) {
-        let def = {
-            let ret = main
-                .pop()
-                .unwrap_or_else(|| Init::new(Ct::Unit, Rt::Const(Const::Unit)));
-            let stmts = main.into_iter().map(|init| init.expr).collect();
-
-            Function::new(
-                None,
-                vec![
-                    FunctionParam::new(RtId::ARGC, Ct::S(32)),
-                    FunctionParam::new(RtId::ARGV, Ct::ptr(Ct::ptr(Ct::U(8)))),
-                ],
-                ret.ty,
-                Rt::seq(stmts, ret.expr),
-                FunctionKind::Main,
-            )
-        };
-
-        let symbol = FunctionSymbol::new("main".to_string(), &def, ctx);
-        let value = self.module.add_function("main", symbol.ty);
+    pub fn add_main(&mut self, main: Function, ctx: &mut ContextArtifact<'ctx>) {
+        assert_eq!(main.kind, FunctionKind::Main);
+        let symbol = FunctionSymbol::new("llrl_main".to_string(), &main, ctx);
+        let value = self.module.add_function("llrl_main", symbol.ty);
         let function = FunctionArtifact::new(symbol, value);
-        codegen::run(&function, &def, self, ctx);
+        codegen::function_body(&function, &main, self, ctx);
 
         assert!(ctx.main_function_symbol.is_none());
         ctx.main_function_symbol = Some(function.symbol.clone());
         self.main_function = Some(function);
+    }
+
+    pub fn add_c_main_adapter(&mut self, ctx: &ContextArtifact<'ctx>) {
+        let llrl_main = ctx
+            .main_function_symbol
+            .as_ref()
+            .expect("llrl_main not found");
+        let llrl_main = self.module.add_function(&llrl_main.name, llrl_main.ty);
+        codegen::c_main_adapter(llrl_main, self);
     }
 
     pub fn capture_function(
@@ -338,7 +279,6 @@ impl<'ctx: 'm, 'm> ModuleArtifact<'ctx, 'm> {
     pub fn capture_c_function(
         &mut self,
         name: &str,
-        ctx: &ContextArtifact<'ctx>,
         function_ty: impl FnOnce() -> LLVMFunctionType<'ctx>,
     ) -> CFunctionArtifact<'ctx, 'm> {
         if let Some(function) = self.c_functions.get(name) {
@@ -346,18 +286,18 @@ impl<'ctx: 'm, 'm> ModuleArtifact<'ctx, 'm> {
         }
 
         let function_ty = function_ty();
+        let ret_ty = function_ty.return_type();
 
-        // TODO: This adjustment is not enough. We need to follow the System V ABI.
-        let (function_ty, return_by_pointer_store) = if function_ty.return_type().is_sized()
-            && 2 * 8 < ctx.data_layout().type_alloc_size(function_ty.return_type())
-        {
-            let mut params = function_ty.param_types();
-            let ret = function_ty.return_type();
-            params.insert(0, llvm_type!(*ctx, (ptr { ret })).as_type());
-            (llvm_type!(*ctx, (function(...{params}) void)), true)
-        } else {
-            (function_ty, false)
-        };
+        // TODO: This adjustment is probably not enough. We need to follow the System V ABI.
+        let (function_ty, return_by_pointer_store) =
+            if ret_ty.is_sized() && 2 * 8 < self.module.data_layout().type_alloc_size(ret_ty) {
+                let mut params = function_ty.param_types();
+                let ret = function_ty.return_type();
+                params.insert(0, llvm_type!(*self, (ptr { ret })).as_type());
+                (llvm_type!(*self, (function(...{params}) void)), true)
+            } else {
+                (function_ty, false)
+            };
 
         let function = self.module.add_function(name, function_ty);
         let artifact = CFunctionArtifact::new(function, return_by_pointer_store);

@@ -13,9 +13,5 @@ impl lowering::Backend for () {
         Err("Internal error: Unit backend does not support excute_function".to_string())
     }
 
-    fn execute_main(&mut self) -> Result<bool, String> {
-        Err("Internal error: Unit backend does not support execute_main".to_string())
-    }
-
     fn complete(self, _: &mut Report) {}
 }

@@ -203,6 +203,29 @@ pub struct Function {
     pub kind: FunctionKind,
 }
 
+impl Function {
+    pub fn r#macro(param: FunctionParam, ret: Ct, body: Rt) -> Self {
+        Self::new(None, vec![param], ret, body, FunctionKind::Macro)
+    }
+
+    pub fn main(mut inits: Vec<Init>) -> Self {
+        let ret = if matches!(inits.last(), Some(init) if matches!(init.ty, Ct::U(1))) {
+            inits.pop().unwrap()
+        } else {
+            Init::new(Ct::U(1), Rt::Const(Const::bool(false)))
+        };
+        let stmts = inits.into_iter().map(|init| init.expr).collect();
+
+        Self::new(
+            None,
+            Vec::new(),
+            ret.ty,
+            Rt::seq(stmts, ret.expr),
+            FunctionKind::Main,
+        )
+    }
+}
+
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy, Hash)]
 pub enum FunctionKind {
     Standard,
@@ -236,9 +259,6 @@ impl RtId {
     pub fn index(self) -> u32 {
         self.0
     }
-
-    pub const ARGC: Self = Self(-1i32 as u32);
-    pub const ARGV: Self = Self(-2i32 as u32);
 }
 
 #[derive(Debug, Clone)]

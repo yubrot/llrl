@@ -29,8 +29,6 @@ pub trait Backend: Send + 'static {
 
     fn put_main(&mut self, init: ir::Init);
 
-    fn execute_main(&mut self) -> Result<bool, String>;
-
     fn execute_macro(
         &mut self,
         id: ir::CtId,

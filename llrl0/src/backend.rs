@@ -20,6 +20,14 @@ pub trait ProduceExecutable {
     ) -> Result<String, String>;
 }
 
+/// Common backend trait that can execute main.
+///
+/// If the last expression is typed to bool, the result of its evaluation is returned.
+/// Otherwise, false is returned.
+pub trait ExecuteMain {
+    fn execute_main(&mut self) -> Result<bool, String>;
+}
+
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Options {
     pub optimize: Option<bool>,

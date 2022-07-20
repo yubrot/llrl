@@ -5,7 +5,22 @@ use derive_new::new;
 use llvm::prelude::*;
 use std::collections::HashMap;
 
-pub fn run<'ctx: 'm, 'm>(
+pub fn c_main_adapter<'ctx: 'm, 'm>(
+    llrl_main: LLVMFunction<'ctx, 'm>,
+    module: &mut ModuleArtifact<'ctx, 'm>,
+) {
+    let c_main_ty = llvm_type!(*module, (function(i32 (ptr (ptr u8))) i32));
+    let c_main = module.module().add_function("main", c_main_ty);
+    let llrt_init_ty = llvm_type!(*module, (function(i32 (ptr (ptr u8))) void));
+    let llrt_init = module.capture_c_function("llrt_init", || llrt_init_ty);
+    let entry_bb = c_main.append_block("entry");
+    let builder = LLVMBuilder::new(entry_bb);
+    builder.build_call(llrt_init.value, &c_main.params());
+    builder.build_call(llrl_main, &[]);
+    builder.build_ret(llvm_constant!(*module, (i32 0)));
+}
+
+pub fn function_body<'ctx: 'm, 'm>(
     function: &FunctionArtifact<'ctx, 'm>,
     def: &Function,
     module: &mut ModuleArtifact<'ctx, 'm>,
@@ -17,12 +32,12 @@ pub fn run<'ctx: 'm, 'm>(
 
     let (ret_pointer, env_param, params) = {
         let mut params = function.value.params();
-        let ret_pointer = if function.symbol.kind.returns_by_pointer_store() {
+        let ret_pointer = if function.symbol.call_conv.returns_by_pointer_store() {
             Some(params.remove(0))
         } else {
             None
         };
-        let env_param = if function.symbol.kind.takes_env_as_argument() {
+        let env_param = if function.symbol.call_conv.takes_env_as_argument() {
             Some(params.remove(0))
         } else {
             None
@@ -50,15 +65,6 @@ pub fn run<'ctx: 'm, 'm>(
             let param = builder.build_load(param);
             values.insert(elem.id, param);
         }
-    }
-
-    if function.symbol.kind.is_main() {
-        let llrt_init = module.capture_c_function(
-            "llrt_init",
-            ctx,
-            || llvm_type!(*ctx, (function(i32 (ptr (ptr u8))) void)),
-        );
-        builder.build_call(llrt_init.value, &params);
     }
 
     let mut codegen = Codegen::new(ctx, module, builder, ret_pointer, values, HashMap::new());
@@ -118,7 +124,7 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
                 let ctx = self.ctx;
                 let f = self
                     .module
-                    .capture_c_function(&c_call.0, ctx, || match c_call.1 {
+                    .capture_c_function(&c_call.0, || match c_call.1 {
                         Ct::Clos(ref clos) => {
                             let params = ctx.llvm_type_all(&clos.0);
                             let ret = match clos.1 {
@@ -668,7 +674,7 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
         }
     }
 
-    pub fn llvm_constant(&self, c: &Const) -> LLVMConstant<'ctx, 'm> {
+    fn llvm_constant(&self, c: &Const) -> LLVMConstant<'ctx, 'm> {
         match c {
             Const::Integer(ty, signed, value) => match ty {
                 Ct::F32 | Ct::F64 => LLVMConstantFP::get(

@@ -165,7 +165,7 @@ impl TestTarget {
         }
     }
 
-    fn run_backend<B: Backend>(
+    fn run_backend<B: Backend + ExecuteMain>(
         &self,
         sources: Vec<Source>,
         cond: &TestCondition,

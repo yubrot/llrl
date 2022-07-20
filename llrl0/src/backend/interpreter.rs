@@ -40,16 +40,6 @@ impl lowering::Backend for Backend {
         self.main.push(init);
     }
 
-    fn execute_main(&mut self) -> std::result::Result<bool, String> {
-        let mut result = Value::Unit;
-        for init in self.main.iter() {
-            result = Evaluator::new(self)
-                .eval(&init.expr)
-                .map_err(|e| e.to_string())?;
-        }
-        result.test().map_err(|e| e.to_string())
-    }
-
     fn execute_macro(
         &mut self,
         id: CtId,
@@ -62,4 +52,16 @@ impl lowering::Backend for Backend {
     }
 
     fn complete(self, _: &mut Report) {}
+}
+
+impl super::ExecuteMain for Backend {
+    fn execute_main(&mut self) -> std::result::Result<bool, String> {
+        let mut result = Value::Unit;
+        for init in self.main.iter() {
+            result = Evaluator::new(self)
+                .eval(&init.expr)
+                .map_err(|e| e.to_string())?;
+        }
+        result.test().map_err(|e| e.to_string())
+    }
 }
