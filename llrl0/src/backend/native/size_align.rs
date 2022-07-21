@@ -1,3 +1,4 @@
+use super::data::{NativeArray, NativeCapturedUse, NativeChar, NativeString, NativeSyntax};
 use crate::lowering::ir::*;
 use derive_new::new;
 use std::collections::HashMap;
@@ -48,13 +49,13 @@ impl SizeAlignResolver {
             }
             Ct::F32 => SizeAlign::new(4, 4),
             Ct::F64 => SizeAlign::new(8, 8),
-            Ct::String => SizeAlign::of::<super::NativeString>(),
-            Ct::Char => SizeAlign::of::<super::NativeChar>(),
-            Ct::Array(_) => SizeAlign::of::<super::NativeArray<u8>>(),
-            Ct::CapturedUse => SizeAlign::of::<super::NativeCapturedUse>(),
+            Ct::String => SizeAlign::of::<NativeString>(),
+            Ct::Char => SizeAlign::of::<NativeChar>(),
+            Ct::Array(_) => SizeAlign::of::<NativeArray<u8>>(),
+            Ct::CapturedUse => SizeAlign::of::<NativeCapturedUse>(),
             Ct::Unit => SizeAlign::new(0, 0),
             Ct::Env => SizeAlign::pointer(),
-            Ct::Syntax(_) => SizeAlign::of::<super::NativeSyntax<u8>>(),
+            Ct::Syntax(_) => SizeAlign::of::<NativeSyntax<u8>>(),
             Ct::Hole => panic!("Found Ct::Hole on SizeAlignResolver"),
         }
     }

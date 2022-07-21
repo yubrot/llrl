@@ -2,7 +2,7 @@
 
 // NOTE: Can we use utilities like libffi to support a wider variety of functions?
 
-use super::{NativeResult, NativeSexp, NativeString, NativeSyntax, NativeValue};
+use super::data::{NativeResult, NativeSexp, NativeString, NativeSyntax, NativeValue};
 use crate::lowering::ir::*;
 
 #[allow(clippy::missing_safety_doc)]

@@ -1,10 +1,9 @@
+use crate::backend::native::data::*;
 use crate::lowering::ir::{CapturedUse, Syntax, SyntaxBody, SyntaxMetadata};
 use llvm::prelude::*;
 use once_cell::unsync::OnceCell;
 use std::mem::size_of;
 use std::sync::Once;
-
-pub use crate::backend::native::*;
 
 #[derive(Debug)]
 pub struct Library<'ctx: 'm, 'm> {
@@ -339,6 +338,7 @@ pub fn captured_use_type(ctx: &LLVMContext) -> LLVMType {
     llvm_type!(ctx, (struct u64 u64)).as_type()
 }
 
+#[allow(dead_code)]
 pub fn captured_use_constant<'ctx: 'm, 'm>(
     src: &CapturedUse,
     module: &'m LLVMModule<'ctx>,

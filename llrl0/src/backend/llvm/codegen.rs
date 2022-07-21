@@ -1,5 +1,6 @@
 use super::runtime;
 use super::{CFunctionArtifact, ContextArtifact, FunctionArtifact, ModuleArtifact};
+use crate::backend::native::data::NativeSexp;
 use crate::lowering::ir::*;
 use derive_new::new;
 use llvm::prelude::*;
@@ -701,7 +702,7 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
             Const::String(s) => runtime::string_constant(s, self.module.module()),
             Const::Char(c) => runtime::char_constant(*c, self.module.module()),
             Const::SyntaxSexp(_, s) => {
-                runtime::syntax_constant::<runtime::NativeSexp>(s, self.module.module())
+                runtime::syntax_constant::<NativeSexp>(s, self.module.module())
             }
             Const::Unit => llvm_constant!(*self.ctx, (struct)).as_constant(),
         }

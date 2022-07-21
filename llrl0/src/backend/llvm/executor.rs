@@ -1,5 +1,5 @@
 use super::FunctionSymbol;
-use crate::backend::native::{native_macro, native_main, CallConv};
+use crate::backend::native::calling::{native_macro, native_main, CallConv};
 use crate::lowering::ir::*;
 use llvm::prelude::*;
 use std::sync::Once;

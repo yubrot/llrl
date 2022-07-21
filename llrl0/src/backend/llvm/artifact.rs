@@ -1,5 +1,7 @@
 use super::codegen;
 use super::runtime;
+use crate::backend::native::calling::CallConv;
+use crate::backend::native::size_align::SizeAlignResolver;
 use crate::lowering::ir::*;
 use derive_new::new;
 use llvm::prelude::*;
@@ -10,7 +12,7 @@ use std::sync::Arc;
 pub struct ContextArtifact<'ctx> {
     context: &'ctx LLVMContext,
     data_layout: LLVMBox<LLVMDataLayout>,
-    sa_resolver: runtime::SizeAlignResolver,
+    sa_resolver: SizeAlignResolver,
     types: HashMap<CtId, LLVMType<'ctx>>,
     structs: HashMap<CtId, LLVMStructType<'ctx>>,
     unions: HashMap<CtId, LLVMArrayType<'ctx>>,
@@ -23,7 +25,7 @@ impl<'ctx> ContextArtifact<'ctx> {
         Self {
             context,
             data_layout: data_layout.to_owned(),
-            sa_resolver: runtime::SizeAlignResolver::new(),
+            sa_resolver: SizeAlignResolver::new(),
             types: HashMap::new(),
             structs: HashMap::new(),
             unions: HashMap::new(),
@@ -130,13 +132,13 @@ impl<'ctx> LLVMTypeBuilder<'ctx> for ContextArtifact<'ctx> {
 #[derive(Debug, Clone)]
 pub struct FunctionSymbol<'ctx> {
     pub name: String,
-    pub call_conv: runtime::CallConv,
+    pub call_conv: CallConv,
     pub ty: LLVMFunctionType<'ctx>,
 }
 
 impl<'ctx> FunctionSymbol<'ctx> {
     pub fn new(name: String, def: &Function, ctx: &ContextArtifact<'ctx>) -> Self {
-        let call_conv = runtime::CallConv::from(def.kind);
+        let call_conv = CallConv::from(def.kind);
 
         let param_tys = call_conv
             .takes_env_as_argument()
@@ -207,6 +209,7 @@ impl<'ctx: 'm, 'm> ModuleArtifact<'ctx, 'm> {
         &self.runtime_library
     }
 
+    #[allow(dead_code)]
     pub fn function(&self, id: CtId) -> Option<&FunctionArtifact<'ctx, 'm>> {
         self.functions.get(&id)
     }

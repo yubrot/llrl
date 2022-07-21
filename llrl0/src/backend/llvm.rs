@@ -1,26 +1,27 @@
 use super::native::execution;
 use super::Options;
-use crate::lowering::{self, ir};
+use crate::lowering;
+use crate::lowering::ir::*;
 use crate::report::{Phase, Report};
 use crossbeam_channel::{bounded, unbounded, Receiver, Sender};
 use itertools::Itertools;
 use llvm::prelude::*;
 use std::collections::HashMap;
-use std::fs;
+use std::fs::File;
 use std::io::Write;
-use std::path;
-use std::process;
+use std::path::PathBuf;
+use std::process::Command;
 use std::sync::Arc;
 
 mod artifact;
 mod codegen;
 mod executor;
 mod optimizer;
-pub mod runtime;
+mod runtime;
 
-pub use artifact::*;
-pub use executor::Executor;
-pub use optimizer::Optimizer;
+use artifact::*;
+use executor::Executor;
+use optimizer::Optimizer;
 
 #[derive(Debug)]
 pub struct Backend {
@@ -37,19 +38,15 @@ impl Backend {
 }
 
 impl lowering::Backend for Backend {
-    fn put_def(&mut self, id: ir::CtId, def: Arc<ir::CtDef>) {
+    fn put_def(&mut self, id: CtId, def: Arc<CtDef>) {
         self.sender.send(Request::PutDef(id, def)).unwrap();
     }
 
-    fn put_main(&mut self, init: ir::Init) {
+    fn put_main(&mut self, init: Init) {
         self.sender.send(Request::PutMain(init)).unwrap();
     }
 
-    fn execute_macro(
-        &mut self,
-        id: ir::CtId,
-        s: ir::Syntax<ir::Sexp>,
-    ) -> Result<ir::Syntax<ir::Sexp>, String> {
+    fn execute_macro(&mut self, id: CtId, s: Syntax<Sexp>) -> Result<Syntax<Sexp>, String> {
         let (sender, receiver) = bounded(0);
         self.sender
             .send(Request::ExecuteMacro(id, s, sender))
@@ -74,7 +71,7 @@ impl super::ExecuteMain for Backend {
 impl super::ProduceExecutable for Backend {
     fn produce_executable(
         &self,
-        dest: path::PathBuf,
+        dest: PathBuf,
         clang_options: Vec<String>,
     ) -> Result<String, String> {
         let (sender, receiver) = bounded(0);
@@ -93,15 +90,11 @@ impl From<Options> for Backend {
 
 #[derive(Debug)]
 enum Request {
-    PutDef(ir::CtId, Arc<ir::CtDef>),
-    PutMain(ir::Init),
-    ExecuteMacro(
-        ir::CtId,
-        ir::Syntax<ir::Sexp>,
-        Sender<Result<ir::Syntax<ir::Sexp>, String>>,
-    ),
+    PutDef(CtId, Arc<CtDef>),
+    PutMain(Init),
+    ExecuteMacro(CtId, Syntax<Sexp>, Sender<Result<Syntax<Sexp>, String>>),
     ExecuteMain(Sender<Result<bool, String>>),
-    ProduceExecutable(path::PathBuf, Vec<String>, Sender<Result<String, String>>),
+    ProduceExecutable(PathBuf, Vec<String>, Sender<Result<String, String>>),
 }
 
 fn process_requests(options: Options, receiver: Receiver<Request>) -> Report {
@@ -109,7 +102,19 @@ fn process_requests(options: Options, receiver: Receiver<Request>) -> Report {
     let mut builder = Builder::new(&context, options);
 
     while let Ok(request) = receiver.recv() {
-        builder.process_request(request);
+        match request {
+            Request::PutDef(id, def) => builder.put_def(id, def),
+            Request::PutMain(init) => builder.put_main(init),
+            Request::ExecuteMacro(id, sexp, sender) => {
+                let _ = sender.send(builder.execute_macro(id, sexp));
+            }
+            Request::ExecuteMain(sender) => {
+                let _ = sender.send(builder.execute_main());
+            }
+            Request::ProduceExecutable(dest, clang_options, sender) => {
+                let _ = sender.send(builder.produce_executable(dest, clang_options));
+            }
+        }
     }
 
     builder.report
@@ -122,8 +127,8 @@ struct Builder<'ctx> {
     executor: Executor<'ctx>,
     optimizer: Optimizer,
     artifact: ContextArtifact<'ctx>,
-    queued_defs: HashMap<ir::CtId, Arc<ir::CtDef>>,
-    queued_main: Vec<ir::Init>,
+    queued_defs: HashMap<CtId, Arc<CtDef>>,
+    queued_main: Vec<Init>,
     generation: i32,
 }
 
@@ -151,34 +156,17 @@ impl<'ctx> Builder<'ctx> {
         }
     }
 
-    fn process_request(&mut self, request: Request) {
-        match request {
-            Request::PutDef(id, def) => self.put_def(id, def),
-            Request::PutMain(init) => self.put_main(init),
-            Request::ExecuteMacro(id, sexp, sender) => {
-                let _ = sender.send(self.execute_macro(id, sexp));
-            }
-            Request::ExecuteMain(sender) => {
-                let _ = sender.send(self.execute_main());
-            }
-            Request::ProduceExecutable(dest, clang_options, sender) => {
-                let _ = sender.send(self.produce_executable(dest, clang_options));
-            }
-        }
-    }
-
-    fn put_def(&mut self, id: ir::CtId, def: Arc<ir::CtDef>) {
+    fn put_def(&mut self, id: CtId, def: Arc<CtDef>) {
         self.queued_defs.insert(id, def);
     }
 
-    fn put_main(&mut self, init: ir::Init) {
+    fn put_main(&mut self, init: Init) {
         self.queued_main.push(init);
     }
 
     fn codegen(&mut self, codegen_llrl_main: bool) {
         let defs = std::mem::take(&mut self.queued_defs);
-        let main =
-            codegen_llrl_main.then(|| ir::Function::main(std::mem::take(&mut self.queued_main)));
+        let main = codegen_llrl_main.then(|| Function::main(std::mem::take(&mut self.queued_main)));
 
         if !defs.is_empty() || main.is_some() {
             self.report.enter_phase(Phase::Codegen);
@@ -232,11 +220,7 @@ impl<'ctx> Builder<'ctx> {
         }
     }
 
-    fn execute_macro(
-        &mut self,
-        id: ir::CtId,
-        sexp: ir::Syntax<ir::Sexp>,
-    ) -> Result<ir::Syntax<ir::Sexp>, String> {
+    fn execute_macro(&mut self, id: CtId, sexp: Syntax<Sexp>) -> Result<Syntax<Sexp>, String> {
         self.codegen(false);
 
         match self.artifact.function_symbol(id) {
@@ -266,7 +250,7 @@ impl<'ctx> Builder<'ctx> {
 
     fn produce_executable(
         &mut self,
-        dest: path::PathBuf,
+        dest: PathBuf,
         clang_options: Vec<String>,
     ) -> Result<String, String> {
         self.codegen(true);
@@ -302,12 +286,12 @@ impl<'ctx> Builder<'ctx> {
             })
             .collect::<Vec<_>>();
 
-        fs::File::create(&tmp_dir.path().join("libllrt.a"))
+        File::create(&tmp_dir.path().join("libllrt.a"))
             .unwrap()
             .write_all(llrt::ARCHIVE)
             .unwrap();
 
-        let mut clang_command = process::Command::new("clang");
+        let mut clang_command = Command::new("clang");
         clang_command
             .arg("-o")
             .arg(&dest)
