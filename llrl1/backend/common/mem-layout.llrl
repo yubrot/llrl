@@ -1,0 +1,135 @@
+(import "std/memory" size-of align-of)
+(import "std/ord-map" _)
+(import "std/hash-map" next-power-of-two) ; NOTE: This should be moved to the appropriate module
+(import "~/util" _)
+(import "~/lowering/ir" [ir/_ _])
+(export Layout _.Layout layout: layout/_)
+(export LayoutComponent _.LayoutComponent layout-component: layout-component/_)
+(export LayoutResolver _.LayoutResolver layout-resolver/_)
+
+(derive (Eq Ord DebugDisplay) data Layout
+  (layout: U64 U64 (Array LayoutComponent)))
+
+(getter layout: layout/size layout/align layout/components)
+
+(function (layout/terminal size align) {(-> U64 U64 Layout)}
+  (layout: size align array/empty))
+
+(assert-eq? (size-of (Ptr U8)) 8)
+(assert-eq? (align-of (Ptr U8)) 8)
+
+(function layout/pointer {Layout}
+  (layout/terminal (size-of (Ptr U8)) (align-of (Ptr U8))))
+
+(function (aligned size align) {(-> U64 U64 U64)}
+  (if (ne? align 0)
+    (+ size (% (- align (% size align)) align))
+    size))
+
+(function (layout/product components) {(-> (Array (: ir/Ct Layout)) Layout)}
+  (let* ([align
+           (|> components
+               (it/map (case1 (: _ (let l)) (layout/align l)))
+               (it/fold [^2 (max %1 %2)] 0))]
+         [offset (ref 0)]
+         [components
+           (|> components
+               (it/map (case1 (: (let ty) (layout: (let s) (let a) _))
+                 (set! offset (+ (aligned ~offset a) s))
+                 (layout-component: (- ~offset s) ty)))
+               collect)])
+    (layout: (aligned ~offset align) align components)))
+
+(function (layout/sum tss) {(-> (Array Layout) Layout)}
+  (let* ([align (|> tss (it/map layout/align) (it/fold [^2 (max %1 %2)] 0))]
+         [size (|> tss (it/map layout/size) (it/fold [^2 (max %1 %2)] 0))])
+    (layout/terminal (aligned size align) align)))
+
+(derive (Eq Ord DebugDisplay) value-data LayoutComponent
+  (layout-component: U64 ir/Ct))
+
+(getter layout-component: layout-component/offset layout-component/ty)
+
+(derive (DebugDisplay) value-data LayoutResolver
+  (layout-resolver: (OrdMap ir/CtId (Option Layout))))
+
+(function (layout-resolver/new) {(-> LayoutResolver)}
+  (layout-resolver: ord-map/empty))
+
+(getter layout-resolver: known-layouts)
+
+(function (layout-resolver/register! defs ls) {(-> (OrdMap ir/CtId ir/CtDef) LayoutResolver unit)}
+  (for (: (let id) (let def)) (ord-map/elems defs)
+    (when (or (is? (ir/ct-def:struct _) def) (is? (ir/ct-def:union _) def))
+      (register-visit! defs ls (ir/ct:id id)))))
+
+(function (register-visit! defs ls ty) {(-> (OrdMap ir/CtId ir/CtDef) LayoutResolver ir/Ct Layout)}
+  (match ty
+    [(ir/ct:id (let id))
+      (match (ord-map/get? id (known-layouts ls))
+        [(some none)
+          (assert #f (string "Unsized type: " (debug id)))]
+        [(some (some (let layout)))
+          layout]
+        [none
+          (ord-map/insert! id none (known-layouts ls))
+          (let1
+            layout
+            (match (ord-map/get? id defs)
+              [(some (ir/ct-def:struct (ir/struct: _ (let fields))))
+                (layout/product
+                  (|> fields (it/map [^1 (register-visit! defs ls %1)]) (it/zip fields) collect))]
+              [(some (ir/ct-def:union (ir/union: (let tys))))
+                (layout/sum
+                  (|> tys (it/map [^1 (register-visit! defs ls %1)]) collect))]
+              [(some _)
+                (assert #f (string "Not a type: " (debug id)))]
+              [none
+                (assert #f (string "Unknown type: " (debug id)))])
+            (ord-map/insert! id (some layout) (known-layouts ls))
+            layout)])]
+    [_
+      (layout-resolver/get ty ls)]))
+
+(function (layout-resolver/get ty ls) {(-> ir/Ct LayoutResolver Layout)}
+  (match ty
+    [(ir/ct:id (let id))
+      (match (ord-map/get? id (known-layouts ls))
+        [(some (some (let layout)))
+          layout]
+        [_
+          (assert #f (string "Unregistered type: " (debug id)))])]
+      [(ir/ct:generic-inst _ _)
+        (assert #f "Found ct:generic-inst on layout-resolver/get")]
+      [(ir/ct:table-get _ _)
+        (assert #f "Found ct:table-get on layout-resolver/get")]
+      [(ir/ct:ptr _)
+        layout/pointer]
+      [(ir/ct:clos _ _)
+        (layout/terminal 16 8)]
+      [(ir/ct:s (let n))
+        (let1 size (next-power-of-two (/ (+ n 7) 8))
+          (layout/terminal size size))]
+      [(ir/ct:u (let n))
+        (let1 size (next-power-of-two (/ (+ n 7) 8))
+          (layout/terminal size size))]
+      [ir/ct:f32
+        (layout/terminal 4 4)]
+      [ir/ct:f64
+        (layout/terminal 8 8)]
+      [ir/ct:string
+        (layout/terminal (size-of String) (align-of String))]
+      [ir/ct:char
+        (layout/terminal (size-of Char) (align-of Char))]
+      [(ir/ct:array _)
+        (layout/terminal (size-of (Array U8)) (align-of (Array U8)))]
+      [ir/ct:captured-use
+        (layout/terminal (size-of ir/CapturedUse) (align-of ir/CapturedUse))]
+      [ir/ct:unit
+        (layout/terminal 0 0)]
+      [ir/ct:env
+        layout/pointer]
+      [(ir/ct:syntax _)
+        (layout/terminal (size-of (Syntax unit)) (align-of (Syntax unit)))]
+      [ir/ct:hole
+        (assert #f "Found ct:hole at layout-resolver/get")]))

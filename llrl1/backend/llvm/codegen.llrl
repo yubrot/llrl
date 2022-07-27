@@ -2,7 +2,7 @@
 (import "llvm" [llvm/_ _])
 (import "~/util" _)
 (import "~/lowering/ir" [ir/_ _])
-(import "~/backend/common/size-align" SizeAlign size-align:)
+(import "~/backend/common/mem-layout" Layout layout:)
 (import "~/backend/llvm/runtime" _)
 (export TypeEnv type-env/_ BuildEnv build-env/_ codegen/_)
 
@@ -52,8 +52,8 @@
       [ir/ct:hole
         (assert #f "Found ct:hole on codegen/type")])))
 
-(function (codegen/union-type ts ctx) {(-> SizeAlign llvm/Context llvm/Type)}
-  (with1 (size-align: (let size) (let align)) ts
+(function (codegen/union-type layout ctx) {(-> Layout llvm/Context llvm/Type)}
+  (with1 (layout: (let size) (let align) _) layout
     (if (ne? align 0)
       (llvm/type ctx (array (integer ,(conv (* align 8))) ,(conv (/ size align))))
       (llvm/type ctx (array i1 0)))))

@@ -3,7 +3,7 @@
 (import "llvm" [llvm/_ _])
 (import "~/util" _)
 (import "~/lowering/ir" [ir/_ _])
-(import "~/backend/common/size-align" SizeAlign _.SizeAlign size-align/_)
+(import "~/backend/common/mem-layout" layout/_ LayoutResolver _.LayoutResolver layout-resolver/_)
 (import "~/backend/llvm/runtime" RuntimeBuildEnv)
 (import "~/backend/llvm/codegen" TypeEnv type-env/_ BuildEnv codegen/_)
 (export ContextArtifact _.ContextArtifact context-artifact/_)
@@ -16,7 +16,7 @@
   (context-artifact:
     llvm/Context
     llvm/DataLayout
-    (OrdMap ir/CtId (Option SizeAlign))
+    LayoutResolver
     (OrdMap ir/CtId llvm/Type)
     (OrdMap ir/CtId FunctionSymbol)
     (Ref (Option FunctionSymbol))))
@@ -30,14 +30,14 @@
 (getter context-artifact:
   context-artifact/llvm-context
   context-artifact/data-layout
-  known-size-aligns
+  layout-resolver
   llvm-types
   function-symbols
   main-function-symbol)
 
 (function (context-artifact/new llvm-context llvm-data-layout)
   {(-> llvm/Context llvm/DataLayout ContextArtifact)}
-  (context-artifact: llvm-context llvm-data-layout ord-map/empty ord-map/empty ord-map/empty (ref none)))
+  (context-artifact: llvm-context llvm-data-layout (layout-resolver/new) ord-map/empty ord-map/empty (ref none)))
 
 (function (context-artifact/function-symbol? id ca) {(-> ir/CtId ContextArtifact (Option FunctionSymbol))}
   (ord-map/get? id (function-symbols ca)))
@@ -46,16 +46,17 @@
   ~(main-function-symbol ca))
 
 (function (context-artifact/add-types! defs ca) {(-> (OrdMap ir/CtId ir/CtDef) ContextArtifact unit)}
+  (layout-resolver/register! defs (layout-resolver ca))
+
   ; Put type headers
   (for (: (let id) (let def)) (ord-map/elems defs)
     (match def
       [(ir/ct-def:struct _)
-        (size-align/get! defs (known-size-aligns ca) (ir/ct:id id))
         (ord-map/insert! id (llvm/type/named-struct (conv ca) (|> id ir/ct-id/index string)) (llvm-types ca))
         unit]
       [(ir/ct-def:union _)
-        (let1 ts (size-align/get! defs (known-size-aligns ca) (ir/ct:id id))
-          (ord-map/insert! id (codegen/union-type ts (conv ca)) (llvm-types ca)))
+        (let1 layout (layout-resolver/get (ir/ct:id id) (layout-resolver ca))
+          (ord-map/insert! id (codegen/union-type layout (conv ca)) (llvm-types ca)))
         unit]
       [_]))
 

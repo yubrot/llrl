@@ -1,0 +1,22 @@
+(import "~/lowering/ir" _)
+(import "~/backend/common/mem-layout" _)
+(println! "llrl1/tests/backend")
+
+(assert-eq?
+  (layout/product (array
+    (: (ct:s 32) (layout/terminal 4 4))
+    (: (ct:u 8) (layout/terminal 1 1))
+    (: (ct:u 16) (layout/terminal 2 2))
+    (: (ct:s 64) (layout/terminal 8 8))))
+  (layout: 16 8 (array
+    (layout-component: 0 (ct:s 32))
+    (layout-component: 4 (ct:u 8))
+    (layout-component: 6 (ct:u 16))
+    (layout-component: 8 (ct:s 64)))))
+
+(assert-eq?
+  (layout/sum (array
+    (layout/terminal 12 4)
+    (layout/terminal 20 2)
+    (layout/terminal 8 8)))
+  (layout/terminal 24 8))

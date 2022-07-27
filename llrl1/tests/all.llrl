@@ -14,4 +14,5 @@
 (import "~/tests/report")
 (import "~/tests/source")
 (import "~/tests/module")
+(import "~/tests/backend")
 (import "~/tests/testcases")
