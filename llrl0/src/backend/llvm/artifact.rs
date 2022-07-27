@@ -1,7 +1,7 @@
 use super::codegen;
 use super::runtime;
 use crate::backend::native::calling::CallConv;
-use crate::backend::native::size_align::SizeAlignResolver;
+use crate::backend::native::mem_layout::LayoutResolver;
 use crate::lowering::ir::*;
 use derive_new::new;
 use llvm::prelude::*;
@@ -12,7 +12,7 @@ use std::sync::Arc;
 pub struct ContextArtifact<'ctx> {
     context: &'ctx LLVMContext,
     data_layout: LLVMBox<LLVMDataLayout>,
-    sa_resolver: SizeAlignResolver,
+    layout_resolver: LayoutResolver,
     types: HashMap<CtId, LLVMType<'ctx>>,
     structs: HashMap<CtId, LLVMStructType<'ctx>>,
     unions: HashMap<CtId, LLVMArrayType<'ctx>>,
@@ -25,7 +25,7 @@ impl<'ctx> ContextArtifact<'ctx> {
         Self {
             context,
             data_layout: data_layout.to_owned(),
-            sa_resolver: SizeAlignResolver::new(),
+            layout_resolver: LayoutResolver::new(),
             types: HashMap::new(),
             structs: HashMap::new(),
             unions: HashMap::new(),
@@ -51,20 +51,21 @@ impl<'ctx> ContextArtifact<'ctx> {
     }
 
     pub fn add_types(&mut self, defs: &HashMap<CtId, Arc<CtDef>>) {
+        self.layout_resolver.register(defs);
+
         // Put type headers
         for (id, def) in defs {
             match **def {
                 CtDef::Struct(_) => {
-                    let _ = self.sa_resolver.get(&Ct::Id(*id), defs);
                     let ty = LLVMStructType::new(&id.index().to_string(), self.context);
                     self.structs.insert(*id, ty);
                     self.types.insert(*id, ty.as_type());
                 }
                 CtDef::Union(_) => {
-                    let type_size = self.sa_resolver.get(&Ct::Id(*id), defs);
-                    let ty = if type_size.align != 0 {
-                        let bw = type_size.align * 8;
-                        let len = (type_size.size / type_size.align) as usize;
+                    let layout = self.layout_resolver.get(&Ct::Id(*id));
+                    let ty = if layout.align != 0 {
+                        let bw = layout.align * 8;
+                        let len = (layout.size / layout.align) as usize;
                         llvm_type!(*self, [(i bw); len])
                     } else {
                         llvm_type!(*self, [i1; 0])
