@@ -1,0 +1,4 @@
+(import "~/sexp" S _.S)
+(import "~/source-location" [SyntaxMetadata SourceLocation] [_.SyntaxMetadata _.SourceLocation])
+(import "~/ast" [CapturedUse Construct] [_.CapturedUse _.Construct])
+(export S _.S SyntaxMetadata _.SyntaxMetadata CapturedUse _.CapturedUse)

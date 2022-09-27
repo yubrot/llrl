@@ -5,7 +5,7 @@
 (import "~/ast" [ast/_ _])
 (import "~/module" [m/_ _])
 (import "~/lowering/ir" _)
-(import "~/lowering/transformer" Transform._)
+(import "~/lowering/ir/transformer" Transform._)
 (export Env Translate Translate._ translate! translate-def!)
 
 (class (Env E) (where (m/ModuleSet E))
@@ -14,7 +14,7 @@
   (function (alloc-rt! e) {(-> E RtId)})
   (function (issue-rt! c e) {(forall C) (-> C E RtId) (where (Conv C ast/Construct))}))
 
-(function (translate-def! e c) {(forall E) (-> E ast/Construct (Option CtDef)) (where (Env E))}
+(function (translate-def! e c) {(forall E) (-> E ast/Construct (Option Def)) (where (Env E))}
   (cond?
     [when-match1 (some (let id)) (conv c)
       (translate! e (option/force (m/module-set/ast? ast/root/function? id e)))]
@@ -59,14 +59,14 @@
   (function (translate! e src)
     (ct:id (issue-ct! src e))))
 
-(instance Translate.Function (Translate ast/Function CtDef)
+(instance Translate.Function (Translate ast/Function Def)
   (function (translate! e src)
     (with ([(ast/function: (let id) (let transparent?) (let params) _ (let body)) src]
            [(: (let ct-params) (let params) (let ret))
              (translate! e (: (signature: params) (option/force (m/module-set/scheme? id e))))])
-      (ct-def/generic
+      (def/generic
         ct-params
-        (ct-def:function (function:
+        (def:function (function:
           (if transparent? function-kind:transparent function-kind:standard)
           none
           params
@@ -77,31 +77,31 @@
   (function (translate! e src)
     (issue-rt! (ast/parameter/id src) e)))
 
-(instance Translate.CFunction (Translate ast/CFunction CtDef)
+(instance Translate.CFunction (Translate ast/CFunction Def)
   (function (translate! e src)
     (with ([(ast/c-function: (let id) (ast/annotation: _ (let ty)) (let c-name)) src]
            [(: (let params) (let ret))
              (if-match1 (some (: (let params) (let ret))) (ast/type/fun? ty)
                (: (translate! e params) (translate! e ret))
                (: array/empty (translate! e ty)))])
-      (ct-def:function (function:
+      (def:function (function:
         function-kind:standard
         none
         params
         ret
         (rt:c-call
           c-name
-          (ct:clos (|> params (it/map function-param/ty) collect) ret)
-          (|> params (it/map [^1 (rt:local (function-param/id %1))]) collect)))))))
+          (ct:clos (|> params (it/map rt-param/ty) collect) ret)
+          (|> params (it/map [^1 (rt:local (rt-param/id %1))]) collect)))))))
 
-(instance Translate.BuiltinOp (Translate ast/BuiltinOp CtDef)
+(instance Translate.BuiltinOp (Translate ast/BuiltinOp Def)
   (function (translate! e src)
     (with ([(ast/builtin-op: (let id) (ast/annotation: _ (let scheme)) (let builtin-name)) src]
            [(: (let ct-params) (let params) (let ret))
              (translate! e (: signature:unspecified scheme))])
-      (ct-def/generic
+      (def/generic
         ct-params
-        (ct-def:function (function:
+        (def:function (function:
           function-kind:transparent
           none
           params
@@ -110,26 +110,26 @@
             (option/force (m/module-set/symbol? id e))
             builtin-name
             (|> ct-params (it/map ct:id) collect)
-            (|> params (it/map [^1 (rt:local (function-param/id %1))]) collect))))))))
+            (|> params (it/map [^1 (rt:local (rt-param/id %1))]) collect))))))))
 
 (instance Translate.MacroId (Translate (ast/NodeId ast/Macro) Ct)
   (function (translate! e src)
     (ct:id (issue-ct! src e))))
 
-(instance Translate.Macro (Translate ast/Macro CtDef)
+(instance Translate.Macro (Translate ast/Macro Def)
   (function (translate! e src)
     (with1 (ast/macro: (let id) (let param) (let body)) src
-      (ct-def:function (function/macro
+      (def:function (function/macro
         (translate! e (: param ast/macro/src-ty))
         (translate! e ast/macro/dest-ty)
         (translate! e body))))))
 
-(instance Translate.DataType (Translate ast/DataType CtDef)
+(instance Translate.DataType (Translate ast/DataType Def)
   (function (translate! e src)
     (with1 (ast/data-type: (ast/data-type-con: (let id) (let repr) (let ty-params) _) (let value-cons)) src
-      (ct-def/generic
+      (def/generic
         (translate! e ty-params)
-        (ct-def:data (data:
+        (def:data (data:
           (translate! e repr)
           (|> (value-cons)
               (it/map [^1 (option/unwrap array/empty (translate! e (ast/data-value-con/fields %1)))])
@@ -142,14 +142,14 @@
       [ast/data-repr:value data-repr:value]
       [ast/data-repr:c data-repr:c])))
 
-(instance Translate.DataValueCon (Translate ast/DataValueCon CtDef)
+(instance Translate.DataValueCon (Translate ast/DataValueCon Def)
   (function (translate! e src)
     (with ([(ast/data-value-con: (let id) (let fields) (let type-con)) src]
            [(: (let ct-params) (let params) (let ret))
              (translate! e (: signature:unspecified (option/force (m/module-set/scheme? id e))))])
-      (ct-def/generic
+      (def/generic
         ct-params
-        (ct-def:function (function:
+        (def:function (function:
           function-kind:transparent
           none
           params
@@ -158,24 +158,24 @@
             ret
             (let1 type-con (option/force (m/module-set/ast? ast/root/data-type-con? type-con e))
               (option/force (ast/data-type-con/index-of? id type-con)))
-            (|> params (it/map [^1 (rt:local (function-param/id %1))]) collect))))))))
+            (|> params (it/map [^1 (rt:local (rt-param/id %1))]) collect))))))))
 
-(instance Translate.BuiltinTypeCon (Translate ast/BuiltinTypeCon CtDef)
+(instance Translate.BuiltinTypeCon (Translate ast/BuiltinTypeCon Def)
   (function (translate! e src)
     (with1 (ast/builtin-type-con: (let id) (let ty-params) (let builtin-name) _) src
       (let1 params (translate! e ty-params)
-        (ct-def/generic
+        (def/generic
           params
-          (ct-def:alias (builtin-ct builtin-name params)))))))
+          (def:alias (builtin-ct builtin-name params)))))))
 
-(instance Translate.BuiltinValueCon (Translate ast/BuiltinValueCon CtDef)
+(instance Translate.BuiltinValueCon (Translate ast/BuiltinValueCon Def)
   (function (translate! e src)
     (with ([(ast/builtin-value-con: (let id) (let builtin-name) (let fields) (let type-con)) src]
            [(: (let ct-params) (let params) (let ret))
              (translate! e (: signature:unspecified (option/force (m/module-set/scheme? id e))))])
-      (ct-def/generic
+      (def/generic
         ct-params
-        (ct-def:function (function:
+        (def:function (function:
           function-kind:transparent
           none
           params
@@ -184,13 +184,13 @@
             (option/force (m/module-set/symbol? id e))
             builtin-name
             (|> ct-params (it/map ct:id) collect)
-            (|> params (it/map [^1 (rt:local (function-param/id %1))]) collect))))))))
+            (|> params (it/map [^1 (rt:local (rt-param/id %1))]) collect))))))))
 
 (instance Translate.ValueConField (Translate ast/ValueConField Ct)
   (function (translate! e src)
     (translate! e (ast/value-con-field/ty src))))
 
-(instance Translate.Instance (Translate ast/Instance CtDef)
+(instance Translate.Instance (Translate ast/Instance Def)
   (function (translate! e src)
     (with1 (ast/instance-con: (let id) (let ty-params) (let s-params) (let target) _) (ast/instance/con src)
       (match (ast/constraint/rep target)
@@ -218,39 +218,39 @@
                 (|> class ast/class/con ast/class-con/superclasses)
                 (|> (m/module-set/instantiation? id e) option/force ast/instantiation/s-args))
               (alias-table/put! (translate! e c) (translate! e s) table))
-            (ct-def/generic params (ct-def:alias-table table)))]))))
+            (def/generic params (def:alias-table table)))]))))
 
-(instance Translate.ClassMethod (Translate ast/ClassMethod (Option CtDef))
+(instance Translate.ClassMethod (Translate ast/ClassMethod (Option Def))
   (function (translate! e src)
     (with1? (ast/class-method: (let id) (ast/annotation: _ (let scheme)) (let params) (some (let body)) (let class-id)) src
       (with1 (: (let ct-params) (let params) (let ret)) (translate! e (: (signature: params) scheme))
         (let1 class-con (option/force (m/module-set/ast? ast/root/class-con? class-id e))
-          (ct-def/generic
+          (def/generic
             (array/push
               (translate! e (ast/class-con/constraint class-con))
               (translate! e (ast/class-con/ty-params class-con)))
-            (ct-def/generic
+            (def/generic
               ct-params
-              (ct-def:function (function:
+              (def:function (function:
                 function-kind:standard
                 none
                 params
                 ret
                 (translate! e body))))))))))
 
-(instance Translate.InstanceMethod (Translate ast/InstanceMethod CtDef)
+(instance Translate.InstanceMethod (Translate ast/InstanceMethod Def)
   (function (translate! e src)
     (with ([(ast/instance-method: (let id) (let transparent?) _ (let params) (let body) _ (let inst-id)) src]
            [(: (let ct-params) (let params) (let ret))
              (translate! e (: (signature: params) (option/force (m/module-set/scheme? id e))))])
       (let1 inst-con (option/force (m/module-set/ast? ast/root/instance-con? inst-id e))
-        (ct-def/generic
+        (def/generic
           (array/concat
             (translate! e (ast/instance-con/ty-params inst-con))
             (translate! e (ast/instance-con/s-params inst-con)))
-          (ct-def/generic
+          (def/generic
             ct-params
-            (ct-def:function (function:
+            (def:function (function:
               (if transparent? function-kind:transparent function-kind:standard)
               none
               params
@@ -454,7 +454,7 @@
   (signature: (Option (Array ast/Parameter)))
   signature:unspecified)
 
-(instance Translate.Scheme (Translate (: Signature ast/Scheme) (: (Array CtId) (Array FunctionParam) Ct))
+(instance Translate.Scheme (Translate (: Signature ast/Scheme) (: (Array CtId) (Array RtParam) Ct))
   (function (translate! e src)
     (with1 (: (let sig) (ast/scheme: (let ty-params) (let s-params) (let body))) src
       (let1 ct-params (array/concat (translate! e ty-params) (translate! e s-params))
@@ -470,14 +470,14 @@
           [(: none (signature: (some _)))
             (assert #f "The provided scheme does not match the signature")])))))
 
-(instance Translate.NamedParam (Translate (: ast/Parameter ast/Type) FunctionParam)
+(instance Translate.NamedParam (Translate (: ast/Parameter ast/Type) RtParam)
   (function (translate! e src)
     (with1 (: (let param) (let ty)) src
-      (function-param: (translate! e param) (translate! e ty)))))
+      (rt-param: (translate! e param) (translate! e ty)))))
 
-(instance Translate.AnonParam (Translate ast/Type FunctionParam)
+(instance Translate.AnonParam (Translate ast/Type RtParam)
   (function (translate! e src)
-    (function-param: (alloc-rt! e) (translate! e src))))
+    (rt-param: (alloc-rt! e) (translate! e src))))
 
 (instance Translate.Satisfaction (Translate ast/Satisfaction Ct)
   (function (translate! e src)

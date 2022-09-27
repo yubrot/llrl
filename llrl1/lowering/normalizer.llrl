@@ -1,24 +1,24 @@
 ; Normalizes the IR by evaluating Ct.
-; All generic CtDef instantiations and LocalFun definitions are lifted to the top level.
+; All generic Def instantiations and LocalFun definitions are lifted to the top level.
 (import "std/ord-set" _)
 (import "std/ord-map" _)
 (import "~/util" _)
 (import "~/lowering/ir" _)
-(import "~/lowering/transformer" _)
-(export Env ProcessingCtDef processing-ct-def: normalize!)
+(import "~/lowering/ir/transformer" _)
+(export Env ProcessingDef processing-def: normalize!)
 
 (function (normalize! env t) {(forall E T) (-> E T T) (where (Env E) (Transform T))}
   (rewrite/value (result/unwrap* never (transform (normalizer: env ord-map/empty) t))))
 
 (class (Env E)
   (function (instantiate! id args e) {(-> CtId (Array Ct) E CtId)})
-  (function (processing-ct-def? id e) {(-> CtId E (Option ProcessingCtDef))})
+  (function (processing-def? id e) {(-> CtId E (Option ProcessingDef))})
   (function (alloc-ct! e) {(-> E CtId)})
-  (function (define-ct! id def e) {(-> CtId CtDef E unit)})
+  (function (define-ct! id def e) {(-> CtId Def E unit)})
   (function (alloc-rt! e) {(-> E RtId)}))
 
-(value-data ProcessingCtDef
-  (processing-ct-def: Bool CtDef))
+(value-data ProcessingDef
+  (processing-def: Bool Def))
 
 (value-data (Normalizer E)
   (normalizer: E (OrdMap RtId Ct)))
@@ -29,8 +29,8 @@
   (function (transformer/after-ct ct n)
     (ok (match ct
       [(ct:id (let id))
-        (if-match ([(some (processing-ct-def: (let normalized?) (let def))) (processing-ct-def? id (env n))]
-                   [(ct-def:alias (let ct)) def])
+        (if-match ([(some (processing-def: (let normalized?) (let def))) (processing-def? id (env n))]
+                   [(def:alias (let ct)) def])
           (if normalized?
             (rewrite/changed ct)
             (rewrite/as-changed (transform n ct)!))
@@ -42,8 +42,8 @@
           (assert #f (string "Attempt to generic-inst on " (debug callee))))]
       [(ct:table-get (let table) (let id))
         (if-match ([(ct:id (let table-id)) table]
-                   [(some (processing-ct-def: (let normalized?) (let def))) (processing-ct-def? table-id (env n))]
-                   [(ct-def:alias-table (let table)) def])
+                   [(some (processing-def: (let normalized?) (let def))) (processing-def? table-id (env n))]
+                   [(def:alias-table (let table)) def])
           (if-match1 (some (let ct)) (alias-table/get? id table)
             (if normalized?
               (rewrite/changed ct)
@@ -60,8 +60,8 @@
 
   (function (transformer/after-rt rt n)
     (ok (if-match ([(rt:call (rt:static-fun (ct:id (let id)) none) (let args)) rt]
-                   [(some (processing-ct-def: (let normalized?) (let def))) (processing-ct-def? id (env n))]
-                   [(ct-def:function (let f (function: function-kind:transparent _ _ _ _))) def])
+                   [(some (processing-def: (let normalized?) (let def))) (processing-def? id (env n))]
+                   [(def:function (let f (function: function-kind:transparent _ _ _ _))) def])
       (let1 rt (call-transparent f args)
         (if normalized?
           (rewrite/as-changed (transformer/after-rt rt n)!)
@@ -85,7 +85,7 @@
              (|> captured-vars
                  ord-map/elems
                  (it/map (case1 (: (let var) (let id))
-                   (function-param: id (|> local-var-types (ord-map/get? var) option/force))))
+                   (rt-param: id (|> local-var-types (ord-map/get? var) option/force))))
                  collect)]
            [env-args
              (|> captured-vars ord-map/keys (it/map rt:local) collect)]
@@ -98,9 +98,9 @@
         (let1 body (cc lifted-funs captured-vars captured-env body)
           (define-ct!
             (option/force (ord-map/get? id lifted-funs))
-            (ct-def/generic
+            (def/generic
               ct-params
-              (ct-def:function (function: function-kind:standard function-env params ret body)))
+              (def:function (function: function-kind:standard function-env params ret body)))
             env)))
 
       (let1 body (cc lifted-funs ord-map/empty captured-env body)
@@ -133,5 +133,5 @@
   (assert-is? none (function/env f))
   (assert-eq? (array/length args) (array/length (function/params f)))
   (replace-rt
-    (ord-map/collect (it/zip (it/map function-param/id (function/params f)) args))
+    (ord-map/collect (it/zip (it/map rt-param/id (function/params f)) args))
     (function/body f)))

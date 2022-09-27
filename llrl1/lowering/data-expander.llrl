@@ -5,18 +5,18 @@
 (import "std/real" Real._ ceil)
 (import "~/util" _)
 (import "~/lowering/ir" _)
-(import "~/lowering/transformer" _)
+(import "~/lowering/ir/transformer" _)
 (export Env DataExpansion _.DataExpansion compute! expand!)
 
 (class (Env E)
-  (function (add-ct-def! def e) {(-> CtDef E CtId)})
+  (function (add-def! def e) {(-> Def E CtId)})
   (function (data-expansions e) {(-> E (OrdMap CtId DataExpansion))}))
 
 (function (compute! env data-types)
   {(forall E T) (-> E (T (: CtId Data)) (OrdSet CtId)) (where (Env E) (Iterate T))}
   (let* ([expanded-defs ord-set/empty]
          [(add! def)
-           (let1 id (add-ct-def! def env)
+           (let1 id (add-def! def env)
              (ord-set/insert! id expanded-defs)
              id)])
     (for
@@ -172,10 +172,10 @@
       (ok (rewrite/unchanged ct)))))
 
 (function (expanding-data/compute-data-expansion! named? add! d)
-  {(-> Bool (-> CtDef CtId) ExpandingData DataExpansion)}
+  {(-> Bool (-> Def CtId) ExpandingData DataExpansion)}
 
-  (let ([(struct repr fields) (add! (ct-def:struct (struct: repr fields)))]
-        [(union tys) (add! (ct-def:union (union: tys)))])
+  (let ([(struct repr fields) (add! (def:struct (struct: repr fields)))]
+        [(union tys) (add! (def:union (union: tys)))])
     (with1 (data: (let repr) (let cons)) (expanding-data/data d)
       (cond
         [(array/empty? cons)

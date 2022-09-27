@@ -1,7 +1,7 @@
 (import "std/persistent/ord-map" _)
 (import "~/util" _)
 (import "~/lowering/ir" _)
-(import "~/lowering/transformer" _)
+(import "~/lowering/ir/transformer" _)
 (export Env expand!)
 
 (class (Env E)
@@ -149,14 +149,14 @@
 (derive (Eq Ord DebugDisplay Hash) value-data FlattenPat
   (flatten-pat: Path Condition)) ; path condition
 
-(function (expand-into-flatten-pats pat) {(-> RtPat (: (Array FlattenPat) (Array FunctionParam)))}
+(function (expand-into-flatten-pats pat) {(-> RtPat (: (Array FlattenPat) (Array RtParam)))}
   (let* ([pats vector/empty]
          [params vector/empty]
          [(visit! pat path)
            (match pat
              [(rt-pat:var (let id) (let ty) (let as-pat))
                (vector/push! (flatten-pat: path (condition:bind id)) pats)
-               (vector/push! (function-param: id ty) params)
+               (vector/push! (rt-param: id ty) params)
                (when-match1 (some (let pat)) as-pat (visit! pat path))]
              [rt-pat:wildcard]
              [(rt-pat:deref (let pat))

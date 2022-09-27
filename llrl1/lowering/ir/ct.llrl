@@ -1,0 +1,53 @@
+(import "~/util" _)
+(export CtId _.CtId ct-id/_ CtIdGen _.CtIdGen ct-id-gen/_)
+(export Ct _.Ct ct:_ ct/_)
+
+(derive (Eq Ord DebugDisplay Hash) value-data CtId
+  (ct-id: U32))
+
+(getter ct-id: ct-id/index)
+
+(derive (DebugDisplay) value-data CtIdGen
+  (ct-id-gen: (Ref U32)))
+
+(function (ct-id-gen/new) {(-> CtIdGen)}
+  (ct-id-gen: (ref 0)))
+
+(function (ct-id-gen/next! gen) {(-> CtIdGen CtId)}
+  (with1 (ct-id-gen: (let c)) gen
+    (let1 id (ct-id: ~c)
+      (set! c (+ ~c 1))
+      id)))
+
+; An expression that is evaluated at compile time.
+(derive (Eq Ord DebugDisplay Hash) data Ct
+  (ct:id CtId)
+  (ct:generic-inst Ct (Array Ct)) ; erased by normalizer
+  (ct:table-get Ct CtId)          ; erased by normalizer
+  (ct:ptr Ct)
+  (ct:clos (Array Ct) Ct)
+  (ct:s U64)
+  (ct:u U64)
+  ct:f32
+  ct:f64
+  ct:string
+  ct:char
+  (ct:array Ct)
+  ct:captured-use
+  ct:unit
+  ct:env
+  (ct:syntax Ct)
+  ct:hole)
+
+(instance Default.Ct (Default Ct)
+  (function default ct:unit))
+
+(function (ct/force-id ct) {(-> Ct CtId)}
+  (if-match1 (ct:id (let id)) ct
+    id
+    (assert #f (string "ct/force-id on " (debug ct)))))
+
+(function (ct/generic-inst ct args) {(-> Ct (Array Ct) Ct)}
+  (if (array/empty? args)
+    ct
+    (ct:generic-inst ct args)))

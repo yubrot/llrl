@@ -113,23 +113,23 @@
              (transformer/after-ct x t)!])
       (ok (rewrite: x (or c1? c2? c3?))))))
 
-(instance Transform.CtDef (Transform CtDef)
+(instance Transform.Def (Transform Def)
   (function (transform t x)
     (ok (match x
-      [(ct-def:alias (let ct))
-        (rewrite/1 x ct-def:alias (transform t ct)!)]
-      [(ct-def:alias-table (let table))
-        (rewrite/1 x ct-def:alias-table (transform t table)!)]
-      [(ct-def:generic (let params) (let def))
-        (rewrite/2 x ct-def:generic (rewrite/unchanged params) (transform t def)!)]
-      [(ct-def:data (let d))
-        (rewrite/1 x ct-def:data (transform t d)!)]
-      [(ct-def:struct (let d))
-        (rewrite/1 x ct-def:struct (transform t d)!)]
-      [(ct-def:union (let d))
-        (rewrite/1 x ct-def:union (transform t d)!)]
-      [(ct-def:function (let f))
-        (rewrite/1 x ct-def:function (transform t f)!)]))))
+      [(def:alias (let ct))
+        (rewrite/1 x def:alias (transform t ct)!)]
+      [(def:alias-table (let table))
+        (rewrite/1 x def:alias-table (transform t table)!)]
+      [(def:generic (let params) (let def))
+        (rewrite/2 x def:generic (rewrite/unchanged params) (transform t def)!)]
+      [(def:data (let d))
+        (rewrite/1 x def:data (transform t d)!)]
+      [(def:struct (let d))
+        (rewrite/1 x def:struct (transform t d)!)]
+      [(def:union (let d))
+        (rewrite/1 x def:union (transform t d)!)]
+      [(def:function (let f))
+        (rewrite/1 x def:function (transform t f)!)]))))
 
 (instance Transform.AliasTable (Transform AliasTable)
   (function (transform t x)
@@ -167,13 +167,13 @@
         (transformer/after-rt-def (rewrite/value id) ct:env t)!
         (ok (rewrite/2 x function-env: id (transform t elems)!))))))
 
-(instance Transform.FunctionParam (Transform FunctionParam)
+(instance Transform.RtParam (Transform RtParam)
   (function (transform t x)
-    (with1 (function-param: (let id) (let ty)) x
+    (with1 (rt-param: (let id) (let ty)) x
       (let ([id (rewrite/unchanged id)]
             [ty (transform t ty)!])
         (transformer/after-rt-def (rewrite/value id) (rewrite/value ty) t)!
-        (ok (rewrite/2 x function-param: id ty))))))
+        (ok (rewrite/2 x rt-param: id ty))))))
 
 (instance Transform.Init (Transform Init)
   (function (transform t x)
@@ -356,7 +356,7 @@
             [ret (transform t ret)!])
         (transformer/after-rt-def
           (rewrite/value id)
-          (ct:clos (|> (rewrite/value params) (it/map function-param/ty) collect) (rewrite/value ret))
+          (ct:clos (|> (rewrite/value params) (it/map rt-param/ty) collect) (rewrite/value ret))
           t)!
         (ok (rewrite/5 x rt-function: id ct-params params ret (transform t body)!))))))
 

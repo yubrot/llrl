@@ -18,7 +18,7 @@
     Report
     llvm/Context
     llvm/PassManager
-    (OrdMap ir/CtId ir/CtDef)
+    (OrdMap ir/CtId ir/Def)
     (Vector ir/Init)
     ContextArtifact
     Executor

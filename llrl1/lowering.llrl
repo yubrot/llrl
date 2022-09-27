@@ -8,7 +8,7 @@
 (import "~/ast" [ast/_ _])
 (import "~/module" [m/_ _])
 (import "~/lowering/ir" _)
-(import "~/lowering/transformer" _)
+(import "~/lowering/ir/transformer" _)
 (import "~/lowering/translator" [translator/_ _])
 (import "~/lowering/normalizer" [normalizer/_ _])
 (import "~/lowering/data-expander" [data-expander/_ _])
@@ -18,7 +18,7 @@
 
 ; Low-level compiler backend used by the `Lowerizer`.
 (class (Backend B)
-  (function (backend/put-def! id def b) {(-> CtId CtDef B unit)})
+  (function (backend/put-def! id def b) {(-> CtId Def B unit)})
   (function (backend/put-main! init b) {(-> Init B unit)})
   (function (backend/execute-macro! id s b) {(-> CtId (S CapturedUse) B (Result (S CapturedUse) String))})
   (function (backend/complete! report b) {(-> Report B unit)}))
@@ -33,7 +33,7 @@
     RtIdGen
     (OrdMap CtKey CtId)
     (OrdMap RtKey RtId)
-    (OrdMap CtId ProcessingCtDef)
+    (OrdMap CtId ProcessingDef)
     (OrdMap CtId data-expander/DataExpansion)
     (Ref Generation)))
 
@@ -68,8 +68,8 @@
     (bind-ct!
       (ct-key:inst id args)
       (lambda ()
-        (match (ord-map/get? id (ct-defs e))
-          [(some (processing-ct-def: _ _ (ct-def:generic (let params) (let ct))))
+        (match (ord-map/get? id (defs e))
+          [(some (processing-def: _ _ (def:generic (let params) (let ct))))
             (assert-eq? (array/length params) (array/length args))
             (some (replace-ct (ord-map/collect (it/zip params args)) ct))]
           [(some _)
@@ -78,20 +78,20 @@
             (assert #f (string "Attemt to instantiate " (debug id) ": which is not a definition"))]))
       e))
 
-  (function (processing-ct-def? id e)
-    (with1 (processing-ct-def: (let phase) (let gen) (let def)) (ord-map/get? id (ct-defs e))?
+  (function (processing-def? id e)
+    (with1 (processing-def: (let phase) (let gen) (let def)) (ord-map/get? id (defs e))?
       (some (match phase
         [phase:generalized
-          (normalizer/processing-ct-def: #f def)]
+          (normalizer/processing-def: #f def)]
         [phase:instantiated
-          (ord-map/insert! id (processing-ct-def: phase:normalizing gen def) (ct-defs e))
+          (ord-map/insert! id (processing-def: phase:normalizing gen def) (defs e))
           (let1 def (normalizer/normalize! e def)
-            (ord-map/insert! id (processing-ct-def: phase:normalized gen def) (ct-defs e))
-            (normalizer/processing-ct-def: #t def))]
+            (ord-map/insert! id (processing-def: phase:normalized gen def) (defs e))
+            (normalizer/processing-def: #t def))]
         [phase:normalizing
-          (normalizer/processing-ct-def: #f def)]
+          (normalizer/processing-def: #f def)]
         [phase:normalized
-          (normalizer/processing-ct-def: #t def)]))))
+          (normalizer/processing-def: #t def)]))))
 
   (function (alloc-ct! e)
     (ct-id-gen/next! (ct-id-gen e)))
@@ -100,21 +100,21 @@
     (assert-is? none
       (ord-map/insert!
         id
-        (processing-ct-def:
+        (processing-def:
           (match def
-            [(ct-def:generic _ _) phase:generalized]
+            [(def:generic _ _) phase:generalized]
             [_ phase:instantiated])
           none
           def)
-        (ct-defs e))))
+        (defs e))))
 
   (function (alloc-rt! e)
     (rt-id-gen/next! (rt-id-gen e))))
 
 (instance data-expander/Env.Lowerizer (forall B) (data-expander/Env (Lowerizer B))
-  (function (add-ct-def! def e)
+  (function (add-def! def e)
     (let1 id (ct-id-gen/next! (ct-id-gen e))
-      (ord-map/insert! id (processing-ct-def: phase:normalized (some ~(current-gen e)) def) (ct-defs e))
+      (ord-map/insert! id (processing-def: phase:normalized (some ~(current-gen e)) def) (defs e))
       id))
 
   (function (data-expansions e)
@@ -133,7 +133,7 @@
   rt-id-gen
   ct-mapping
   rt-mapping
-  ct-defs
+  defs
   data-expansions
   current-gen)
 
@@ -151,15 +151,15 @@
     ord-map/empty
     (ref (generation: 0))))
 
-(function (lowerizer/def? id e) {(forall B) (-> CtId (Lowerizer B) (Option CtDef))}
-  (let1 d (|> e ct-defs (ord-map/get? id))?
-    (when? (processing-ct-def/populated? d) (conv d))))
+(function (lowerizer/def? id e) {(forall B) (-> CtId (Lowerizer B) (Option Def))}
+  (let1 d (|> e defs (ord-map/get? id))?
+    (when? (processing-def/populated? d) (conv d))))
 
-(function (lowerizer/defs e) {(forall B) (-> (Lowerizer B) (Iterator (: CtId CtDef)))}
+(function (lowerizer/defs e) {(forall B) (-> (Lowerizer B) (Iterator (: CtId Def)))}
   (|> e
-      ct-defs
+      defs
       ord-map/elems
-      (it/filter (case1 (: _ (let d)) (processing-ct-def/populated? d)))
+      (it/filter (case1 (: _ (let d)) (processing-def/populated? d)))
       (it/map (case1 (: (let id) (let d)) (: id (conv d))))))
 
 (function (lowerizer/register-module! module e) {(forall B) (-> m/Module (Lowerizer B) unit)}
@@ -183,25 +183,25 @@
   (report/merge! (lowerizer/report e) report))
 
 (function (populate! src e)
-  {(forall B S D) (-> S (Lowerizer B) (: D (Iterator (: CtId CtDef)))) (where (Backend B) (translator/Translate S D) (Transform D))}
+  {(forall B S D) (-> S (Lowerizer B) (: D (Iterator (: CtId Def)))) (where (Backend B) (translator/Translate S D) (Transform D))}
   (let* ([dest (translator/translate! e src)]
          [dest (ref (normalizer/normalize! e dest))]
          [gen (generation/next ~(current-gen e))])
     (set! (current-gen e) gen)
 
     (let1 generation-defs (collect-generation-defs e ~dest)
-      ; Assign generation information to each ProcessingCtDef generated in this populate pass.
+      ; Assign generation information to each ProcessingDef generated in this populate pass.
       (for (let id) generation-defs
-        (let1 d (option/force (ord-map/get? id (ct-defs e)))
-          (ord-map/insert! id (processing-ct-def/with-generation gen d) (ct-defs e))))
+        (let1 d (option/force (ord-map/get? id (defs e)))
+          (ord-map/insert! id (processing-def/with-generation gen d) (defs e))))
 
       (let ([(data? id)
-              (with1? (ct-def:data (let d)) (processing-ct-def/def (option/force (ord-map/get? id (ct-defs e))))
+              (with1? (def:data (let d)) (processing-def/def (option/force (ord-map/get? id (defs e))))
                 (: id d))]
             [expanded-defs (data-expander/compute! e (it/filter-map data? generation-defs))])
         (for (let id) expanded-defs (ord-set/insert! id generation-defs)))
 
-      (let1 target (canonicalize-target: dest (ct-defs e) generation-defs)
+      (let1 target (canonicalize-target: dest (defs e) generation-defs)
         (data-expander/expand! (data-expansions e) target)
         (branch-expander/expand! e target)
         (heap2stack/run! target))
@@ -213,11 +213,11 @@
       (: ~dest
          (it/filter-map
            (lambda (id)
-             (let1 d (option/force (ord-map/get? id (ct-defs e)))
-               (when? (processing-ct-def/populated? d) (: id (processing-ct-def/def d)))))
+             (let1 d (option/force (ord-map/get? id (defs e)))
+               (when? (processing-def/populated? d) (: id (processing-def/def d)))))
            generation-defs)))))
 
-(function (bind-ct! key build e) {(forall B) (-> CtKey (-> (Option CtDef)) (Lowerizer B) CtId)}
+(function (bind-ct! key build e) {(forall B) (-> CtKey (-> (Option Def)) (Lowerizer B) CtId)}
   (if-match1 (some (let id)) (ord-map/get? key (ct-mapping e))
     id
     (let1 id (ct-id-gen/next! (ct-id-gen e))
@@ -225,8 +225,8 @@
       (when-match1 (some (let def)) (build)
         (ord-map/insert!
           id
-          (processing-ct-def: (if-match1 (ct-def:generic _ _) def phase:generalized phase:instantiated) none def)
-          (ct-defs e)))
+          (processing-def: (if-match1 (def:generic _ _) def phase:generalized phase:instantiated) none def)
+          (defs e)))
       id)))
 
 (function (bind-rt! key e) {(forall B) (-> RtKey (Lowerizer B) RtId)}
@@ -243,26 +243,26 @@
 (derive (Eq Ord DebugDisplay Hash) value-data RtKey
   (rt-key:construct ast/Construct))
 
-(derive (DebugDisplay) value-data ProcessingCtDef
-  (processing-ct-def: Phase (Option Generation) CtDef))
+(derive (DebugDisplay) value-data ProcessingDef
+  (processing-def: Phase (Option Generation) Def))
 
-(getter processing-ct-def: processing-ct-def/phase processing-ct-def/generation processing-ct-def/def)
+(getter processing-def: processing-def/phase processing-def/generation processing-def/def)
 
-(instance Conv.From.ProcessingCtDef.To.CtDef (Conv ProcessingCtDef CtDef)
-  (function (conv a) (processing-ct-def/def a)))
+(instance Conv.From.ProcessingDef.To.Def (Conv ProcessingDef Def)
+  (function (conv a) (processing-def/def a)))
 
-(function (processing-ct-def/populated? d) {(-> ProcessingCtDef Bool)}
-  (with1 (processing-ct-def: (let phase) (let gen) (let def)) d
+(function (processing-def/populated? d) {(-> ProcessingDef Bool)}
+  (with1 (processing-def: (let phase) (let gen) (let def)) d
     (and (eq? phase phase:normalized)
          (is? (some _) gen)
-         (not (is? (ct-def:data _) def)))))
+         (not (is? (def:data _) def)))))
 
-(function (processing-ct-def/with-generation gen d) {(-> Generation ProcessingCtDef ProcessingCtDef)}
-  (assert-is? phase:normalized (processing-ct-def/phase d)
-    "processing-ct-def/with-generation: generation must be none")
-  (assert-is? none (processing-ct-def/generation d)
-    "processing-ct-def/with-generation: phase must be normalized")
-  (processing-ct-def: phase:normalized (some gen) (processing-ct-def/def d)))
+(function (processing-def/with-generation gen d) {(-> Generation ProcessingDef ProcessingDef)}
+  (assert-is? phase:normalized (processing-def/phase d)
+    "processing-def/with-generation: generation must be none")
+  (assert-is? none (processing-def/generation d)
+    "processing-def/with-generation: phase must be normalized")
+  (processing-def: phase:normalized (some gen) (processing-def/def d)))
 
 (derive (Eq Ord DebugDisplay Hash) value-data Phase
   phase:generalized
@@ -289,22 +289,22 @@
   (function (transformer/after-ct ct collector)
     (with1 (generation-collector: (let generation-defs) (let lowerizer)) collector
       (when-match ([(ct:id (let id)) ct]
-                   [(some (processing-ct-def: _ none (let def))) (ord-map/get? id (ct-defs lowerizer))]
+                   [(some (processing-def: _ none (let def))) (ord-map/get? id (defs lowerizer))]
                    [#t (ord-set/insert! id generation-defs)])
         (transform collector def)!))
     (ok (rewrite/unchanged ct))))
 
 (value-data (CanonicalizeTarget D)
-  (canonicalize-target: (Ref D) (OrdMap CtId ProcessingCtDef) (OrdSet CtId)))
+  (canonicalize-target: (Ref D) (OrdMap CtId ProcessingDef) (OrdSet CtId)))
 
 (instance Transform.CanonicalizeTarget (forall D) (Transform (CanonicalizeTarget D)) (where (Transform D))
   (function (transform t x)
-    (with1 (canonicalize-target: (let dest) (let ct-defs) (let generation-defs)) x
+    (with1 (canonicalize-target: (let dest) (let defs) (let generation-defs)) x
       (when-match1 (rewrite: (let x) #t) (transform t ~dest)!
         (set! dest x))
       (for (let id) generation-defs
-        (with1 (processing-ct-def: (let phase) (let gen) (let def)) (option/force (ord-map/get? id ct-defs))
+        (with1 (processing-def: (let phase) (let gen) (let def)) (option/force (ord-map/get? id defs))
           (when-match1 (rewrite: (let x) #t) (transform t def)!
-            (ord-map/insert! id (processing-ct-def: phase gen x) ct-defs)))))
+            (ord-map/insert! id (processing-def: phase gen x) defs)))))
     ; CanonicalizeTarget is always modified destructively.
     (ok (rewrite/unchanged x))))

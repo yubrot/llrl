@@ -119,7 +119,7 @@
              [env-param (get params[0])]
              [params (array/skip 1 params)])
         ; Bind arguments
-        (for (: (ir/function-param: (let id) _) (let p)) (it/zip fparams params)
+        (for (: (ir/rt-param: (let id) _) (let p)) (it/zip fparams params)
           (ord-map/insert! id p local-values))
 
       (when-match1 (some (ir/function-env: (let id) (let felems))) fenv
@@ -128,12 +128,12 @@
 
         (let* ([elem-tys
                  (|> felems
-                     (it/map (case1 (ir/function-param: _ (let ty)) (codegen/type env ty)))
+                     (it/map (case1 (ir/rt-param: _ (let ty)) (codegen/type env ty)))
                      collect)]
                [env-param
                  (llvm/build! builder (bit-cast ,env-param (pointer (: ,@elem-tys))))])
           ; Bind the environment argument elements
-          (for (: (let i) (ir/function-param: (let id) _)) (it/with-index felems)
+          (for (: (let i) (ir/rt-param: (let id) _)) (it/with-index felems)
             (ord-map/insert! id (llvm/build! builder (load (struct-gep ,env-param ,(conv i)))) local-values))))
 
       (let1 ctx (build-context: env builder local-values ord-map/empty)
@@ -521,7 +521,7 @@
           id
           (cont/new "cont" (lambda (args)
             (assert-eq? (array/length params) (array/length args))
-            (for (: (ir/function-param: (let id) _) (let arg)) (it/zip params args)
+            (for (: (ir/rt-param: (let id) _) (let arg)) (it/zip params args)
               (ord-map/insert! id arg (local-values ctx)))
             (codegen/expr! ctx body)))
           (local-conts ctx)))

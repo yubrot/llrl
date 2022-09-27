@@ -1,0 +1,107 @@
+(import "std/ord-map" _)
+(import "~/util" _)
+(import "~/lowering/ir/ct" Ct _.Ct ct:_ CtId _.CtId)
+(import "~/lowering/ir/rt" Rt _.Rt rt:_ rt/_ RtId _.RtId RtParam _.RtParam Const _.Const const/_)
+(export Def _.Def def:_ def/_)
+(export AliasTable _.AliasTable alias-table/_)
+(export Data _.Data data: data/_ DataRepr _.DataRepr data-repr:_)
+(export Struct _.Struct struct: struct/_ StructRepr _.StructRepr struct-repr:_)
+(export Union _.Union union: union/_)
+(export Function _.Function function: function/_)
+(export FunctionKind _.FunctionKind function-kind:_)
+(export FunctionEnv _.FunctionEnv function-env: function-env/_)
+(export Init _.Init init: init/_)
+
+(derive (DebugDisplay) data Def
+  (def:alias Ct)                    ; erased by normalizer
+  (def:alias-table AliasTable)      ; erased by normalizer
+  (def:generic (Array CtId) Def)  ; erased by normalzier
+  (def:data Data)                   ; erased by data-expander
+  (def:struct Struct)
+  (def:union Union)
+  (def:function Function))
+
+(function (def/generic params def) {(-> (Array CtId) Def Def)}
+  (if (array/empty? params)
+    def
+    (def:generic params def)))
+
+(derive (DebugDisplay) value-data AliasTable
+  (alias-table: (OrdMap CtId Ct)))
+
+(instance ShallowCopy.AliasTable (ShallowCopy AliasTable)
+  (function (shallow-copy t)
+    (with1 (alias-table: (let map)) t
+      (alias-table: (shallow-copy map)))))
+
+(function (alias-table/new) {(-> AliasTable)}
+  (alias-table: ord-map/empty))
+
+(function (alias-table/entries table) {(-> AliasTable (Iterator (: CtId Ct)))}
+  (with1 (alias-table: (let map)) table
+    (ord-map/elems map)))
+
+(function (alias-table/get? id table) {(-> CtId AliasTable (Option Ct))}
+  (with1 (alias-table: (let map)) table
+    (ord-map/get? id map)))
+
+(function (alias-table/put! id ct table) {(-> CtId Ct AliasTable unit)}
+  (with1 (alias-table: (let map)) table
+    (ignore (ord-map/insert! id ct map))))
+
+(derive (DebugDisplay) value-data Data
+  (data: DataRepr (Array (Array Ct))))
+
+(getter data: data/repr data/cons)
+
+(derive (Eq Ord DebugDisplay Hash) value-data DataRepr
+  data-repr:boxed
+  data-repr:value
+  data-repr:c)
+
+(derive (DebugDisplay) value-data Struct
+  (struct: StructRepr (Array Ct)))
+
+(getter struct: struct/repr struct/fields)
+
+(derive (Eq Ord DebugDisplay Hash) value-data StructRepr
+  struct-repr:standard
+  struct-repr:c)
+
+(derive (DebugDisplay) value-data Union
+  (union: (Array Ct)))
+
+(getter union: union/tys)
+
+(derive (DebugDisplay) value-data Function
+  (function: FunctionKind (Option FunctionEnv) (Array RtParam) Ct Rt))
+
+(getter function: function/kind function/env function/params function/ret function/body)
+
+(function (function/macro param ret body) {(-> RtParam Ct Rt Function)}
+  (function: function-kind:macro none (array param) ret body))
+
+(function (function/main inits) {(-> (Array Init) Function)}
+  (with1
+    (: (let ret-expr) (let inits))
+    (if-match1 (some (: (init: (ct:u 1) (let ret-expr)) (let inits))) (array/split-last? inits)
+      (: ret-expr inits)
+      (: (rt:const (const/bool #f)) inits))
+    (let1 body (rt/seq (collect (it/map init/expr inits)) ret-expr)
+      (function: function-kind:main none array/empty (ct:u 1) body))))
+
+(derive (Eq Ord DebugDisplay Hash) value-data FunctionKind
+  function-kind:standard
+  function-kind:macro
+  function-kind:transparent
+  function-kind:main)
+
+(derive (Eq DebugDisplay) value-data FunctionEnv
+  (function-env: RtId (Array RtParam)))
+
+(getter function-env: function-env/id function-env/elems)
+
+(derive (DebugDisplay) value-data Init
+  (init: Ct Rt))
+
+(getter init: init/ty init/expr)

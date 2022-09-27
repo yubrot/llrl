@@ -45,16 +45,16 @@
 (function (context-artifact/main-function-symbol? ca) {(-> ContextArtifact (Option FunctionSymbol))}
   ~(main-function-symbol ca))
 
-(function (context-artifact/add-types! defs ca) {(-> (OrdMap ir/CtId ir/CtDef) ContextArtifact unit)}
+(function (context-artifact/add-types! defs ca) {(-> (OrdMap ir/CtId ir/Def) ContextArtifact unit)}
   (layout-resolver/register! defs (layout-resolver ca))
 
   ; Put type headers
   (for (: (let id) (let def)) (ord-map/elems defs)
     (match def
-      [(ir/ct-def:struct _)
+      [(ir/def:struct _)
         (ord-map/insert! id (llvm/type/named-struct (conv ca) (|> id ir/ct-id/index string)) (llvm-types ca))
         unit]
-      [(ir/ct-def:union _)
+      [(ir/def:union _)
         (let1 layout (layout-resolver/get (ir/ct:id id) (layout-resolver ca))
           (ord-map/insert! id (codegen/union-type layout (conv ca)) (llvm-types ca)))
         unit]
@@ -62,7 +62,7 @@
 
   ; Set struct bodies
   (for (: (let id) (let def)) (ord-map/elems defs)
-    (when-match1 (ir/ct-def:struct (ir/struct: _ (let fields))) def
+    (when-match1 (ir/def:struct (ir/struct: _ (let fields))) def
       ; Bacause currently we always use C-compatible structures, there is no difference by def.repr
       (llvm/type/struct-set-body!
         (|> fields (it/map [^1 (codegen/type ca %1)]) collect)
@@ -79,7 +79,7 @@
            (it/chain
              ; llrl functions always take the environment parameter as its first argument.
              (some (codegen/type ca ir/ct:env))
-             (it/map [^1 (codegen/type ca (ir/function-param/ty %1))] (ir/function/params def)))]
+             (it/map [^1 (codegen/type ca (ir/rt-param/ty %1))] (ir/function/params def)))]
          [ret-ty (codegen/type ca (ir/function/ret def))])
     (function-symbol:
       name
@@ -144,16 +144,16 @@
 (function (module-artifact/main-function? ma) {(-> ModuleArtifact (Option FunctionArtifact))}
   ~(main-function ma))
 
-(function (module-artifact/add-functions! defs ma) {(-> (OrdMap ir/CtId ir/CtDef) ModuleArtifact unit)}
+(function (module-artifact/add-functions! defs ma) {(-> (OrdMap ir/CtId ir/Def) ModuleArtifact unit)}
   ; Put symbols
   (for (: (let id) (let def)) (ord-map/elems defs)
-    (when-match1 (ir/ct-def:function (let f)) def
+    (when-match1 (ir/def:function (let f)) def
       (let* ([symbol (function-symbol/new (string (ir/ct-id/index id)) f (conv ma))]
              [duplicated-symbol (ord-map/insert! id symbol (function-symbols (conv ma)))])
         (assert-is? none duplicated-symbol))))
   ; Generate function bodies
   (for (: (let id) (let def)) (ord-map/elems defs)
-    (when-match1 (ir/ct-def:function (let f)) def
+    (when-match1 (ir/def:function (let f)) def
       (with1 (function-artifact: (let symbol) (let value)) (module-artifact/capture-function! id ma)
         (codegen/function-body! (function-symbol/name symbol) value f ma)))))
 

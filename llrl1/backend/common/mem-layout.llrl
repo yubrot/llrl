@@ -58,12 +58,12 @@
 
 (getter layout-resolver: known-layouts)
 
-(function (layout-resolver/register! defs ls) {(-> (OrdMap ir/CtId ir/CtDef) LayoutResolver unit)}
+(function (layout-resolver/register! defs ls) {(-> (OrdMap ir/CtId ir/Def) LayoutResolver unit)}
   (for (: (let id) (let def)) (ord-map/elems defs)
-    (when (or (is? (ir/ct-def:struct _) def) (is? (ir/ct-def:union _) def))
+    (when (or (is? (ir/def:struct _) def) (is? (ir/def:union _) def))
       (register-visit! defs ls (ir/ct:id id)))))
 
-(function (register-visit! defs ls ty) {(-> (OrdMap ir/CtId ir/CtDef) LayoutResolver ir/Ct Layout)}
+(function (register-visit! defs ls ty) {(-> (OrdMap ir/CtId ir/Def) LayoutResolver ir/Ct Layout)}
   (match ty
     [(ir/ct:id (let id))
       (match (ord-map/get? id (known-layouts ls))
@@ -76,10 +76,10 @@
           (let1
             layout
             (match (ord-map/get? id defs)
-              [(some (ir/ct-def:struct (ir/struct: _ (let fields))))
+              [(some (ir/def:struct (ir/struct: _ (let fields))))
                 (layout/product
                   (|> fields (it/map [^1 (register-visit! defs ls %1)]) (it/zip fields) collect))]
-              [(some (ir/ct-def:union (ir/union: (let tys))))
+              [(some (ir/def:union (ir/union: (let tys))))
                 (layout/sum
                   (|> tys (it/map [^1 (register-visit! defs ls %1)]) collect))]
               [(some _)
