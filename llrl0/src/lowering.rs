@@ -13,19 +13,16 @@ use std::thread;
 mod branch_expander;
 mod context;
 mod data_expander;
-mod display;
 mod heap2stack;
 pub mod ir;
 mod normalizer;
-mod rewriter;
 mod translator;
-mod traverser;
 
 pub use context::Context;
 
 /// Low-level compiler backend used by the `Lowerizer`.
 pub trait Backend: Send + 'static {
-    fn put_def(&mut self, id: ir::CtId, def: Arc<ir::CtDef>);
+    fn put_def(&mut self, id: ir::CtId, def: Arc<ir::Def>);
 
     fn put_main(&mut self, init: ir::Init);
 
@@ -102,7 +99,7 @@ fn process_requests<B: Backend>(mut backend: B, receiver: Receiver<Request>) -> 
     ) -> T::Dest
     where
         T: translator::Translate,
-        T::Dest: traverser::Traverse + rewriter::Rewrite,
+        T::Dest: ir::traverser::Traverse + ir::rewriter::Rewrite,
         B: Backend,
     {
         report.enter_phase(Phase::Lowerize);

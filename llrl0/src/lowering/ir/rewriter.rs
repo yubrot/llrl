@@ -1,4 +1,4 @@
-use super::ir::*;
+use super::*;
 use std::collections::HashMap;
 
 pub fn rewrite<T: Rewriter>(src: &mut impl Rewrite, rewriter: &mut T) -> Result<(), T::Error> {
@@ -115,7 +115,7 @@ impl Rewrite for Ct {
     }
 }
 
-impl Rewrite for CtDef {
+impl Rewrite for Def {
     fn rewrite<T: Rewriter>(&mut self, rewriter: &mut T) -> Result<(), T::Error> {
         match self {
             Self::Alias(ct) => rewriter.rewrite(ct),
@@ -172,7 +172,7 @@ impl Rewrite for FunctionEnv {
     }
 }
 
-impl Rewrite for FunctionParam {
+impl Rewrite for RtParam {
     fn rewrite<T: Rewriter>(&mut self, rewriter: &mut T) -> Result<(), T::Error> {
         rewriter.rewrite(&mut self.ty)?;
         rewriter.after_rt_def(self.id, || self.ty.clone())

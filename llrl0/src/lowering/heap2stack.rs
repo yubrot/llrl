@@ -2,7 +2,7 @@
 
 use std::collections::HashSet;
 
-use super::{ir::*, rewriter};
+use super::ir::*;
 
 pub fn run(src: &mut impl rewriter::Rewrite) {
     let _ = rewriter::rewrite(src, &mut Heap2Stack::default());

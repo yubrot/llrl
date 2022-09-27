@@ -50,18 +50,18 @@ impl<'ctx> ContextArtifact<'ctx> {
         self.main_function_symbol.as_ref()
     }
 
-    pub fn add_types(&mut self, defs: &HashMap<CtId, Arc<CtDef>>) {
+    pub fn add_types(&mut self, defs: &HashMap<CtId, Arc<Def>>) {
         self.layout_resolver.register(defs);
 
         // Put type headers
         for (id, def) in defs {
             match **def {
-                CtDef::Struct(_) => {
+                Def::Struct(_) => {
                     let ty = LLVMStructType::new(&id.index().to_string(), self.context);
                     self.structs.insert(*id, ty);
                     self.types.insert(*id, ty.as_type());
                 }
-                CtDef::Union(_) => {
+                Def::Union(_) => {
                     let layout = self.layout_resolver.get(&Ct::Id(*id));
                     let ty = if layout.align != 0 {
                         let bw = layout.align * 8;
@@ -79,7 +79,7 @@ impl<'ctx> ContextArtifact<'ctx> {
 
         // Set struct bodies
         for (id, def) in defs {
-            if let CtDef::Struct(ref def) = **def {
+            if let Def::Struct(ref def) = **def {
                 // Bacause currently we always use C-compatible structures, there is no difference by def.repr
                 let ty = self.structs.get(id).unwrap();
                 ty.set_body(&self.llvm_type_all(&def.fields), false);
@@ -221,12 +221,12 @@ impl<'ctx: 'm, 'm> ModuleArtifact<'ctx, 'm> {
 
     pub fn add_functions(
         &mut self,
-        defs: &HashMap<CtId, Arc<CtDef>>,
+        defs: &HashMap<CtId, Arc<Def>>,
         ctx: &mut ContextArtifact<'ctx>,
     ) {
         // Put symbols
         for (id, def) in defs {
-            if let CtDef::Function(ref def) = **def {
+            if let Def::Function(ref def) = **def {
                 let name = id.index().to_string();
                 let symbol = FunctionSymbol::new(name, def, ctx);
                 assert!(ctx.function_symbol(*id).is_none());
@@ -236,7 +236,7 @@ impl<'ctx: 'm, 'm> ModuleArtifact<'ctx, 'm> {
 
         // Generate function bodies
         for (id, def) in defs {
-            if let CtDef::Function(ref def) = **def {
+            if let Def::Function(ref def) = **def {
                 let function = self.capture_function(*id, ctx).clone();
                 codegen::function_body(&function, def, self, ctx);
             }

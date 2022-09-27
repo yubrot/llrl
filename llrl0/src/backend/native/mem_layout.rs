@@ -77,15 +77,15 @@ impl LayoutResolver {
         }
     }
 
-    pub fn register(&mut self, defs: &HashMap<CtId, Arc<CtDef>>) {
+    pub fn register(&mut self, defs: &HashMap<CtId, Arc<Def>>) {
         for (id, def) in defs {
-            if matches!(**def, CtDef::Struct(_) | CtDef::Union(_)) {
+            if matches!(**def, Def::Struct(_) | Def::Union(_)) {
                 self.register_visit(&Ct::Id(*id), defs);
             }
         }
     }
 
-    fn register_visit(&mut self, ty: &Ct, defs: &HashMap<CtId, Arc<CtDef>>) -> (usize, usize) {
+    fn register_visit(&mut self, ty: &Ct, defs: &HashMap<CtId, Arc<Def>>) -> (usize, usize) {
         let id = match ty {
             Ct::Id(id) => match self.map.get(id) {
                 Some(None) => panic!("Unsized type: {}", id),
@@ -100,7 +100,7 @@ impl LayoutResolver {
 
         self.map.insert(id, None);
         let layout = match defs.get(&id).map(|def| &**def) {
-            Some(CtDef::Struct(ty)) => Layout::product(
+            Some(Def::Struct(ty)) => Layout::product(
                 ty.fields
                     .iter()
                     .map(|f| {
@@ -109,7 +109,7 @@ impl LayoutResolver {
                     })
                     .collect(),
             ),
-            Some(CtDef::Union(ty)) => Layout::sum(
+            Some(Def::Union(ty)) => Layout::sum(
                 ty.tys
                     .iter()
                     .map(|f| self.register_visit(f, defs))

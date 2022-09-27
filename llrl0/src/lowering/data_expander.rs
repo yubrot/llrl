@@ -1,6 +1,6 @@
 //! Expands data types and pattern matching to lower level representations.
 
-use super::{ir::*, rewriter, traverser};
+use super::ir::*;
 use crate::topological_sort;
 use derive_new::new;
 use if_chain::if_chain;
@@ -8,7 +8,7 @@ use itertools::Itertools;
 use std::collections::HashMap;
 
 pub trait Env {
-    fn add_def(&mut self, def: CtDef) -> CtId;
+    fn add_def(&mut self, def: Def) -> CtId;
 
     fn data_expansions(&mut self) -> &mut HashMap<CtId, DataExpansion>;
 }
@@ -99,20 +99,20 @@ pub enum DataExpansion {
 
 impl DataExpansion {
     pub fn boxed_struct_on(env: &mut impl Env, fields: Vec<Ct>) -> Self {
-        Self::BoxedStruct(env.add_def(CtDef::Struct(Struct::new(StructRepr::Standard, fields))))
+        Self::BoxedStruct(env.add_def(Def::Struct(Struct::new(StructRepr::Standard, fields))))
     }
 
     pub fn struct_on(env: &mut impl Env, fields: Vec<Ct>) -> Self {
-        Self::Struct(env.add_def(CtDef::Struct(Struct::new(StructRepr::Standard, fields))))
+        Self::Struct(env.add_def(Def::Struct(Struct::new(StructRepr::Standard, fields))))
     }
 
     pub fn c_struct_on(env: &mut impl Env, fields: Vec<Ct>) -> Self {
-        Self::Struct(env.add_def(CtDef::Struct(Struct::new(StructRepr::C, fields))))
+        Self::Struct(env.add_def(Def::Struct(Struct::new(StructRepr::C, fields))))
     }
 
     pub fn boxed_tagged_on(env: &mut impl Env, size: usize, tagged_body: TaggedDataBody) -> Self {
         Self::BoxedTagged(
-            env.add_def(CtDef::Struct(Struct::new(
+            env.add_def(Def::Struct(Struct::new(
                 StructRepr::Standard,
                 vec![DataExpansion::enum_ct(size), Ct::ptr(tagged_body.to_ct())],
             ))),
@@ -123,7 +123,7 @@ impl DataExpansion {
 
     pub fn tagged_on(env: &mut impl Env, size: usize, tagged_body: TaggedDataBody) -> Self {
         Self::Tagged(
-            env.add_def(CtDef::Struct(Struct::new(
+            env.add_def(Def::Struct(Struct::new(
                 StructRepr::Standard,
                 vec![DataExpansion::enum_ct(size), tagged_body.to_ct()],
             ))),
@@ -265,18 +265,18 @@ impl TaggedDataBody {
     pub fn struct_on(env: &mut impl Env, i: usize, fields: Vec<Ct>) -> Self {
         Self::Struct(
             i,
-            env.add_def(CtDef::Struct(Struct::new(StructRepr::Standard, fields))),
+            env.add_def(Def::Struct(Struct::new(StructRepr::Standard, fields))),
         )
     }
 
     pub fn union_on(env: &mut impl Env, cons: impl IntoIterator<Item = Vec<Ct>>) -> Self {
         let cons = cons
             .into_iter()
-            .map(|fields| env.add_def(CtDef::Struct(Struct::new(StructRepr::Standard, fields))))
+            .map(|fields| env.add_def(Def::Struct(Struct::new(StructRepr::Standard, fields))))
             .collect::<Vec<_>>();
 
         TaggedDataBody::Union(
-            env.add_def(CtDef::Union(Union::new(
+            env.add_def(Def::Union(Union::new(
                 cons.iter().map(|id| Ct::Id(*id)).collect(),
             ))),
             cons,

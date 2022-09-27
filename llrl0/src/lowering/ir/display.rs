@@ -1,4 +1,4 @@
-use super::ir::*;
+use super::*;
 use crate::string;
 use itertools::Itertools;
 use std::fmt;
@@ -37,7 +37,7 @@ impl fmt::Display for Ct {
     }
 }
 
-impl fmt::Display for CtDef {
+impl fmt::Display for Def {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Alias(ct) => write!(f, "{}", ct),
@@ -143,7 +143,7 @@ impl fmt::Display for FunctionEnv {
     }
 }
 
-impl fmt::Display for FunctionParam {
+impl fmt::Display for RtParam {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}: {}", self.id, self.ty)
     }

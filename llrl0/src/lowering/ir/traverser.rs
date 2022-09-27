@@ -1,4 +1,4 @@
-use super::ir::*;
+use super::*;
 use std::collections::HashSet;
 
 pub fn traverse<T: Traverser>(src: &impl Traverse, traverser: &mut T) -> Result<(), T::Error> {
@@ -115,7 +115,7 @@ impl Traverse for Ct {
     }
 }
 
-impl Traverse for CtDef {
+impl Traverse for Def {
     fn traverse<T: Traverser>(&self, traverser: &mut T) -> Result<(), T::Error> {
         match self {
             Self::Alias(ct) => traverser.traverse(ct),
@@ -172,7 +172,7 @@ impl Traverse for FunctionEnv {
     }
 }
 
-impl Traverse for FunctionParam {
+impl Traverse for RtParam {
     fn traverse<T: Traverser>(&self, traverser: &mut T) -> Result<(), T::Error> {
         traverser.traverse(&self.ty)?;
         traverser.after_rt_def(self.id, || self.ty.clone())

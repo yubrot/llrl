@@ -25,7 +25,7 @@ pub trait Env<'m>: Sized {
         src.translate(self)
     }
 
-    fn translate_def(&mut self, src: ast::Construct) -> Option<CtDef> {
+    fn translate_def(&mut self, src: ast::Construct) -> Option<Def> {
         let set = self.module_set();
         match src {
             ast::Construct::Function(id) => Some(self.translate(set.ast(id).unwrap())),
@@ -47,7 +47,7 @@ pub trait Env<'m>: Sized {
         &mut self,
         signature: Option<Option<&Vec<ast::Parameter>>>,
         scheme: &ast::Scheme,
-    ) -> (Vec<CtId>, Vec<FunctionParam>, Ct) {
+    ) -> (Vec<CtId>, Vec<RtParam>, Ct) {
         let mut ct_params = self.translate(&scheme.ty_params);
         ct_params.append(&mut self.translate(&scheme.s_params));
 
@@ -60,7 +60,7 @@ pub trait Env<'m>: Sized {
                     .map(|(param, ty)| {
                         let id = self.translate(param);
                         let ty = self.translate(ty);
-                        FunctionParam::new(id, ty)
+                        RtParam::new(id, ty)
                     })
                     .collect();
                 let ret_ty = self.translate(ret_ty);
@@ -70,7 +70,7 @@ pub trait Env<'m>: Sized {
                 let params = self
                     .translate(param_tys)
                     .into_iter()
-                    .map(|ty| FunctionParam::new(self.alloc_rt(), ty))
+                    .map(|ty| RtParam::new(self.alloc_rt(), ty))
                     .collect();
                 let ret_ty = self.translate(ret_ty);
                 (params, ret_ty)
@@ -144,7 +144,7 @@ impl Translate for ast::NodeId<ast::Function> {
 }
 
 impl Translate for ast::Function {
-    type Dest = CtDef;
+    type Dest = Def;
 
     fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         let scheme = env.module_set().scheme_of(self.id).unwrap();
@@ -157,9 +157,9 @@ impl Translate for ast::Function {
             FunctionKind::Standard
         };
 
-        CtDef::generic(
+        Def::generic(
             ct_params,
-            CtDef::Function(Function::new(None, params, ret_ty, body, kind)),
+            Def::Function(Function::new(None, params, ret_ty, body, kind)),
         )
     }
 }
@@ -173,7 +173,7 @@ impl Translate for ast::Parameter {
 }
 
 impl Translate for ast::CFunction {
-    type Dest = CtDef;
+    type Dest = Def;
 
     fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         let (params, ret_ty) = match self.ann.body.matches_fun() {
@@ -181,7 +181,7 @@ impl Translate for ast::CFunction {
                 let params = env
                     .translate(param_tys)
                     .into_iter()
-                    .map(|ty| FunctionParam::new(env.alloc_rt(), ty))
+                    .map(|ty| RtParam::new(env.alloc_rt(), ty))
                     .collect();
                 let ret_ty = env.translate(ret_ty);
                 (params, ret_ty)
@@ -198,7 +198,7 @@ impl Translate for ast::CFunction {
             params.iter().map(|p| Rt::Local(p.id)).collect(),
         );
 
-        CtDef::Function(Function::new(
+        Def::Function(Function::new(
             None,
             params,
             ret_ty,
@@ -209,7 +209,7 @@ impl Translate for ast::CFunction {
 }
 
 impl Translate for ast::BuiltinOp {
-    type Dest = CtDef;
+    type Dest = Def;
 
     fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         let symbol = env.module_set().symbol_of(self.id).unwrap();
@@ -219,9 +219,9 @@ impl Translate for ast::BuiltinOp {
         let args = params.iter().map(|p| Rt::Local(p.id)).collect();
         let rt = builtin_rt(symbol, &self.builtin_name, ct_args, args);
 
-        CtDef::generic(
+        Def::generic(
             ct_params,
-            CtDef::Function(Function::new(
+            Def::Function(Function::new(
                 None,
                 params,
                 ret_ty,
@@ -241,21 +241,21 @@ impl Translate for ast::NodeId<ast::Macro> {
 }
 
 impl Translate for ast::Macro {
-    type Dest = CtDef;
+    type Dest = Def;
 
     fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         let src_ty = env.translate(&ast::Macro::src_ty());
         let dest_ty = env.translate(&ast::Macro::dest_ty());
 
-        let param = FunctionParam::new(env.translate(&self.param), src_ty);
+        let param = RtParam::new(env.translate(&self.param), src_ty);
         let rt = env.translate(&self.body);
 
-        CtDef::Function(Function::r#macro(param, dest_ty, rt))
+        Def::Function(Function::r#macro(param, dest_ty, rt))
     }
 }
 
 impl<'a> Translate for ast::DataType<'a> {
-    type Dest = CtDef;
+    type Dest = Def;
 
     fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         let repr = env.translate(&self.con.repr);
@@ -265,7 +265,7 @@ impl<'a> Translate for ast::DataType<'a> {
             .map(|value_con| env.translate(&value_con.fields).unwrap_or_default())
             .collect();
 
-        CtDef::generic(params, CtDef::Data(Data::new(repr, cons)))
+        Def::generic(params, Def::Data(Data::new(repr, cons)))
     }
 }
 
@@ -282,7 +282,7 @@ impl Translate for ast::DataRepr {
 }
 
 impl Translate for ast::DataValueCon {
-    type Dest = CtDef;
+    type Dest = Def;
 
     fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         let index = {
@@ -300,9 +300,9 @@ impl Translate for ast::DataValueCon {
             params.iter().map(|p| Rt::Local(p.id)).collect(),
         );
 
-        CtDef::generic(
+        Def::generic(
             ct_params,
-            CtDef::Function(Function::new(
+            Def::Function(Function::new(
                 None,
                 params,
                 ret_ty,
@@ -314,17 +314,17 @@ impl Translate for ast::DataValueCon {
 }
 
 impl Translate for ast::BuiltinTypeCon {
-    type Dest = CtDef;
+    type Dest = Def;
 
     fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         let params = env.translate(&self.ty_params);
         let ty = builtin_ct(&self.builtin_name, &params);
-        CtDef::generic(params, CtDef::Alias(ty))
+        Def::generic(params, Def::Alias(ty))
     }
 }
 
 impl Translate for ast::BuiltinValueCon {
-    type Dest = CtDef;
+    type Dest = Def;
 
     fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         let symbol = env.module_set().symbol_of(self.id).unwrap();
@@ -336,9 +336,9 @@ impl Translate for ast::BuiltinValueCon {
         let args = params.iter().map(|p| Rt::Local(p.id)).collect();
         let rt = builtin_rt(symbol, &self.builtin_name, ct_args, args);
 
-        CtDef::generic(
+        Def::generic(
             ct_params,
-            CtDef::Function(Function::new(
+            Def::Function(Function::new(
                 None,
                 params,
                 ty,
@@ -358,7 +358,7 @@ impl Translate for ast::ValueConField {
 }
 
 impl<'a> Translate for ast::Instance<'a> {
-    type Dest = CtDef;
+    type Dest = Def;
 
     fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         let ast::ConstraintRep::Class(ref class_id, ref class_args) = self.con.target.rep;
@@ -397,12 +397,12 @@ impl<'a> Translate for ast::Instance<'a> {
             table.insert(c, s);
         }
 
-        CtDef::generic(params, CtDef::AliasTable(table))
+        Def::generic(params, Def::AliasTable(table))
     }
 }
 
 impl Translate for ast::ClassMethod {
-    type Dest = Option<CtDef>;
+    type Dest = Option<Def>;
 
     fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         if let Some(ref body) = self.default_body {
@@ -416,11 +416,11 @@ impl Translate for ast::ClassMethod {
 
             let body = env.translate(body);
 
-            Some(CtDef::generic(
+            Some(Def::generic(
                 class_ct_params,
-                CtDef::generic(
+                Def::generic(
                     method_ct_params,
-                    CtDef::Function(Function::new(
+                    Def::Function(Function::new(
                         None,
                         params,
                         ret_ty,
@@ -436,7 +436,7 @@ impl Translate for ast::ClassMethod {
 }
 
 impl Translate for ast::InstanceMethod {
-    type Dest = CtDef;
+    type Dest = Def;
 
     fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         let inst = env.module_set().ast(self.instance_con).unwrap();
@@ -455,11 +455,11 @@ impl Translate for ast::InstanceMethod {
             FunctionKind::Standard
         };
 
-        CtDef::generic(
+        Def::generic(
             inst_ct_params,
-            CtDef::generic(
+            Def::generic(
                 method_ct_params,
-                CtDef::Function(Function::new(None, params, ret_ty, body, kind)),
+                Def::Function(Function::new(None, params, ret_ty, body, kind)),
             ),
         )
     }

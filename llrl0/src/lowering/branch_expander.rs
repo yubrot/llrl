@@ -1,4 +1,4 @@
-use super::{ir::*, rewriter};
+use super::ir::*;
 use derive_new::new;
 use smallvec::SmallVec;
 use std::collections::{HashMap, VecDeque};
@@ -257,17 +257,17 @@ struct FlattenPat {
 }
 
 impl FlattenPat {
-    fn collect(pat: RtPat) -> (VecDeque<FlattenPat>, Vec<FunctionParam>) {
+    fn collect(pat: RtPat) -> (VecDeque<FlattenPat>, Vec<RtParam>) {
         fn visit(
             pat: RtPat,
             path: Path,
             pats: &mut VecDeque<FlattenPat>,
-            params: &mut Vec<FunctionParam>,
+            params: &mut Vec<RtParam>,
         ) {
             match pat {
                 RtPat::Var(id, ty, as_pat) => {
                     pats.push_back(FlattenPat::new(path.clone(), Condition::Bind(id)));
-                    params.push(FunctionParam::new(id, ty));
+                    params.push(RtParam::new(id, ty));
                     if let Some(pat) = as_pat {
                         visit(*pat, path, pats, params);
                     }

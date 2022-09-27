@@ -1,7 +1,7 @@
 //! Normalizes the IR by evaluating Ct.
-//! All generic CtDef instantiations and LocalFun definitions are lifted to the top level.
+//! All generic Def instantiations and LocalFun definitions are lifted to the top level.
 
-use super::{ir::*, rewriter, traverser};
+use super::ir::*;
 use if_chain::if_chain;
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
@@ -19,19 +19,19 @@ pub fn normalize(src: &mut impl rewriter::Rewrite, env: &mut impl Env) {
 pub trait Env: Sized {
     fn instantiate(&mut self, id: CtId, args: Vec<Ct>) -> CtId;
 
-    fn get_processing_ct_def(&mut self, id: CtId) -> Option<ProcessingCtDef>;
+    fn get_processing_def(&mut self, id: CtId) -> Option<ProcessingDef>;
 
     fn alloc_ct(&mut self) -> CtId;
 
-    fn define_ct(&mut self, id: CtId, def: CtDef);
+    fn define_ct(&mut self, id: CtId, def: Def);
 
     fn alloc_rt(&mut self) -> RtId;
 }
 
 #[derive(Debug)]
-pub struct ProcessingCtDef {
+pub struct ProcessingDef {
     pub is_normalized: bool,
-    pub def: Arc<CtDef>,
+    pub def: Arc<Def>,
 }
 
 #[derive(Debug)]
@@ -46,8 +46,8 @@ impl<'e, E: Env> rewriter::Rewriter for Normalizer<'e, E> {
     fn after_ct(&mut self, ct: &mut Ct) -> Result<(), ()> {
         match ct {
             Ct::Id(id) => if_chain! {
-                if let Some(ProcessingCtDef { is_normalized, def }) = self.env.get_processing_ct_def(*id);
-                if let CtDef::Alias(x) = def.as_ref();
+                if let Some(ProcessingDef { is_normalized, def }) = self.env.get_processing_def(*id);
+                if let Def::Alias(x) = def.as_ref();
                 then {
                     *ct = x.clone();
                     if !is_normalized {
@@ -68,8 +68,8 @@ impl<'e, E: Env> rewriter::Rewriter for Normalizer<'e, E> {
             },
             Ct::TableGet(get) => if_chain! {
                 if let Ct::Id(table_id) = get.0;
-                if let Some(ProcessingCtDef { is_normalized, def }) = self.env.get_processing_ct_def(table_id);
-                if let CtDef::AliasTable(table) = def.as_ref();
+                if let Some(ProcessingDef { is_normalized, def }) = self.env.get_processing_def(table_id);
+                if let Def::AliasTable(table) = def.as_ref();
                 then {
                     if let Some(x) = table.get(get.1) {
                         *ct = x.clone();
@@ -101,8 +101,8 @@ impl<'e, E: Env> rewriter::Rewriter for Normalizer<'e, E> {
         if_chain! {
             if let Rt::Call(call) = rt;
             if let Rt::StaticFun(Ct::Id(id), None) = call.0;
-            if let Some(ProcessingCtDef { is_normalized, def }) = self.env.get_processing_ct_def(id);
-            if let CtDef::Function(f) = def.as_ref();
+            if let Some(ProcessingDef { is_normalized, def }) = self.env.get_processing_def(id);
+            if let Def::Function(f) = def.as_ref();
             if f.kind == FunctionKind::Transparent;
             let args = std::mem::take(&mut call.1);
             then {
@@ -161,7 +161,7 @@ impl ClosureConversion {
         let env_params = cc
             .captured_vars
             .iter()
-            .map(|(var, id)| FunctionParam::new(*id, normalizer.local_var_types[var].clone()))
+            .map(|(var, id)| RtParam::new(*id, normalizer.local_var_types[var].clone()))
             .collect::<Vec<_>>();
         let env_args = cc
             .captured_vars
@@ -175,9 +175,9 @@ impl ClosureConversion {
             let env = cc
                 .captured_env
                 .map(|id| FunctionEnv::new(id, env_params.clone()));
-            let def = CtDef::generic(
+            let def = Def::generic(
                 fun.ct_params,
-                CtDef::Function(Function::new(
+                Def::Function(Function::new(
                     env,
                     fun.params,
                     fun.ret,

@@ -38,7 +38,7 @@ impl Backend {
 }
 
 impl lowering::Backend for Backend {
-    fn put_def(&mut self, id: CtId, def: Arc<CtDef>) {
+    fn put_def(&mut self, id: CtId, def: Arc<Def>) {
         self.sender.send(Request::PutDef(id, def)).unwrap();
     }
 
@@ -90,7 +90,7 @@ impl From<Options> for Backend {
 
 #[derive(Debug)]
 enum Request {
-    PutDef(CtId, Arc<CtDef>),
+    PutDef(CtId, Arc<Def>),
     PutMain(Init),
     ExecuteMacro(CtId, Syntax<Sexp>, Sender<Result<Syntax<Sexp>, String>>),
     ExecuteMain(Sender<Result<bool, String>>),
@@ -127,7 +127,7 @@ struct Builder<'ctx> {
     executor: Executor<'ctx>,
     optimizer: Optimizer,
     artifact: ContextArtifact<'ctx>,
-    queued_defs: HashMap<CtId, Arc<CtDef>>,
+    queued_defs: HashMap<CtId, Arc<Def>>,
     queued_main: Vec<Init>,
     generation: i32,
 }
@@ -156,7 +156,7 @@ impl<'ctx> Builder<'ctx> {
         }
     }
 
-    fn put_def(&mut self, id: CtId, def: Arc<CtDef>) {
+    fn put_def(&mut self, id: CtId, def: Arc<Def>) {
         self.queued_defs.insert(id, def);
     }
 

@@ -1,6 +1,4 @@
-use super::{
-    branch_expander, data_expander, heap2stack, ir::*, normalizer, rewriter, translator, traverser,
-};
+use super::{branch_expander, data_expander, heap2stack, ir::*, normalizer, translator};
 use crate::ast;
 use crate::module::ModuleSet;
 use derive_new::new;
@@ -14,7 +12,7 @@ pub struct Context {
     rt_id_gen: RtIdGen,
     ct_mapping: HashMap<CtKey, CtId>,
     rt_mapping: HashMap<RtKey, RtId>,
-    ct_defs: HashMap<CtId, ContextCtDef>,
+    defs: HashMap<CtId, ProcessingDef>,
     data_expansions: HashMap<CtId, data_expander::DataExpansion>,
     next_generation: Generation,
 }
@@ -27,21 +25,21 @@ impl Context {
             rt_id_gen: RtIdGen::new(),
             ct_mapping: HashMap::new(),
             rt_mapping: HashMap::new(),
-            ct_defs: HashMap::new(),
+            defs: HashMap::new(),
             data_expansions: HashMap::new(),
             next_generation: Generation(0),
         }
     }
 
-    pub fn def(&self, id: CtId) -> Option<&Arc<CtDef>> {
-        self.ct_defs
+    pub fn def(&self, id: CtId) -> Option<&Arc<Def>> {
+        self.defs
             .get(&id)
             .filter(|cdef| cdef.is_populated())
             .map(|cdef| &cdef.def)
     }
 
-    pub fn defs(&self) -> impl Iterator<Item = (CtId, &Arc<CtDef>)> {
-        self.ct_defs
+    pub fn defs(&self) -> impl Iterator<Item = (CtId, &Arc<Def>)> {
+        self.defs
             .iter()
             .filter(|(_, cdef)| cdef.is_populated())
             .map(|(id, cdef)| (*id, &cdef.def))
@@ -51,7 +49,7 @@ impl Context {
         &mut self,
         src: &T,
         set: &impl ModuleSet,
-    ) -> (T::Dest, impl Iterator<Item = (CtId, &Arc<CtDef>)>)
+    ) -> (T::Dest, impl Iterator<Item = (CtId, &Arc<Def>)>)
     where
         T: translator::Translate,
         T::Dest: traverser::Traverse + rewriter::Rewrite,
@@ -62,15 +60,15 @@ impl Context {
         let generation = self.next_generation;
         self.next_generation.0 += 1;
 
-        // Assign generation information to each CtDef generated in this populate pass.
+        // Assign generation information to each Def generated in this populate pass.
         let mut generation_defs = GenerationCollector::collect(&dest, self);
         for id in generation_defs.iter() {
-            self.ct_defs.get_mut(id).unwrap().generation = Some(generation);
+            self.defs.get_mut(id).unwrap().generation = Some(generation);
         }
 
         DataExpansionComputetor::compute(generation, &mut generation_defs, self);
 
-        let mut target = CanonicalizeTarget::new(&generation_defs, &mut dest, &mut self.ct_defs);
+        let mut target = CanonicalizeTarget::new(&generation_defs, &mut dest, &mut self.defs);
         data_expander::expand(&mut target, &self.data_expansions);
         branch_expander::expand(&mut target, &mut MatchExpander::new(&mut self.rt_id_gen));
         heap2stack::run(&mut target);
@@ -79,18 +77,18 @@ impl Context {
         // * Closure inlining: we can inline closure immediate calls like $<f>{<env>}(..)
         // * More escape analysis to promote heap allocations to stack allocations
 
-        let ct_defs = &self.ct_defs;
+        let defs = &self.defs;
         let related_defs =
             generation_defs
                 .into_iter()
-                .filter_map(move |id| match ct_defs.get(&id).unwrap() {
+                .filter_map(move |id| match defs.get(&id).unwrap() {
                     cdef if cdef.is_populated() => Some((id, &cdef.def)),
                     _ => None,
                 });
         (dest, related_defs)
     }
 
-    fn bind_ct(&mut self, key: CtKey, build: impl FnOnce(&mut Self) -> Option<CtDef>) -> CtId {
+    fn bind_ct(&mut self, key: CtKey, build: impl FnOnce(&mut Self) -> Option<Def>) -> CtId {
         match self.ct_mapping.entry(key) {
             hash_map::Entry::Occupied(e) => *e.get(),
             hash_map::Entry::Vacant(e) => {
@@ -98,11 +96,11 @@ impl Context {
                 e.insert(id);
                 if let Some(def) = build(self) {
                     let phase = match def {
-                        CtDef::Generic(_, _) => Phase::Generalized,
+                        Def::Generic(_, _) => Phase::Generalized,
                         _ => Phase::Instantiated,
                     };
-                    self.ct_defs
-                        .insert(id, ContextCtDef::new(phase, None, Arc::new(def)));
+                    self.defs
+                        .insert(id, ProcessingDef::new(phase, None, Arc::new(def)));
                 }
                 id
             }
@@ -113,12 +111,12 @@ impl Context {
 impl normalizer::Env for Context {
     fn instantiate(&mut self, id: CtId, args: Vec<Ct>) -> CtId {
         self.bind_ct(CtKey::Inst(id, args.clone()), move |self_| {
-            let def = match self_.ct_defs.get(&id) {
+            let def = match self_.defs.get(&id) {
                 Some(cdef) => &cdef.def,
                 None => panic!("Attempt to instantiate {}: which is not a definition", id),
             };
             match def.as_ref() {
-                CtDef::Generic(params, ct) => {
+                Def::Generic(params, ct) => {
                     assert_eq!(params.len(), args.len());
                     let mut ct = ct.as_ref().clone();
                     rewriter::replace_ct(&mut ct, params.iter().copied().zip(args).collect());
@@ -132,39 +130,39 @@ impl normalizer::Env for Context {
         })
     }
 
-    fn get_processing_ct_def(&mut self, id: CtId) -> Option<normalizer::ProcessingCtDef> {
-        let cdef = self.ct_defs.get(&id)?;
+    fn get_processing_def(&mut self, id: CtId) -> Option<normalizer::ProcessingDef> {
+        let cdef = self.defs.get(&id)?;
         let mut def = Arc::clone(&cdef.def);
         let is_normalized = match cdef.phase {
             Phase::Generalized => false,
             Phase::Instantiated => {
-                self.ct_defs.get_mut(&id).unwrap().phase = Phase::Normalizing;
+                self.defs.get_mut(&id).unwrap().phase = Phase::Normalizing;
                 def = Arc::new({
                     let mut def = def.as_ref().clone();
                     normalizer::normalize(&mut def, self);
                     def
                 });
-                self.ct_defs.get_mut(&id).unwrap().phase = Phase::Normalized;
-                self.ct_defs.get_mut(&id).unwrap().def = Arc::clone(&def);
+                self.defs.get_mut(&id).unwrap().phase = Phase::Normalized;
+                self.defs.get_mut(&id).unwrap().def = Arc::clone(&def);
                 true
             }
             Phase::Normalizing => false,
             Phase::Normalized => true,
         };
-        Some(normalizer::ProcessingCtDef { is_normalized, def })
+        Some(normalizer::ProcessingDef { is_normalized, def })
     }
 
     fn alloc_ct(&mut self) -> CtId {
         self.ct_id_gen.next()
     }
 
-    fn define_ct(&mut self, id: CtId, def: CtDef) {
+    fn define_ct(&mut self, id: CtId, def: Def) {
         let phase = match def {
-            CtDef::Generic(_, _) => Phase::Generalized,
+            Def::Generic(_, _) => Phase::Generalized,
             _ => Phase::Instantiated,
         };
-        let def = ContextCtDef::new(phase, None, Arc::new(def));
-        if self.ct_defs.insert(id, def).is_some() {
+        let def = ProcessingDef::new(phase, None, Arc::new(def));
+        if self.defs.insert(id, def).is_some() {
             panic!("Duplicate definition of {}", id);
         }
     }
@@ -183,17 +181,17 @@ enum CtKey {
 type RtKey = ast::Construct;
 
 #[derive(Debug, Clone, new)]
-struct ContextCtDef {
+struct ProcessingDef {
     phase: Phase,
     generation: Option<Generation>,
-    def: Arc<CtDef>,
+    def: Arc<Def>,
 }
 
-impl ContextCtDef {
+impl ProcessingDef {
     fn is_populated(&self) -> bool {
         self.phase == Phase::Normalized
             && self.generation.is_some()
-            && !matches!(*self.def, CtDef::Data(_))
+            && !matches!(*self.def, Def::Data(_))
     }
 }
 
@@ -254,7 +252,7 @@ struct DataExpansionComputetor<'a> {
     ct_id_gen: &'a mut CtIdGen,
     data_expansions: &'a mut HashMap<CtId, data_expander::DataExpansion>,
     #[new(default)]
-    defs: HashMap<CtId, CtDef>,
+    defs: HashMap<CtId, Def>,
 }
 
 impl<'a> DataExpansionComputetor<'a> {
@@ -263,11 +261,11 @@ impl<'a> DataExpansionComputetor<'a> {
 
         data_expander::compute(
             {
-                let ct_defs = &ctx.ct_defs;
+                let defs = &ctx.defs;
                 generation_defs
                     .iter()
-                    .filter_map(move |id| match *ct_defs.get(id).unwrap().def {
-                        CtDef::Data(ref data) => Some((*id, data)),
+                    .filter_map(move |id| match *defs.get(id).unwrap().def {
+                        Def::Data(ref data) => Some((*id, data)),
                         _ => None,
                     })
             },
@@ -275,15 +273,15 @@ impl<'a> DataExpansionComputetor<'a> {
         );
 
         for (id, def) in env.defs {
-            let cdef = ContextCtDef::new(Phase::Normalized, Some(generation), Arc::new(def));
-            ctx.ct_defs.insert(id, cdef);
+            let cdef = ProcessingDef::new(Phase::Normalized, Some(generation), Arc::new(def));
+            ctx.defs.insert(id, cdef);
             generation_defs.insert(id);
         }
     }
 }
 
 impl<'a> data_expander::Env for DataExpansionComputetor<'a> {
-    fn add_def(&mut self, def: CtDef) -> CtId {
+    fn add_def(&mut self, def: Def) -> CtId {
         let id = self.ct_id_gen.next();
         self.defs.insert(id, def);
         id
@@ -325,7 +323,7 @@ impl traverser::Traverser for GenerationCollector<'_> {
     fn after_ct(&mut self, ct: &Ct) -> Result<(), ()> {
         if_chain! {
             if let Ct::Id(id) = ct;
-            if let Some(cdef) = self.context.ct_defs.get(id);
+            if let Some(cdef) = self.context.defs.get(id);
             if cdef.generation.is_none() && self.generation_defs.insert(*id);
             then {
                     self.traverse(cdef.def.as_ref())?;
@@ -339,15 +337,15 @@ impl traverser::Traverser for GenerationCollector<'_> {
 struct CanonicalizeTarget<'a, D> {
     generation_defs: &'a BTreeSet<CtId>,
     dest: &'a mut D,
-    ct_defs: &'a mut HashMap<CtId, ContextCtDef>,
+    defs: &'a mut HashMap<CtId, ProcessingDef>,
 }
 
 impl<'a, D: rewriter::Rewrite> rewriter::Rewrite for CanonicalizeTarget<'a, D> {
     fn rewrite<T: rewriter::Rewriter>(&mut self, rewriter: &mut T) -> Result<(), T::Error> {
         rewriter.rewrite(self.dest)?;
         for id in self.generation_defs {
-            let cdef = self.ct_defs.get_mut(id).unwrap();
-            rewriter.rewrite(Arc::make_mut(&mut cdef.def))?;
+            let def = self.defs.get_mut(id).unwrap();
+            rewriter.rewrite(Arc::make_mut(&mut def.def))?;
         }
         Ok(())
     }
