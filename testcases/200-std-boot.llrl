@@ -25,11 +25,11 @@
 
   (function test
     (: (f (some #t) none) (f none (some #t)) (f (some #t) none) (f (some #t) (some #f))
-           (g (err "left") (err "right")) (g (err "left") (ok #t)) (g (ok #t) (err "right")) (g (ok #t) (ok #f))))
+       (g (err "left") (err "right")) (g (err "left") (ok #t)) (g (ok #t) (err "right")) (g (ok #t) (ok #f))))
 
   (match test
     [(: none none none (some (: #t #f))
-            (err "left") (err "left") (err "right") (ok (: #t #f)))
+        (err "left") (err "left") (err "right") (ok (: #t #f)))
       #t]
     [_
       #f]))

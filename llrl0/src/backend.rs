@@ -2,7 +2,6 @@
 
 use std::path;
 
-pub mod interpreter;
 #[cfg(feature = "llvm-backend")]
 pub mod llvm;
 pub mod native;

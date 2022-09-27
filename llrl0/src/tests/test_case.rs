@@ -153,8 +153,6 @@ impl TestTarget {
                 cond.run(&modules, &errors, ctx);
             }
             Self::Backend => {
-                let backend = InterpreterBackend::new();
-                self.run_backend(sources.clone(), cond, backend, ctx);
                 let backend = DefaultBackend::from(BackendOptions::default());
                 self.run_backend(sources, cond, backend, ctx);
             }
