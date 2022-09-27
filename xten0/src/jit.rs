@@ -34,7 +34,7 @@ pub enum LinkError {
 
 /// A JIT execution engine.
 #[derive(Debug)]
-pub struct Engine<R: SymbolResolver> {
+pub struct Engine<R: SymbolResolver = fn(&str) -> Option<*const u8>> {
     global: Global<R>,
     ro: Segment,
     rw: Segment,
@@ -42,8 +42,10 @@ pub struct Engine<R: SymbolResolver> {
 }
 
 impl<R: SymbolResolver> Engine<R> {
-    /// Initializes the JIT engine. `hint_addr` is used as a hint for mmap areas to be allocated.
-    pub fn new(hint_addr: *const u8, symbol_resolver: R) -> Self {
+    /// Initializes the JIT engine.
+    pub fn new(symbol_resolver: R) -> Self {
+        let hint_box = Box::new(0u8);
+        let hint_addr: *const u8 = &*hint_box;
         Self {
             global: Global::new(hint_addr, symbol_resolver),
             ro: Segment::new(hint_addr, Protect::ReadOnly),
@@ -450,9 +452,7 @@ mod tests {
 
     #[test]
     fn jit() {
-        let some_heap_space = Box::new(0u8);
-        let some_heap_ptr = &*some_heap_space as *const u8;
-        let mut engine = Engine::new(some_heap_ptr, symbol_resolver::none);
+        let mut engine = Engine::new(symbol_resolver::none);
 
         static FIB_LOG: Lazy<Mutex<Vec<i32>>> = Lazy::new(|| Mutex::new(Vec::new()));
         extern "C" fn log_fib(value: i32) {
@@ -476,9 +476,7 @@ mod tests {
 
     #[test]
     fn jit_multiple_objects() {
-        let some_heap_space = Box::new(0u8);
-        let some_heap_ptr = &*some_heap_space as *const u8;
-        let mut engine = Engine::new(some_heap_ptr, symbol_resolver::none);
+        let mut engine = Engine::new(symbol_resolver::none);
 
         let obj1 = test_object_1().unwrap();
         assert_eq!(engine.add_object(&obj1), Ok(()));
@@ -505,9 +503,7 @@ mod tests {
 
     #[test]
     fn jit_dl() {
-        let some_heap_space = Box::new(0u8);
-        let some_heap_ptr = &*some_heap_space as *const u8;
-        let mut engine = Engine::new(some_heap_ptr, symbol_resolver::dl::default);
+        let mut engine = Engine::new(symbol_resolver::dl::default);
 
         let obj = test_object_dl().unwrap();
         assert_eq!(engine.add_object(&obj), Ok(()));

@@ -1,8 +1,8 @@
 // https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html
 
 use super::encoding::{Displacement, Reg, Rm, Scale};
-use std::ops::{Add, Mul, Sub};
 use derive_new::new;
+use std::ops::{Add, Mul, Sub};
 
 // 64-bit general-purpose (GP) register.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
@@ -357,6 +357,8 @@ impl From<Rip> for Address<Rip, (), ()> {
 macro_rules! impl_add_sub_disp {
     // Address<$base, (), _> + $disp
     // Address<$base, (), _> - $disp
+    // Address<$base, $disp, _> + $disp
+    // Address<$base, $disp, _> - $disp
     // $base + $disp
     // $base - $disp
     ($base:ty, $disp:ty) => {
@@ -373,6 +375,22 @@ macro_rules! impl_add_sub_disp {
 
             fn sub(self, disp: $disp) -> Self::Output {
                 Address::new(self.base, -disp, self.idxs)
+            }
+        }
+
+        impl<Idxs> Add<$disp> for Address<$base, $disp, Idxs> {
+            type Output = Address<$base, $disp, Idxs>;
+
+            fn add(self, disp: $disp) -> Self::Output {
+                Address::new(self.base, self.disp + disp, self.idxs)
+            }
+        }
+
+        impl<Idxs> Sub<$disp> for Address<$base, $disp, Idxs> {
+            type Output = Address<$base, $disp, Idxs>;
+
+            fn sub(self, disp: $disp) -> Self::Output {
+                Address::new(self.base, self.disp - disp, self.idxs)
             }
         }
 
@@ -452,14 +470,6 @@ impl_add_idxs!(Gpr64, i32); // GP + disp32 + IndexScale
 /// A memory operand. Semantically equivalent to `[..]` in Intel assembler syntax.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
 pub struct Memory<T = Rm>(pub T);
-
-/// A type-erased memory operand.
-pub fn memory<Address>(address: Address) -> Memory
-where
-    Rm: From<Memory<Address>>,
-{
-    Memory(Memory(address).into())
-}
 
 impl From<Memory> for Rm {
     fn from(Memory(rm): Memory) -> Self {
@@ -599,6 +609,24 @@ where
             .sib_index(idxs.index.register_code())
             .sib_scale(idxs.scale)
             .disp(disp)
+    }
+}
+
+/// A type-erased memory operand.
+pub fn memory<A: MemoryAddress>(address: A) -> Memory {
+    A::common_rep(Memory(address))
+}
+
+pub trait MemoryAddress: Sized {
+    fn common_rep(m: Memory<Self>) -> Memory;
+}
+
+impl<T> MemoryAddress for T
+where
+    Rm: From<Memory<T>>,
+{
+    fn common_rep(m: Memory<Self>) -> Memory {
+        Memory(m.into())
     }
 }
 
@@ -765,6 +793,10 @@ mod tests {
         assert_as!(movq(memory(Rip), Rcx), "mov [rip], rcx");
         assert_as!(movq(memory(Rip + 16), Rcx), "mov [rip + 16], rcx");
         assert_as!(movq(memory(Rip - 64), Rcx), "mov [rip - 64], rcx");
+
+        // $disp + $disp
+        assert_as!(movq(memory(Rip - 64 + 32), Rcx), "mov [rip - 32], rcx");
+        assert_as!(movq(memory(Rip + 64 - 32), Rcx), "mov [rip + 32], rcx");
 
         for (ra, sa) in general_purpose_registers() {
             for (rb, sb) in general_purpose_registers() {
