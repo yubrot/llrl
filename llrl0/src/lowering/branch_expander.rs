@@ -1,7 +1,7 @@
 use super::ir::*;
 use derive_new::new;
-use smallvec::SmallVec;
-use std::collections::{HashMap, VecDeque};
+use std::borrow::Cow;
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::rc::Rc;
 
 pub trait Env {
@@ -45,110 +45,122 @@ impl<'e, E: Env> rewriter::Rewriter for MatchExpander<'e, E> {
 
 impl<'e, E: Env> MatchExpander<'e, E> {
     fn expand(&mut self, target: Rt, clauses: Vec<RtClause>) -> Rt {
-        let mut conts = Vec::with_capacity(clauses.len());
-        let mut matrix = VecDeque::with_capacity(clauses.len());
+        if let Some(ty) = target.ty() {
+            let ty = ty.into_owned();
+            let mut conts = Vec::with_capacity(clauses.len());
+            let mut matches = VecDeque::with_capacity(clauses.len());
 
-        for clause in clauses {
-            let (row, params) = FlattenPat::collect(clause.pat);
-            let id = self.env.alloc_rt();
-            conts.push(RtCont::new(id, params, clause.body));
-            matrix.push_back((row, id));
+            for clause in clauses {
+                let pat = FlattenPat::from(clause.pat);
+                let id = self.env.alloc_rt();
+                let ret = clause.body.ty().map(|ty| ty.into_owned());
+                conts.push(RtCont::new(id, pat.binds, clause.body));
+                matches.push_back((pat.parts, id, ret));
+            }
+
+            Rt::let_cont(conts, {
+                let root = self.env.alloc_rt();
+                Rt::let_var(vec![RtVar::new(root, ty.clone(), target)], {
+                    let progress = Box::new(MatchProgress::new(root, ty));
+                    self.expand_matches(progress, matches)
+                })
+            })
+        } else {
+            target
         }
-
-        Rt::let_cont(conts, {
-            let root = self.env.alloc_rt();
-            Rt::let_var(
-                vec![RtVar::new(root, Ct::Hole, target)],
-                self.expand_matrix(Box::new(MatchProgress::new(root)), matrix),
-            )
-        })
     }
 
-    fn expand_matrix(
+    fn expand_matches(
         &mut self,
         progress: Box<MatchProgress>,
-        mut matrix: VecDeque<(VecDeque<FlattenPat>, RtId)>,
+        mut matches: VecDeque<(VecDeque<PatPart>, RtId, Option<Ct>)>,
     ) -> Rt {
-        if let Some((row, id)) = matrix.pop_front() {
+        if let Some((parts, id, ret)) = matches.pop_front() {
             let cont = MatchCont::<Self>::new(
-                move |_, progress| Rt::Cont(id, progress.args),
+                move |_, progress| Rt::cont_call(id, progress.bind_args, ret),
                 move |self_, mut progress| {
-                    progress.reset_args();
-                    self_.expand_matrix(progress, matrix.clone())
+                    progress.bind_args.clear();
+                    self_.expand_matches(progress, matches.clone())
                 },
             );
-            self.expand_row(progress, row, cont)
+            self.expand_pat_parts(progress, parts, cont)
         } else {
             Rt::Never
         }
     }
 
-    fn expand_row(
+    fn expand_pat_parts(
         &mut self,
         progress: Box<MatchProgress>,
-        mut row: VecDeque<FlattenPat>,
+        mut parts: VecDeque<PatPart>,
         cont: MatchCont<Self>,
     ) -> Rt {
-        if let Some(pat) = row.pop_front() {
-            let cont = cont
-                .extend_success(move |self_, progress, cont| self_.expand_row(progress, row, cont));
-            self.expand_pat(progress, pat, cont)
+        if let Some(part) = parts.pop_front() {
+            let cont = cont.extend_success(move |self_, progress, cont| {
+                self_.expand_pat_parts(progress, parts, cont)
+            });
+            self.expand_pat_part(progress, part, cont)
         } else {
             (cont.success)(self, progress)
         }
     }
 
-    fn expand_pat(
+    fn expand_pat_part(
         &mut self,
         mut progress: Box<MatchProgress>,
-        pat: FlattenPat,
+        part: PatPart,
         cont: MatchCont<Self>,
     ) -> Rt {
-        if let Some(result) = progress.path_progressess.get_mut(&pat.path) {
-            match result.is_satisfied(&pat.cond) {
-                Some(true) => (cont.success)(self, progress),
-                Some(false) => (cont.failure)(self, progress),
-                None => match pat.cond.get_test(result.tmp_var) {
-                    None => {
-                        match pat.cond {
-                            Condition::Bind(_) => progress.args.push(result.to_cont_arg()),
-                            _ => result.mark_as_satisfied(pat.cond),
-                        }
-                        (cont.success)(self, progress)
-                    }
-                    Some(e) => {
+        match progress.part(&part) {
+            MatchPartProgress::Satisfied(_) => (cont.success)(self, progress),
+            MatchPartProgress::Unsatisfied => (cont.failure)(self, progress),
+            MatchPartProgress::NotKnown => match progress.part(part.parent()) {
+                MatchPartProgress::Satisfied(Some(parent)) => match part.to_test_expr(parent) {
+                    Some(expr) => {
                         let success = {
                             let mut progress = progress.clone();
-                            progress
-                                .path_progressess
-                                .get_mut(&pat.path)
-                                .unwrap()
-                                .mark_as_satisfied(pat.cond.clone());
+                            if let Some(expr) = part.to_bind_expr(parent) {
+                                progress.bind_args.push(expr);
+                            }
+                            progress.mark_as_passed(part.clone());
                             (cont.success)(self, progress)
                         };
                         let failure = {
-                            progress
-                                .path_progressess
-                                .get_mut(&pat.path)
-                                .unwrap()
-                                .mark_as_unsatisfied(pat.cond);
+                            progress.mark_as_failed(part);
                             (cont.failure)(self, progress)
                         };
-                        Rt::if_(e, success, failure)
+                        Rt::if_(expr, success, failure)
+                    }
+                    None => {
+                        if let Some(expr) = part.to_bind_expr(parent) {
+                            progress.bind_args.push(expr);
+                        }
+                        progress.mark_as_passed(part);
+                        (cont.success)(self, progress)
                     }
                 },
-            }
-        } else {
-            let id = self.env.alloc_rt();
-            let parent = pat.path.clone().parent();
-            let index = pat.path.last_index();
-            let tmp = progress.path_progressess[&parent].get_child(index);
-            Rt::let_var(vec![RtVar::new(id, Ct::Hole, tmp)], {
-                progress
-                    .path_progressess
-                    .insert(pat.path.clone(), PathProgress::new(id));
-                self.expand_pat(progress, pat, cont)
-            })
+                MatchPartProgress::Satisfied(None) => {
+                    // part.parent() is satisfied but is not obtained, put it to a variable
+                    let parent = part.parent().clone();
+                    let grandparent = progress.part(parent.parent()).var().unwrap();
+                    let id = self.env.alloc_rt();
+                    let ty = parent.ty().into_owned();
+                    let get = parent.to_get_expr(grandparent).unwrap();
+                    Rt::let_var(vec![RtVar::new(id, ty, get)], {
+                        progress.set_passed_var(parent, id);
+                        self.expand_pat_part(progress, part, cont)
+                    })
+                }
+                MatchPartProgress::Unsatisfied => (cont.failure)(self, progress),
+                MatchPartProgress::NotKnown => {
+                    // We first need to test that part.parent() is satisfied
+                    let parent = part.parent().clone();
+                    let cont = cont.extend_success(move |self_, progress, cont| {
+                        self_.expand_pat_part(progress, part, cont)
+                    });
+                    self.expand_pat_part(progress, parent, cont)
+                }
+            },
         }
     }
 }
@@ -181,232 +193,300 @@ impl<'e, E: 'e> MatchCont<'e, E> {
     }
 }
 
+// TODO: Use exhaustiveness information to reduce test
 #[derive(Debug, Clone)]
 struct MatchProgress {
-    path_progressess: HashMap<Path, PathProgress>,
-    args: Vec<Rt>,
+    passed: HashMap<PatPart, Option<RtId>>,
+    failed: HashSet<PatPart>,
+    collision: HashMap<PatPart, Vec<PatPart>>,
+    bind_args: Vec<Rt>,
 }
 
 impl MatchProgress {
-    fn new(root: RtId) -> Self {
+    fn new(root: RtId, ty: Ct) -> Self {
         Self {
-            path_progressess: vec![(Path::root(), PathProgress::new(root))]
-                .into_iter()
-                .collect(),
-            args: Vec::new(),
+            passed: vec![(PatPart::Root(ty), Some(root))].into_iter().collect(),
+            failed: HashSet::new(),
+            collision: HashMap::new(),
+            bind_args: Vec::new(),
         }
     }
 
-    fn reset_args(&mut self) {
-        self.args.clear();
-    }
-}
-
-// TODO: Use exhaustiveness information to reduce Condition test
-#[derive(Debug, Clone, new)]
-struct PathProgress {
-    tmp_var: RtId,
-    #[new(default)]
-    satisfied: SmallVec<[Condition; 1]>,
-    #[new(default)]
-    unsatisfied: SmallVec<[Condition; 1]>,
-}
-
-impl PathProgress {
-    fn to_cont_arg(&self) -> Rt {
-        Rt::Local(self.tmp_var)
-    }
-
-    fn mark_as_satisfied(&mut self, cond: Condition) {
-        self.satisfied.push(cond);
-    }
-
-    fn mark_as_unsatisfied(&mut self, cond: Condition) {
-        self.unsatisfied.push(cond);
-    }
-
-    fn is_satisfied(&self, cond: &Condition) -> Option<bool> {
-        for satisfied_cond in self.satisfied.iter() {
-            if satisfied_cond == cond {
-                return Some(true);
-            }
-            if satisfied_cond.excludes(cond) {
-                return Some(false);
+    fn part(&self, part: &PatPart) -> MatchPartProgress {
+        if let Some(var) = self.passed.get(part) {
+            return MatchPartProgress::Satisfied(*var);
+        }
+        if self.failed.contains(part) {
+            return MatchPartProgress::Unsatisfied;
+        }
+        for p in self.collision.get(part.parent()).into_iter().flatten() {
+            if p.excludes(part) {
+                return MatchPartProgress::Unsatisfied;
             }
         }
-        for unsatisfied_cond in self.unsatisfied.iter() {
-            if unsatisfied_cond == cond {
-                return Some(false);
-            }
-        }
-        None
+        MatchPartProgress::NotKnown
     }
 
-    fn get_child(&self, index: usize) -> Rt {
-        self.satisfied
-            .iter()
-            .find_map(|c| c.get_child(self.tmp_var, index))
-            .expect("Cannot get child from satisfied conditions")
+    fn mark_as_passed(&mut self, part: PatPart) {
+        self.collision
+            .entry(part.parent().clone())
+            .or_default()
+            .push(part.clone());
+        assert_eq!(self.passed.insert(part, None), None);
+    }
+
+    fn mark_as_failed(&mut self, part: PatPart) {
+        self.failed.insert(part);
+    }
+
+    fn set_passed_var(&mut self, part: PatPart, var: RtId) {
+        assert_eq!(self.passed.insert(part, Some(var)), Some(None));
     }
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Hash, new)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
+enum MatchPartProgress {
+    NotKnown,
+    Unsatisfied,
+    Satisfied(Option<RtId>),
+}
+
+impl MatchPartProgress {
+    fn var(self) -> Option<RtId> {
+        match self {
+            Self::NotKnown | Self::Unsatisfied => panic!("MatchPartProgress::var on {:?}", self),
+            Self::Satisfied(var) => var,
+        }
+    }
+}
+
+/// A representation of a pattern that is expanded as a set of PatParts.
+#[derive(PartialEq, Eq, Debug, Clone)]
 struct FlattenPat {
-    path: Path,
-    cond: Condition,
+    parts: VecDeque<PatPart>,
+    binds: Vec<RtParam>,
 }
 
 impl FlattenPat {
-    fn collect(pat: RtPat) -> (VecDeque<FlattenPat>, Vec<RtParam>) {
-        fn visit(
-            pat: RtPat,
-            path: Path,
-            pats: &mut VecDeque<FlattenPat>,
-            params: &mut Vec<RtParam>,
-        ) {
-            match pat {
-                RtPat::Var(id, ty, as_pat) => {
-                    pats.push_back(FlattenPat::new(path.clone(), Condition::Bind(id)));
-                    params.push(RtParam::new(id, ty));
-                    if let Some(pat) = as_pat {
-                        visit(*pat, path, pats, params);
-                    }
+    #[allow(clippy::new_without_default)]
+    fn new() -> Self {
+        Self {
+            parts: VecDeque::new(),
+            binds: Vec::new(),
+        }
+    }
+
+    /// Collect the necessary `PatPart`s from `RtPat`.
+    /// Returns true if any pattern is added as a PatPart.
+    fn collect(&mut self, pat: RtPat, parent: &PatPart) -> bool {
+        match pat {
+            RtPat::Var(id, ty, as_pat) => {
+                self.parts.push_back(parent.bind(id));
+                self.binds.push(RtParam::new(id, ty));
+                if let Some(pat) = as_pat {
+                    self.collect(*pat, parent);
                 }
-                RtPat::Wildcard => {}
-                RtPat::Deref(pat) => {
-                    pats.push_back(FlattenPat::new(path.clone(), Condition::Deref));
-                    visit(*pat, path.child(0), pats, params);
+                true
+            }
+            RtPat::Wildcard(_) => false,
+            RtPat::Deref(elem_pat) => {
+                // Deref is unchecked
+                self.collect(*elem_pat, &parent.deref_elem())
+            }
+            RtPat::NonNull(elem_pat) => {
+                let elem = parent.non_null_elem();
+                if !self.collect(*elem_pat, &elem) {
+                    // Non-null check is required even if the element is unused
+                    self.parts.push_back(elem);
                 }
-                RtPat::NonNull(ty, pat) => {
-                    pats.push_back(FlattenPat::new(path.clone(), Condition::NonNull(ty)));
-                    visit(*pat, path.child(0), pats, params);
+                true
+            }
+            RtPat::Null(_) => {
+                self.parts.push_back(parent.null());
+                true
+            }
+            RtPat::Data(_, _, _) => panic!("Found RtPat::Data at branch_expander"),
+            RtPat::Struct(_, args) => {
+                let mut added = false;
+                for (i, arg) in args.into_iter().enumerate() {
+                    let elem = parent.struct_elem(i, arg.ty().into_owned());
+                    added = self.collect(arg, &elem) || added;
                 }
-                RtPat::Null(ty) => {
-                    pats.push_back(FlattenPat::new(path, Condition::Null(ty)));
-                }
-                RtPat::Data(_, _, _) => panic!("Found RtPat::Data at branch_expander"),
-                RtPat::Struct(ty, args) => {
-                    pats.push_back(FlattenPat::new(path.clone(), Condition::Struct(ty)));
-                    for (i, arg) in args.into_iter().enumerate() {
-                        visit(arg, path.clone().child(i), pats, params);
-                    }
-                }
-                RtPat::Reinterpret(from, to, pat) => {
-                    pats.push_back(FlattenPat::new(
-                        path.clone(),
-                        Condition::Reinterpret(from, to),
-                    ));
-                    visit(*pat, path.child(0), pats, params);
-                }
-                RtPat::Syntax(ty, pat) => {
-                    pats.push_back(FlattenPat::new(path.clone(), Condition::Syntax(ty)));
-                    visit(*pat, path.child(0), pats, params);
-                }
-                RtPat::Const(c) => {
-                    pats.push_back(FlattenPat::new(path, Condition::Const(c)));
-                }
+                added
+            }
+            RtPat::Reinterpret(_, pat) => {
+                let ty = pat.ty().into_owned();
+                self.collect(*pat, &parent.reinterpret(ty))
+            }
+            RtPat::Syntax(pat) => self.collect(*pat, &parent.syntax_body()),
+            RtPat::Const(c) => {
+                self.parts.push_back(parent.const_(c));
+                true
             }
         }
-
-        let mut pats = VecDeque::new();
-        let mut params = Vec::new();
-        visit(pat, Path::root(), &mut pats, &mut params);
-        (pats, params)
     }
 }
 
+impl From<RtPat> for FlattenPat {
+    fn from(pat: RtPat) -> Self {
+        let mut p = Self::new();
+        let ty = pat.ty().into_owned();
+        p.collect(pat, &PatPart::Root(ty));
+        p
+    }
+}
+
+/// A representation of a certain part of a pattern.
+/// PatPart is represented by a recursive structure from a leaf of the pattern tree to the root.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Hash)]
-enum Condition {
-    Bind(RtId),
-    Deref,
-    NonNull(Ct),
-    Null(Ct),
-    Struct(Ct),
-    Reinterpret(Ct, Ct),
-    Syntax(Ct),
-    Const(Const),
+enum PatPart {
+    Root(Ct),
+    Bind(RtId, Box<PatPart>), // a marker PatPart indicating variable binding
+    DerefElem(Box<PatPart>),
+    NonNullElem(Box<PatPart>),
+    Null(Box<PatPart>),
+    StructElem(Ct, usize, Box<PatPart>),
+    Reinterpret(Ct, Box<PatPart>),
+    SyntaxBody(Box<PatPart>),
+    Const(Const, Box<PatPart>),
 }
 
-impl Condition {
-    fn excludes(&self, other: &Condition) -> bool {
-        !matches!(self, Self::Bind(_)) && !matches!(other, Self::Bind(_)) && self != other
+impl PatPart {
+    fn bind(&self, var: RtId) -> Self {
+        Self::Bind(var, Box::new(self.clone()))
     }
 
-    fn get_test(&self, var: RtId) -> Option<Rt> {
+    fn deref_elem(&self) -> Self {
+        Self::DerefElem(Box::new(self.clone()))
+    }
+
+    fn non_null_elem(&self) -> Self {
+        Self::NonNullElem(Box::new(self.clone()))
+    }
+
+    fn null(&self) -> Self {
+        Self::Null(Box::new(self.clone()))
+    }
+
+    fn struct_elem(&self, index: usize, elem_ty: Ct) -> Self {
+        Self::StructElem(elem_ty, index, Box::new(self.clone()))
+    }
+
+    fn reinterpret(&self, ty: Ct) -> Self {
+        Self::Reinterpret(ty, Box::new(self.clone()))
+    }
+
+    fn syntax_body(&self) -> Self {
+        Self::SyntaxBody(Box::new(self.clone()))
+    }
+
+    fn const_(&self, c: Const) -> Self {
+        Self::Const(c, Box::new(self.clone()))
+    }
+
+    fn parent(&self) -> &Self {
         match self {
-            Condition::Bind(_) => None,
-            Condition::Deref => None,
-            Condition::NonNull(ty) => Some(Rt::unary(
-                Unary::Not,
-                Rt::binary(
-                    Binary::PtrEq,
-                    Rt::Local(var),
-                    Rt::nullary(Nullary::Null(ty.clone())),
-                ),
-            )),
-            Condition::Null(ty) => Some(Rt::binary(
-                Binary::PtrEq,
-                Rt::Local(var),
-                Rt::nullary(Nullary::Null(ty.clone())),
-            )),
-            Condition::Struct(_) => None,
-            Condition::Reinterpret(_, _) => None,
-            Condition::Syntax(_) => None,
-            Condition::Const(const_) => Some(Rt::binary(
-                match const_ {
-                    Const::Integer(_, _, _) => Binary::IEq,
-                    Const::FPNumber(_, _) => Binary::FEq,
-                    Const::String(_) => Binary::StringEq,
-                    Const::Char(_) => Binary::CharEq,
-                    Const::SyntaxSexp(_, _) => panic!("Found Const::SyntaxSexp in Pattern"),
-                    Const::Unit => None?,
-                },
-                Rt::Local(var),
-                Rt::Const(const_.clone()),
-            )),
+            PatPart::Root(_) => self,
+            PatPart::Bind(_, p)
+            | PatPart::DerefElem(p)
+            | PatPart::NonNullElem(p)
+            | PatPart::Null(p)
+            | PatPart::StructElem(_, _, p)
+            | PatPart::Reinterpret(_, p)
+            | PatPart::SyntaxBody(p)
+            | PatPart::Const(_, p) => p,
         }
     }
 
-    fn get_child(&self, condition_satisfied_var: RtId, index: usize) -> Option<Rt> {
-        let v = Rt::Local(condition_satisfied_var);
+    fn ty(&self) -> Cow<Ct> {
         match self {
-            Self::Deref | Self::NonNull(_) => {
-                assert_eq!(index, 0);
-                Some(Rt::unary(Unary::Load, v))
+            PatPart::Root(ty) | PatPart::StructElem(ty, _, _) | PatPart::Reinterpret(ty, _) => {
+                Cow::Borrowed(ty)
             }
-            Self::Struct(ty) => Some(Rt::unary(Unary::StructElem(ty.clone(), index), v)),
-            Self::Reinterpret(from, to) => {
-                assert_eq!(index, 0);
-                Some(Rt::unary(Unary::Reinterpret(from.clone(), to.clone()), v))
-            }
-            Self::Syntax(ty) => {
-                assert_eq!(index, 0);
-                Some(Rt::unary(Unary::SyntaxBody(ty.clone()), v))
-            }
+            PatPart::DerefElem(p) | PatPart::NonNullElem(p) => Ct::ptr_elem(p.ty()),
+            PatPart::Bind(_, p) | PatPart::Null(p) | PatPart::Const(_, p) => p.ty(),
+            PatPart::SyntaxBody(p) => Ct::syntax_body(p.ty()),
+        }
+    }
+
+    fn excludes(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::NonNullElem(a), Self::Null(b)) | (Self::Null(a), Self::NonNullElem(b)) => a == b,
+            (Self::Const(ca, a), Self::Const(cb, b)) => ca != cb && a == b,
+            _ => false,
+        }
+    }
+
+    fn to_bind_expr(&self, parent: RtId) -> Option<Rt> {
+        match self {
+            Self::Bind(_, p) => Some(Rt::Var(parent, p.ty().into_owned())),
             _ => None,
         }
     }
-}
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Hash)]
-struct Path(Vec<usize>);
+    fn to_test_expr(&self, parent: RtId) -> Option<Rt> {
+        match self {
+            Self::NonNullElem(p) => {
+                let elem_ty = Ct::ptr_elem(p.ty()).into_owned();
+                Some(Rt::unary(
+                    Unary::Not,
+                    Rt::binary(
+                        Binary::PtrEq,
+                        Rt::Var(parent, Ct::ptr(elem_ty.clone())),
+                        Rt::nullary(Nullary::Null(elem_ty)),
+                    ),
+                ))
+            }
+            Self::Null(p) => {
+                let elem_ty = Ct::ptr_elem(p.ty()).into_owned();
+                Some(Rt::binary(
+                    Binary::PtrEq,
+                    Rt::Var(parent, Ct::ptr(elem_ty.clone())),
+                    Rt::nullary(Nullary::Null(elem_ty)),
+                ))
+            }
+            Self::Const(c, _) => Some(Rt::binary(
+                match c {
+                    Const::Integer(_, _, _) => Binary::IEq,
+                    Const::FPNumber(_, _) => Binary::FEq,
+                    Const::String(_) => Binary::StringEq,
+                    Const::Char(_) => Binary::IEq,
+                    Const::SyntaxSexp(_, _) => panic!("Found Const::SyntaxSexp in Pattern"),
+                    Const::Unit => None?,
+                },
+                Rt::Var(parent, c.ty().into_owned()),
+                Rt::Const(c.clone()),
+            )),
 
-impl Path {
-    fn root() -> Self {
-        Self(Vec::new())
+            _ => None,
+        }
     }
 
-    fn last_index(&self) -> usize {
-        self.0.last().copied().unwrap_or_default()
-    }
-
-    fn parent(mut self) -> Self {
-        self.0.pop();
-        self
-    }
-
-    fn child(mut self, index: usize) -> Self {
-        self.0.push(index);
-        self
+    fn to_get_expr(&self, parent: RtId) -> Option<Rt> {
+        match self {
+            Self::DerefElem(p) | Self::NonNullElem(p) => {
+                let ty = p.ty().into_owned();
+                Some(Rt::unary(Unary::Load, Rt::Var(parent, ty)))
+            }
+            Self::StructElem(elem_ty, index, p) => {
+                let struct_ty = p.ty().into_owned();
+                Some(Rt::unary(
+                    Unary::StructElem(elem_ty.clone(), *index),
+                    Rt::Var(parent, struct_ty),
+                ))
+            }
+            Self::Reinterpret(to, p) => {
+                let from = p.ty().into_owned();
+                Some(Rt::unary(
+                    Unary::Reinterpret(to.clone()),
+                    Rt::Var(parent, from),
+                ))
+            }
+            Self::SyntaxBody(p) => {
+                let ty = p.ty().into_owned();
+                Some(Rt::unary(Unary::SyntaxBody, Rt::Var(parent, ty)))
+            }
+            _ => None,
+        }
     }
 }

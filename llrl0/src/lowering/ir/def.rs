@@ -4,10 +4,10 @@ use std::collections::BTreeMap;
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum Def {
-    Alias(Ct),                    // erased by normalizer
-    AliasTable(AliasTable),       // erased by normalizer
-    Generic(Vec<CtId>, Box<Def>), // erased by normalizer
-    Data(Data),                   // erased by data_expander
+    Alias(Ct),                    // this will be erased by normalizer
+    AliasTable(AliasTable),       // this will be erased by normalizer
+    Generic(Vec<CtId>, Box<Def>), // this will be erased by normalizer
+    Data(Data),                   // this will be erased by data_expander
     Struct(Struct),
     Union(Union),
     Function(Function),
@@ -93,15 +93,26 @@ pub struct Function {
 }
 
 impl Function {
+    pub fn ty(&self) -> Ct {
+        Ct::clos(
+            self.params.iter().map(|p| p.ty.clone()).collect(),
+            self.ret.clone(),
+        )
+    }
+
+    pub fn main_ty() -> Ct {
+        Ct::clos(Vec::new(), Ct::BOOL)
+    }
+
     pub fn r#macro(param: RtParam, ret: Ct, body: Rt) -> Self {
         Self::new(None, vec![param], ret, body, FunctionKind::Macro)
     }
 
     pub fn main(mut inits: Vec<Init>) -> Self {
-        let ret = if matches!(inits.last(), Some(init) if matches!(init.ty, Ct::U(1))) {
+        let ret = if matches!(inits.last(), Some(init) if init.ty == Ct::BOOL) {
             inits.pop().unwrap()
         } else {
-            Init::new(Ct::U(1), Rt::Const(Const::bool(false)))
+            Init::new(Ct::BOOL, Rt::Const(Const::bool(false)))
         };
         let stmts = inits.into_iter().map(|init| init.expr).collect();
 

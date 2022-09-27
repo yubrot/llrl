@@ -77,7 +77,7 @@ impl<'e> rewriter::Rewriter for DataExpander<'e> {
             if let Some(expansion) = self.data_expansions.get(id);
             let args = std::mem::take(args);
             then {
-                *pat = expansion.to_pat(*index, args);
+                *pat = expansion.to_rt_pat(*index, args);
                 self.before_rt_pat(pat)
             } else {
                 Ok(true)
@@ -191,7 +191,7 @@ impl DataExpansion {
         }
     }
 
-    pub fn to_pat(&self, index: usize, mut args: Vec<RtPat>) -> RtPat {
+    pub fn to_rt_pat(&self, index: usize, mut args: Vec<RtPat>) -> RtPat {
         match self {
             // unit
             Self::Unit => {
@@ -221,12 +221,15 @@ impl DataExpansion {
             // #id(<index>, ptr(<tagged>))
             Self::BoxedTagged(id, n, tagged) => RtPat::Struct(
                 Ct::Id(*id),
-                vec![Self::enum_pat(*n, index), tagged.to_pat_boxed(index, args)],
+                vec![
+                    Self::enum_pat(*n, index),
+                    tagged.to_rt_pat_boxed(index, args),
+                ],
             ),
             // #id(<index>, <tagged>)
             Self::Tagged(id, n, tagged) => RtPat::Struct(
                 Ct::Id(*id),
-                vec![Self::enum_pat(*n, index), tagged.to_pat(index, args)],
+                vec![Self::enum_pat(*n, index), tagged.to_rt_pat(index, args)],
             ),
         }
     }
@@ -313,9 +316,9 @@ impl TaggedDataBody {
                 debug_assert_eq!(args.len(), 0);
                 Rt::nullary(Nullary::Uninitialized(Ct::Id(*id)))
             }
-            // reinterpret[#con -> #id](#con(<args>))
+            // reinterpret[#id](#con(<args>))
             Self::Union(id, structs) => Rt::unary(
-                Unary::Reinterpret(Ct::Id(structs[index]), Ct::Id(*id)),
+                Unary::Reinterpret(Ct::Id(*id)),
                 Rt::construct_struct(Ct::Id(structs[index]), args),
             ),
         }
@@ -333,7 +336,7 @@ impl TaggedDataBody {
         }
     }
 
-    pub fn to_pat(&self, index: usize, mut args: Vec<RtPat>) -> RtPat {
+    pub fn to_rt_pat(&self, index: usize, mut args: Vec<RtPat>) -> RtPat {
         match self {
             // <args[0]>
             Self::Alias(i, _) if index == *i => {
@@ -341,31 +344,29 @@ impl TaggedDataBody {
                 args.pop().unwrap()
             }
             // uninitialized
-            Self::Alias(_, _) => {
+            Self::Alias(_, ty) => {
                 debug_assert_eq!(args.len(), 0);
-                RtPat::Wildcard
+                RtPat::Wildcard(ty.clone())
             }
             // #id(<args>)
             Self::Struct(i, id) if index == *i => RtPat::Struct(Ct::Id(*id), args),
             // uninitialized
-            Self::Struct(_, _) => {
+            Self::Struct(_, id) => {
                 debug_assert_eq!(args.len(), 0);
-                RtPat::Wildcard
+                RtPat::Wildcard(Ct::Id(*id))
             }
-            // reinterpret[#id -> #con](#con(<args>))
-            Self::Union(id, structs) => RtPat::Reinterpret(
-                Ct::Id(*id),
-                Ct::Id(structs[index]),
-                Box::new(RtPat::Struct(Ct::Id(structs[index]), args)),
-            ),
+            // reinterpret[#id](#con(<args>))
+            Self::Union(id, structs) => {
+                RtPat::reinterpret(Ct::Id(*id), RtPat::Struct(Ct::Id(structs[index]), args))
+            }
         }
     }
 
-    pub fn to_pat_boxed(&self, index: usize, args: Vec<RtPat>) -> RtPat {
+    pub fn to_rt_pat_boxed(&self, index: usize, args: Vec<RtPat>) -> RtPat {
         match self {
-            Self::Alias(i, _) if index != *i => RtPat::Wildcard,
-            Self::Struct(i, _) if index != *i => RtPat::Wildcard,
-            _ => RtPat::deref(self.to_pat(index, args)),
+            Self::Alias(i, ty) if index != *i => RtPat::Wildcard(Ct::ptr(ty.clone())),
+            Self::Struct(i, id) if index != *i => RtPat::Wildcard(Ct::ptr(Ct::Id(*id))),
+            _ => RtPat::deref(self.to_rt_pat(index, args)),
         }
     }
 }

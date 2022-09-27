@@ -115,7 +115,6 @@ impl<'ctx> ContextArtifact<'ctx> {
             Ct::Unit => llvm_type!(*self, (struct)).as_type(),
             Ct::Env => llvm_type!(*self, (ptr i8)).as_type(),
             Ct::Syntax(_) => runtime::syntax_type(self.context),
-            Ct::Hole => panic!("Found Ct::Hole at Codegen::get_type"),
         }
     }
 
@@ -141,15 +140,14 @@ impl<'ctx> FunctionSymbol<'ctx> {
     pub fn new(name: String, def: &Function, ctx: &ContextArtifact<'ctx>) -> Self {
         let call_conv = CallConv::from(def.kind);
 
-        let param_tys = call_conv
-            .takes_env_as_argument()
+        let param_tys = (call_conv == CallConv::Default)
             .then(|| ctx.llvm_type(&Ct::Env))
             .into_iter()
             .chain(def.params.iter().map(|p| ctx.llvm_type(&p.ty)))
             .collect::<Vec<_>>();
         let ret_ty = ctx.llvm_type(&def.ret);
 
-        let ty = if call_conv.returns_by_pointer_store() {
+        let ty = if call_conv == CallConv::Macro {
             let mut param_tys = param_tys;
             param_tys.insert(0, llvm_type!(*ctx, (ptr { ret_ty })).as_type());
             llvm_type!(*ctx, (function(...{param_tys}) void))
@@ -256,10 +254,7 @@ impl<'ctx: 'm, 'm> ModuleArtifact<'ctx, 'm> {
     }
 
     pub fn add_c_main_adapter(&mut self, ctx: &ContextArtifact<'ctx>) {
-        let llrl_main = ctx
-            .main_function_symbol
-            .as_ref()
-            .expect("llrl_main not found");
+        let llrl_main = ctx.main_function_symbol.as_ref().expect("main not found");
         let llrl_main = self.module.add_function(&llrl_main.name, llrl_main.ty);
         codegen::c_main_adapter(llrl_main, self);
     }

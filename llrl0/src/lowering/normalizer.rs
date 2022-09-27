@@ -89,7 +89,7 @@ impl<'e, E: Env> rewriter::Rewriter for Normalizer<'e, E> {
     }
 
     fn before_rt(&mut self, rt: &mut Rt) -> Result<bool, ()> {
-        if let Rt::LetFunction(let_) = rt {
+        if let Rt::LetLocalFun(let_) = rt {
             let funs = std::mem::take(&mut let_.0);
             let body = std::mem::take(&mut let_.1);
             *rt = ClosureConversion::run(funs, body, self)?;
@@ -100,12 +100,13 @@ impl<'e, E: Env> rewriter::Rewriter for Normalizer<'e, E> {
     fn after_rt(&mut self, rt: &mut Rt) -> Result<(), ()> {
         if_chain! {
             if let Rt::Call(call) = rt;
-            if let Rt::StaticFun(Ct::Id(id), None) = call.0;
+            if let Rt::StaticFun(ref capture) = call.callee;
+            if let Ct::Id(id) = capture.fun;
             if let Some(ProcessingDef { is_normalized, def }) = self.env.get_processing_def(id);
             if let Def::Function(f) = def.as_ref();
             if f.kind == FunctionKind::Transparent;
-            let args = std::mem::take(&mut call.1);
             then {
+                let args = std::mem::take(&mut call.args);
                 *rt = call_transparent(f, args);
                 if !is_normalized {
                     self.rewrite(rt)?;
@@ -131,7 +132,7 @@ struct ClosureConversion {
 }
 
 impl ClosureConversion {
-    fn new(funs: &Vec<RtFunction>, env: &mut impl Env) -> Self {
+    fn new(funs: &Vec<RtLocalFun>, env: &mut impl Env) -> Self {
         let lifted_funs = funs
             .iter()
             .map(|f| (f.id, env.alloc_ct()))
@@ -152,7 +153,7 @@ impl ClosureConversion {
     }
 
     fn run(
-        funs: Vec<RtFunction>,
+        funs: Vec<RtLocalFun>,
         mut body: Rt,
         normalizer: &mut Normalizer<impl Env>,
     ) -> Result<Rt, ()> {
@@ -165,8 +166,8 @@ impl ClosureConversion {
             .collect::<Vec<_>>();
         let env_args = cc
             .captured_vars
-            .iter()
-            .map(|(var, _)| Rt::Local(*var))
+            .keys()
+            .map(|var| Rt::Var(*var, normalizer.local_var_types[var].clone()))
             .collect();
 
         for mut fun in funs {
@@ -209,16 +210,18 @@ impl rewriter::Rewriter for ClosureConversion {
 
     fn after_rt(&mut self, rt: &mut Rt) -> Result<(), ()> {
         match rt {
-            Rt::Local(id) => {
+            Rt::Var(id, ty) => {
                 if let Some(id) = self.captured_vars.get(id) {
-                    *rt = Rt::Local(*id);
+                    let ty = std::mem::replace(ty, Ct::Unit);
+                    *rt = Rt::Var(*id, ty);
                 }
             }
-            Rt::LocalFun(id, args) => {
-                if let Some(id) = self.lifted_funs.get(id) {
-                    let args = std::mem::take(args);
+            Rt::LocalFun(inst) => {
+                if let Some(id) = self.lifted_funs.get(&inst.fun) {
+                    let args = std::mem::take(&mut inst.args);
+                    let ty = std::mem::take(&mut inst.ty);
                     let f = Ct::generic_inst(Ct::Id(*id), args);
-                    *rt = Rt::capture(f, self.captured_env.map(Rt::Local));
+                    *rt = Rt::static_fun(f, ty, self.captured_env.map(|id| Rt::Var(id, Ct::Env)));
                 }
             }
             _ => {}

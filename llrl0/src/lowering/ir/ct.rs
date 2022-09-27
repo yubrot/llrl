@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy, Hash)]
 pub struct CtId(u32);
 
@@ -27,9 +29,9 @@ impl CtIdGen {
 /// An expression that is evaluated at compile time.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Hash)]
 pub enum Ct {
-    Id(CtId),
-    GenericInst(Box<(Ct, Vec<Ct>)>), // erased by normalizer
-    TableGet(Box<(Ct, CtId)>),       // erased by normalizer
+    Id(CtId),                        // this may be replaced by normalizer
+    GenericInst(Box<(Ct, Vec<Ct>)>), // this will be erased by normalizer
+    TableGet(Box<(Ct, CtId)>),       // this will be erased by normalizer
     Ptr(Box<Ct>),
     Clos(Box<(Vec<Ct>, Ct)>),
     S(usize),
@@ -43,7 +45,6 @@ pub enum Ct {
     Unit,
     Env,
     Syntax(Box<Ct>),
-    Hole,
 }
 
 impl Ct {
@@ -82,19 +83,52 @@ impl Ct {
         Self::Syntax(Box::new(ty))
     }
 
-    pub fn is_compatible_with(&self, other: &Self) -> bool {
-        use Ct::*;
-        match (self, other) {
-            (Hole, _) | (_, Hole) => true,
-            (Id(a), Id(b)) => a == b,
-            (Ptr(a), Ptr(b)) => a.is_compatible_with(b),
-            (Clos(a), Clos(b)) if a.0.len() == b.0.len() => {
-                a.1.is_compatible_with(&b.1)
-                    && a.0.iter().zip(&b.0).all(|(a, b)| a.is_compatible_with(b))
-            }
-            (S(a), S(b)) => a == b,
-            (U(a), U(b)) => a == b,
-            (a, b) => a == b,
+    // Due to rust-lang/rust#73448, using `Self` produces some warnings
+    pub const BOOL: Ct = Ct::U(1);
+
+    pub fn clos_ret(ct: Cow<Self>) -> Cow<Self> {
+        match ct {
+            Cow::Borrowed(Self::Clos(clos)) => Cow::Borrowed(&clos.1),
+            Cow::Owned(Self::Clos(clos)) => Cow::Owned(clos.1),
+            _ => panic!("Cannot extract the return type: {}", ct),
+        }
+    }
+
+    pub fn ptr_elem(ct: Cow<Self>) -> Cow<Self> {
+        match ct {
+            Cow::Borrowed(Self::Ptr(ty)) => Cow::Borrowed(ty.as_ref()),
+            Cow::Owned(Self::Ptr(ty)) => Cow::Owned(*ty),
+            _ => panic!("Cannot extract the pointer element type: {}", ct),
+        }
+    }
+
+    pub fn ptr_to_array(ct: Cow<Self>) -> Cow<Self> {
+        match ct.into_owned() {
+            Self::Ptr(ty) => Cow::Owned(Self::Array(ty)),
+            ct => panic!("Cannot extract the array element type: {}", ct),
+        }
+    }
+
+    pub fn array_to_ptr(ct: Cow<Self>) -> Cow<Self> {
+        match ct.into_owned() {
+            Self::Array(ty) => Cow::Owned(Self::Ptr(ty)),
+            ct => panic!("Cannot extract the array element type: {}", ct),
+        }
+    }
+
+    pub fn array_elem(ct: Cow<Self>) -> Cow<Self> {
+        match ct {
+            Cow::Borrowed(Self::Array(ty)) => Cow::Borrowed(ty.as_ref()),
+            Cow::Owned(Self::Array(ty)) => Cow::Owned(*ty),
+            _ => panic!("Cannot extract the array element type: {}", ct),
+        }
+    }
+
+    pub fn syntax_body(ct: Cow<Self>) -> Cow<Self> {
+        match ct {
+            Cow::Borrowed(Self::Syntax(ty)) => Cow::Borrowed(ty.as_ref()),
+            Cow::Owned(Self::Syntax(ty)) => Cow::Owned(*ty),
+            _ => panic!("Cannot extract the syntax body type: {}", ct),
         }
     }
 }

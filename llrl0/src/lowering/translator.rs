@@ -87,11 +87,11 @@ pub trait Env<'m>: Sized {
             ast::Const::FPNumber(v) => Const::FPNumber(ty, *v),
             ast::Const::String(s) => Const::String(s.clone()),
             ast::Const::Char(c) => Const::Char(*c),
-            ast::Const::SyntaxSexp(s) => self.translate_const_sexp(s.as_ref().clone()),
+            ast::Const::SyntaxSexp(s) => self.translate_const_syntax_sexp(s.as_ref().clone()),
         }
     }
 
-    fn translate_const_sexp(&mut self, syntax_sexp: Syntax<Sexp>) -> Const {
+    fn translate_const_syntax_sexp(&mut self, syntax_sexp: Syntax<Sexp>) -> Const {
         let ty = self.issue_ct(ast::builtin::SEXP);
         Const::SyntaxSexp(Ct::Id(ty), Box::new(syntax_sexp))
     }
@@ -189,14 +189,12 @@ impl Translate for ast::CFunction {
             None => (Vec::new(), env.translate(&self.ann.body)),
         };
 
-        let rt = Rt::c_call(
-            self.c_name.clone(),
-            Ct::clos(
-                params.iter().map(|p| p.ty.clone()).collect(),
-                ret_ty.clone(),
-            ),
-            params.iter().map(|p| Rt::Local(p.id)).collect(),
+        let args = params.iter().map(|p| Rt::Var(p.id, p.ty.clone())).collect();
+        let ty = Ct::clos(
+            params.iter().map(|p| p.ty.clone()).collect(),
+            ret_ty.clone(),
         );
+        let rt = Rt::c_call(self.c_name.clone(), ty, args);
 
         Def::Function(Function::new(
             None,
@@ -216,7 +214,7 @@ impl Translate for ast::BuiltinOp {
         let (ct_params, params, ret_ty) = env.translate_scheme(None, &self.ann.body);
 
         let ct_args = ct_params.iter().map(|p| Ct::Id(*p)).collect();
-        let args = params.iter().map(|p| Rt::Local(p.id)).collect();
+        let args = params.iter().map(|p| Rt::Var(p.id, p.ty.clone())).collect();
         let rt = builtin_rt(symbol, &self.builtin_name, ct_args, args);
 
         Def::generic(
@@ -294,11 +292,8 @@ impl Translate for ast::DataValueCon {
 
         let (ct_params, params, ret_ty) = env.translate_scheme(None, scheme);
 
-        let rt = Rt::construct_data(
-            ret_ty.clone(),
-            index,
-            params.iter().map(|p| Rt::Local(p.id)).collect(),
-        );
+        let args = params.iter().map(|p| Rt::Var(p.id, p.ty.clone())).collect();
+        let rt = Rt::construct_data(ret_ty.clone(), index, args);
 
         Def::generic(
             ct_params,
@@ -333,7 +328,7 @@ impl Translate for ast::BuiltinValueCon {
         let (ct_params, params, ty) = env.translate_scheme(None, scheme);
 
         let ct_args = ct_params.iter().map(|p| Ct::Id(*p)).collect();
-        let args = params.iter().map(|p| Rt::Local(p.id)).collect();
+        let args = params.iter().map(|p| Rt::Var(p.id, p.ty.clone())).collect();
         let rt = builtin_rt(symbol, &self.builtin_name, ct_args, args);
 
         Def::generic(
@@ -486,59 +481,67 @@ impl Translate for ast::Expr {
     fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         let set = env.module_set();
         match self.rep {
-            ast::ExprRep::Use(ref use_) => match *use_.get_resolved() {
-                ast::Value::Function(id) => {
-                    let f = Ct::Id(env.issue_ct(id));
-                    let ct_args = env.translate(set.instantiation_of(self.id).unwrap());
-                    let autocall = set.ast(id).unwrap().params.is_none();
-                    Rt::autocall(Rt::StaticFun(Ct::generic_inst(f, ct_args), None), autocall)
-                }
-                ast::Value::CFunction(id) => {
-                    let f = Ct::Id(env.issue_ct(id));
-                    let autocall = !set.ast(id).unwrap().ann.body.is_fun();
-                    Rt::autocall(Rt::StaticFun(f, None), autocall)
-                }
-                ast::Value::BuiltinOp(id) => {
-                    let f = Ct::Id(env.issue_ct(id));
-                    let ct_args = env.translate(set.instantiation_of(self.id).unwrap());
-                    let autocall = !set.ast(id).unwrap().ann.body.body.is_fun();
-                    Rt::autocall(Rt::StaticFun(Ct::generic_inst(f, ct_args), None), autocall)
-                }
-                ast::Value::ClassMethod(id) => {
-                    let method = set.ast(id).unwrap();
-                    let (instance_inst, method_inst) = method.expand_external_instantiation(
-                        set.instantiation_of(self.id).unwrap().clone(),
-                    );
-                    debug_assert_eq!(instance_inst.s_args.len(), 1);
+            ast::ExprRep::Use(ref use_) => {
+                let ty = env.translate(set.type_of(self.id).unwrap());
+                match *use_.get_resolved() {
+                    ast::Value::Function(id) => {
+                        let ct_args = env.translate(set.instantiation_of(self.id).unwrap());
+                        Rt::autocall(
+                            Ct::generic_inst(Ct::Id(env.issue_ct(id)), ct_args),
+                            ty,
+                            set.ast(id).unwrap().params.is_none(),
+                        )
+                    }
+                    ast::Value::CFunction(id) => Rt::autocall(
+                        Ct::Id(env.issue_ct(id)),
+                        ty,
+                        !set.ast(id).unwrap().ann.body.is_fun(),
+                    ),
+                    ast::Value::BuiltinOp(id) => {
+                        let ct_args = env.translate(set.instantiation_of(self.id).unwrap());
+                        Rt::autocall(
+                            Ct::generic_inst(Ct::Id(env.issue_ct(id)), ct_args),
+                            ty,
+                            !set.ast(id).unwrap().ann.body.body.is_fun(),
+                        )
+                    }
+                    ast::Value::ClassMethod(id) => {
+                        let method = set.ast(id).unwrap();
+                        let (instance_inst, method_inst) = method.expand_external_instantiation(
+                            set.instantiation_of(self.id).unwrap().clone(),
+                        );
+                        debug_assert_eq!(instance_inst.s_args.len(), 1);
 
-                    let instance = env.translate(&instance_inst.s_args[0]);
-                    let f = Ct::table_get(instance, env.issue_ct(id));
-                    let args = env.translate(&method_inst);
-                    let autocall = method.params.is_none();
-                    Rt::autocall(Rt::StaticFun(Ct::generic_inst(f, args), None), autocall)
+                        let instance = env.translate(&instance_inst.s_args[0]);
+                        let args = env.translate(&method_inst);
+                        Rt::autocall(
+                            Ct::generic_inst(Ct::table_get(instance, env.issue_ct(id)), args),
+                            ty,
+                            method.params.is_none(),
+                        )
+                    }
+                    ast::Value::Parameter(id) => Rt::Var(env.issue_rt(id), ty),
+                    ast::Value::LocalVar(id) => Rt::Var(env.issue_rt(id), ty),
+                    ast::Value::LocalFun(id) => {
+                        let id = env.issue_rt(id);
+                        let args = env.translate(set.instantiation_of(self.id).unwrap());
+                        Rt::local_fun(id, args, ty)
+                    }
+                    ast::Value::PatternVar(id) => Rt::Var(env.issue_rt(id), ty),
                 }
-                ast::Value::Parameter(id) => Rt::Local(env.issue_rt(id)),
-                ast::Value::LocalVar(id) => Rt::Local(env.issue_rt(id)),
-                ast::Value::LocalFun(id) => {
-                    let id = env.issue_rt(id);
-                    let ct_args = env.translate(set.instantiation_of(self.id).unwrap());
-                    Rt::LocalFun(id, ct_args)
-                }
-                ast::Value::PatternVar(id) => Rt::Local(env.issue_rt(id)),
-            },
+            }
             ast::ExprRep::Con(con) => {
-                let (f, autocall) = match con {
-                    ast::ValueCon::Data(id) => (
-                        Ct::Id(env.issue_ct(id)),
-                        set.ast(id).unwrap().fields.is_none(),
-                    ),
-                    ast::ValueCon::Builtin(id) => (
-                        Ct::Id(env.issue_ct(id)),
-                        set.ast(id).unwrap().fields.is_none(),
-                    ),
-                };
+                let ty = env.translate(set.type_of(self.id).unwrap());
                 let ct_args = env.translate(set.instantiation_of(self.id).unwrap());
-                Rt::autocall(Rt::StaticFun(Ct::generic_inst(f, ct_args), None), autocall)
+                let f = match con {
+                    ast::ValueCon::Data(id) => Ct::Id(env.issue_ct(id)),
+                    ast::ValueCon::Builtin(id) => Ct::Id(env.issue_ct(id)),
+                };
+                let autocall = match con {
+                    ast::ValueCon::Data(id) => set.ast(id).unwrap().fields.is_none(),
+                    ast::ValueCon::Builtin(id) => set.ast(id).unwrap().fields.is_none(),
+                };
+                Rt::autocall(Ct::generic_inst(f, ct_args), ty, autocall)
             }
             ast::ExprRep::Const(ref lit) => {
                 let ty = env.translate(set.type_of(self.id).unwrap());
@@ -559,14 +562,14 @@ impl Translate for ast::Expr {
             ast::ExprRep::Capture(ref use_) => {
                 let construct = *use_.get_resolved();
                 let symbol = set.symbol_of(self.id).unwrap();
-                Rt::Const(env.translate_const_sexp(Sexp::Use(construct).pack(symbol.loc)))
+                Rt::Const(env.translate_const_syntax_sexp(Sexp::Use(construct).pack(symbol.loc)))
             }
             ast::ExprRep::Annotate(ref annotate) => env.translate(&annotate.body),
             ast::ExprRep::Let(ref let_) => {
                 let funs = let_.local_functions().map(|f| env.translate(f)).collect();
                 let vars = let_.local_vars().map(|v| env.translate(v)).collect();
                 let body = env.translate(&let_.body);
-                Rt::let_function(funs, Rt::let_var(vars, body))
+                Rt::let_local_fun(funs, Rt::let_var(vars, body))
             }
             ast::ExprRep::Seq(ref seq) => {
                 let stmts = env.translate(&seq.stmts);
@@ -608,7 +611,7 @@ impl Translate for (ast::Pattern, ast::Expr) {
 }
 
 impl Translate for ast::LocalFun {
-    type Dest = RtFunction;
+    type Dest = RtLocalFun;
 
     fn translate<'m>(&self, env: &mut impl Env<'m>) -> Self::Dest {
         let id = env.issue_rt(self.id);
@@ -618,7 +621,7 @@ impl Translate for ast::LocalFun {
 
         let body = env.translate(&self.body);
 
-        RtFunction::new(id, ct_params, params, ret_ty, body)
+        RtLocalFun::new(id, ct_params, params, ret_ty, body)
     }
 }
 
@@ -641,11 +644,14 @@ impl Translate for ast::Pattern {
         match self.rep {
             ast::PatternRep::Var(ref var) => {
                 let id = env.issue_rt(var.id);
-                let ty = env.translate(env.module_set().type_of(var.id).unwrap());
+                let ty = env.translate(set.type_of(var.id).unwrap());
                 let as_pat = env.translate(&var.as_pat);
                 RtPat::Var(id, ty, as_pat.map(Box::new))
             }
-            ast::PatternRep::Wildcard => RtPat::Wildcard,
+            ast::PatternRep::Wildcard => {
+                let ty = env.translate(set.type_of(self.id).unwrap());
+                RtPat::Wildcard(ty)
+            }
             ast::PatternRep::Decon(ref decon) => {
                 let args = env.translate(&decon.fields).unwrap_or_default();
                 match *decon.use_.get_resolved() {
@@ -876,9 +882,7 @@ fn builtin_rt(symbol: &Symbol, name: &str, mut ct_args: Vec<Ct>, mut args: Vec<R
         ("ptr.copy", _, [a, b, c]) => Rt::ternary(Ternary::PtrCopy, take(a), take(b), take(c)),
         ("ptr.move", _, [a, b, c]) => Rt::ternary(Ternary::PtrMove, take(a), take(b), take(c)),
         ("ptr.to-integer", _, [ptr]) => Rt::unary(Unary::PtrToI, take(ptr)),
-        ("reinterpret", [from, to], [a]) => {
-            Rt::unary(Unary::Reinterpret(take(from), take(to)), take(a))
-        }
+        ("reinterpret", [_, to], [a]) => Rt::unary(Unary::Reinterpret(take(to)), take(a)),
         ("array.construct", _, [a, b]) => Rt::binary(Binary::ArrayConstruct, take(a), take(b)),
         ("array.ptr", _, [a]) => Rt::unary(Unary::ArrayPtr, take(a)),
         ("array.length", _, [a]) => Rt::unary(Unary::ArrayLength, take(a)),
@@ -907,9 +911,9 @@ fn builtin_rt_pat(name: &str, mut ct_args: Vec<Ct>, mut args: Vec<RtPat>) -> RtP
 
     match (name, ct_args.as_mut_slice(), args.as_mut_slice()) {
         ("ptr", [_], [a]) => RtPat::deref(take(a)),
-        ("non-null", [ty], [a]) => RtPat::non_null(take(ty), take(a)),
+        ("non-null", [_], [a]) => RtPat::non_null(take(a)),
         ("null", [ty], []) => RtPat::Null(take(ty)),
-        ("syntax", [ty], [a]) => RtPat::Syntax(take(ty), Box::new(take(a))),
+        ("syntax", [_], [a]) => RtPat::syntax(take(a)),
         (name, _, _) => panic!(
             "Unsupported builtin-pattern {} (ct_args={}, args={})",
             name,

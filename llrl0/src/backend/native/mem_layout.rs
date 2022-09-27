@@ -149,7 +149,6 @@ impl LayoutResolver {
             Ct::Unit => Layout::terminal(0, 0),
             Ct::Env => Layout::pointer(),
             Ct::Syntax(_) => Layout::of::<NativeSyntax<u8>>(),
-            Ct::Hole => panic!("Found Ct::Hole on LayoutResolver"),
         })
     }
 }

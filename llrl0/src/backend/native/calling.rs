@@ -37,20 +37,6 @@ pub enum CallConv {
     Main,  // NativeMain
 }
 
-impl CallConv {
-    pub fn takes_env_as_argument(self) -> bool {
-        matches!(self, Self::Default)
-    }
-
-    pub fn returns_by_pointer_store(self) -> bool {
-        // Macros are called from Rust code with C-compatible ABI, so the result of the macro functions
-        // must be returned through pointers. The main function is also called from Rust with
-        // C-compatible ABI, but the type of the return value used in tests is bool (i8), which can
-        // be returned directly as C-compatible form.
-        matches!(self, Self::Macro)
-    }
-}
-
 impl From<FunctionKind> for CallConv {
     fn from(kind: FunctionKind) -> Self {
         match kind {

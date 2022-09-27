@@ -91,10 +91,10 @@ impl Rewrite for Ct {
                     rewriter.rewrite(&mut clos.0)?;
                     rewriter.rewrite(&mut clos.1)?;
                 }
-                Self::Syntax(ty) => {
+                Self::Array(ty) => {
                     rewriter.rewrite(ty)?;
                 }
-                Self::Array(ty) => {
+                Self::Syntax(ty) => {
                     rewriter.rewrite(ty)?;
                 }
                 Self::S(_)
@@ -105,8 +105,7 @@ impl Rewrite for Ct {
                 | Self::Char
                 | Self::CapturedUse
                 | Self::Unit
-                | Self::Env
-                | Self::Hole => {}
+                | Self::Env => {}
             };
             rewriter.after_ct(self)
         } else {
@@ -190,27 +189,34 @@ impl Rewrite for Rt {
     fn rewrite<T: Rewriter>(&mut self, rewriter: &mut T) -> Result<(), T::Error> {
         if rewriter.before_rt(self)? {
             match self {
-                Self::Local(id) => {
+                Self::Var(id, ty) => {
                     rewriter.after_rt_use(*id)?;
+                    rewriter.rewrite(ty)?;
                 }
-                Self::LocalFun(id, args) => {
-                    rewriter.after_rt_use(*id)?;
-                    rewriter.rewrite(args)?;
+                Self::LocalFun(inst) => {
+                    rewriter.after_rt_use(inst.fun)?;
+                    rewriter.rewrite(&mut inst.args)?;
+                    rewriter.rewrite(&mut inst.ty)?;
                 }
-                Self::StaticFun(ct, env) => {
-                    rewriter.rewrite(ct)?;
-                    rewriter.rewrite(env)?;
+                Self::StaticFun(capture) => {
+                    rewriter.rewrite(&mut capture.fun)?;
+                    rewriter.rewrite(&mut capture.env)?;
+                    rewriter.rewrite(&mut capture.ty)?;
                 }
                 Self::Const(c) => {
                     rewriter.rewrite(c)?;
                 }
                 Self::Call(call) => {
-                    rewriter.rewrite(&mut call.0)?;
-                    rewriter.rewrite(&mut call.1)?;
+                    rewriter.rewrite(&mut call.callee)?;
+                    rewriter.rewrite(&mut call.args)?;
                 }
-                Self::CCall(c_call) => {
-                    rewriter.rewrite(&mut c_call.1)?;
-                    rewriter.rewrite(&mut c_call.2)?;
+                Self::CCall(call) => {
+                    rewriter.rewrite(&mut call.ty)?;
+                    rewriter.rewrite(&mut call.args)?;
+                }
+                Self::ContCall(call) => {
+                    rewriter.rewrite(&mut call.ret)?;
+                    rewriter.rewrite(&mut call.args)?;
                 }
                 Self::Nullary(nullary) => {
                     rewriter.rewrite(nullary)?;
@@ -275,11 +281,8 @@ impl Rewrite for Rt {
                 Self::Return(ret) => {
                     rewriter.rewrite(ret)?;
                 }
-                Self::Cont(_, args) => {
-                    rewriter.rewrite(args)?;
-                }
                 Self::Never => {}
-                Self::LetFunction(let_) => {
+                Self::LetLocalFun(let_) => {
                     rewriter.rewrite(&mut let_.0)?;
                     rewriter.rewrite(&mut let_.1)?;
                 }
@@ -324,16 +327,13 @@ impl Rewrite for Unary {
         match self {
             Not => {}
             Load => {}
-            StructElem(ty, _) => {
-                rewriter.rewrite(ty)?;
+            StructElem(elem_ty, _) => {
+                rewriter.rewrite(elem_ty)?;
             }
-            Reinterpret(from, to) => {
-                rewriter.rewrite(from)?;
+            Reinterpret(to) => {
                 rewriter.rewrite(to)?;
             }
-            SyntaxBody(ty) => {
-                rewriter.rewrite(ty)?;
-            }
+            SyntaxBody => {}
             Panic => {}
             BitCast(ty) => {
                 rewriter.rewrite(ty)?;
@@ -377,7 +377,6 @@ impl Rewrite for Binary {
             FEq | FLt | FLe | FGt | FGe | FAdd | FSub | FMul | FDiv | FRem => {}
             MathPow => {}
             StringConstruct | StringEq | StringCmp | StringConcat => {}
-            CharEq => {}
             PtrEq | PtrLt | PtrLe | PtrGt | PtrGe => {}
             ArrayConstruct | ArrayLoad => {}
         }
@@ -412,12 +411,13 @@ impl Rewrite for RtPat {
                     rewriter.after_rt_def(*id, || ty.clone())?;
                     rewriter.rewrite(p)?;
                 }
-                Self::Wildcard => {}
+                Self::Wildcard(ty) => {
+                    rewriter.rewrite(ty)?;
+                }
                 Self::Deref(x) => {
                     rewriter.rewrite(x)?;
                 }
-                Self::NonNull(ty, x) => {
-                    rewriter.rewrite(ty)?;
+                Self::NonNull(x) => {
                     rewriter.rewrite(x)?;
                 }
                 Self::Null(ty) => {
@@ -431,13 +431,11 @@ impl Rewrite for RtPat {
                     rewriter.rewrite(ty)?;
                     rewriter.rewrite(fields)?;
                 }
-                Self::Reinterpret(from, to, x) => {
-                    rewriter.rewrite(from)?;
-                    rewriter.rewrite(to)?;
+                Self::Reinterpret(ty, x) => {
+                    rewriter.rewrite(ty)?;
                     rewriter.rewrite(x)?;
                 }
-                Self::Syntax(ty, body) => {
-                    rewriter.rewrite(ty)?;
+                Self::Syntax(body) => {
                     rewriter.rewrite(body)?;
                 }
                 Self::Const(c) => {
@@ -451,7 +449,7 @@ impl Rewrite for RtPat {
     }
 }
 
-impl Rewrite for RtFunction {
+impl Rewrite for RtLocalFun {
     fn rewrite<T: Rewriter>(&mut self, rewriter: &mut T) -> Result<(), T::Error> {
         rewriter.rewrite(&mut self.params)?;
         rewriter.rewrite(&mut self.ret)?;
@@ -511,7 +509,7 @@ impl Rewriter for HashMap<RtId, Rt> {
     type Error = ();
 
     fn after_rt(&mut self, rt: &mut Rt) -> Result<(), ()> {
-        if let Rt::Local(id) = *rt {
+        if let Rt::Var(id, _) = *rt {
             if let Some(x) = self.get(&id) {
                 *rt = x.clone();
             }

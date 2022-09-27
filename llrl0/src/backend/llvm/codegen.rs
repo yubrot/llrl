@@ -1,5 +1,6 @@
 use super::runtime;
 use super::{CFunctionArtifact, ContextArtifact, FunctionArtifact, ModuleArtifact};
+use crate::backend::native::calling::CallConv;
 use crate::backend::native::data::NativeSexp;
 use crate::lowering::ir::*;
 use derive_new::new;
@@ -33,12 +34,12 @@ pub fn function_body<'ctx: 'm, 'm>(
 
     let (ret_pointer, env_param, params) = {
         let mut params = function.value.params();
-        let ret_pointer = if function.symbol.call_conv.returns_by_pointer_store() {
+        let ret_pointer = if function.symbol.call_conv == CallConv::Macro {
             Some(params.remove(0))
         } else {
             None
         };
-        let env_param = if function.symbol.call_conv.takes_env_as_argument() {
+        let env_param = if function.symbol.call_conv == CallConv::Default {
             Some(params.remove(0))
         } else {
             None
@@ -81,51 +82,52 @@ struct Codegen<'a, 'ctx: 'm, 'm> {
     builder: LLVMBox<LLVMBuilder<'ctx, 'm>>,
     ret_pointer: Option<LLVMValue<'ctx, 'm>>,
     local_values: HashMap<RtId, LLVMValue<'ctx, 'm>>,
-    local_conts: HashMap<RtId, Cont<'ctx, 'm>>,
+    conts: HashMap<RtId, Cont<'ctx, 'm>>,
 }
 
 impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
     fn eval(&mut self, rt: &Rt) -> Option<LLVMValue<'ctx, 'm>> {
         match rt {
-            Rt::Local(id) => match self.local_values.get(id) {
+            Rt::Var(id, _) => match self.local_values.get(id) {
                 Some(value) => Some(*value),
                 None => panic!("Undefined variable: {}", id),
             },
-            Rt::LocalFun(_, _) => {
+            Rt::LocalFun(_) => {
                 panic!("Found Rt::LocalFun at Codegen, this should be erased by lowerizer")
             }
-            Rt::StaticFun(Ct::Id(id), env) => {
-                let fp = self.module.capture_function(*id, self.ctx).value;
-                let env = match env {
-                    Some(env) => self.eval(env)?,
-                    None => {
-                        let ty = self.ctx.llvm_type(&Ct::Env).as_type_of().unwrap();
-                        llvm_constant!(*self.ctx, (nullptr { ty })).as_value()
-                    }
-                };
-                let value = llvm_constant!(*self.ctx, (undef (struct (typeof fp) (typeof env))));
-                let value = self.builder.build_insert_value(value, fp, 0);
-                let value = self.builder.build_insert_value(value, env, 1);
-                Some(value)
-            }
-            Rt::StaticFun(ct, _) => {
-                panic!(
+            Rt::StaticFun(capture) => match &capture.fun {
+                Ct::Id(id) => {
+                    let fp = self.module.capture_function(*id, self.ctx).value;
+                    let env = match capture.env {
+                        Some(ref env) => self.eval(env)?,
+                        None => {
+                            let ty = self.ctx.llvm_type(&Ct::Env).as_type_of().unwrap();
+                            llvm_constant!(*self.ctx, (nullptr { ty })).as_value()
+                        }
+                    };
+                    let value =
+                        llvm_constant!(*self.ctx, (undef (struct (typeof fp) (typeof env))));
+                    let value = self.builder.build_insert_value(value, fp, 0);
+                    let value = self.builder.build_insert_value(value, env, 1);
+                    Some(value)
+                }
+                ct => panic!(
                     "Unresolved Ct: {}, this should be resolved by lowerizer",
                     ct
-                )
-            }
+                ),
+            },
             Rt::Const(c) => Some(self.llvm_constant(c).as_value()),
             Rt::Call(call) => {
-                let clos = self.eval(&call.0)?;
-                let args = self.eval_all(&call.1)?;
+                let args = self.eval_all(&call.args)?;
+                let clos = self.eval(&call.callee)?;
                 Some(self.eval_call(clos, &args))
             }
-            Rt::CCall(c_call) => {
-                let args = self.eval_all(&c_call.2)?;
+            Rt::CCall(call) => {
+                let args = self.eval_all(&call.args)?;
                 let ctx = self.ctx;
                 let f = self
                     .module
-                    .capture_c_function(&c_call.0, || match c_call.1 {
+                    .capture_c_function(&call.sym, || match &call.ty {
                         Ct::Clos(ref clos) => {
                             let params = ctx.llvm_type_all(&clos.0);
                             let ret = match clos.1 {
@@ -134,9 +136,21 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
                             };
                             llvm_type!(*ctx, (function(...{params}) {ret}))
                         }
-                        ref ty => panic!("CCall type is not a function type: {}", ty),
+                        ty => panic!("CCall type is not a function type: {}", ty),
                     });
                 Some(self.eval_c_call(f, &args))
+            }
+            Rt::ContCall(call) => {
+                let args = self.eval_all(&call.args)?;
+                match self.conts.remove(&call.cont) {
+                    Some(mut cont) => {
+                        cont.enter(args, self);
+                        self.conts.insert(call.cont, cont);
+                        None
+                    }
+                    // NOTE: Continuation recursion is unsupported at the moment
+                    None => panic!("Undefined continuation: {}", call.cont),
+                }
             }
             Rt::Nullary(nullary) => {
                 use Nullary::*;
@@ -169,14 +183,13 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
                     Not => self.builder.build_not(x),
                     Load => self.builder.build_load(x),
                     StructElem(_, i) => self.builder.build_extract_value(x, *i as u32),
-                    Reinterpret(a, b) => {
-                        let a = self.ctx.llvm_type(a);
-                        let b = self.ctx.llvm_type(b);
-                        self.eval_reinterpret(a, b, x)
+                    Reinterpret(to) => {
+                        let to = self.ctx.llvm_type(to);
+                        self.eval_reinterpret(to, x)
                     }
-                    SyntaxBody(ty) => {
-                        let ty = self.ctx.llvm_type(ty);
-                        runtime::build_syntax_body(ty, x, &self.builder, self.module)
+                    SyntaxBody => {
+                        let body_ty = self.ctx.llvm_type(&rt.ty().unwrap());
+                        runtime::build_syntax_body(body_ty, x, &self.builder, self.module)
                     }
                     Panic => {
                         runtime::build_panic(x, &self.builder, self.module);
@@ -350,7 +363,6 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
                     StringEq => runtime::build_string_eq(x, y, &self.builder, self.module),
                     StringCmp => runtime::build_string_cmp(x, y, &self.builder, self.module),
                     StringConcat => runtime::build_string_concat(x, y, &self.builder, self.module),
-                    CharEq => runtime::build_char_eq(x, y, &self.builder),
                     ArrayConstruct => runtime::build_array_construct(x, y, &self.builder),
                     ArrayLoad => runtime::build_array_load(x, y, &self.builder),
                 })
@@ -454,23 +466,11 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
                 self.eval_return(ret);
                 None
             }
-            Rt::Cont(id, args) => {
-                let args = self.eval_all(args)?;
-                match self.local_conts.remove(id) {
-                    Some(mut cont) => {
-                        cont.enter(args, self);
-                        self.local_conts.insert(*id, cont);
-                        None
-                    }
-                    // NOTE: Continuation recursion is unsupported at the moment
-                    None => panic!("Undefined continuation: {}", id),
-                }
-            }
             Rt::Never => {
                 self.builder.build_unreachable();
                 None
             }
-            Rt::LetFunction(_) => {
+            Rt::LetLocalFun(_) => {
                 panic!("Found Rt::LetFunction at Codegen, this should be erased by lowerizer")
             }
             Rt::LetVar(let_) => self.eval_let_var(&let_.0, &let_.1),
@@ -581,7 +581,7 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
 
     fn eval_let_cont(&mut self, conts: &Vec<RtCont>, body: &Rt) -> Option<LLVMValue<'ctx, 'm>> {
         for cont in conts {
-            self.local_conts.insert(cont.id, {
+            self.conts.insert(cont.id, {
                 let params = cont.params.iter().map(|p| p.id).collect::<Vec<_>>();
                 let body = cont.body.clone();
                 Cont::boxed("cont", move |args, self_| {
@@ -602,7 +602,7 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
         }
 
         for cont in conts {
-            let cont = self.local_conts.remove(&cont.id).unwrap();
+            let cont = self.conts.remove(&cont.id).unwrap();
             if let Some(ret) = cont.continue_(self) {
                 merge.enter(vec![ret], self);
             }
@@ -643,10 +643,11 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
 
     fn eval_reinterpret(
         &mut self,
-        a: impl LLVMAnyType<'ctx>,
-        b: impl LLVMAnyType<'ctx>,
+        to: impl LLVMAnyType<'ctx>,
         x: impl LLVMAnyValue<'ctx, 'm>,
     ) -> LLVMValue<'ctx, 'm> {
+        let a = x.get_type();
+        let b = to.as_type();
         let a_size = self.ctx.data_layout().type_alloc_size(a);
         let b_size = self.ctx.data_layout().type_alloc_size(b);
 

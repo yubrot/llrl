@@ -988,7 +988,11 @@ impl<'a, E: External> Context<'a, E> {
     fn infer_pattern(&mut self, scope: &mut u::Scope, pattern: &ast::Pattern) -> Result<u::Type> {
         match pattern.rep {
             ast::PatternRep::Var(ref var) => self.infer_pattern_var(scope, var),
-            ast::PatternRep::Wildcard => Ok(self.u_ctx.new_type_var(scope.level())),
+            ast::PatternRep::Wildcard => {
+                let ty = self.u_ctx.new_type_var(scope.level());
+                self.u_types.types.insert(pattern.id.into(), ty);
+                Ok(ty)
+            }
             ast::PatternRep::Decon(ref decon) => self.infer_pattern_decon(scope, pattern.id, decon),
             ast::PatternRep::Const(ref c) => self.infer_const(scope, pattern.id, c),
         }
@@ -1076,7 +1080,7 @@ impl<'a, E: External> Context<'a, E> {
     fn infer_use(
         &mut self,
         scope: &mut u::Scope,
-        construct: impl Into<ast::Construct>,
+        construct: impl Into<ast::Construct> + Copy,
         mut scheme: u::Scheme,
     ) -> Result<u::Type> {
         let ty_args = scheme.instantiate_types(scope.level(), &mut self.u_ctx);
@@ -1088,6 +1092,7 @@ impl<'a, E: External> Context<'a, E> {
         self.u_types
             .instantiations
             .insert(construct.into(), u::Instantiation::new(ty_args, s_args));
+        self.u_types.types.insert(construct.into(), scheme.body);
         Ok(scheme.body)
     }
 }

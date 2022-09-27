@@ -1,6 +1,7 @@
 use super::{Ct, CtId, Sexp, Syntax, SyntaxMetadata};
 use derive_new::new;
 use ordered_float::OrderedFloat;
+use std::borrow::Cow;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy, Hash)]
 pub struct RtId(u32);
@@ -31,13 +32,14 @@ impl RtIdGen {
 /// An expression that is evaluated at runtime.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Hash)]
 pub enum Rt {
-    Local(RtId),
-    LocalFun(RtId, Vec<Ct>), // erased by normalizer
-    StaticFun(Ct, Option<Box<Rt>>),
+    Var(RtId, Ct),
+    LocalFun(Box<RtLocalFunInst>), // this will be erased by normalizer
+    StaticFun(Box<RtStaticFunCapture>),
     Const(Const),
 
-    Call(Box<(Rt, Vec<Rt>)>),
-    CCall(Box<(String, Ct, Vec<Rt>)>),
+    Call(Box<RtCall>),
+    CCall(Box<RtCCall>),
+    ContCall(Box<RtContCall>),
     Nullary(Nullary),
     Unary(Box<(Unary, Rt)>),
     Binary(Box<(Binary, Rt, Rt)>),
@@ -46,43 +48,53 @@ pub enum Rt {
     Alloc(Box<(Location, Rt)>),
     AllocArray(Box<(Location, Ct, Rt)>),
     ConstructEnv(Box<(Location, Vec<Rt>)>),
-    ConstructData(Box<(Ct, usize, Vec<Rt>)>), // erased by data_expander
+    ConstructData(Box<(Ct, usize, Vec<Rt>)>), // this will be erased by data_expander
     ConstructStruct(Box<(Ct, Vec<Rt>)>),
     ConstructSyntax(Box<(SyntaxMetadata, Rt)>),
 
     Seq(Box<(Vec<Rt>, Rt)>),
     If(Box<(Rt, Rt, Rt)>),
     While(Box<(Rt, Rt)>),
-    And(Box<(Rt, Rt)>),              // erased by branch_expander
-    Or(Box<(Rt, Rt)>),               // erased by branch_expander
-    Match(Box<(Rt, Vec<RtClause>)>), // erased by branch_expander
+    And(Box<(Rt, Rt)>),              // this will be erased by branch_expander
+    Or(Box<(Rt, Rt)>),               // this will be erased by branch_expander
+    Match(Box<(Rt, Vec<RtClause>)>), // this will be erased by branch_expander
     Return(Box<Rt>),
-    Cont(RtId, Vec<Rt>),
     Never,
 
-    LetFunction(Box<(Vec<RtFunction>, Rt)>), // erased by normalizer
     LetVar(Box<(Vec<RtVar>, Rt)>),
+    LetLocalFun(Box<(Vec<RtLocalFun>, Rt)>), // this will be erased by normalizer
     LetCont(Box<(Vec<RtCont>, Rt)>),
 }
 
 impl Rt {
-    pub fn capture(ct: Ct, env: Option<Self>) -> Self {
-        Self::StaticFun(ct, env.map(Box::new))
+    pub fn local_fun(fun: RtId, args: Vec<Ct>, ty: Ct) -> Self {
+        Self::LocalFun(Box::new(RtLocalFunInst::new(fun, args, ty)))
+    }
+
+    pub fn static_fun(fun: Ct, ty: Ct, env: Option<Self>) -> Self {
+        Self::StaticFun(Box::new(RtStaticFunCapture::new(fun, ty, env)))
     }
 
     pub fn call(callee: Self, args: Vec<Self>) -> Self {
-        Self::Call(Box::new((callee, args)))
+        Self::Call(Box::new(RtCall::new(callee, args)))
     }
 
     pub fn c_call(name: String, ty: Ct, args: Vec<Self>) -> Self {
-        Self::CCall(Box::new((name, ty, args)))
+        Self::CCall(Box::new(RtCCall::new(name, ty, args)))
     }
 
-    pub fn autocall(rt: Self, autocall: bool) -> Self {
+    pub fn cont_call(id: RtId, args: Vec<Self>, ret: Option<Ct>) -> Self {
+        Self::ContCall(Box::new(RtContCall::new(id, args, ret)))
+    }
+
+    pub fn autocall(fun: Ct, ty: Ct, autocall: bool) -> Self {
         if autocall {
-            Self::call(rt, Vec::new())
+            Self::call(
+                Rt::static_fun(fun, Ct::clos(Vec::new(), ty), None),
+                Vec::new(),
+            )
         } else {
-            rt
+            Rt::static_fun(fun, ty, None)
         }
     }
 
@@ -162,14 +174,6 @@ impl Rt {
         Self::Return(Box::new(ret))
     }
 
-    pub fn let_function(funs: Vec<RtFunction>, body: Self) -> Self {
-        if funs.is_empty() {
-            body
-        } else {
-            Self::LetFunction(Box::new((funs, body)))
-        }
-    }
-
     pub fn let_var(vars: Vec<RtVar>, body: Self) -> Self {
         if vars.is_empty() {
             body
@@ -179,6 +183,14 @@ impl Rt {
             Self::LetVar(let_)
         } else {
             Self::LetVar(Box::new((vars, body)))
+        }
+    }
+
+    pub fn let_local_fun(funs: Vec<RtLocalFun>, body: Self) -> Self {
+        if funs.is_empty() {
+            body
+        } else {
+            Self::LetLocalFun(Box::new((funs, body)))
         }
     }
 
@@ -193,12 +205,79 @@ impl Rt {
             Self::LetCont(Box::new((conts, body)))
         }
     }
+
+    /// Get the type of value obtained when this Rt is evaluated.
+    pub fn ty(&self) -> Option<Cow<Ct>> {
+        Some(match self {
+            Rt::Var(_, ty) => Cow::Borrowed(ty),
+            Rt::LocalFun(inst) => Cow::Borrowed(&inst.ty),
+            Rt::StaticFun(capture) => Cow::Borrowed(&capture.ty),
+            Rt::Const(c) => c.ty(),
+            Rt::Call(call) => Ct::clos_ret(call.callee.ty()?),
+            Rt::CCall(call) => Ct::clos_ret(Cow::Borrowed(&call.ty)),
+            Rt::ContCall(call) => Cow::Borrowed(call.ret.as_ref()?),
+            Rt::Nullary(nullary) => nullary.ty()?,
+            Rt::Unary(unary) => unary.0.ty(&unary.1)?,
+            Rt::Binary(binary) => binary.0.ty(&binary.1, &binary.2)?,
+            Rt::Ternary(ternary) => ternary.0.ty(&ternary.1, &ternary.2, &ternary.3)?,
+            Rt::Alloc(alloc) => Cow::Owned(Ct::ptr(alloc.1.ty()?.into_owned())),
+            Rt::AllocArray(alloc) => Cow::Owned(Ct::array(alloc.1.clone())),
+            Rt::ConstructEnv(_) => Cow::Owned(Ct::Env),
+            Rt::ConstructData(c) => Cow::Borrowed(&c.0),
+            Rt::ConstructStruct(c) => Cow::Borrowed(&c.0),
+            Rt::ConstructSyntax(c) => Cow::Owned(Ct::syntax(c.1.ty()?.into_owned())),
+            Rt::Seq(seq) => seq.1.ty()?,
+            Rt::If(if_) => if_.1.ty().or_else(|| if_.2.ty())?,
+            Rt::While(_) => Cow::Owned(Ct::Unit),
+            Rt::And(_) | Rt::Or(_) => Cow::Owned(Ct::U(1)),
+            Rt::Match(m) => m.1.iter().find_map(|c| c.body.ty())?,
+            Rt::Return(_) => return None,
+            Rt::Never => return None,
+            Rt::LetLocalFun(let_local_fun) => let_local_fun.1.ty()?,
+            Rt::LetVar(let_var) => let_var.1.ty()?,
+            Rt::LetCont(let_cont) => let_cont.1.ty()?,
+        })
+    }
 }
 
 impl Default for Rt {
     fn default() -> Self {
         Self::Const(Const::default())
     }
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Hash, new)]
+pub struct RtCall {
+    pub callee: Rt,
+    pub args: Vec<Rt>,
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Hash, new)]
+pub struct RtCCall {
+    pub sym: String,
+    pub ty: Ct,
+    pub args: Vec<Rt>,
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Hash, new)]
+pub struct RtContCall {
+    pub cont: RtId,
+    pub args: Vec<Rt>,
+    pub ret: Option<Ct>,
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Hash, new)]
+pub struct RtLocalFunInst {
+    pub fun: RtId,
+    pub args: Vec<Ct>,
+    pub ty: Ct,
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Hash, new)]
+pub struct RtStaticFunCapture {
+    pub fun: Ct, // this will be simplified to Ct::Id(_) by normalizer
+    pub ty: Ct,
+    pub env: Option<Rt>,
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Hash)]
@@ -210,17 +289,29 @@ pub enum Nullary {
     AlignOf(Ct),       // () -> u64
 }
 
+impl Nullary {
+    fn ty(&self) -> Option<Cow<Ct>> {
+        use Nullary::*;
+        Some(match self {
+            Uninitialized(ty) => Cow::Borrowed(ty),
+            Null(ty) => Cow::Owned(Ct::ptr(ty.clone())),
+            GenId => Cow::Owned(Ct::String),
+            SizeOf(_) | AlignOf(_) => Cow::Owned(Ct::U(64)),
+        })
+    }
+}
+
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Hash)]
 pub enum Unary {
     Not,                   // (bool) -> bool
     Load,                  // (ptr('a)) -> 'a
-    StructElem(Ct, usize), // (#struct) -> #elem
-    Reinterpret(Ct, Ct),   // (#from) -> #to
-    SyntaxBody(Ct),        // (syntax) -> #syntax-body
+    StructElem(Ct, usize), // ('struct) -> #elem
+    Reinterpret(Ct),       // ('from) -> #to
+    SyntaxBody,            // ('syntax) -> 'syntax-body
     Panic,                 // (string) -> !
-    BitCast(Ct),           // ('a) -> 'b
+    BitCast(Ct),           // ('a) -> #b
     PtrToI,                // (ptr('a)) -> u64
-    IToPtr(Ct),            // (u64) -> ptr('a)
+    IToPtr(Ct),            // (u64) -> ptr(#a)
     IComplement,           // (iX) -> iX
     ITrunc(Ct),            // (iX) -> iX
     IPopCount,             // (iX) -> iX
@@ -245,6 +336,31 @@ pub enum Unary {
     StringLength,          // (string) -> u64
     ArrayPtr,              // (array('a)) -> ptr('a)
     ArrayLength,           // (array('a)) -> u64
+}
+
+impl Unary {
+    fn ty<'a>(&'a self, a: &'a Rt) -> Option<Cow<'a, Ct>> {
+        use Unary::*;
+        Some(match self {
+            Not => Cow::Owned(Ct::BOOL),
+            Load => Ct::ptr_elem(a.ty()?),
+            StructElem(elem, _) => Cow::Borrowed(elem),
+            Reinterpret(to) => Cow::Borrowed(to),
+            SyntaxBody => Ct::syntax_body(a.ty()?),
+            Panic => return None,
+            BitCast(ty) => Cow::Borrowed(ty),
+            PtrToI => Cow::Owned(Ct::U(64)),
+            IToPtr(ty) => Cow::Owned(Ct::ptr(ty.clone())),
+            ITrunc(ty) | SExt(ty) | UExt(ty) | SToF(ty) | UToF(ty) | FToS(ty) | FToU(ty)
+            | FTrunc(ty) | FExt(ty) => Cow::Borrowed(ty),
+            IComplement | IPopCount | RealCeil | RealFloor | RealTrunc | RealRound | MathSqrt
+            | MathSin | MathCos | MathExp | MathLog => a.ty()?,
+            StringPtr => Cow::Owned(Ct::ptr(Ct::U(8))),
+            StringLength => Cow::Owned(Ct::U(64)),
+            ArrayPtr => Ct::array_to_ptr(a.ty()?),
+            ArrayLength => Cow::Owned(Ct::U(64)),
+        })
+    }
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Hash)]
@@ -296,9 +412,29 @@ pub enum Binary {
     StringEq,        // (string, string) -> bool
     StringCmp,       // (string, string) -> i32
     StringConcat,    // (string, string) -> string
-    CharEq,          // (char, char) -> bool
     ArrayConstruct,  // (ptr('a), u64) -> array('a)
     ArrayLoad,       // (u64, array('a)) -> 'a
+}
+
+impl Binary {
+    fn ty<'a>(&'a self, a: &'a Rt, b: &'a Rt) -> Option<Cow<'a, Ct>> {
+        use Binary::*;
+        Some(match self {
+            Store => Cow::Owned(Ct::Unit),
+            Offset => b.ty()?,
+            IShl | IAShr | ILShr | IAnd | IOr | IXor | SAdd | SSub | SMul | SDiv | SRem | UAdd
+            | USub | UMul | UDiv | URem | FGe | FAdd | FSub | FMul | FDiv | FRem | MathPow => {
+                a.ty()?
+            }
+            PtrEq | PtrLt | PtrLe | PtrGt | PtrGe | IEq | SLt | SLe | SGt | SGe | ULt | ULe
+            | UGt | UGe | FEq | FLt | FLe | FGt | StringEq => Cow::Owned(Ct::BOOL),
+            StringConstruct => Cow::Owned(Ct::String),
+            StringCmp => Cow::Owned(Ct::S(32)),
+            StringConcat => Cow::Owned(Ct::String),
+            ArrayConstruct => Ct::ptr_to_array(a.ty()?),
+            ArrayLoad => Ct::array_elem(b.ty()?),
+        })
+    }
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Hash)]
@@ -306,6 +442,12 @@ pub enum Ternary {
     PtrCopy,    // (ptr('a), u64, ptr('a)) -> unit
     PtrMove,    // (ptr('a), u64, ptr('a)) -> unit
     ArrayStore, // (u64, 'a, array('a)) -> unit
+}
+
+impl Ternary {
+    fn ty<'a>(&'a self, _a: &'a Rt, _b: &'a Rt, _c: &'a Rt) -> Option<Cow<'a, Ct>> {
+        Some(Cow::Owned(Ct::Unit))
+    }
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy, Hash)]
@@ -324,24 +466,48 @@ pub struct RtClause {
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Hash)]
 pub enum RtPat {
     Var(RtId, Ct, Option<Box<RtPat>>),
-    Wildcard,
+    Wildcard(Ct),
     Deref(Box<RtPat>),
-    NonNull(Ct, Box<RtPat>),
+    NonNull(Box<RtPat>),
     Null(Ct),
-    Data(Ct, usize, Vec<RtPat>), // erased by data_expander
+    Data(Ct, usize, Vec<RtPat>), // this will be erased by data_expander
     Struct(Ct, Vec<RtPat>),
-    Reinterpret(Ct, Ct, Box<RtPat>),
-    Syntax(Ct, Box<RtPat>),
+    Reinterpret(Ct, Box<RtPat>),
+    Syntax(Box<RtPat>),
     Const(Const),
 }
 
 impl RtPat {
+    /// Get the target type of this pattern.
+    pub fn ty(&self) -> Cow<Ct> {
+        match self {
+            Self::Var(_, ty, _) => Cow::Borrowed(ty),
+            Self::Wildcard(ty) => Cow::Borrowed(ty),
+            Self::Deref(pat) => Cow::Owned(Ct::ptr(pat.ty().into_owned())),
+            Self::NonNull(pat) => Cow::Owned(Ct::ptr(pat.ty().into_owned())),
+            Self::Null(ty) => Cow::Owned(Ct::ptr(ty.to_owned())),
+            Self::Data(ty, _, _) => Cow::Borrowed(ty),
+            Self::Struct(ty, _) => Cow::Borrowed(ty),
+            Self::Reinterpret(ty, _) => Cow::Borrowed(ty),
+            Self::Syntax(pat) => Cow::Owned(Ct::syntax(pat.ty().into_owned())),
+            Self::Const(c) => c.ty(),
+        }
+    }
+
     pub fn deref(pat: Self) -> Self {
         Self::Deref(Box::new(pat))
     }
 
-    pub fn non_null(ty: Ct, pat: Self) -> Self {
-        Self::NonNull(ty, Box::new(pat))
+    pub fn non_null(pat: Self) -> Self {
+        Self::NonNull(Box::new(pat))
+    }
+
+    pub fn reinterpret(ty: Ct, pat: Self) -> Self {
+        Self::Reinterpret(ty, Box::new(pat))
+    }
+
+    pub fn syntax(pat: Self) -> Self {
+        Self::Syntax(Box::new(pat))
     }
 }
 
@@ -352,7 +518,7 @@ impl Default for RtPat {
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Hash, new)]
-pub struct RtFunction {
+pub struct RtLocalFun {
     pub id: RtId,
     pub ct_params: Vec<CtId>,
     pub params: Vec<RtParam>,
@@ -360,7 +526,7 @@ pub struct RtFunction {
     pub body: Rt,
 }
 
-impl RtFunction {
+impl RtLocalFun {
     pub fn ty(&self) -> Ct {
         Ct::clos(
             self.params.iter().map(|param| param.ty.clone()).collect(),
@@ -401,17 +567,22 @@ pub enum Const {
 
 impl Const {
     pub fn bool(value: bool) -> Self {
-        Self::Integer(Ct::U(1), false, if value { 1 } else { 0 })
+        Self::Integer(Ct::BOOL, false, if value { 1 } else { 0 })
     }
 
-    pub fn ty(&self) -> Ct {
+    pub fn syntax_sexp(s_ty: Ct, s: Syntax<Sexp>) -> Self {
+        Self::SyntaxSexp(s_ty, Box::new(s))
+    }
+
+    /// Get the type of this constant.
+    pub fn ty(&self) -> Cow<Ct> {
         match self {
-            Self::Integer(ty, _, _) => ty.clone(),
-            Self::FPNumber(ty, _) => ty.clone(),
-            Self::String(_) => Ct::String,
-            Self::Char(_) => Ct::Char,
-            Self::SyntaxSexp(ty, _) => Ct::syntax(ty.clone()),
-            Self::Unit => Ct::Unit,
+            Self::Integer(ty, _, _) => Cow::Borrowed(ty),
+            Self::FPNumber(ty, _) => Cow::Borrowed(ty),
+            Self::String(_) => Cow::Owned(Ct::String),
+            Self::Char(_) => Cow::Owned(Ct::Char),
+            Self::SyntaxSexp(ty, _) => Cow::Owned(Ct::syntax(ty.clone())),
+            Self::Unit => Cow::Owned(Ct::Unit),
         }
     }
 }

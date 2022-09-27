@@ -1,8 +1,7 @@
 //! A very simple and conservative pass for promoting heap allocations to stack allocations.
 
-use std::collections::HashSet;
-
 use super::ir::*;
+use std::collections::HashSet;
 
 pub fn run(src: &mut impl rewriter::Rewrite) {
     let _ = rewriter::rewrite(src, &mut Heap2Stack::default());
@@ -18,16 +17,16 @@ impl rewriter::Rewriter for Heap2Stack {
 
     fn before_rt(&mut self, rt: &mut Rt) -> Result<bool, Self::Error> {
         match rt {
-            Rt::Local(id) => {
+            Rt::Var(id, _) => {
                 self.load_only_vars.remove(id);
             }
             Rt::Unary(unary) => {
-                if let (Unary::Load, Rt::Local(_)) = **unary {
+                if let (Unary::Load, Rt::Var(_, _)) = **unary {
                     return Ok(false);
                 }
             }
             Rt::Binary(binary) => {
-                if let (Binary::Store, ref mut val, Rt::Local(_)) = **binary {
+                if let (Binary::Store, ref mut val, Rt::Var(_, _)) = **binary {
                     self.rewrite(val)?;
                     return Ok(false);
                 }

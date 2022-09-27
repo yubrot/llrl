@@ -274,14 +274,6 @@ pub fn char_constant<'ctx: 'm, 'm>(
     llvm_constant!(*module, (u32 {src as u32})).as_constant()
 }
 
-pub fn build_char_eq<'ctx: 'm, 'm>(
-    a: impl LLVMAnyValue<'ctx, 'm>,
-    b: impl LLVMAnyValue<'ctx, 'm>,
-    builder: &LLVMBuilder<'ctx, 'm>,
-) -> LLVMValue<'ctx, 'm> {
-    builder.build_eq(a, b)
-}
-
 pub fn array_type<'ctx>(elem_ty: impl LLVMAnyType<'ctx>) -> LLVMType<'ctx> {
     let ctx = elem_ty.context();
     llvm_type!(ctx, (struct (ptr {elem_ty}) u64)).as_type()

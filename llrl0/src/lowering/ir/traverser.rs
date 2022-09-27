@@ -91,10 +91,10 @@ impl Traverse for Ct {
                     traverser.traverse(&clos.0)?;
                     traverser.traverse(&clos.1)?;
                 }
-                Self::Syntax(ty) => {
+                Self::Array(ty) => {
                     traverser.traverse(ty)?;
                 }
-                Self::Array(ty) => {
+                Self::Syntax(ty) => {
                     traverser.traverse(ty)?;
                 }
                 Self::S(_)
@@ -105,8 +105,7 @@ impl Traverse for Ct {
                 | Self::Char
                 | Self::CapturedUse
                 | Self::Unit
-                | Self::Env
-                | Self::Hole => {}
+                | Self::Env => {}
             };
             traverser.after_ct(self)
         } else {
@@ -190,27 +189,34 @@ impl Traverse for Rt {
     fn traverse<T: Traverser>(&self, traverser: &mut T) -> Result<(), T::Error> {
         if traverser.before_rt(self)? {
             match self {
-                Self::Local(id) => {
+                Self::Var(id, ty) => {
                     traverser.after_rt_use(*id)?;
+                    traverser.traverse(ty)?;
                 }
-                Self::LocalFun(id, args) => {
-                    traverser.after_rt_use(*id)?;
-                    traverser.traverse(args)?;
+                Self::LocalFun(inst) => {
+                    traverser.after_rt_use(inst.fun)?;
+                    traverser.traverse(&inst.args)?;
+                    traverser.traverse(&inst.ty)?;
                 }
-                Self::StaticFun(ct, env) => {
-                    traverser.traverse(ct)?;
-                    traverser.traverse(env)?;
+                Self::StaticFun(capture) => {
+                    traverser.traverse(&capture.fun)?;
+                    traverser.traverse(&capture.env)?;
+                    traverser.traverse(&capture.ty)?;
                 }
                 Self::Const(c) => {
                     traverser.traverse(c)?;
                 }
                 Self::Call(call) => {
-                    traverser.traverse(&call.0)?;
-                    traverser.traverse(&call.1)?;
+                    traverser.traverse(&call.callee)?;
+                    traverser.traverse(&call.args)?;
                 }
-                Self::CCall(c_call) => {
-                    traverser.traverse(&c_call.1)?;
-                    traverser.traverse(&c_call.2)?;
+                Self::CCall(call) => {
+                    traverser.traverse(&call.ty)?;
+                    traverser.traverse(&call.args)?;
+                }
+                Self::ContCall(call) => {
+                    traverser.traverse(&call.ret)?;
+                    traverser.traverse(&call.args)?;
                 }
                 Self::Nullary(nullary) => {
                     traverser.traverse(nullary)?;
@@ -275,11 +281,8 @@ impl Traverse for Rt {
                 Self::Return(ret) => {
                     traverser.traverse(ret)?;
                 }
-                Self::Cont(_, args) => {
-                    traverser.traverse(args)?;
-                }
                 Self::Never => {}
-                Self::LetFunction(let_) => {
+                Self::LetLocalFun(let_) => {
                     traverser.traverse(&let_.0)?;
                     traverser.traverse(&let_.1)?;
                 }
@@ -324,16 +327,13 @@ impl Traverse for Unary {
         match self {
             Not => {}
             Load => {}
-            StructElem(ty, _) => {
-                traverser.traverse(ty)?;
+            StructElem(elem_ty, _) => {
+                traverser.traverse(elem_ty)?;
             }
-            Reinterpret(from, to) => {
-                traverser.traverse(from)?;
+            Reinterpret(to) => {
                 traverser.traverse(to)?;
             }
-            SyntaxBody(ty) => {
-                traverser.traverse(ty)?;
-            }
+            SyntaxBody => {}
             Panic => {}
             BitCast(ty) => {
                 traverser.traverse(ty)?;
@@ -377,7 +377,6 @@ impl Traverse for Binary {
             FEq | FLt | FLe | FGt | FGe | FAdd | FSub | FMul | FDiv | FRem => {}
             MathPow => {}
             StringConstruct | StringEq | StringCmp | StringConcat => {}
-            CharEq => {}
             PtrEq | PtrLt | PtrLe | PtrGt | PtrGe => {}
             ArrayConstruct | ArrayLoad => {}
         }
@@ -412,12 +411,13 @@ impl Traverse for RtPat {
                     traverser.after_rt_def(*id, || ty.clone())?;
                     traverser.traverse(p)?;
                 }
-                Self::Wildcard => {}
+                Self::Wildcard(ty) => {
+                    traverser.traverse(ty)?;
+                }
                 Self::Deref(x) => {
                     traverser.traverse(x)?;
                 }
-                Self::NonNull(ty, x) => {
-                    traverser.traverse(ty)?;
+                Self::NonNull(x) => {
                     traverser.traverse(x)?;
                 }
                 Self::Null(ty) => {
@@ -431,13 +431,11 @@ impl Traverse for RtPat {
                     traverser.traverse(ty)?;
                     traverser.traverse(fields)?;
                 }
-                Self::Reinterpret(from, to, x) => {
-                    traverser.traverse(from)?;
-                    traverser.traverse(to)?;
+                Self::Reinterpret(ty, x) => {
+                    traverser.traverse(ty)?;
                     traverser.traverse(x)?;
                 }
-                Self::Syntax(ty, body) => {
-                    traverser.traverse(ty)?;
+                Self::Syntax(body) => {
                     traverser.traverse(body)?;
                 }
                 Self::Const(c) => {
@@ -451,7 +449,7 @@ impl Traverse for RtPat {
     }
 }
 
-impl Traverse for RtFunction {
+impl Traverse for RtLocalFun {
     fn traverse<T: Traverser>(&self, traverser: &mut T) -> Result<(), T::Error> {
         traverser.traverse(&self.params)?;
         traverser.traverse(&self.ret)?;

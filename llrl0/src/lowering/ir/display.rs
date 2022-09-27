@@ -31,8 +31,7 @@ impl fmt::Display for Ct {
             Self::CapturedUse => write!(f, "captured-use"),
             Self::Unit => write!(f, "unit"),
             Self::Env => write!(f, "env"),
-            Self::Syntax(ty) => write!(f, "syntax({})", ty),
-            Self::Hole => write!(f, "_"),
+            Self::Syntax(ct) => write!(f, "syntax({})", ct),
         }
     }
 }
@@ -161,16 +160,31 @@ impl fmt::Display for RtId {
     }
 }
 
+impl fmt::Display for RtLocalFunInst {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}[{}]", self.fun, self.args.iter().format(", "))
+    }
+}
+
+impl fmt::Display for RtStaticFunCapture {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.env {
+            Some(ref env) => write!(f, "{}{{{}}}", self.fun, env),
+            None => write!(f, "{}", self.fun),
+        }
+    }
+}
+
 impl fmt::Display for Rt {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Local(id) => write!(f, "{}", id),
-            Self::LocalFun(id, args) => write!(f, "{}[{}]", id, args.iter().format(", ")),
-            Self::StaticFun(id, None) => write!(f, "{}", id),
-            Self::StaticFun(id, Some(env)) => write!(f, "{}{{{}}}", id, env),
+            Self::Var(id, _) => write!(f, "{}", id),
+            Self::LocalFun(inst) => write!(f, "{}", inst),
+            Self::StaticFun(capture) => write!(f, "{}", capture),
             Self::Const(c) => write!(f, "{}", c),
-            Self::Call(call) => write!(f, "{}({})", call.0, call.1.iter().format(", ")),
-            Self::CCall(c_call) => write!(f, "@{}({})", c_call.0, c_call.2.iter().format(", ")),
+            Self::Call(call) => write!(f, "{}({})", call.callee, call.args.iter().format(", ")),
+            Self::CCall(call) => write!(f, "@{}({})", call.sym, call.args.iter().format(", ")),
+            Self::ContCall(call) => write!(f, "{}({})", call.cont, call.args.iter().format(", ")),
             Self::Nullary(nullary) => write!(f, "{}()", nullary),
             Self::Unary(unary) => write!(f, "{}({})", unary.0, unary.1),
             Self::Binary(binary) => write!(f, "{}({}, {})", binary.0, binary.1, binary.2),
@@ -202,15 +216,8 @@ impl fmt::Display for Rt {
                 write!(f, "match({} with {})", m.0, m.1.iter().format(", "))
             }
             Self::Return(ret) => write!(f, "return({})", ret),
-            Self::Cont(id, args) => {
-                if args.is_empty() {
-                    write!(f, "cont({})", id)
-                } else {
-                    write!(f, "cont({} with {})", id, args.iter().format(", "))
-                }
-            }
             Self::Never => write!(f, "never"),
-            Self::LetFunction(let_) => {
+            Self::LetLocalFun(let_) => {
                 write!(f, "letf({} in {})", let_.0.iter().format(", "), let_.1)
             }
             Self::LetVar(let_) => {
@@ -242,9 +249,9 @@ impl fmt::Display for Unary {
         match self {
             Not => write!(f, "not"),
             Load => write!(f, "load"),
-            StructElem(ty, index) => write!(f, "{}.{}", ty, index),
-            Reinterpret(from, to) => write!(f, "reinterpret[{} -> {}]", from, to),
-            SyntaxBody(ty) => write!(f, "syntax-body[{}]", ty),
+            StructElem(ty, index) => write!(f, "elem.{}[{}]", index, ty),
+            Reinterpret(to) => write!(f, "reinterpret[{}]", to),
+            SyntaxBody => write!(f, "syntax-body"),
             Panic => write!(f, "panic"),
             BitCast(ty) => write!(f, "bitcast[{}]", ty),
             PtrToI => write!(f, "ptr-to-integer"),
@@ -328,7 +335,6 @@ impl fmt::Display for Binary {
             StringEq => write!(f, "string-eq"),
             StringCmp => write!(f, "string-cmp"),
             StringConcat => write!(f, "string-concat"),
-            CharEq => write!(f, "char-eq"),
             ArrayLoad => write!(f, "array-load"),
             ArrayConstruct => write!(f, "array-construct"),
         }
@@ -367,24 +373,24 @@ impl fmt::Display for RtPat {
         match self {
             Self::Var(id, ty, None) => write!(f, "{}: {}", id, ty),
             Self::Var(id, ty, Some(pat)) => write!(f, "as({}, {}): {}", id, pat, ty),
-            Self::Wildcard => write!(f, "_"),
+            Self::Wildcard(ty) => write!(f, "_: {}", ty),
             Self::Deref(pat) => write!(f, "deref({})", pat),
-            Self::NonNull(ty, pat) => write!(f, "non-null[{}]({})", ty, pat),
+            Self::NonNull(pat) => write!(f, "non-null({})", pat),
             Self::Null(ty) => write!(f, "null[{}]", ty),
-            Self::Syntax(ty, body) => write!(f, "syntax[{}]({})", ty, body),
+            Self::Syntax(body) => write!(f, "syntax({})", body),
             Self::Data(ty, index, args) => {
                 write!(f, "{}@{}({})", ty, index, args.iter().format(", "))
             }
             Self::Struct(ty, fields) => {
                 write!(f, "{}({})", ty, fields.iter().format(", "))
             }
-            Self::Reinterpret(from, to, x) => write!(f, "reinterpret[{} -> {}]({})", from, to, x),
+            Self::Reinterpret(ty, x) => write!(f, "reinterpret[{}]({})", ty, x),
             Self::Const(c) => write!(f, "{}", c),
         }
     }
 }
 
-impl fmt::Display for RtFunction {
+impl fmt::Display for RtLocalFun {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.id)?;
         if !self.ct_params.is_empty() {
@@ -426,7 +432,7 @@ impl fmt::Display for Const {
             Self::FPNumber(ty, v) => write!(f, "<{} {}>", ty, v),
             Self::String(s) => write!(f, "<string \"{}\">", string::escape(s)),
             Self::Char(c) => write!(f, "<char #\\{}>", string::escape(&c.to_string())),
-            Self::SyntaxSexp(ty, s) => write!(f, "<syntax[{}] '{}>", ty, s),
+            Self::SyntaxSexp(_, s) => write!(f, "<syntax-sexp '{}>", s),
             Self::Unit => write!(f, "<unit>"),
         }
     }
