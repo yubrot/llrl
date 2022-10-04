@@ -18,228 +18,281 @@
       [(rt:or (let a) (let b))
         (rewrite/changed (rt:if a (rt:const (const/bool #t)) b))]
       [(rt:match (let target) (let clauses))
-        (rewrite/changed (expand-clauses! target clauses t))]
+        (rewrite/changed (expand-pattern-matching! target clauses t))]
       [_
         (rewrite/unchanged rt)]))))
 
-(function (expand-clauses! target clauses env) {(forall E) (-> Rt (Array RtClause) E Rt) (where (Env E))}
-  (let ([conts (array/unsafe-alloc-uninitialized (array/length clauses))]
-        [matrix (array/unsafe-alloc-uninitialized (array/length clauses))])
+(function (expand-pattern-matching! target clauses env)
+  {(forall E) (-> Rt (Array RtClause) E Rt) (where (Env E))}
+  (if-match1 (some (let ty)) (rt/ty target)
+    (let ([conts (array/unsafe-alloc-uninitialized (array/length clauses))]
+          [matches (array/unsafe-alloc-uninitialized (array/length clauses))])
 
-    (for (: (let i) (rt-clause: (let pat) (let body))) (it/with-index clauses)
-      (with1 (: (let row) (let params)) (expand-into-flatten-pats pat)
-        (let1 id (alloc-rt! env)
-          (set! conts[i] (rt-cont: id params body))
-          (set! matrix[i] (: row id)))))
+      (for (: (let i) (rt-clause: (let pat) (let body))) (it/with-index clauses)
+        (with1 (flatten-pat: (let parts) (let binds)) (flatten-pat pat)
+          (let1 id (alloc-rt! env)
+            (set! conts[i] (rt-cont: id binds body))
+            (set! matches[i] (: parts id (rt/ty body))))))
 
-    (let1 root (alloc-rt! env)
       (rt/let-cont
         conts
-        (rt/let-var
-          (array (rt-var: root ct:hole target))
-          (expand-matrix! (match-progress/new root) matrix env))))))
+        (let1 root (alloc-rt! env)
+          (rt/let-var
+            (array (rt-var: root ty target))
+            (expand-matches! (match-progress root ty) matches env)))))
+    target))
 
-(function (expand-matrix! progress matrix env)
-  {(forall E) (-> MatchProgress (Array (: (Array FlattenPat) RtId)) E Rt) (where (Env E))}
-  (if-match1 (some (: (: (let row) (let id)) (let matrix))) (array/split-first? matrix)
-    (let ([(success progress) (rt:cont id (match-progress/args progress))]
-          [(failure progress) (expand-matrix! (match-progress/reset-args progress) matrix env)])
-      (expand-row! progress row (match-cont: success failure) env))
+(function (expand-matches! mp matches env)
+  {(forall E) (-> MatchProgress (Array (: (Array PatPart) RtId (Option Ct))) E Rt) (where (Env E))}
+  (if-match1 (some (: (: (let parts) (let id) (let ret)) (let matches))) (array/split-first? matches)
+    (let ([(success mp) (rt:cont-call id (bind-args mp) ret)]
+          [(failure mp) (expand-matches! (reset-bind-args mp) matches env)])
+      (expand-pat-parts! mp parts (match-cont: success failure) env))
     rt:never))
 
-(function (expand-row! progress row cont env)
-  {(forall E) (-> MatchProgress (Array FlattenPat) MatchCont E Rt) (where (Env E))}
-  (if-match1 (some (: (let pat) (let row))) (array/split-first? row)
-    (let ([(success progress) (expand-row! progress row cont env)]
+(function (expand-pat-parts! mp parts cont env)
+  {(forall E) (-> MatchProgress (Array PatPart) MatchCont E Rt) (where (Env E))}
+  (if-match1 (some (: (let part) (let parts))) (array/split-first? parts)
+    (let ([(success mp) (expand-pat-parts! mp parts cont env)]
           [failure (match-cont/failure cont)])
-      (expand-pat! progress pat (match-cont: success failure) env))
-    ((match-cont/success cont) progress)))
+      (expand-pat-part! mp part (match-cont: success failure) env))
+    ((match-cont/success cont) mp)))
 
-(function (expand-pat! progress pat cont env)
-  {(forall E) (-> MatchProgress FlattenPat MatchCont E Rt) (where (Env E))}
-  (with1 (flatten-pat: (let path) (let cond)) pat
-    (if-match1 (some (let pp)) (match-progress/progress-for-path? path progress)
-      (match (path-progress/satisfied? cond pp)
-        [(some #t)
-          ((match-cont/success cont) progress)]
-        [(some #f)
-          ((match-cont/failure cont) progress)]
-        [none
-          (if-match1 (some (let test)) (condition/test (path-progress/tmp-var pp) cond)
+(function (expand-pat-part! mp part cont env)
+  {(forall E) (-> MatchProgress PatPart MatchCont E Rt) (where (Env E))}
+  (match (match-part-progress part mp)
+    [(match-part-progress:satisfied _)
+      ((match-cont/success cont) mp)]
+    [match-part-progress:unsatisfied
+      ((match-cont/failure cont) mp)]
+    [match-part-progress:not-known
+      (match (match-part-progress (pat-part/parent part) mp)
+        [(match-part-progress:satisfied (some (let parent)))
+          (if-match1 (some (let test-expr)) (pat-part/test-expr? parent part)
             (rt:if
-              test
-              ((match-cont/success cont)
-                (match-progress/put-progress-for-path path (path-progress/determine cond #t pp) progress))
-              ((match-cont/failure cont)
-                (match-progress/put-progress-for-path path (path-progress/determine cond #f pp) progress)))
-            ((match-cont/success cont)
-              (if-match1 (condition:bind _) cond
-                (match-progress/put-arg (rt:local (path-progress/tmp-var pp)) progress)
-                (match-progress/put-progress-for-path path (path-progress/determine cond #t pp) progress))))])
-      (let ([id (alloc-rt! env)]
-            [value
-              (|> (match-progress/progress-for-path? (path/parent path) progress)
-                  option/force
-                  (path-progress/child (path/last-index path)))])
-        (rt/let-var
-          (array (rt-var: id ct:hole value))
-          (expand-pat! (match-progress/put-progress-for-path path (path-progress/new id) progress) pat cont env))))))
+              test-expr
+              ((match-cont/success cont) (mark-as-passed part (put-bind-arg (pat-part/bind-expr? parent part) mp)))
+              ((match-cont/failure cont) (mark-as-failed part mp)))
+            ((match-cont/success cont) (mark-as-passed part (put-bind-arg (pat-part/bind-expr? parent part) mp))))]
+        [(match-part-progress:satisfied none)
+          ; (pat-part/parent part) is satisfied but is not obtained, put it to a variable
+          (let* ([parent (pat-part/parent part)]
+                 [grandparent (pat-part/parent parent)]
+                 [grandparent (option/force (match-part-var (match-part-progress grandparent mp)))]
+                 [parent-var (alloc-rt! env)]
+                 [parent-ty (pat-part/ty parent)]
+                 [get-parent-expr (option/force (pat-part/get-expr? grandparent parent))])
+            (rt/let-var
+              (array (rt-var: parent-var parent-ty get-parent-expr))
+              (expand-pat-part! (set-passed-var parent parent-var mp) part cont env)))]
+        [match-part-progress:unsatisfied
+          ((match-cont/failure cont) mp)]
+        [match-part-progress:not-known
+          ; We first need to test that (pat-part/parent part) is satisfied
+          (let ([(success mp) (expand-pat-part! mp part cont env)]
+                [failure (match-cont/failure cont)])
+            (expand-pat-part! mp (pat-part/parent part) (match-cont: success failure) env))])]))
 
 (value-data MatchCont
   (match-cont: (-> MatchProgress Rt) (-> MatchProgress Rt)))
 
 (getter match-cont: match-cont/success match-cont/failure)
 
-(value-data MatchProgress
-  (match-progress: (OrdMap Path PathProgress) (Array Rt))) ; path-progresses args
-
-(function (match-progress/new root-var) {(-> RtId MatchProgress)}
-  (match-progress: (ord-map (: path/root (path-progress/new root-var))) array/empty))
-
-(function (match-progress/args mp) {(-> MatchProgress (Array Rt))}
-  (with1 (match-progress: _ (let args)) mp
-    args))
-
-(function (match-progress/reset-args mp) {(-> MatchProgress MatchProgress)}
-  (with1 (match-progress: (let path-progresses) (let args)) mp
-    (match-progress: path-progresses array/empty)))
-
-(function (match-progress/put-arg arg mp) {(-> Rt MatchProgress MatchProgress)}
-  (with1 (match-progress: (let path-progresses) (let args)) mp
-    (match-progress: path-progresses (array/push arg args))))
-
-(function (match-progress/progress-for-path? path mp) {(-> Path MatchProgress (Option PathProgress))}
-  (with1 (match-progress: (let path-progresses) _) mp
-    (ord-map/get? path path-progresses)))
-
-(function (match-progress/put-progress-for-path path pp mp) {(-> Path PathProgress MatchProgress MatchProgress)}
-  (with1 (match-progress: (let path-progresses) (let args)) mp
-    (match-progress: (ord-map/insert path pp path-progresses) args)))
-
 ; TODO: Use exhaustiveness information to reduce Condition test
-(value-data PathProgress
-  (path-progress: RtId (OrdMap Condition Bool))) ; tmp-var determined-conds
+(data MatchProgress
+  (match-progress:
+    (OrdMap PatPart (Result (Option RtId) unit)) ; determined
+    (OrdMap PatPart (Array PatPart))             ; determined-range
+    (Array Rt)))                                 ; bind-args
 
-(function (path-progress/new var) {(-> RtId PathProgress)}
-  (path-progress: var ord-map/empty))
+(function (match-progress root ty) {(-> RtId Ct MatchProgress)}
+  (match-progress:
+    (ord-map (: (pat-part:root ty) (ok (some root))))
+    ord-map/empty
+    array/empty))
 
-(function (path-progress/tmp-var pp) {(-> PathProgress RtId)}
-  (with1 (path-progress: (let tmp-var) _) pp
-    tmp-var))
+(function (match-part-progress part mp) {(-> PatPart MatchProgress MatchPartProgress)}
+  (with1 (match-progress: (let determined) (let determined-range) _) mp
+    (match (ord-map/get? part determined)
+      [(some (ok (let var)))
+        (match-part-progress:satisfied var)]
+      [(some (err _))
+        match-part-progress:unsatisfied]
+      [none
+        (if-match ([(some (let ps)) (ord-map/get? (pat-part/parent part) determined-range)]
+                   [#t (it/any? [^1 (pat-part/exclusive? %1 part)] ps)])
+          match-part-progress:unsatisfied
+          match-part-progress:not-known)])))
 
-(function (path-progress/determine c satisfied? pp) {(-> Condition Bool PathProgress PathProgress)}
-  (with1 (path-progress: (let tmp-var) (let determined-conds)) pp
-    (path-progress: tmp-var (ord-map/insert c satisfied? determined-conds))))
+(function (mark-as-passed part mp) {(-> PatPart MatchProgress MatchProgress)}
+  (with1 (match-progress: (let determined) (let determined-range) (let bind-args)) mp
+    (let* ([determined (ord-map/insert part (ok none) determined)]
+           [ps (|> determined-range (ord-map/get? (pat-part/parent part)) (option/unwrap array/empty) (array/push part))]
+           [determined-range (ord-map/insert (pat-part/parent part) ps determined-range)])
+      (match-progress: determined determined-range bind-args))))
 
-(function (path-progress/satisfied? cond pp) {(-> Condition PathProgress (Option Bool))}
-  (with1 (path-progress: _ (let determined-conds)) pp
-    (for (: (let c) (let satisfied?)) (ord-map/elems determined-conds)
-      (when (eq? c cond) (return (some satisfied?)))
-      (when (and satisfied? (condition/exclusive? c cond)) (return (some #f)))))
-  none)
+(function (mark-as-failed part mp) {(-> PatPart MatchProgress MatchProgress)}
+  (with1 (match-progress: (let determined) (let determined-range) (let bind-args)) mp
+    (match-progress: (ord-map/insert part (err unit) determined) determined-range bind-args)))
 
-(function (path-progress/child index pp) {(-> U64 PathProgress Rt)}
-  (with1 (path-progress: (let tmp-var) (let determined-conds)) pp
-    (for (: (let c) (let satisfied?)) (ord-map/elems determined-conds)
-      (when-match ([#t satisfied?]
-                  [(some (let c)) (condition/child? tmp-var index c)])
-        (return c)))
-    (assert #f "Cannot get child from satisfied conditions")))
+(function (set-passed-var part var mp) {(-> PatPart RtId MatchProgress MatchProgress)}
+  (with1 (match-progress: (let determined) (let determined-range) (let bind-args)) mp
+    (match-progress: (ord-map/insert part (ok (some var)) determined) determined-range bind-args)))
 
+(function (bind-args mp) {(-> MatchProgress (Array Rt))}
+  (with1 (match-progress: _ _ (let bind-args)) mp
+    bind-args))
+
+(function (reset-bind-args mp) {(-> MatchProgress MatchProgress)}
+  (with1 (match-progress: (let determined) (let determined-range) _) mp
+    (match-progress: determined determined-range array/empty)))
+
+(function (put-bind-arg arg mp) {(-> (Option Rt) MatchProgress MatchProgress)}
+  (if-match1 (some (let arg)) arg
+    (with1 (match-progress: (let determined) (let determined-range) (let bind-args)) mp
+      (match-progress: determined determined-range (array/push arg bind-args)))
+    mp))
+
+(derive (DebugDisplay) value-data MatchPartProgress
+  match-part-progress:not-known
+  match-part-progress:unsatisfied
+  (match-part-progress:satisfied (Option RtId)))
+
+(function (match-part-var p) {(-> MatchPartProgress (Option RtId))}
+  (match p
+    [(match-part-progress:satisfied (let v)) v]
+    [_ (assert #f (string "match-part-var on " (debug p)))]))
+
+; A representation of a pattern that is expanded as a set of PatParts.
 (derive (Eq Ord DebugDisplay Hash) value-data FlattenPat
-  (flatten-pat: Path Condition)) ; path condition
+  (flatten-pat: (Array PatPart) (Array RtParam))) ; parts binds
 
-(function (expand-into-flatten-pats pat) {(-> RtPat (: (Array FlattenPat) (Array RtParam)))}
-  (let* ([pats vector/empty]
-         [params vector/empty]
-         [(visit! pat path)
+(function (flatten-pat pat) {(-> RtPat FlattenPat)}
+  (let* ([parts vector/empty]
+         [binds vector/empty]
+         [(collect! pat parent) {(-> RtPat PatPart Bool)}
            (match pat
              [(rt-pat:var (let id) (let ty) (let as-pat))
-               (vector/push! (flatten-pat: path (condition:bind id)) pats)
-               (vector/push! (rt-param: id ty) params)
-               (when-match1 (some (let pat)) as-pat (visit! pat path))]
-             [rt-pat:wildcard]
-             [(rt-pat:deref (let pat))
-               (vector/push! (flatten-pat: path condition:deref) pats)
-               (visit! pat (path/child path 0))]
-             [(rt-pat:non-null (let ty) (let pat))
-               (vector/push! (flatten-pat: path (condition:non-null ty)) pats)
-               (visit! pat (path/child path 0))]
-             [(rt-pat:null (let ty))
-               (vector/push! (flatten-pat: path (condition:null ty)) pats)]
+               (vector/push! (pat-part:bind id parent) parts)
+               (vector/push! (rt-param: id ty) binds)
+               (when-match1 (some (let pat)) as-pat (collect! pat parent))
+               #t]
+             [(rt-pat:wildcard _)
+               #f]
+             [(rt-pat:deref (let elem-pat))
+               ; Deref is unchecked
+               (collect! elem-pat (pat-part:deref-elem parent))]
+             [(rt-pat:non-null (let elem-pat))
+               (let1 elem (pat-part:non-null-elem parent)
+                 ; Non-null check is required even if the element is unused
+                 (when (not (collect! elem-pat elem)) (vector/push! elem parts)))
+               #t]
+             [(rt-pat:null _)
+               (vector/push! (pat-part:null parent) parts)
+               #t]
              [(rt-pat:data _ _ _)
                (assert #f "Found rt-pat:data at branch-expander")]
-             [(rt-pat:struct (let ty) (let args))
-               (vector/push! (flatten-pat: path (condition:struct ty)) pats)
-               (for (: (let i) (let arg)) (it/with-index args)
-                 (visit! arg (path/child path i)))]
-             [(rt-pat:reinterpret (let a) (let b) (let pat))
-               (vector/push! (flatten-pat: path (condition:reinterpret a b)) pats)
-               (visit! pat (path/child path 0))]
-             [(rt-pat:syntax (let ty) (let pat))
-               (vector/push! (flatten-pat: path (condition:syntax ty)) pats)
-               (visit! pat (path/child path 0))]
+             [(rt-pat:struct _ (let args))
+               (|> args
+                   it/with-index
+                   (it/map (case1 (: (let i) (let arg))
+                     (collect! arg (pat-part:struct-elem (rt-pat/ty arg) i parent))))
+                   (it/fold [^2 (or %1 %2)] #f))]
+             [(rt-pat:reinterpret _ (let pat))
+               (collect! pat (pat-part:reinterpret (rt-pat/ty pat) parent))]
+             [(rt-pat:syntax (let pat))
+               (collect! pat (pat-part:syntax-body parent))]
              [(rt-pat:const (let c))
-               (vector/push! (flatten-pat: path (condition:const c)) pats)])])
-    (visit! pat path/root)
-    (: (vector/buffer pats) (vector/buffer params))))
+               (vector/push! (pat-part:const c parent) parts)
+               #t])])
+    (collect! pat (pat-part:root (rt-pat/ty pat)))
+    (flatten-pat: (vector/buffer parts) (vector/buffer binds))))
 
-(derive (Eq Ord DebugDisplay Hash) value-data Condition
-  (condition:bind RtId)
-  condition:deref
-  (condition:non-null Ct)
-  (condition:null Ct)
-  (condition:struct Ct)
-  (condition:reinterpret Ct Ct)
-  (condition:syntax Ct)
-  (condition:const Const))
+; A representation of a certain part of a pattern.
+; PatPart is represented by a recursive structure from a leaf of the pattern tree to the root.
+(derive (Eq Ord DebugDisplay Hash) data PatPart
+  (pat-part:root Ct)
+  (pat-part:bind RtId PatPart) ; a marker PatPart indicating variable binding
+  (pat-part:deref-elem PatPart)
+  (pat-part:non-null-elem PatPart)
+  (pat-part:null PatPart)
+  (pat-part:struct-elem Ct U64 PatPart)
+  (pat-part:reinterpret Ct PatPart)
+  (pat-part:syntax-body PatPart)
+  (pat-part:const Const PatPart))
 
-(function (condition/exclusive? a b) {(-> Condition Condition Bool)}
-  (and (not (is? (condition:bind _) a))
-       (not (is? (condition:bind _) b))
-       (ne? a b)))
+(function (pat-part/parent part) {(-> PatPart PatPart)}
+  (match part
+    [(pat-part:root _) part]
+    [(pat-part:bind _ (let p)) p]
+    [(pat-part:deref-elem (let p)) p]
+    [(pat-part:non-null-elem (let p)) p]
+    [(pat-part:null (let p)) p]
+    [(pat-part:struct-elem _ _ (let p)) p]
+    [(pat-part:reinterpret _ (let p)) p]
+    [(pat-part:syntax-body (let p)) p]
+    [(pat-part:const _ (let p)) p]))
 
-(function (condition/test var c) {(-> RtId Condition (Option Rt))}
-  (match? c
-    [(condition:non-null (let ty))
-      (rt:unary unary:not (rt:binary binary:ptr-eq (rt:local var) (rt:nullary (nullary:null ty))))]
-    [(condition:null (let ty))
-      (rt:binary binary:ptr-eq (rt:local var) (rt:nullary (nullary:null ty)))]
-    [(condition:const (let c))
+(function (pat-part/ty part) {(-> PatPart Ct)}
+  (match part
+    [(pat-part:root (let ty)) ty]
+    [(pat-part:bind _ (let p)) (pat-part/ty p)]
+    [(pat-part:deref-elem (let p)) (ct/force-ptr-elem (pat-part/ty p))]
+    [(pat-part:non-null-elem (let p)) (ct/force-ptr-elem (pat-part/ty p))]
+    [(pat-part:null (let p)) (pat-part/ty p)]
+    [(pat-part:struct-elem (let ty) _ _) ty]
+    [(pat-part:reinterpret (let ty) _) ty]
+    [(pat-part:syntax-body (let p)) (ct/force-syntax-body (pat-part/ty p))]
+    [(pat-part:const _ (let p)) (pat-part/ty p)]))
+
+(function (pat-part/exclusive? a b) {(-> PatPart PatPart Bool)}
+  (match (: a b)
+    [(: (pat-part:non-null-elem (let a)) (pat-part:null (let b)))
+      (eq? a b)]
+    [(: (pat-part:null (let a)) (pat-part:non-null-elem (let b)))
+      (eq? a b)]
+    [(: (pat-part:const (let ca) (let a)) (pat-part:const (let cb) (let b)))
+      (and (ne? ca cb) (eq? a b))]
+    [_
+      #f]))
+
+(function (pat-part/bind-expr? parent part) {(-> RtId PatPart (Option Rt))}
+  (with1? (pat-part:bind _ (let p)) part
+    (rt:var parent (pat-part/ty p))))
+
+(function (pat-part/test-expr? parent part) {(-> RtId PatPart (Option Rt))}
+  (match? part
+    [(pat-part:non-null-elem (let p))
+      (let1 elem-ty (ct/force-ptr-elem (pat-part/ty p))
+        (rt:unary unary:not
+          (rt:binary binary:ptr-eq
+            (rt:var parent (ct:ptr elem-ty))
+            (rt:nullary (nullary:null elem-ty)))))]
+    [(pat-part:null (let p))
+      (let1 elem-ty (ct/force-ptr-elem (pat-part/ty p))
+        (rt:binary binary:ptr-eq
+          (rt:var parent (ct:ptr elem-ty))
+          (rt:nullary (nullary:null elem-ty))))]
+    [(pat-part:const (let c) _)
       (rt:binary
         (match? c
           [(const:integer _ _ _) binary:i-eq]
           [(const:fp-number _ _) binary:f-eq]
           [(const:string _) binary:string-eq]
-          [(const:char _) binary:char-eq]
+          [(const:char _) binary:i-eq]
           [(const:sexp _ _) (assert #f "Found const:sexp in pattern")])?
-        (rt:local var)
+        (rt:var parent (const/ty c))
         (rt:const c))]))
 
-(function (condition/child? condition-satisfied-var index c) {(-> RtId U64 Condition (Option Rt))}
-  (let1 v (rt:local condition-satisfied-var)
-    (match? c
-      [condition:deref (rt:unary unary:load v)]
-      [(condition:non-null _) (rt:unary unary:load v)]
-      [(condition:struct (let ty)) (rt:unary (unary:struct-elem ty index) v)]
-      [(condition:reinterpret (let a) (let b)) (rt:unary (unary:reinterpret a b) v)]
-      [(condition:syntax (let ty)) (rt:unary (unary:syntax-body ty) v)])))
-
-(derive (Eq Ord DebugDisplay Hash) value-data Path
-  (path: (Array U64)))
-
-(function path/root (path: array/empty))
-
-(function (path/last-index p) {(-> Path U64)}
-  (with ([(path: (let indices)) p]
-         [(: (let index) _) (array/split-last indices)])
-    index))
-
-(function (path/parent p) {(-> Path Path)}
-  (with ([(path: (let indices)) p]
-         [(: _ (let indices)) (array/split-last indices)])
-    (path: indices)))
-
-(function (path/child p index) {(-> Path U64 Path)}
-  (with1 (path: (let indices)) p
-    (path: (array/push index indices))))
+(function (pat-part/get-expr? parent part) {(-> RtId PatPart (Option Rt))}
+  (match? part
+    [(pat-part:deref-elem (let p))
+      (rt:unary unary:load (rt:var parent (pat-part/ty p)))]
+    [(pat-part:non-null-elem (let p))
+      (rt:unary unary:load (rt:var parent (pat-part/ty p)))]
+    [(pat-part:struct-elem (let elem-ty) (let index) (let p))
+      (rt:unary (unary:struct-elem elem-ty index) (rt:var parent (pat-part/ty p)))]
+    [(pat-part:reinterpret (let to) (let p))
+      (rt:unary (unary:reinterpret to) (rt:var parent (pat-part/ty p)))]
+    [(pat-part:syntax-body (let p))
+      (rt:unary unary:syntax-body (rt:var parent (pat-part/ty p)))]))

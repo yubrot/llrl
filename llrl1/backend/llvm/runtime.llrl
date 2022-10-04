@@ -131,9 +131,6 @@
 (function (runtime/char/type ctx) {(-> llvm/Context llvm/Type)}
   (llvm/type ctx i32))
 
-(function (runtime/char/build-eq! builder a b) {(-> llvm/Builder llvm/Value llvm/Value llvm/Value)}
-  (llvm/build! builder (ieq ,a ,b)))
-
 (function (runtime/array/type ctx elem-ty) {(-> llvm/Context llvm/Type llvm/Type)}
   (llvm/type ctx (: (pointer ,elem-ty) i64)))
 

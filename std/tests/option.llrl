@@ -42,6 +42,32 @@
   (assert-is? (some #t) (option/take x))
   (assert-is? none (option/take x)))
 
+(assert-is? none
+  (option/and none none))
+(assert-is? none
+  (option/and (some #t) none))
+(assert-is? none
+  (option/and none (some #f)))
+(assert-is? (some #f)
+  (option/and (some #t) (some #f)))
+(assert-is? (some "C")
+  (option/and (some "A") (some "B") (some "C")))
+(assert-is? none
+  (option/and (some "A") (some "B") none (some "D")))
+
+(assert-is? none
+  (option/or none none))
+(assert-is? (some #t)
+  (option/or (some #t) none))
+(assert-is? (some #f)
+  (option/or none (some #f)))
+(assert-is? (some #t)
+  (option/or (some #t) (some #f)))
+(assert-is? none
+  (option/or none none none))
+(assert-is? (some "c")
+  (option/or none none (some "c") none))
+
 (assert-is? none default)
 
 (assert-eq? none none)

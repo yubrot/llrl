@@ -187,20 +187,22 @@
                 (if (is? cut:yes cut) (return (ok r)) r))]
            [(rewrite: (let x) (let c2?))
              (match x
-               [(rt:local (let id))
+               [(rt:var (let id) (let ty))
                   (transformer/after-rt-use id t)!
-                 (rewrite/unchanged x)]
-               [(rt:local-fun (let id) (let args))
+                  (rewrite/2 x rt:var (rewrite/unchanged id) (transform t ty)!)]
+               [(rt:local-fun (let id) (let args) (let ty))
                   (transformer/after-rt-use id t)!
-                 (rewrite/2 x rt:local-fun (rewrite/unchanged id) (transform t args)!)]
-               [(rt:static-fun (let ct) (let env))
-                 (rewrite/2 x rt:static-fun (transform t ct)! (transform t env)!)]
+                 (rewrite/3 x rt:local-fun (rewrite/unchanged id) (transform t args)! (transform t ty)!)]
+               [(rt:static-fun (let fun) (let ty) (let env))
+                 (rewrite/3 x rt:static-fun (transform t fun)! (transform t ty)! (transform t env)!)]
                [(rt:const (let c))
                  (rewrite/1 x rt:const (transform t c)!)]
                [(rt:call (let callee) (let args))
                  (rewrite/2 x rt:call (transform t callee)! (transform t args)!)]
-               [(rt:c-call (let name) (let ty) (let args))
-                 (rewrite/3 x rt:c-call (rewrite/unchanged name) (transform t ty)! (transform t args)!)]
+               [(rt:c-call (let sym) (let ty) (let args))
+                 (rewrite/3 x rt:c-call (rewrite/unchanged sym) (transform t ty)! (transform t args)!)]
+               [(rt:cont-call (let id) (let args) (let ret))
+                 (rewrite/3 x rt:cont-call (rewrite/unchanged id) (transform t args)! (transform t ret)!)]
                [(rt:nullary (let op))
                  (rewrite/1 x rt:nullary (transform t op)!)]
                [(rt:unary (let op) (let a))
@@ -235,10 +237,8 @@
                  (rewrite/2 x rt:match (transform t target)! (transform t clauses)!)]
                [(rt:return (let rt))
                  (rewrite/1 x rt:return (transform t rt)!)]
-               [(rt:cont (let id) (let args))
-                 (rewrite/2 x rt:cont (rewrite/unchanged id) (transform t args)!)]
-               [(rt:let-function (let funs) (let body))
-                 (rewrite/2 x rt:let-function (transform t funs)! (transform t body)!)]
+               [(rt:let-local-fun (let funs) (let body))
+                 (rewrite/2 x rt:let-local-fun (transform t funs)! (transform t body)!)]
                [(rt:let-var (let vars) (let body))
                  (rewrite/2 x rt:let-var (transform t vars)! (transform t body)!)]
                [(rt:let-cont (let conts) (let body))
@@ -266,12 +266,10 @@
 (instance Transform.Unary (Transform Unary)
   (function (transform t x)
     (ok (match x
-      [(unary:struct-elem (let ty) (let idx))
-        (rewrite/2 x unary:struct-elem (transform t ty)! (rewrite/unchanged idx))]
-      [(unary:reinterpret (let a) (let b))
-        (rewrite/2 x unary:reinterpret (transform t a)! (transform t b)!)]
-      [(unary:syntax-body (let ty))
-        (rewrite/1 x unary:syntax-body (transform t ty)!)]
+      [(unary:struct-elem (let elem-ty) (let idx))
+        (rewrite/2 x unary:struct-elem (transform t elem-ty)! (rewrite/unchanged idx))]
+      [(unary:reinterpret (let to))
+        (rewrite/1 x unary:reinterpret (transform t to)!)]
       [(unary:bit-cast (let ty))
         (rewrite/1 x unary:bit-cast (transform t ty)!)]
       [(unary:i-to-ptr (let ty))
@@ -325,31 +323,31 @@
                   (let1 ty (transform t ty)!
                    (transformer/after-rt-def id (rewrite/value ty) t)!
                    (rewrite/3 x rt-pat:var (rewrite/unchanged id) ty (transform t p)!))]
+               [(rt-pat:wildcard (let ty))
+                 (rewrite/1 x rt-pat:wildcard (transform t ty)!)]
                [(rt-pat:deref (let p))
                  (rewrite/1 x rt-pat:deref (transform t p)!)]
-               [(rt-pat:non-null (let ty) (let p))
-                 (rewrite/2 x rt-pat:non-null (transform t ty)! (transform t p)!)]
+               [(rt-pat:non-null (let p))
+                 (rewrite/1 x rt-pat:non-null (transform t p)!)]
                [(rt-pat:null (let ty))
                  (rewrite/1 x rt-pat:null (transform t ty)!)]
                [(rt-pat:data (let ty) (let idx) (let fields))
                  (rewrite/3 x rt-pat:data (transform t ty)! (rewrite/unchanged idx) (transform t fields)!)]
                [(rt-pat:struct (let ty) (let fields))
                  (rewrite/2 x rt-pat:struct (transform t ty)! (transform t fields)!)]
-               [(rt-pat:reinterpret (let a) (let b) (let p))
-                 (rewrite/3 x rt-pat:reinterpret (transform t a)! (transform t b)! (transform t p)!)]
-               [(rt-pat:syntax (let ty) (let body))
-                 (rewrite/2 x rt-pat:syntax (transform t ty)! (transform t body)!)]
+               [(rt-pat:reinterpret (let ty) (let p))
+                 (rewrite/2 x rt-pat:reinterpret (transform t ty)! (transform t p)!)]
+               [(rt-pat:syntax (let body))
+                 (rewrite/1 x rt-pat:syntax (transform t body)!)]
                [(rt-pat:const (let c))
-                 (rewrite/1 x rt-pat:const (transform t c)!)]
-               [_
-                 (rewrite/unchanged x)])]
+                 (rewrite/1 x rt-pat:const (transform t c)!)])]
            [(rewrite: (let x) (let c3?))
              (transformer/after-rt-pat x t)!])
       (ok (rewrite: x (or c1? c2? c3?))))))
 
-(instance Transform.RtFunction (Transform RtFunction)
+(instance Transform.RtLocalFun (Transform RtLocalFun)
   (function (transform t x)
-    (with1 (rt-function: (let id) (let ct-params) (let params) (let ret) (let body)) x
+    (with1 (rt-local-fun: (let id) (let ct-params) (let params) (let ret) (let body)) x
       (let ([id (rewrite/unchanged id)]
             [ct-params (rewrite/unchanged ct-params)]
             [params (transform t params)!]
@@ -358,7 +356,7 @@
           (rewrite/value id)
           (ct:clos (|> (rewrite/value params) (it/map rt-param/ty) collect) (rewrite/value ret))
           t)!
-        (ok (rewrite/5 x rt-function: id ct-params params ret (transform t body)!))))))
+        (ok (rewrite/5 x rt-local-fun: id ct-params params ret (transform t body)!))))))
 
 (instance Transform.RtVar (Transform RtVar)
   (function (transform t x)
@@ -425,7 +423,7 @@
 (instance Transformer.CtMap (forall Never) (Transformer (OrdMap CtId Ct) Never)
   (function (transformer/after-ct ct t)
     (ok (if-match ([(ct:id (let id)) ct]
-                    [(some (let ct)) (ord-map/get? id t)])
+                   [(some (let ct)) (ord-map/get? id t)])
       (rewrite/changed ct)
       (rewrite/unchanged ct)))))
 
@@ -434,7 +432,7 @@
 
 (instance Transformer.RtMap (forall Never) (Transformer (OrdMap RtId Rt) Never)
   (function (transformer/after-rt rt t)
-    (ok (if-match ([(rt:local (let id)) rt]
-                    [(some (let rt)) (ord-map/get? id t)])
+    (ok (if-match ([(rt:var (let id) _) rt]
+                   [(some (let rt)) (ord-map/get? id t)])
       (rewrite/changed rt)
       (rewrite/unchanged rt)))))

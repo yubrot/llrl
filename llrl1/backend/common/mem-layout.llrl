@@ -130,6 +130,4 @@
       [ir/ct:env
         layout/pointer]
       [(ir/ct:syntax _)
-        (layout/terminal (size-of (Syntax unit)) (align-of (Syntax unit)))]
-      [ir/ct:hole
-        (assert #f "Found ct:hole at layout-resolver/get")]))
+        (layout/terminal (size-of (Syntax unit)) (align-of (Syntax unit)))]))

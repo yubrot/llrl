@@ -701,7 +701,9 @@
           (unify-on! id ty (infer-pattern! scope p ctx)! ctx)!)
         (ok ty))]
     [pattern-rep:wildcard
-      (ok (new-type-var! scope ctx))]
+      (let1 ty (new-type-var! scope ctx)
+        (put-type-of! unifying-types (pattern/id pattern) ty ctx)
+        (ok ty))]
     [(pattern-rep:decon (let con) (let fields))
       (let ([a (option/map array/length fields)]
             [b (type-env/value-con-arity con (type-env ctx))])
@@ -748,6 +750,7 @@
                      (it/map [^1 (u/scope/put-context-constraint! %1 scope)])
                      collect)
       (put-type-of! unifying-instantiations c (u/instantiation: ty-args s-args) ctx)
+      (put-type-of! unifying-types c (u/scheme/body scheme) ctx)
       (ok (u/scheme/body scheme)))))
 
 (function (put-type-of! choice c ty ctx)

@@ -46,6 +46,38 @@
     [(some (let a)) (set! x none) (some a)]
     [none none]))
 
+(macro (option/and s)
+  (s/match s
+    [(_ ,option ,@options)
+      (ok (expand-and option options))]
+    [_
+      (err "Expected (option/and option option-2 ...)")]))
+
+(function (expand-and r rs)
+  (match rs
+    [(s:cons (let r2) (let rs))
+      `(match ,r
+        [(,\some _) ,(expand-and r2 rs)]
+        [,\none ,\none])]
+    [_
+      r]))
+
+(macro (option/or s)
+  (s/match s
+    [(_ ,option ,@options)
+      (ok (expand-or option options))]
+    [_
+      (err "Expected (option/or option option-2 ...)")]))
+
+(function (expand-or r rs)
+  (match rs
+    [(s:cons (let r2) (let rs))
+      `(match ,r
+        [(,\some (let x)) (,\some x)]
+        [,\none ,(expand-or r2 rs)])]
+    [_
+      r]))
+
 (instance DeepCopy.Option (forall A) (DeepCopy (Option A)) (where (DeepCopy A))
   (function (deep-copy a)
     (match a

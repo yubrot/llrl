@@ -92,7 +92,7 @@
         (rt:c-call
           c-name
           (ct:clos (|> params (it/map rt-param/ty) collect) ret)
-          (|> params (it/map [^1 (rt:local (rt-param/id %1))]) collect)))))))
+          (|> params (it/map conv) collect)))))))
 
 (instance Translate.BuiltinOp (Translate ast/BuiltinOp Def)
   (function (translate! e src)
@@ -110,7 +110,7 @@
             (option/force (m/module-set/symbol? id e))
             builtin-name
             (|> ct-params (it/map ct:id) collect)
-            (|> params (it/map [^1 (rt:local (rt-param/id %1))]) collect))))))))
+            (|> params (it/map conv) collect))))))))
 
 (instance Translate.MacroId (Translate (ast/NodeId ast/Macro) Ct)
   (function (translate! e src)
@@ -158,7 +158,7 @@
             ret
             (let1 type-con (option/force (m/module-set/ast? ast/root/data-type-con? type-con e))
               (option/force (ast/data-type-con/index-of? id type-con)))
-            (|> params (it/map [^1 (rt:local (rt-param/id %1))]) collect))))))))
+            (|> params (it/map conv) collect))))))))
 
 (instance Translate.BuiltinTypeCon (Translate ast/BuiltinTypeCon Def)
   (function (translate! e src)
@@ -184,7 +184,7 @@
             (option/force (m/module-set/symbol? id e))
             builtin-name
             (|> ct-params (it/map ct:id) collect)
-            (|> params (it/map [^1 (rt:local (rt-param/id %1))]) collect))))))))
+            (|> params (it/map conv) collect))))))))
 
 (instance Translate.ValueConField (Translate ast/ValueConField Ct)
   (function (translate! e src)
@@ -269,69 +269,64 @@
       (match rep
         [(ast/expr-rep:unresolved _)
           (assert #f "Found expr-rep:unresolved at translator")]
-        [(ast/expr-rep:value (ast/value:function (let function-id)))
-          (let1 function (option/force (m/module-set/ast? ast/root/function? function-id e))
-            (rt/autocall
-              (rt:static-fun
-                (ct/generic-inst
-                  (ct:id (issue-ct! function-id e))
-                  (translate! e (option/force (m/module-set/instantiation? id e))))
-                none)
-              (is? none (ast/function/params function))))]
-        [(ast/expr-rep:value (ast/value:c-function (let c-function-id)))
-          (let1 c-function (option/force (m/module-set/ast? ast/root/c-function? c-function-id e))
-            (rt/autocall
-              (rt:static-fun (ct:id (issue-ct! c-function-id e)) none)
-              (is? none (ast/type/fun? (ast/annotation/body (ast/c-function/ann c-function))))))]
-        [(ast/expr-rep:value (ast/value:builtin-op (let builtin-op-id)))
-          (let1 builtin-op (option/force (m/module-set/ast? ast/root/builtin-op? builtin-op-id e))
-            (rt/autocall
-              (rt:static-fun
-                (ct/generic-inst
-                  (ct:id (issue-ct! builtin-op-id e))
-                  (translate! e (option/force (m/module-set/instantiation? id e))))
-                none)
-              (is? none (ast/type/fun? (ast/scheme/body (ast/annotation/body (ast/builtin-op/ann builtin-op)))))))]
-        [(ast/expr-rep:value (ast/value:class-method (let class-method-id)))
-          (let1 class-method (option/force (m/module-set/ast? ast/root/class-method? class-method-id e))
-            (with1
-              (: (ast/instantiation: _ (let instance-sas)) (let method-inst))
-              (ast/class-method/expand-external-instantiation (option/force (m/module-set/instantiation? id e)) class-method)
-              (rt/autocall
-                (rt:static-fun
+        [(ast/expr-rep:value (let value))
+          (let1 ty (translate! e (option/force (m/module-set/type? id e)))
+            (match value
+              [(ast/value:function (let function-id))
+                (rt/autocall
                   (ct/generic-inst
-                    (ct:table-get (translate! e (get instance-sas[0])) (issue-ct! class-method-id e))
-                    (translate! e method-inst))
-                  none)
-                (is? none (ast/class-method/params class-method)))))]
-        [(ast/expr-rep:value (ast/value:parameter (let parameter-id)))
-          (rt:local (issue-rt! parameter-id e))]
-        [(ast/expr-rep:value (ast/value:local-var (let local-var-id)))
-          (rt:local (issue-rt! local-var-id e))]
-        [(ast/expr-rep:value (ast/value:local-fun (let local-fun-id)))
-          (rt:local-fun
-            (issue-rt! local-fun-id e)
-            (translate! e (option/force (m/module-set/instantiation? id e))))]
-        [(ast/expr-rep:value (ast/value:pattern-var (let pattern-var-id)))
-          (rt:local (issue-rt! pattern-var-id e))]
-        [(ast/expr-rep:con (ast/value-con:data (let data-value-con-id)))
-          (let1 data-value-con (option/force (m/module-set/ast? ast/root/data-value-con? data-value-con-id e))
-            (rt/autocall
-              (rt:static-fun
-                (ct/generic-inst
-                  (ct:id (issue-ct! data-value-con-id e))
-                  (translate! e (option/force (m/module-set/instantiation? id e))))
-                none)
-              (is? none (ast/data-value-con/fields data-value-con))))]
-        [(ast/expr-rep:con (ast/value-con:builtin (let builtin-value-con-id)))
-          (let1 builtin-value-con (option/force (m/module-set/ast? ast/root/builtin-value-con? builtin-value-con-id e))
-            (rt/autocall
-              (rt:static-fun
-                (ct/generic-inst
-                  (ct:id (issue-ct! builtin-value-con-id e))
-                  (translate! e (option/force (m/module-set/instantiation? id e))))
-                none)
-              (is? none (ast/builtin-value-con/fields builtin-value-con))))]
+                    (ct:id (issue-ct! function-id e))
+                    (translate! e (option/force (m/module-set/instantiation? id e))))
+                  ty
+                  (|> (m/module-set/ast? ast/root/function? function-id e) option/force ast/function/params (is? none)))]
+              [(ast/value:c-function (let function-id))
+                (rt/autocall
+                  (ct:id (issue-ct! function-id e))
+                  ty
+                  (|> (m/module-set/ast? ast/root/c-function? function-id e) option/force ast/c-function/ann ast/annotation/body ast/type/fun? (is? none)))]
+              [(ast/value:builtin-op (let op-id))
+                (rt/autocall
+                  (ct/generic-inst
+                    (ct:id (issue-ct! op-id e))
+                    (translate! e (option/force (m/module-set/instantiation? id e))))
+                  ty
+                  (|> (m/module-set/ast? ast/root/builtin-op? op-id e) option/force ast/builtin-op/ann ast/annotation/body ast/scheme/body ast/type/fun? (is? none)))]
+              [(ast/value:class-method (let method-id))
+                (let1 method (option/force (m/module-set/ast? ast/root/class-method? method-id e))
+                  (with1
+                    (: (ast/instantiation: _ (let instance-sas)) (let method-inst))
+                    (ast/class-method/expand-external-instantiation (option/force (m/module-set/instantiation? id e)) method)
+                    (rt/autocall
+                      (ct/generic-inst
+                        (ct:table-get (translate! e (get instance-sas[0])) (issue-ct! method-id e))
+                        (translate! e method-inst))
+                      ty
+                      (|> method ast/class-method/params (is? none)))))]
+              [(ast/value:parameter (let parameter-id))
+                (rt:var (issue-rt! parameter-id e) ty)]
+              [(ast/value:local-var (let local-var-id))
+                (rt:var (issue-rt! local-var-id e) ty)]
+              [(ast/value:local-fun (let local-fun-id))
+                (rt:local-fun
+                  (issue-rt! local-fun-id e)
+                  (translate! e (option/force (m/module-set/instantiation? id e)))
+                  ty)]
+              [(ast/value:pattern-var (let pattern-var-id))
+                (rt:var (issue-rt! pattern-var-id e) ty)]))]
+        [(ast/expr-rep:con (let con))
+          (let ([ty (translate! e (option/force (m/module-set/type? id e)))]
+                [ct-args (translate! e (option/force (m/module-set/instantiation? id e)))])
+            (match con
+              [(ast/value-con:data (let data-value-con-id))
+                (rt/autocall
+                  (ct/generic-inst (ct:id (issue-ct! data-value-con-id e)) ct-args)
+                  ty
+                  (|> (m/module-set/ast? ast/root/data-value-con? data-value-con-id e) option/force ast/data-value-con/fields (is? none)))]
+              [(ast/value-con:builtin (let builtin-value-con-id))
+                (rt/autocall
+                  (ct/generic-inst (ct:id (issue-ct! builtin-value-con-id e)) ct-args)
+                  ty
+                  (|> (m/module-set/ast? ast/root/builtin-value-con? builtin-value-con-id e) option/force ast/builtin-value-con/fields (is? none)))]))]
         [(ast/expr-rep:const (let c))
           (rt:const (translate! e (: (option/force (m/module-set/type? id e)) c)))]
         [(ast/expr-rep:app (let callee) (let args))
@@ -351,7 +346,7 @@
         [(ast/expr-rep:let (let defs) (let body))
           (let ([funs (translate! e (it/filter-map (case1? (right (let f)) f) defs))]
                 [vars (translate! e (it/filter-map (case1? (left (let v)) v) defs))])
-            (rt/let-function funs (rt/let-var vars (translate! e body))))]
+            (rt/let-local-fun funs (rt/let-var vars (translate! e body))))]
         [(ast/expr-rep:seq (let stmts) (let ret))
           (rt/seq (translate! e stmts) (translate! e ret))]
         [(ast/expr-rep:if (let cond) (let then) (let else))
@@ -370,13 +365,13 @@
             [expr (translate! e expr)])
         (rt-clause: pat expr)))))
 
-(instance Translate.LocalFun (Translate ast/LocalFun RtFunction)
+(instance Translate.LocalFun (Translate ast/LocalFun RtLocalFun)
   (function (translate! e src)
     (with1 (ast/local-fun: (let id) (let params) _ (let body)) src
       (with1
         (: (let ct-params) (let params) (let ret))
         (translate! e (: (signature: (some params)) (option/force (m/module-set/scheme? id e))))
-        (rt-function:
+        (rt-local-fun:
           (issue-rt! id e)
           ct-params
           params
@@ -403,7 +398,8 @@
             (translate! e (option/force (m/module-set/type? id e)))
             (translate! e as-pat))]
         [ast/pattern-rep:wildcard
-          rt-pat:wildcard]
+          (let1 ty (translate! e (option/force (m/module-set/type? id e)))
+            (rt-pat:wildcard ty))]
         [(ast/pattern-rep:decon (ast/value-con:data (let con-id)) (let fields))
           (let* ([con (option/force (m/module-set/ast? ast/root/data-value-con? con-id e))]
                  [type-con (option/force (m/module-set/ast? ast/root/data-type-con? (ast/data-value-con/type-con con) e))])
@@ -631,7 +627,7 @@
     [(: "ptr.copy" _ 3) (rt:ternary ternary:ptr-copy (get args[0]) (get args[1]) (get args[2]))]
     [(: "ptr.move" _ 3) (rt:ternary ternary:ptr-move (get args[0]) (get args[1]) (get args[2]))]
     [(: "ptr.to-integer" _ 1) (rt:unary unary:ptr-to-i (get args[0]))]
-    [(: "reinterpret" 2 1) (rt:unary (unary:reinterpret (get ct-args[0]) (get ct-args[1])) (get args[0]))]
+    [(: "reinterpret" 2 1) (rt:unary (unary:reinterpret (get ct-args[1])) (get args[0]))]
     [(: "array.construct" _ 2) (rt:binary binary:array-construct (get args[0]) (get args[1]))]
     [(: "array.ptr" _ 1) (rt:unary unary:array-ptr (get args[0]))]
     [(: "array.length" _ 1) (rt:unary unary:array-length (get args[0]))]
@@ -648,8 +644,8 @@
 (function (builtin-rt-pat name ct-args args) {(-> String (Array Ct) (Array RtPat) RtPat)}
   (match (: name (array/length ct-args) (array/length args))
     [(: "ptr" 1 1) (rt-pat:deref (get args[0]))]
-    [(: "non-null" 1 1) (rt-pat:non-null (get ct-args[0]) (get args[0]))]
+    [(: "non-null" 1 1) (rt-pat:non-null (get args[0]))]
     [(: "null" 1 0) (rt-pat:null (get ct-args[0]))]
-    [(: "syntax" 1 1) (rt-pat:syntax (get ct-args[0]) (get args[0]))]
+    [(: "syntax" 1 1) (rt-pat:syntax (get args[0]))]
     [(: (let name) (let ct-arity) (let arity))
       (assert #f (string "Unsupported builtin-rt-pat " name " (ct-arity=" ct-arity ") (arity=" arity ")"))]))

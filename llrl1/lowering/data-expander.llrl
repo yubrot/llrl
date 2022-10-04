@@ -112,7 +112,7 @@
         (rt:nullary (nullary:uninitialized (ct:id id))))]
     [(tagged-data-body:union (let id) (let tys))
       (rt:unary
-        (unary:reinterpret (ct:id (get tys[index])) (ct:id id))
+        (unary:reinterpret (ct:id id))
         (rt:construct-struct (ct:id (get tys[index])) args))]))
 
 (function (tagged-data-body/rt-boxed t index args) {(-> TaggedDataBody U64 (Array Rt) Rt)}
@@ -131,24 +131,22 @@
     [(tagged-data-body:alias (let i) (let ty))
       (if (eq? i index)
         (get args[0])
-        rt-pat:wildcard)]
+        (rt-pat:wildcard ty))]
     [(tagged-data-body:struct (let i) (let id))
       (if (eq? i index)
         (rt-pat:struct (ct:id id) args)
-        rt-pat:wildcard)]
+        (rt-pat:wildcard (ct:id id)))]
     [(tagged-data-body:union (let id) (let tys))
-      (rt-pat:reinterpret
-        (ct:id id) (ct:id (get tys[index]))
-        (rt-pat:struct (ct:id (get tys[index])) args))]))
+      (rt-pat:reinterpret (ct:id id) (rt-pat:struct (ct:id (get tys[index])) args))]))
 
 (function (tagged-data-body/rt-pat-boxed t index args) {(-> TaggedDataBody U64 (Array RtPat) RtPat)}
   (cond
     [when-match ([(tagged-data-body:alias (let i) (let ty)) t]
                  [#t (ne? i index)])
-      rt-pat:wildcard]
+      (rt-pat:wildcard ty)]
     [when-match ([(tagged-data-body:struct (let i) (let id)) t]
                  [#t (ne? i index)])
-      rt-pat:wildcard]
+      (rt-pat:wildcard (ct:id id))]
     [else
       (rt-pat:deref (tagged-data-body/rt-pat t index args))]))
 

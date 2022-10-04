@@ -1,6 +1,6 @@
 (import "~/util" _)
 (import "~/lowering/ir/builtin" _)
-(import "~/lowering/ir/ct" Ct _.Ct ct:_ CtId _.CtId)
+(import "~/lowering/ir/ct" Ct _.Ct ct:_ ct/_ CtId _.CtId)
 (export RtId _.RtId rt-id/_ RtIdGen _.RtIdGen rt-id-gen/_)
 (export Rt _.Rt rt:_ rt/_)
 (export Nullary _.Nullary nullary:_)
@@ -10,7 +10,7 @@
 (export Location _.Location location:_)
 (export RtClause _.RtClause rt-clause: rt-clause/_)
 (export RtPat _.RtPat rt-pat:_ rt-pat/_)
-(export RtFunction _.RtFunction rt-function: rt-function/_)
+(export RtLocalFun _.RtLocalFun rt-local-fun: rt-local-fun/_)
 (export RtVar _.RtVar rt-var: rt-var/_)
 (export RtCont _.RtCont rt-cont: rt-cont/_)
 (export RtParam _.RtParam rt-param: rt-param/_)
@@ -34,14 +34,15 @@
       id)))
 
 ; An expression that is evaluated at runtime.
-(derive (DebugDisplay) data Rt
-  (rt:local RtId)
-  (rt:local-fun RtId (Array Ct)) ; erased by normalizer
-  (rt:static-fun Ct (Option Rt))
+(derive (Eq Ord DebugDisplay Hash) data Rt
+  (rt:var RtId Ct)
+  (rt:local-fun RtId (Array Ct) Ct) ; (rt:local-fun fun args ty), this will be erased by normalizer
+  (rt:static-fun Ct Ct (Option Rt)) ; (rt:static-fun fun ty env), fun will be simplified to (ct:id _) by normalizer
   (rt:const Const)
 
-  (rt:call Rt (Array Rt))
-  (rt:c-call String Ct (Array Rt))
+  (rt:call Rt (Array Rt))                    ; (rt:call callee args)
+  (rt:c-call String Ct (Array Rt))           ; (rt:c-call sym ty args)
+  (rt:cont-call RtId (Array Rt) (Option Ct)) ; (rt:cont-call cont args ret)
   (rt:nullary Nullary)
   (rt:unary Unary Rt)
   (rt:binary Binary Rt Rt)
@@ -50,31 +51,30 @@
   (rt:alloc Location Rt)
   (rt:alloc-array Location Ct Rt)
   (rt:construct-env Location (Array Rt))
-  (rt:construct-data Ct U64 (Array Rt)) ; erased by data-expander
+  (rt:construct-data Ct U64 (Array Rt)) ; this will be erased by data-expander
   (rt:construct-struct Ct (Array Rt))
   (rt:construct-syntax SyntaxMetadata Rt)
 
   (rt:seq (Array Rt) Rt)
   (rt:if Rt Rt Rt)
   (rt:while Rt Rt)
-  (rt:and Rt Rt)                  ; erased by branch-expander
-  (rt:or Rt Rt)                   ; erased by branch-expander
-  (rt:match Rt (Array RtClause))  ; erased by branch-expander
+  (rt:and Rt Rt)                 ; this will be erased by branch-expander
+  (rt:or Rt Rt)                  ; this will be erased by branch-expander
+  (rt:match Rt (Array RtClause)) ; this will be erased by branch-expander
   (rt:return Rt)
-  (rt:cont RtId (Array Rt))
   rt:never
 
-  (rt:let-function (Array RtFunction) Rt) ; erased by normalizer
+  (rt:let-local-fun (Array RtLocalFun) Rt) ; this will be erased by normalizer
   (rt:let-var (Array RtVar) Rt)
   (rt:let-cont (Array RtCont) Rt))
 
 (instance Default.Rt (Default Rt)
   (function default (rt:const default)))
 
-(function (rt/autocall rt autocall) {(-> Rt Bool Rt)}
+(function (rt/autocall fun ty autocall) {(-> Ct Ct Bool Rt)}
   (if autocall
-    (rt:call rt array/empty)
-    rt))
+    (rt:call (rt:static-fun fun (ct:clos array/empty ty) none) array/empty)
+    (rt:static-fun fun ty none)))
 
 (function (rt/seq stmts ret) {(-> (Array Rt) Rt Rt)}
   (cond
@@ -85,11 +85,6 @@
     [else
       (rt:seq stmts ret)]))
 
-(function (rt/let-function funs body) {(-> (Array RtFunction) Rt Rt)}
-  (if (array/empty? funs)
-    body
-    (rt:let-function funs body)))
-
 (function (rt/let-var vars body) {(-> (Array RtVar) Rt Rt)}
   (cond
     [when (array/empty? vars)
@@ -98,6 +93,11 @@
       (rt:let-var (array/concat vars inner-vars) body)]
     [else
       (rt:let-var vars body)]))
+
+(function (rt/let-local-fun funs body) {(-> (Array RtLocalFun) Rt Rt)}
+  (if (array/empty? funs)
+    body
+    (rt:let-local-fun funs body)))
 
 (function (rt/let-cont conts body) {(-> (Array RtCont) Rt Rt)}
   (cond
@@ -108,6 +108,37 @@
     [else
       (rt:let-cont conts body)]))
 
+(function (rt/ty rt) {(-> Rt (Option Ct))}
+  (some (match rt
+    [(rt:var _ (let ty)) ty]
+    [(rt:local-fun _ _ (let ty)) ty]
+    [(rt:static-fun _ (let ty) _) ty]
+    [(rt:const (let c)) (const/ty c)]
+    [(rt:call (let callee) _) (ct/force-clos-ret (rt/ty callee)?)]
+    [(rt:c-call _ (let ty) _) (ct/force-clos-ret ty)]
+    [(rt:cont-call _ _ (let ret)) (id ret)?]
+    [(rt:nullary (let op)) (nullary/ty op)?]
+    [(rt:unary (let op) (let a)) (unary/ty op a)?]
+    [(rt:binary (let op) (let a) (let b)) (binary/ty op a b)?]
+    [(rt:ternary (let op) (let a) (let b) (let c)) (ternary/ty op a b c)?]
+    [(rt:alloc _ (let rt)) (ct:ptr (rt/ty rt)?)]
+    [(rt:alloc-array _ (let ty) _) (ct:array ty)]
+    [(rt:construct-env _ _) ct:env]
+    [(rt:construct-data (let ty) _ _) ty]
+    [(rt:construct-struct (let ty) _) ty]
+    [(rt:construct-syntax _ (let rt)) (ct:syntax (rt/ty rt)?)]
+    [(rt:seq _ (let rt)) (rt/ty rt)?]
+    [(rt:if _ (let t) (let e)) (option/or (rt/ty t) (rt/ty e))?]
+    [(rt:while _ _) ct:unit]
+    [(rt:and _ _) (ct:u 1)]
+    [(rt:or _ _) (ct:u 1)]
+    [(rt:match _ (let clauses)) (it/find-map? [^1 (|> %1 rt-clause/body rt/ty)] clauses)?]
+    [(rt:return _) (return none)]
+    [rt:never (return none)]
+    [(rt:let-local-fun _ (let body)) (rt/ty body)?]
+    [(rt:let-var _ (let body)) (rt/ty body)?]
+    [(rt:let-cont _ (let body)) (rt/ty body)?])))
+
 (derive (Eq Ord DebugDisplay Hash) value-data Nullary
   (nullary:uninitialized Ct)
   (nullary:null Ct)
@@ -115,12 +146,20 @@
   (nullary:size-of Ct)
   (nullary:align-of Ct))
 
+(function (nullary/ty op) {(-> Nullary (Option Ct))}
+  (some (match op
+    [(nullary:uninitialized (let ty)) ty]
+    [(nullary:null (let ty)) (ct:ptr ty)]
+    [nullary:gen-id ct:string]
+    [(nullary:size-of _) (ct:u 64)]
+    [(nullary:align-of _) (ct:u 64)])))
+
 (derive (Eq Ord DebugDisplay Hash) value-data Unary
   unary:not
   unary:load
   (unary:struct-elem Ct U64)
-  (unary:reinterpret Ct Ct)
-  (unary:syntax-body Ct)
+  (unary:reinterpret Ct)
+  unary:syntax-body
   unary:panic
   (unary:bit-cast Ct)
   unary:ptr-to-i
@@ -149,6 +188,42 @@
   unary:string-length
   unary:array-ptr
   unary:array-length)
+
+(function (unary/ty op a) {(-> Unary Rt (Option Ct))}
+  (some (match op
+    [unary:not (ct:u 1)]
+    [unary:load (ct/force-ptr-elem (rt/ty a)?)]
+    [(unary:struct-elem (let elem-ty) _) elem-ty]
+    [(unary:reinterpret (let ty)) ty]
+    [unary:syntax-body (ct/force-syntax-body (rt/ty a)?)]
+    [unary:panic (return none)]
+    [(unary:bit-cast (let ty)) ty]
+    [unary:ptr-to-i (ct:u 64)]
+    [(unary:i-to-ptr (let ty)) (ct:ptr ty)]
+    [unary:i-complement (rt/ty a)?]
+    [(unary:i-trunc (let ty)) ty]
+    [unary:i-pop-count (rt/ty a)?]
+    [(unary:s-ext (let ty)) ty]
+    [(unary:u-ext (let ty)) ty]
+    [(unary:s-to-f (let ty)) ty]
+    [(unary:u-to-f (let ty)) ty]
+    [(unary:f-to-s (let ty)) ty]
+    [(unary:f-to-u (let ty)) ty]
+    [(unary:f-trunc (let ty)) ty]
+    [(unary:f-ext (let ty)) ty]
+    [unary:real-ceil (rt/ty a)?]
+    [unary:real-floor (rt/ty a)?]
+    [unary:real-trunc (rt/ty a)?]
+    [unary:real-round (rt/ty a)?]
+    [unary:math-sqrt (rt/ty a)?]
+    [unary:math-sin (rt/ty a)?]
+    [unary:math-cos (rt/ty a)?]
+    [unary:math-exp (rt/ty a)?]
+    [unary:math-log (rt/ty a)?]
+    [unary:string-ptr (ct:ptr (ct:u 8))]
+    [unary:string-length (ct:u 64)]
+    [unary:array-ptr (ct:ptr (ct/force-array-elem (rt/ty a)?))]
+    [unary:array-length (ct:u 64)])))
 
 (derive (Eq Ord DebugDisplay Hash) value-data Binary
   binary:store
@@ -198,59 +273,131 @@
   binary:string-eq
   binary:string-cmp
   binary:string-concat
-  binary:char-eq
   binary:array-construct
   binary:array-load)
+
+(function (binary/ty op a b) {(-> Binary Rt Rt (Option Ct))}
+  (some (match op
+    [binary:store ct:unit]
+    [binary:offset (rt/ty b)?]
+    [binary:ptr-eq (ct:u 1)]
+    [binary:ptr-lt (ct:u 1)]
+    [binary:ptr-le (ct:u 1)]
+    [binary:ptr-gt (ct:u 1)]
+    [binary:ptr-ge (ct:u 1)]
+    [binary:i-eq (ct:u 1)]
+    [binary:i-shl (rt/ty a)?]
+    [binary:i-ashr (rt/ty a)?]
+    [binary:i-lshr (rt/ty a)?]
+    [binary:i-and (rt/ty a)?]
+    [binary:i-or (rt/ty a)?]
+    [binary:i-xor (rt/ty a)?]
+    [binary:s-lt (ct:u 1)]
+    [binary:s-le (ct:u 1)]
+    [binary:s-gt (ct:u 1)]
+    [binary:s-ge (ct:u 1)]
+    [binary:s-add (rt/ty a)?]
+    [binary:s-sub (rt/ty a)?]
+    [binary:s-mul (rt/ty a)?]
+    [binary:s-div (rt/ty a)?]
+    [binary:s-rem (rt/ty a)?]
+    [binary:u-lt (ct:u 1)]
+    [binary:u-le (ct:u 1)]
+    [binary:u-gt (ct:u 1)]
+    [binary:u-ge (ct:u 1)]
+    [binary:u-add (rt/ty a)?]
+    [binary:u-sub (rt/ty a)?]
+    [binary:u-mul (rt/ty a)?]
+    [binary:u-div (rt/ty a)?]
+    [binary:u-rem (rt/ty a)?]
+    [binary:f-eq (ct:u 1)]
+    [binary:f-lt (ct:u 1)]
+    [binary:f-le (ct:u 1)]
+    [binary:f-gt (ct:u 1)]
+    [binary:f-ge (ct:u 1)]
+    [binary:f-add (rt/ty a)?]
+    [binary:f-sub (rt/ty a)?]
+    [binary:f-mul (rt/ty a)?]
+    [binary:f-div (rt/ty a)?]
+    [binary:f-rem (rt/ty a)?]
+    [binary:math-pow (rt/ty a)?]
+    [binary:string-construct ct:string]
+    [binary:string-eq (ct:u 1)]
+    [binary:string-cmp (ct:s 32)]
+    [binary:string-concat ct:string]
+    [binary:array-construct (ct:array (ct/force-ptr-elem (rt/ty a)?))]
+    [binary:array-load (ct/force-array-elem (rt/ty b)?)])))
 
 (derive (Eq Ord DebugDisplay Hash) value-data Ternary
   ternary:ptr-copy
   ternary:ptr-move
   ternary:array-store)
 
+(function (ternary/ty op a b c) {(-> Ternary Rt Rt Rt (Option Ct))}
+  (some ct:unit))
+
 (derive (Eq Ord DebugDisplay Hash) value-data Location
   location:heap
   location:stack-static
   location:stack-dynamic)
 
-(derive (DebugDisplay) value-data RtClause
+(derive (Eq Ord DebugDisplay Hash) value-data RtClause
   (rt-clause: RtPat Rt))
 
 (getter rt-clause: rt-clause/pat rt-clause/body)
 
-(derive (DebugDisplay) data RtPat
+(derive (Eq Ord DebugDisplay Hash) data RtPat
   (rt-pat:var RtId Ct (Option RtPat))
-  rt-pat:wildcard
+  (rt-pat:wildcard Ct)
   (rt-pat:deref RtPat)
-  (rt-pat:non-null Ct RtPat)
+  (rt-pat:non-null RtPat)
   (rt-pat:null Ct)
-  (rt-pat:data Ct U64 (Array RtPat)) ; erased by data-expander
+  (rt-pat:data Ct U64 (Array RtPat)) ; this will be erased by data-expander
   (rt-pat:struct Ct (Array RtPat))
-  (rt-pat:reinterpret Ct Ct RtPat)
-  (rt-pat:syntax Ct RtPat)
+  (rt-pat:reinterpret Ct RtPat)
+  (rt-pat:syntax RtPat)
   (rt-pat:const Const))
 
 (instance Default.RtPat (Default RtPat)
   (function default (rt-pat:const default)))
 
-(derive (DebugDisplay) value-data RtFunction
-  (rt-function: RtId (Array CtId) (Array RtParam) Ct Rt))
+(function (rt-pat/ty pat) {(-> RtPat Ct)}
+  (match pat
+    [(rt-pat:var _ (let ty) _) ty]
+    [(rt-pat:wildcard (let ty)) ty]
+    [(rt-pat:deref (let p)) (ct:ptr (rt-pat/ty p))]
+    [(rt-pat:non-null (let p)) (ct:ptr (rt-pat/ty p))]
+    [(rt-pat:null (let ty)) (ct:ptr ty)]
+    [(rt-pat:data (let ty) _ _) ty]
+    [(rt-pat:struct (let ty) _) ty]
+    [(rt-pat:reinterpret (let ty) _) ty]
+    [(rt-pat:syntax (let p)) (ct:syntax (rt-pat/ty p))]
+    [(rt-pat:const (let c)) (const/ty c)]))
 
-(getter rt-function: rt-function/id rt-function/ct-params rt-function/params rt-function/ret rt-function/body)
+(derive (Eq Ord DebugDisplay Hash) value-data RtLocalFun
+  (rt-local-fun: RtId (Array CtId) (Array RtParam) Ct Rt))
 
-(derive (DebugDisplay) value-data RtVar
+(getter rt-local-fun: rt-local-fun/id rt-local-fun/ct-params rt-local-fun/params rt-local-fun/ret rt-local-fun/body)
+
+(derive (Eq Ord DebugDisplay Hash) value-data RtVar
   (rt-var: RtId Ct Rt))
 
 (getter rt-var: rt-var/id rt-var/ty rt-var/init)
 
-(derive (DebugDisplay) value-data RtCont
+(derive (Eq Ord DebugDisplay Hash) value-data RtCont
   (rt-cont: RtId (Array RtParam) Rt))
 
 (getter rt-cont: rt-cont/id rt-cont/params rt-cont/body)
 
-(derive (Eq DebugDisplay) value-data RtParam
+(derive (Eq Ord DebugDisplay Hash) value-data RtParam
   (rt-param: RtId Ct))
 
 (getter rt-param: rt-param/id rt-param/ty)
+
+(instance Conv.From.RtParam.To.Rt (Conv RtParam Rt)
+  (function (conv param)
+    (with1 (rt-param: (let id) (let ty)) param
+      (rt:var id ty))))
 
 (derive (Eq Ord DebugDisplay Hash) value-data Const
   (const:integer Ct Bool U64)

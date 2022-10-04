@@ -10,11 +10,11 @@
 (instance Transformer.Heap2Stack (forall Error) (Transformer (OrdSet RtId) Error)
   (function (transformer/before-rt rt load-only-vars)
     (match rt
-      [(rt:local (let id))
+      [(rt:var (let id) _)
         (ignore (ord-set/remove! id load-only-vars))]
-      [(rt:unary unary:load (rt:local _))
+      [(rt:unary unary:load (rt:var _ _))
         (return (ok (: cut:yes (rewrite/unchanged rt))))]
-      [(rt:binary binary:store (let val) (rt:local _))
+      [(rt:binary binary:store (let val) (rt:var _ _))
         (transform load-only-vars val)!
         (return (ok (: cut:yes (rewrite/unchanged rt))))]
       [(rt:let-var (let vars) _)

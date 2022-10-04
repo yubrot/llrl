@@ -48,9 +48,7 @@
       [ir/ct:env
         (llvm/type (conv env) (pointer i8))]
       [(ir/ct:syntax _)
-        (runtime/syntax/type (conv env))]
-      [ir/ct:hole
-        (assert #f "Found ct:hole on codegen/type")])))
+        (runtime/syntax/type (conv env))])))
 
 (function (codegen/union-type layout ctx) {(-> Layout llvm/Context llvm/Type)}
   (with1 (layout: (let size) (let align) _) layout
@@ -176,13 +174,13 @@
 (function (codegen/expr! ctx rt)
   {(forall E) (-> (BuildContext E) ir/Rt (Option llvm/Value)) (where (BuildEnv E))}
   (match rt
-    [(ir/rt:local (let id))
+    [(ir/rt:var (let id) _)
       (if-match1 (some (let value)) (ord-map/get? id (local-values ctx))
         (some value)
         (assert #f (string "Undefined variable: " (debug id))))]
-    [(ir/rt:local-fun _ _)
+    [(ir/rt:local-fun _ _ _)
       (assert #f "Found rt:local-fun at codegen, this should be erased by lowerizer")]
-    [(ir/rt:static-fun (ir/ct:id (let id)) (let env))
+    [(ir/rt:static-fun (ir/ct:id (let id)) _ (let env))
       (let ([fp (build-env/capture-function! id ctx)]
             [env
               (if-match1 (some (let env)) env
@@ -190,7 +188,7 @@
                 (llvm/build! (conv ctx) (null ,(codegen/type ctx ir/ct:env))))])
         (some (llvm/build! (conv ctx)
           (insert-value (insert-value (undef (: ,(llvm/value/type fp) ,(llvm/value/type env))) 0 ,fp) 1 ,env))))]
-    [(ir/rt:static-fun (let ct) _)
+    [(ir/rt:static-fun (let ct) _ _)
       (assert #f (string "Unresolved Ct: " (debug ct) ", this should be resolved by lowerizer"))]
     [(ir/rt:const (let c))
       (some (codegen/const! ctx c))]
@@ -226,6 +224,11 @@
                 (if (|> ret llvm/value/type llvm/type/sized?)
                   ret
                   (codegen/const! ctx ir/const:unit)))))))]
+    [(ir/rt:cont-call (let id) (let args) _)
+      (let ([args (vector/buffer (it/traverse-option [^1 (codegen/expr! ctx %1)] args)?)]
+            [cont (option/force (ord-map/get? id (local-conts ctx)))])
+        (cont/enter! ctx args cont))
+      none]
     [(ir/rt:nullary (let op))
       (some (match op
         [(ir/nullary:uninitialized (let ty))
@@ -247,9 +250,9 @@
             (llvm/build! (conv ctx) (load ,x))]
           [(ir/unary:struct-elem _ (let i))
             (llvm/build! (conv ctx) (extract-value ,x ,(conv i)))]
-          [(ir/unary:reinterpret (let a) (let b))
-            (let* ([a (codegen/type ctx a)]
-                   [b (codegen/type ctx b)]
+          [(ir/unary:reinterpret (let to))
+            (let* ([a (llvm/value/type x)]
+                   [b (codegen/type ctx to)]
                    [as (llvm/data-layout/type-alloc-size (conv ctx) a)]
                    [bs (llvm/data-layout/type-alloc-size (conv ctx) b)])
               (if (< as bs)
@@ -261,8 +264,9 @@
                        [_ (llvm/build! (conv ctx) (store ,x ,ptr))]
                        [b-ptr (llvm/build! (conv ctx) (bit-cast ,ptr (pointer ,b)))])
                   (llvm/build! (conv ctx) (load ,b-ptr)))))]
-          [(ir/unary:syntax-body (let ty))
-            (runtime/syntax/build-syntax-body! (conv ctx) x (codegen/type ctx ty))]
+          [ir/unary:syntax-body
+            (let1 body-ty (codegen/type ctx (option/force (ir/rt/ty rt)))
+              (runtime/syntax/build-syntax-body! (conv ctx) x body-ty))]
           [ir/unary:panic
             (runtime/build-panic! (conv ctx) ctx x)
             (return none)]
@@ -394,8 +398,6 @@
             (runtime/string/build-cmp! (conv ctx) ctx x y)]
           [ir/binary:string-concat
             (runtime/string/build-concat! (conv ctx) ctx x y)]
-          [ir/binary:char-eq
-            (runtime/char/build-eq! (conv ctx) x y)]
           [ir/binary:array-construct
             (runtime/array/build-construct! (conv ctx) x y)]
           [ir/binary:array-load
@@ -500,16 +502,11 @@
     [(ir/rt:return (let ret))
       (llvm/build! (conv ctx) (ret ,(codegen/expr! ctx ret)?))
       none]
-    [(ir/rt:cont (let id) (let args))
-      (let ([args (vector/buffer (it/traverse-option [^1 (codegen/expr! ctx %1)] args)?)]
-            [cont (option/force (ord-map/get? id (local-conts ctx)))])
-        (cont/enter! ctx args cont))
-      none]
     [ir/rt:never
       (llvm/build! (conv ctx) unreachable)
       none]
-    [(ir/rt:let-function _ _)
-      (assert #f "Found rt:let-function at codegen, this should be erased by lowerizer")]
+    [(ir/rt:let-local-fun _ _)
+      (assert #f "Found rt:let-local-fun at codegen, this should be erased by lowerizer")]
     [(ir/rt:let-var (let vars) (let body))
       (for (ir/rt-var: (let id) _ (let init)) vars
         (let1 value (codegen/expr! ctx init)?

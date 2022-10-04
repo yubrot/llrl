@@ -1,7 +1,7 @@
 (import "std/ord-map" _)
 (import "~/util" _)
 (import "~/lowering/ir/ct" Ct _.Ct ct:_ CtId _.CtId)
-(import "~/lowering/ir/rt" Rt _.Rt rt:_ rt/_ RtId _.RtId RtParam _.RtParam Const _.Const const/_)
+(import "~/lowering/ir/rt" Rt _.Rt rt:_ rt/_ RtId _.RtId RtParam _.RtParam rt-param/_ Const _.Const const/_)
 (export Def _.Def def:_ def/_)
 (export AliasTable _.AliasTable alias-table/_)
 (export Data _.Data data: data/_ DataRepr _.DataRepr data-repr:_)
@@ -13,10 +13,10 @@
 (export Init _.Init init: init/_)
 
 (derive (DebugDisplay) data Def
-  (def:alias Ct)                    ; erased by normalizer
-  (def:alias-table AliasTable)      ; erased by normalizer
-  (def:generic (Array CtId) Def)  ; erased by normalzier
-  (def:data Data)                   ; erased by data-expander
+  (def:alias Ct)                    ; this will be erased by normalizer
+  (def:alias-table AliasTable)      ; this will be erased by normalizer
+  (def:generic (Array CtId) Def)    ; this will be erased by normalzier
+  (def:data Data)                   ; this will be erased by data-expander
   (def:struct Struct)
   (def:union Union)
   (def:function Function))
@@ -77,6 +77,12 @@
   (function: FunctionKind (Option FunctionEnv) (Array RtParam) Ct Rt))
 
 (getter function: function/kind function/env function/params function/ret function/body)
+
+(function (function/ty f) {(-> Function Ct)}
+  (ct:clos (collect (it/map rt-param/ty (function/params f))) (function/ret f)))
+
+(function function/main-ty {Ct}
+  (ct:clos array/empty (ct:u 1)))
 
 (function (function/macro param ret body) {(-> RtParam Ct Rt Function)}
   (function: function-kind:macro none (array param) ret body))
