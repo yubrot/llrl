@@ -1,7 +1,7 @@
 use super::ir::*;
 use derive_new::new;
 use std::borrow::Cow;
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, VecDeque};
 use std::rc::Rc;
 
 pub trait Env {
@@ -116,11 +116,11 @@ impl<'e, E: Env> MatchExpander<'e, E> {
             MatchPartProgress::Unsatisfied => (cont.failure)(self, progress),
             MatchPartProgress::NotKnown => match progress.part(part.parent()) {
                 MatchPartProgress::Satisfied(Some(parent)) => match part.to_test_expr(parent) {
-                    Some(expr) => {
+                    Some(test_expr) => {
                         let success = {
                             let mut progress = progress.clone();
-                            if let Some(expr) = part.to_bind_expr(parent) {
-                                progress.bind_args.push(expr);
+                            if let Some(bind_expr) = part.to_bind_expr(parent) {
+                                progress.bind_args.push(bind_expr);
                             }
                             progress.mark_as_passed(part.clone());
                             (cont.success)(self, progress)
@@ -129,7 +129,7 @@ impl<'e, E: Env> MatchExpander<'e, E> {
                             progress.mark_as_failed(part);
                             (cont.failure)(self, progress)
                         };
-                        Rt::if_(expr, success, failure)
+                        Rt::if_(test_expr, success, failure)
                     }
                     None => {
                         if let Some(expr) = part.to_bind_expr(parent) {
@@ -143,11 +143,11 @@ impl<'e, E: Env> MatchExpander<'e, E> {
                     // part.parent() is satisfied but is not obtained, put it to a variable
                     let parent = part.parent().clone();
                     let grandparent = progress.part(parent.parent()).var().unwrap();
-                    let id = self.env.alloc_rt();
-                    let ty = parent.ty().into_owned();
-                    let get = parent.to_get_expr(grandparent).unwrap();
-                    Rt::let_var(vec![RtVar::new(id, ty, get)], {
-                        progress.set_passed_var(parent, id);
+                    let parent_var = self.env.alloc_rt();
+                    let parent_ty = parent.ty().into_owned();
+                    let get_parent_expr = parent.to_get_expr(grandparent).unwrap();
+                    Rt::let_var(vec![RtVar::new(parent_var, parent_ty, get_parent_expr)], {
+                        progress.set_passed_var(parent, parent_var);
                         self.expand_pat_part(progress, part, cont)
                     })
                 }
@@ -196,51 +196,47 @@ impl<'e, E: 'e> MatchCont<'e, E> {
 // TODO: Use exhaustiveness information to reduce test
 #[derive(Debug, Clone)]
 struct MatchProgress {
-    passed: HashMap<PatPart, Option<RtId>>,
-    failed: HashSet<PatPart>,
-    collision: HashMap<PatPart, Vec<PatPart>>,
+    determined: HashMap<PatPart, Result<Option<RtId>, ()>>,
+    determined_range: HashMap<PatPart, Vec<PatPart>>,
     bind_args: Vec<Rt>,
 }
 
 impl MatchProgress {
     fn new(root: RtId, ty: Ct) -> Self {
         Self {
-            passed: vec![(PatPart::Root(ty), Some(root))].into_iter().collect(),
-            failed: HashSet::new(),
-            collision: HashMap::new(),
+            determined: vec![(PatPart::Root(ty), Ok(Some(root)))]
+                .into_iter()
+                .collect(),
+            determined_range: HashMap::new(),
             bind_args: Vec::new(),
         }
     }
 
     fn part(&self, part: &PatPart) -> MatchPartProgress {
-        if let Some(var) = self.passed.get(part) {
-            return MatchPartProgress::Satisfied(*var);
+        match self.determined.get(part) {
+            Some(Ok(var)) => MatchPartProgress::Satisfied(*var),
+            Some(Err(_)) => MatchPartProgress::Unsatisfied,
+            None => match self.determined_range.get(part.parent()) {
+                Some(ps) if ps.iter().any(|p| p.excludes(part)) => MatchPartProgress::Unsatisfied,
+                _ => MatchPartProgress::NotKnown,
+            },
         }
-        if self.failed.contains(part) {
-            return MatchPartProgress::Unsatisfied;
-        }
-        for p in self.collision.get(part.parent()).into_iter().flatten() {
-            if p.excludes(part) {
-                return MatchPartProgress::Unsatisfied;
-            }
-        }
-        MatchPartProgress::NotKnown
     }
 
     fn mark_as_passed(&mut self, part: PatPart) {
-        self.collision
+        self.determined_range
             .entry(part.parent().clone())
             .or_default()
             .push(part.clone());
-        assert_eq!(self.passed.insert(part, None), None);
+        assert_eq!(self.determined.insert(part, Ok(None)), None);
     }
 
     fn mark_as_failed(&mut self, part: PatPart) {
-        self.failed.insert(part);
+        assert_eq!(self.determined.insert(part, Err(())), None);
     }
 
     fn set_passed_var(&mut self, part: PatPart, var: RtId) {
-        assert_eq!(self.passed.insert(part, Some(var)), Some(None));
+        assert_eq!(self.determined.insert(part, Ok(Some(var))), Some(Ok(None)));
     }
 }
 
@@ -307,16 +303,18 @@ impl FlattenPat {
             }
             RtPat::Data(_, _, _) => panic!("Found RtPat::Data at branch_expander"),
             RtPat::Struct(_, args) => {
-                let mut added = false;
-                for (i, arg) in args.into_iter().enumerate() {
-                    let elem = parent.struct_elem(i, arg.ty().into_owned());
-                    added = self.collect(arg, &elem) || added;
-                }
-                added
+                #[allow(clippy::unnecessary_fold)] // to force side-effects
+                args.into_iter()
+                    .enumerate()
+                    .map(|(i, arg)| {
+                        let elem = parent.struct_elem(arg.ty().into_owned(), i);
+                        self.collect(arg, &elem)
+                    })
+                    .fold(false, |a, b| a || b)
             }
-            RtPat::Reinterpret(_, pat) => {
-                let ty = pat.ty().into_owned();
-                self.collect(*pat, &parent.reinterpret(ty))
+            RtPat::Reinterpret(_from_ty, pat) => {
+                let to_ty = pat.ty().into_owned();
+                self.collect(*pat, &parent.reinterpret(to_ty))
             }
             RtPat::Syntax(pat) => self.collect(*pat, &parent.syntax_body()),
             RtPat::Const(c) => {
@@ -368,7 +366,7 @@ impl PatPart {
         Self::Null(Box::new(self.clone()))
     }
 
-    fn struct_elem(&self, index: usize, elem_ty: Ct) -> Self {
+    fn struct_elem(&self, elem_ty: Ct, index: usize) -> Self {
         Self::StructElem(elem_ty, index, Box::new(self.clone()))
     }
 

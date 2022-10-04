@@ -357,7 +357,7 @@ impl Unary {
             | MathSin | MathCos | MathExp | MathLog => a.ty()?,
             StringPtr => Cow::Owned(Ct::ptr(Ct::U(8))),
             StringLength => Cow::Owned(Ct::U(64)),
-            ArrayPtr => Ct::array_to_ptr(a.ty()?),
+            ArrayPtr => Cow::Owned(Ct::ptr(Ct::array_elem(a.ty()?).into_owned())),
             ArrayLength => Cow::Owned(Ct::U(64)),
         })
     }
@@ -431,7 +431,7 @@ impl Binary {
             StringConstruct => Cow::Owned(Ct::String),
             StringCmp => Cow::Owned(Ct::S(32)),
             StringConcat => Cow::Owned(Ct::String),
-            ArrayConstruct => Ct::ptr_to_array(a.ty()?),
+            ArrayConstruct => Cow::Owned(Ct::array(Ct::ptr_elem(a.ty()?).into_owned())),
             ArrayLoad => Ct::array_elem(b.ty()?),
         })
     }

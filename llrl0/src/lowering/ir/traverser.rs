@@ -200,8 +200,8 @@ impl Traverse for Rt {
                 }
                 Self::StaticFun(capture) => {
                     traverser.traverse(&capture.fun)?;
-                    traverser.traverse(&capture.env)?;
                     traverser.traverse(&capture.ty)?;
+                    traverser.traverse(&capture.env)?;
                 }
                 Self::Const(c) => {
                     traverser.traverse(c)?;
@@ -215,8 +215,8 @@ impl Traverse for Rt {
                     traverser.traverse(&call.args)?;
                 }
                 Self::ContCall(call) => {
-                    traverser.traverse(&call.ret)?;
                     traverser.traverse(&call.args)?;
+                    traverser.traverse(&call.ret)?;
                 }
                 Self::Nullary(nullary) => {
                     traverser.traverse(nullary)?;

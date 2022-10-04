@@ -82,7 +82,7 @@ struct Codegen<'a, 'ctx: 'm, 'm> {
     builder: LLVMBox<LLVMBuilder<'ctx, 'm>>,
     ret_pointer: Option<LLVMValue<'ctx, 'm>>,
     local_values: HashMap<RtId, LLVMValue<'ctx, 'm>>,
-    conts: HashMap<RtId, Cont<'ctx, 'm>>,
+    local_conts: HashMap<RtId, Cont<'ctx, 'm>>,
 }
 
 impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
@@ -142,10 +142,10 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
             }
             Rt::ContCall(call) => {
                 let args = self.eval_all(&call.args)?;
-                match self.conts.remove(&call.cont) {
+                match self.local_conts.remove(&call.cont) {
                     Some(mut cont) => {
                         cont.enter(args, self);
-                        self.conts.insert(call.cont, cont);
+                        self.local_conts.insert(call.cont, cont);
                         None
                     }
                     // NOTE: Continuation recursion is unsupported at the moment
@@ -581,7 +581,7 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
 
     fn eval_let_cont(&mut self, conts: &Vec<RtCont>, body: &Rt) -> Option<LLVMValue<'ctx, 'm>> {
         for cont in conts {
-            self.conts.insert(cont.id, {
+            self.local_conts.insert(cont.id, {
                 let params = cont.params.iter().map(|p| p.id).collect::<Vec<_>>();
                 let body = cont.body.clone();
                 Cont::boxed("cont", move |args, self_| {
@@ -602,7 +602,7 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
         }
 
         for cont in conts {
-            let cont = self.conts.remove(&cont.id).unwrap();
+            let cont = self.local_conts.remove(&cont.id).unwrap();
             if let Some(ret) = cont.continue_(self) {
                 merge.enter(vec![ret], self);
             }

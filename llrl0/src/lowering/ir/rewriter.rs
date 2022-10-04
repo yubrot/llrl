@@ -200,8 +200,8 @@ impl Rewrite for Rt {
                 }
                 Self::StaticFun(capture) => {
                     rewriter.rewrite(&mut capture.fun)?;
-                    rewriter.rewrite(&mut capture.env)?;
                     rewriter.rewrite(&mut capture.ty)?;
+                    rewriter.rewrite(&mut capture.env)?;
                 }
                 Self::Const(c) => {
                     rewriter.rewrite(c)?;
@@ -215,8 +215,8 @@ impl Rewrite for Rt {
                     rewriter.rewrite(&mut call.args)?;
                 }
                 Self::ContCall(call) => {
-                    rewriter.rewrite(&mut call.ret)?;
                     rewriter.rewrite(&mut call.args)?;
+                    rewriter.rewrite(&mut call.ret)?;
                 }
                 Self::Nullary(nullary) => {
                     rewriter.rewrite(nullary)?;

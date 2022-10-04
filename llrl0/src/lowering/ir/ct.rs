@@ -102,20 +102,6 @@ impl Ct {
         }
     }
 
-    pub fn ptr_to_array(ct: Cow<Self>) -> Cow<Self> {
-        match ct.into_owned() {
-            Self::Ptr(ty) => Cow::Owned(Self::Array(ty)),
-            ct => panic!("Cannot extract the array element type: {}", ct),
-        }
-    }
-
-    pub fn array_to_ptr(ct: Cow<Self>) -> Cow<Self> {
-        match ct.into_owned() {
-            Self::Array(ty) => Cow::Owned(Self::Ptr(ty)),
-            ct => panic!("Cannot extract the array element type: {}", ct),
-        }
-    }
-
     pub fn array_elem(ct: Cow<Self>) -> Cow<Self> {
         match ct {
             Cow::Borrowed(Self::Array(ty)) => Cow::Borrowed(ty.as_ref()),
