@@ -51,7 +51,7 @@
         (runtime/syntax/type (conv env))])))
 
 (function (codegen/union-type layout ctx) {(-> Layout llvm/Context llvm/Type)}
-  (with1 (layout: (let size) (let align) _) layout
+  (with1 (layout: (let size) (let align) _ _) layout
     (if (ne? align 0)
       (llvm/type ctx (array (integer ,(conv (* align 8))) ,(conv (/ size align))))
       (llvm/type ctx (array i1 0)))))

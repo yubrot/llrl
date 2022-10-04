@@ -6,44 +6,50 @@
 (export Layout _.Layout layout: layout/_)
 (export LayoutComponent _.LayoutComponent layout-component: layout-component/_)
 (export LayoutResolver _.LayoutResolver layout-resolver/_)
+(export Class _.Class class:_ class/_)
 
 (derive (Eq Ord DebugDisplay) data Layout
-  (layout: U64 U64 (Array LayoutComponent)))
+  (layout: U64 U64 Class (Array LayoutComponent)))
 
-(getter layout: layout/size layout/align layout/components)
+(getter layout: layout/size layout/align layout/class layout/components)
 
-(function (layout/terminal size align) {(-> U64 U64 Layout)}
-  (layout: size align array/empty))
+(function (layout/terminal size align cls) {(-> U64 U64 Class Layout)}
+  (layout: size align cls array/empty))
 
 (assert-eq? (size-of (Ptr U8)) 8)
 (assert-eq? (align-of (Ptr U8)) 8)
 
 (function layout/pointer {Layout}
-  (layout/terminal (size-of (Ptr U8)) (align-of (Ptr U8))))
+  (layout/terminal 8 8 class:integer))
 
-(function (aligned size align) {(-> U64 U64 U64)}
-  (if (ne? align 0)
-    (+ size (% (- align (% size align)) align))
-    size))
+(function layout/clos {Layout}
+  (layout/terminal 16 8 class:integer))
 
 (function (layout/product components) {(-> (Array (: ir/Ct Layout)) Layout)}
-  (let* ([align
-           (|> components
-               (it/map (case1 (: _ (let l)) (layout/align l)))
-               (it/fold [^2 (max %1 %2)] 0))]
+  (let* ([(layouts) (it/map (case1 (: _ (let l)) l) components)]
+         [align (it/fold [^2 (max %1 (layout/align %2))] 0 (layouts))]
+         [cls (it/fold [^2 (class/merge %1 (layout/class %2))] class:void (layouts))]
          [offset (ref 0)]
          [components
            (|> components
-               (it/map (case1 (: (let ty) (layout: (let s) (let a) _))
+               (it/map (case1 (: (let ty) (layout: (let s) (let a) _ _))
                  (set! offset (+ (aligned ~offset a) s))
                  (layout-component: (- ~offset s) ty)))
-               collect)])
-    (layout: (aligned ~offset align) align components)))
+               collect)]
+         [size (aligned ~offset align)]
+         [cls (if (< 16 size) class:memory cls)])
+    (layout: size align cls components)))
 
 (function (layout/sum tss) {(-> (Array Layout) Layout)}
-  (let* ([align (|> tss (it/map layout/align) (it/fold [^2 (max %1 %2)] 0))]
-         [size (|> tss (it/map layout/size) (it/fold [^2 (max %1 %2)] 0))])
-    (layout/terminal (aligned size align) align)))
+  (let* ([align (it/fold [^2 (max %1 (layout/align %2))] 0 tss)]
+         [cls (it/fold [^2 (class/merge %1 (layout/class %2))] class:integer tss)]
+         [size (aligned (it/fold [^2 (max %1 (layout/size %2))] 0 tss) align)]
+         [cls (if (< 16 size) class:memory cls)])
+    (layout/terminal size align cls)))
+
+(instance Default.Layout (Default Layout)
+  (function default
+    (layout/terminal 0 0 class:void)))
 
 (derive (Eq Ord DebugDisplay) value-data LayoutComponent
   (layout-component: U64 ir/Ct))
@@ -106,28 +112,49 @@
       [(ir/ct:ptr _)
         layout/pointer]
       [(ir/ct:clos _ _)
-        (layout/terminal 16 8)]
+        layout/clos]
       [(ir/ct:s (let n))
         (let1 size (next-power-of-two (/ (+ n 7) 8))
-          (layout/terminal size size))]
+          (layout/terminal size size class:integer))]
       [(ir/ct:u (let n))
         (let1 size (next-power-of-two (/ (+ n 7) 8))
-          (layout/terminal size size))]
+          (layout/terminal size size class:integer))]
       [ir/ct:f32
-        (layout/terminal 4 4)]
+        (layout/terminal 4 4 class:floating-point)]
       [ir/ct:f64
-        (layout/terminal 8 8)]
+        (layout/terminal 8 8 class:floating-point)]
       [ir/ct:string
-        (layout/terminal (size-of String) (align-of String))]
+        (layout/terminal (size-of String) (align-of String) class:integer)]
       [ir/ct:char
-        (layout/terminal (size-of Char) (align-of Char))]
+        (layout/terminal (size-of Char) (align-of Char) class:integer)]
       [(ir/ct:array _)
-        (layout/terminal (size-of (Array U8)) (align-of (Array U8)))]
+        (layout/terminal (size-of (Array U8)) (align-of (Array U8)) class:integer)]
       [ir/ct:captured-use
-        (layout/terminal (size-of ir/CapturedUse) (align-of ir/CapturedUse))]
+        (layout/terminal (size-of ir/CapturedUse) (align-of ir/CapturedUse) class:integer)]
       [ir/ct:unit
-        (layout/terminal 0 0)]
+        default]
       [ir/ct:env
         layout/pointer]
       [(ir/ct:syntax _)
-        (layout/terminal (size-of (Syntax unit)) (align-of (Syntax unit)))]))
+        (layout/terminal (size-of (Syntax unit)) (align-of (Syntax unit)) class:integer)]))
+
+(derive (Eq Ord DebugDisplay Hash) value-data Class
+  class:void
+  class:integer
+  class:floating-point
+  class:memory)
+
+(function (class/merge a b) {(-> Class Class Class)}
+  (match (: a b)
+    [(: class:memory _) class:memory]
+    [(: _ class:memory) class:memory]
+    [(: class:integer _) class:integer]
+    [(: _ class:integer) class:integer]
+    [(: class:floating-point _) class:floating-point]
+    [(: _ class:floating-point) class:floating-point]
+    [(: class:void _) class:void]))
+
+(function (aligned size align) {(-> U64 U64 U64)}
+  (if (ne? align 0)
+    (+ size (% (- align (% size align)) align))
+    size))
