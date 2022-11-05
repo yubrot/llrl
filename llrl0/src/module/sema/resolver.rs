@@ -88,7 +88,11 @@ impl<'a, S: Scope> Context for ContextImpl<'a, S> {
         }
     }
 
-    fn on(&mut self, bind: &impl Bind) -> Result<ContextImpl<LocalScope>> {
+    type LocalContext<'s> = ContextImpl<'a, LocalScope<'s>>
+    where
+        Self: 's;
+
+    fn on<'s>(&'s mut self, bind: &impl Bind) -> Result<Self::LocalContext<'s>> {
         let symbol_map = self.symbol_map;
         let mut scope = self.scope.enter_scope();
         bind.traverse_defs(&mut |def| {
@@ -104,8 +108,12 @@ trait Context: Sized {
     where
         Construct: From<NodeId<Use<T>>>;
 
+    type LocalContext<'a>: Context
+    where
+        Self: 'a;
+
     // TODO: Abstract with GATs (rust-lang/rust#44265)
-    fn on(&mut self, bind: &impl Bind) -> Result<ContextImpl<LocalScope>>;
+    fn on<'a>(&'a mut self, bind: &impl Bind) -> Result<Self::LocalContext<'a>>;
 
     fn resolve(&mut self, target: &mut impl Resolve) -> Result<()> {
         Resolve::resolve(self, target)
