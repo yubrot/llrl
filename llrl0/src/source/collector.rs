@@ -60,7 +60,7 @@ impl<'l> Collector<'l> {
             let source = self
                 .loader
                 .load(path, &mut locator)
-                .unwrap_or_else(|(path, error)| Source::from_error(path, error));
+                .unwrap_or_else(|e| Source::from_error(e.path, e.error));
 
             self.source_location_table
                 .lock()

@@ -17,7 +17,7 @@ pub use matcher::{Error as MatchError, Match, MatchSlice};
 pub use native::{Native, NativeValue};
 
 /// A sequence of S-expressions.
-#[derive(PartialEq, PartialOrd, Debug, Clone, new)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, new)]
 pub struct Ss {
     pub loc: SourceLocation,
     pub ss: Vec<Sexp>,

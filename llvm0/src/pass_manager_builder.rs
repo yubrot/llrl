@@ -22,7 +22,7 @@ impl PassManagerBuilder {
     }
 
     pub fn set_disable_unroll_loops(&self, value: bool) {
-        let value = if value { 1 } else { 0 };
+        let value = i32::from(value);
         unsafe { LLVMPassManagerBuilderSetDisableUnrollLoops(self.as_ptr(), value) };
     }
 

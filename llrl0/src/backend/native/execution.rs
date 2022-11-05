@@ -5,7 +5,7 @@ use std::thread;
 /// To avoid concurrency issues of Boehm GC, we need a dedicated thread for backends.
 pub fn dedicated_thread() -> &'static Thread {
     static THREAD: Lazy<Thread> = Lazy::new(Thread::spawn);
-    &*THREAD
+    &THREAD
 }
 
 #[derive(Debug)]

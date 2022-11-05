@@ -567,7 +567,7 @@ pub enum Const {
 
 impl Const {
     pub fn bool(value: bool) -> Self {
-        Self::Integer(Ct::BOOL, false, if value { 1 } else { 0 })
+        Self::Integer(Ct::BOOL, false, u64::from(value))
     }
 
     pub fn syntax_sexp(s_ty: Ct, s: Syntax<Sexp>) -> Self {

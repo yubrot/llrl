@@ -7,7 +7,7 @@ use std::borrow::Cow;
 use std::fmt::{self, Write as _};
 use std::marker::PhantomData;
 
-#[derive(PartialEq, PartialOrd, Debug, Clone, new)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, new)]
 pub struct Error {
     pub loc: SourceLocation,
     expect: fn() -> Cow<'static, str>,

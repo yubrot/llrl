@@ -131,7 +131,7 @@ impl<T> From<Var<T>> for Vars<T> {
     }
 }
 
-#[derive(PartialEq, PartialOrd, thiserror::Error, Debug, Clone)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, thiserror::Error, Debug, Clone)]
 pub enum Error {
     #[error("Occurs check failed")]
     OccursCheckFailed,

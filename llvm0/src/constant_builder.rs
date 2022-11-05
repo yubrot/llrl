@@ -103,11 +103,7 @@ macro_rules! llvm_constant {
 
 pub trait ConstantBuilder<'a>: TypeBuilder<'a> {
     fn bool(&self, value: bool) -> ConstantInt<'a, 'a> {
-        ConstantInt::get(
-            IntegerType::get(1, self.context()),
-            if value { 1 } else { 0 },
-            false,
-        )
+        ConstantInt::get(IntegerType::get(1, self.context()), u64::from(value), false)
     }
 
     fn signed(&self, ty: IntegerType<'a>, value: i64) -> ConstantInt<'a, 'a> {

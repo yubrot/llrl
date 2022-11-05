@@ -89,10 +89,10 @@ impl<'ctx> ExecutionEngine<'ctx> {
             options.CodeModel = code_model.into();
         }
         if let Some(a) = no_frame_pointer_elim {
-            options.NoFramePointerElim = if a { 1 } else { 0 };
+            options.NoFramePointerElim = i32::from(a);
         }
         if let Some(a) = enable_fast_isel {
-            options.EnableFastISel = if a { 1 } else { 0 };
+            options.EnableFastISel = i32::from(a);
         }
         Self::new_with(ctx, |out, m, err| unsafe {
             LLVMCreateMCJITCompilerForModule(out, m, &mut options, options_size, err)

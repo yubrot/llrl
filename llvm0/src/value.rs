@@ -259,13 +259,7 @@ pub struct ConstantInt<'ctx, 'p>(Value<'ctx, 'p>);
 
 impl<'ctx> ConstantInt<'ctx, 'ctx> {
     pub fn get(ty: IntegerType<'ctx>, value: u64, sign_extend: bool) -> Self {
-        unsafe {
-            Self::from_ptr(LLVMConstInt(
-                ty.as_ptr(),
-                value,
-                if sign_extend { 1 } else { 0 },
-            ))
-        }
+        unsafe { Self::from_ptr(LLVMConstInt(ty.as_ptr(), value, i32::from(sign_extend))) }
     }
 
     pub fn null(ty: IntegerType<'ctx>) -> Self {
@@ -389,7 +383,7 @@ impl<'ctx: 'p, 'p> ConstantStruct<'ctx, 'p> {
                 context.as_ptr(),
                 constants.as_ptr() as *mut LLVMValueRef,
                 constants.len() as u32,
-                if packed { 1 } else { 0 },
+                i32::from(packed),
             ))
         }
     }
@@ -491,7 +485,7 @@ impl<'ctx: 'p, 'p> GlobalVariable<'ctx, 'p> {
     }
 
     pub fn set_is_thread_local(self, v: bool) {
-        unsafe { LLVMSetThreadLocal(self.as_ptr(), if v { 1 } else { 0 }) };
+        unsafe { LLVMSetThreadLocal(self.as_ptr(), i32::from(v)) };
     }
 
     pub fn is_constant(self) -> bool {
@@ -499,7 +493,7 @@ impl<'ctx: 'p, 'p> GlobalVariable<'ctx, 'p> {
     }
 
     pub fn set_is_constant(self, v: bool) {
-        unsafe { LLVMSetGlobalConstant(self.as_ptr(), if v { 1 } else { 0 }) };
+        unsafe { LLVMSetGlobalConstant(self.as_ptr(), i32::from(v)) };
     }
 
     pub fn thread_local_mode(self) -> ThreadLocalMode {
@@ -515,7 +509,7 @@ impl<'ctx: 'p, 'p> GlobalVariable<'ctx, 'p> {
     }
 
     pub fn set_is_externally_initialized(self, v: bool) {
-        unsafe { LLVMSetExternallyInitialized(self.as_ptr(), if v { 1 } else { 0 }) };
+        unsafe { LLVMSetExternallyInitialized(self.as_ptr(), i32::from(v)) };
     }
 
     /// Remove this global variable from its parent `Module`.

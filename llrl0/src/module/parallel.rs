@@ -205,7 +205,7 @@ impl<'a, B: Backend> External for ModuleBuildingContext<'a, B> {
     fn module(&self, mid: ModuleId) -> &Module {
         let ctx = self.ctx;
         let arena = self.deps_arena;
-        *self.deps_cache.borrow_mut().entry(mid).or_insert_with(|| {
+        self.deps_cache.borrow_mut().entry(mid).or_insert_with(|| {
             let module = ctx.modules.get(mid.as_index()).unwrap();
             arena.alloc(Arc::clone(module.result.read().unwrap().as_ref().unwrap()))
         })

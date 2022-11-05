@@ -28,7 +28,7 @@ impl TargetMachine {
     }
 
     pub fn set_asm_verbosity(&self, verbose: bool) {
-        unsafe { LLVMSetTargetMachineAsmVerbosity(self.as_ptr(), if verbose { 1 } else { 0 }) };
+        unsafe { LLVMSetTargetMachineAsmVerbosity(self.as_ptr(), i32::from(verbose)) };
     }
 
     pub fn emit_to_file(

@@ -39,7 +39,7 @@ fn main() -> io::Result<()> {
 
     {
         let mut path = workspace.clone();
-        path.extend(&["xtencg", "supported-instructions.md"]);
+        path.extend(["xtencg", "supported-instructions.md"]);
         let mut file = File::create(path)?;
         writeln!(&mut file, "{}", render::supported_instructions(&inst_set))?;
     }
@@ -48,7 +48,7 @@ fn main() -> io::Result<()> {
 
     {
         let mut path = workspace;
-        path.extend(&["xten0", "src", "asm", "inst.rs"]);
+        path.extend(["xten0", "src", "asm", "inst.rs"]);
         let mut file = File::create(path)?;
         writeln!(&mut file, "{}", render::xten0(&inst_set))?;
     }

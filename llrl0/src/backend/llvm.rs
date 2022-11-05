@@ -296,7 +296,7 @@ impl<'ctx> Builder<'ctx> {
             .arg("-o")
             .arg(&dest)
             .args(&objects)
-            .args(&[
+            .args([
                 "-lgc",
                 "-lm",
                 &format!("-L{}", tmp_dir.path().display()),

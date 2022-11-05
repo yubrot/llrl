@@ -369,7 +369,7 @@ impl TryFrom<Construct> for TypeCon {
     }
 }
 
-#[derive(PartialEq, Debug, Clone, new)]
+#[derive(PartialEq, Eq, Debug, Clone, new)]
 pub struct Constraint {
     pub id: NodeId<Constraint>,
     pub rep: ConstraintRep,
@@ -400,7 +400,7 @@ impl topological_sort::DependencyList<NodeId<ClassCon>> for Constraint {
     }
 }
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub enum ConstraintRep {
     Class(Use<NodeId<ClassCon>>, Vec<Type>),
 }

@@ -153,7 +153,7 @@ impl<'a> TypeBuilder<'a> for Module<'a> {
 
 impl<'a> TypeBuilder<'a> for &'a Oo<Context> {
     fn context(&self) -> &'a Context {
-        &***self
+        self
     }
 }
 

@@ -210,7 +210,7 @@ pub struct FunctionType<'ctx>(Type<'ctx>);
 
 impl<'ctx> FunctionType<'ctx> {
     pub fn get(return_ty: impl AnyType<'ctx>, params: &[Type<'ctx>], is_var_arg: bool) -> Self {
-        let is_var_arg = if is_var_arg { 1 } else { 0 };
+        let is_var_arg = i32::from(is_var_arg);
         unsafe {
             Self::from_ptr(LLVMFunctionType(
                 return_ty.as_ptr(),
@@ -259,7 +259,7 @@ impl<'ctx> StructType<'ctx> {
                 context.as_ptr(),
                 elements.as_ptr() as *mut LLVMTypeRef,
                 elements.len() as u32,
-                if packed { 1 } else { 0 },
+                i32::from(packed),
             ))
         }
     }
@@ -296,7 +296,7 @@ impl<'ctx> StructType<'ctx> {
                     self.as_ptr(),
                     elements.as_ptr() as *mut LLVMTypeRef,
                     elements.len() as u32,
-                    if packed { 1 } else { 0 },
+                    i32::from(packed),
                 )
             }
             true

@@ -2,7 +2,7 @@ use itertools::Itertools;
 use std::fmt;
 use std::str::FromStr;
 
-#[derive(PartialEq, PartialOrd, thiserror::Error, Debug, Clone)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, thiserror::Error, Debug, Clone)]
 pub enum Error {
     #[error("Path contains illegal characters: \"{0}\"")]
     PathContainsIllegalCharacters(String),

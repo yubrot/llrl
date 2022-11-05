@@ -104,7 +104,8 @@ pub trait OpaqueOwn: Opaque {
 }
 
 /// An owned opaque pointer.
-#[derive(Eq, PartialEq, Ord, PartialOrd)]
+#[allow(clippy::derive_partial_eq_without_eq)] // To avoid strange clippy warns
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub struct Oo<T: OpaqueOwn + ?Sized> {
     ptr: *mut T::Type,
     owns: PhantomData<T>,

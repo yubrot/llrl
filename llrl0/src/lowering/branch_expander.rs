@@ -165,6 +165,7 @@ impl<'e, E: Env> MatchExpander<'e, E> {
     }
 }
 
+#[allow(clippy::type_complexity)]
 struct MatchCont<'e, E> {
     success: Box<dyn FnOnce(&mut E, Box<MatchProgress>) -> Rt + 'e>,
     failure: Rc<dyn Fn(&mut E, Box<MatchProgress>) -> Rt + 'e>,

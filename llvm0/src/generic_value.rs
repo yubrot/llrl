@@ -12,7 +12,7 @@ impl GenericValue {
             Oo::from_ptr(LLVMCreateGenericValueOfInt(
                 ty.as_ptr(),
                 n,
-                if signed { 1 } else { 0 },
+                i32::from(signed),
             ))
         }
     }
@@ -28,7 +28,7 @@ impl GenericValue {
 
     #[allow(clippy::missing_safety_doc)]
     pub unsafe fn as_int(&self, signed: bool) -> u64 {
-        LLVMGenericValueToInt(self.as_ptr(), if signed { 1 } else { 0 })
+        LLVMGenericValueToInt(self.as_ptr(), i32::from(signed))
     }
 
     #[allow(clippy::missing_safety_doc)]

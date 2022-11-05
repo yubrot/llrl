@@ -2,6 +2,7 @@ use super::{Error, Source, SOURCE_CODE_EXTENSION};
 use crate::path::{ModuleName, PackageName, Path};
 use crate::sexp::Ss;
 use crate::source_loc::SourceLocator;
+use derive_new::new;
 use std::collections::{hash_map, HashMap};
 use std::fs;
 use std::io;
@@ -10,6 +11,12 @@ use std::path;
 #[derive(Debug, Clone)]
 pub struct Loader {
     loadable_packages: HashMap<PackageName, LoadablePackage>,
+}
+
+#[derive(PartialEq, PartialOrd, Debug, Clone, new)]
+pub struct LoadError {
+    pub path: Path,
+    pub error: Error,
 }
 
 impl Loader {
@@ -47,10 +54,10 @@ impl Loader {
         }
     }
 
-    pub fn load(&self, path: Path, locator: &mut SourceLocator) -> Result<Source, (Path, Error)> {
+    pub fn load(&self, path: Path, locator: &mut SourceLocator) -> Result<Source, Box<LoadError>> {
         match self.loadable_packages.get(&path.package) {
             Some(loadable_package) => loadable_package.load(path, locator),
-            None => Err((path, Error::PackageNotFound)),
+            None => Err(Box::new(LoadError::new(path, Error::PackageNotFound))),
         }
     }
 }
@@ -62,11 +69,11 @@ pub enum LoadablePackage {
 }
 
 impl LoadablePackage {
-    pub fn load(&self, path: Path, locator: &mut SourceLocator) -> Result<Source, (Path, Error)> {
+    pub fn load(&self, path: Path, locator: &mut SourceLocator) -> Result<Source, Box<LoadError>> {
         match self {
             Self::InMemory(map) => match map.get(&path.module) {
                 Some(source) => Ok(source.to_source(path, locator)),
-                None => Err((path, Error::ModuleNotFound)),
+                None => Err(Box::new(LoadError::new(path, Error::ModuleNotFound))),
             },
             Self::FileSystem(fs_path) => {
                 let fs_path = {
@@ -85,14 +92,14 @@ impl LoadablePackage {
 
                 match fs::read_to_string(fs_path) {
                     Ok(text) => Ok(Source::from_code_text(path, locator, &text)),
-                    Err(e) => Err((
-                        path,
-                        if e.kind() == io::ErrorKind::NotFound {
+                    Err(e) => {
+                        let error = if e.kind() == io::ErrorKind::NotFound {
                             Error::ModuleNotFound
                         } else {
                             Error::LoadFailed(e.to_string())
-                        },
-                    )),
+                        };
+                        Err(Box::new(LoadError::new(path, error)))
+                    }
                 }
             }
         }
