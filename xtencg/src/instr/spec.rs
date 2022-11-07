@@ -39,7 +39,7 @@ impl Spec {
 
         exclude(opcode.is_empty() || instr.is_empty())?; // encoding is not always specified
         exclude(x64compat != "V")?; // 64-bit mode only
-        exclude(!flags.is_empty() && !flags.starts_with("SSE"))?; // Only SSE* features are supported
+        exclude(!flags.is_empty() && !flags.starts_with("SSE") && flags != "POPCNT")?; // SSE* and POPCNT features are supported
         exclude(FAR_RETURN.is_match(description))?; // Far returns are unsupported
 
         let (mnemonic, operands) = {

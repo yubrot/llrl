@@ -1795,6 +1795,21 @@
 | ----------- | -------- | ----------- |
 | pmuludq xmm xmm/m128 | `66 0F F4 /r [reg=0, rm=1]` | Multiply packed unsigned doubleword integers in xmm1 by packed unsigned doubleword integers in xmm2/m128, and store the quadword results in xmm1. |
 
+# popcntl
+| Instruction | Encoding | Description |
+| ----------- | -------- | ----------- |
+| popcntl r32 r/m32 | `F3 0F B8 /r [reg=0, rm=1]` | POPCNT on r/m32 |
+
+# popcntq
+| Instruction | Encoding | Description |
+| ----------- | -------- | ----------- |
+| popcntq r64 r/m64 | `F3 REX.W+ 0F B8 /r [reg=0, rm=1]` | POPCNT on r/m64 |
+
+# popcntw
+| Instruction | Encoding | Description |
+| ----------- | -------- | ----------- |
+| popcntw r16 r/m16 | `F3 66 0F B8 /r [reg=0, rm=1]` | POPCNT on r/m16 |
+
 # popfq
 | Instruction | Encoding | Description |
 | ----------- | -------- | ----------- |
@@ -2824,4 +2839,4 @@
 | xsetbv | `0F 01 D1 []` | Write the value in EDX:EAX to the XCR specified by ECX. |
 
 ---
-Total 502 mnemonics.
+Total 505 mnemonics.

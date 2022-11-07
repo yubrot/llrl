@@ -2206,6 +2206,27 @@ pub trait WriteInstExt: io::Write {
         Pmuludq(op0, op1).write_inst(self)
     }
 
+    fn popcntl<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
+    where
+        Popcntl<Op0, Op1>: WriteInst<Self>,
+    {
+        Popcntl(op0, op1).write_inst(self)
+    }
+
+    fn popcntq<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
+    where
+        Popcntq<Op0, Op1>: WriteInst<Self>,
+    {
+        Popcntq(op0, op1).write_inst(self)
+    }
+
+    fn popcntw<Op0, Op1>(&mut self, op0: Op0, op1: Op1) -> io::Result<()>
+    where
+        Popcntw<Op0, Op1>: WriteInst<Self>,
+    {
+        Popcntw(op0, op1).write_inst(self)
+    }
+
     fn popfq(&mut self) -> io::Result<()> {
         Popfq().write_inst(self)
     }
@@ -15666,6 +15687,110 @@ impl<W: io::Write + ?Sized> WriteInst<W> for Pmuludq<Xmm, Memory> {
         puts(w, modrm.rex_byte(false))?;
         put(w, 0x0F)?;
         put(w, 0xF4)?;
+        put(w, modrm.byte())?;
+        puts(w, modrm.sib_byte())?;
+        puts(w, modrm.disp_bytes().into_iter().flatten())?;
+        Ok(())
+    }
+}
+
+pub struct Popcntl<Op0, Op1>(pub Op0, pub Op1);
+
+/// popcntl r32 r32: POPCNT on r/m32
+impl<W: io::Write + ?Sized> WriteInst<W> for Popcntl<Gpr32, Gpr32> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
+        // F3 0F B8 /r
+        let modrm = ModRM::new(self.0, self.1);
+        put(w, 0xF3)?;
+        puts(w, modrm.rex_byte(false))?;
+        put(w, 0x0F)?;
+        put(w, 0xB8)?;
+        put(w, modrm.byte())?;
+        puts(w, modrm.sib_byte())?;
+        puts(w, modrm.disp_bytes().into_iter().flatten())?;
+        Ok(())
+    }
+}
+
+/// popcntl r32 m32: POPCNT on r/m32
+impl<W: io::Write + ?Sized> WriteInst<W> for Popcntl<Gpr32, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
+        // F3 0F B8 /r
+        let modrm = ModRM::new(self.0, self.1);
+        put(w, 0xF3)?;
+        puts(w, modrm.rex_byte(false))?;
+        put(w, 0x0F)?;
+        put(w, 0xB8)?;
+        put(w, modrm.byte())?;
+        puts(w, modrm.sib_byte())?;
+        puts(w, modrm.disp_bytes().into_iter().flatten())?;
+        Ok(())
+    }
+}
+
+pub struct Popcntq<Op0, Op1>(pub Op0, pub Op1);
+
+/// popcntq r64 r64: POPCNT on r/m64
+impl<W: io::Write + ?Sized> WriteInst<W> for Popcntq<Gpr64, Gpr64> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
+        // F3 REX.W+ 0F B8 /r
+        let modrm = ModRM::new(self.0, self.1);
+        put(w, 0xF3)?;
+        puts(w, modrm.rex_byte(true))?;
+        put(w, 0x0F)?;
+        put(w, 0xB8)?;
+        put(w, modrm.byte())?;
+        puts(w, modrm.sib_byte())?;
+        puts(w, modrm.disp_bytes().into_iter().flatten())?;
+        Ok(())
+    }
+}
+
+/// popcntq r64 m64: POPCNT on r/m64
+impl<W: io::Write + ?Sized> WriteInst<W> for Popcntq<Gpr64, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
+        // F3 REX.W+ 0F B8 /r
+        let modrm = ModRM::new(self.0, self.1);
+        put(w, 0xF3)?;
+        puts(w, modrm.rex_byte(true))?;
+        put(w, 0x0F)?;
+        put(w, 0xB8)?;
+        put(w, modrm.byte())?;
+        puts(w, modrm.sib_byte())?;
+        puts(w, modrm.disp_bytes().into_iter().flatten())?;
+        Ok(())
+    }
+}
+
+pub struct Popcntw<Op0, Op1>(pub Op0, pub Op1);
+
+/// popcntw r16 r16: POPCNT on r/m16
+impl<W: io::Write + ?Sized> WriteInst<W> for Popcntw<Gpr16, Gpr16> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
+        // F3 66 0F B8 /r
+        let modrm = ModRM::new(self.0, self.1);
+        put(w, 0xF3)?;
+        put(w, 0x66)?;
+        puts(w, modrm.rex_byte(false))?;
+        put(w, 0x0F)?;
+        put(w, 0xB8)?;
+        put(w, modrm.byte())?;
+        puts(w, modrm.sib_byte())?;
+        puts(w, modrm.disp_bytes().into_iter().flatten())?;
+        Ok(())
+    }
+}
+
+/// popcntw r16 m16: POPCNT on r/m16
+impl<W: io::Write + ?Sized> WriteInst<W> for Popcntw<Gpr16, Memory> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
+        // F3 66 0F B8 /r
+        let modrm = ModRM::new(self.0, self.1);
+        put(w, 0xF3)?;
+        put(w, 0x66)?;
+        puts(w, modrm.rex_byte(false))?;
+        put(w, 0x0F)?;
+        put(w, 0xB8)?;
         put(w, modrm.byte())?;
         puts(w, modrm.sib_byte())?;
         puts(w, modrm.disp_bytes().into_iter().flatten())?;
