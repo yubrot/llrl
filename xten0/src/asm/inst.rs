@@ -3730,7 +3730,7 @@ impl<W: io::Write + ?Sized> WriteInst<W> for Adcq<Memory, i32> {
 impl<W: io::Write + ?Sized> WriteInst<W> for Adcq<_Rax, i32> {
     fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 15 id
-        puts(w, rex_byte(false, true, false, false, false))?;
+        puts(w, RexPrefix::default().byte(true, false, false, false))?;
         put(w, 0x15)?;
         puts(w, self.1.to_le_bytes())?;
         Ok(())
@@ -4231,7 +4231,7 @@ impl<W: io::Write + ?Sized> WriteInst<W> for Addq<Memory, i32> {
 impl<W: io::Write + ?Sized> WriteInst<W> for Addq<_Rax, i32> {
     fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 05 id
-        puts(w, rex_byte(false, true, false, false, false))?;
+        puts(w, RexPrefix::default().byte(true, false, false, false))?;
         put(w, 0x05)?;
         puts(w, self.1.to_le_bytes())?;
         Ok(())
@@ -4866,7 +4866,7 @@ impl<W: io::Write + ?Sized> WriteInst<W> for Andq<Memory, i32> {
 impl<W: io::Write + ?Sized> WriteInst<W> for Andq<_Rax, i32> {
     fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 25 id
-        puts(w, rex_byte(false, true, false, false, false))?;
+        puts(w, RexPrefix::default().byte(true, false, false, false))?;
         put(w, 0x25)?;
         puts(w, self.1.to_le_bytes())?;
         Ok(())
@@ -6251,7 +6251,7 @@ pub struct Cltq();
 impl<W: io::Write + ?Sized> WriteInst<W> for Cltq {
     fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 98
-        puts(w, rex_byte(false, true, false, false, false))?;
+        puts(w, RexPrefix::default().byte(true, false, false, false))?;
         put(w, 0x98)?;
         Ok(())
     }
@@ -6656,7 +6656,7 @@ impl<W: io::Write + ?Sized> WriteInst<W> for Cmpq<Memory, i32> {
 impl<W: io::Write + ?Sized> WriteInst<W> for Cmpq<_Rax, i32> {
     fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 3D id
-        puts(w, rex_byte(false, true, false, false, false))?;
+        puts(w, RexPrefix::default().byte(true, false, false, false))?;
         put(w, 0x3D)?;
         puts(w, self.1.to_le_bytes())?;
         Ok(())
@@ -7082,7 +7082,7 @@ pub struct Cqto();
 impl<W: io::Write + ?Sized> WriteInst<W> for Cqto {
     fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 99
-        puts(w, rex_byte(false, true, false, false, false))?;
+        puts(w, RexPrefix::default().byte(true, false, false, false))?;
         put(w, 0x99)?;
         Ok(())
     }
@@ -9366,7 +9366,7 @@ pub struct Iretq();
 impl<W: io::Write + ?Sized> WriteInst<W> for Iretq {
     fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ CF
-        puts(w, rex_byte(false, true, false, false, false))?;
+        puts(w, RexPrefix::default().byte(true, false, false, false))?;
         put(w, 0xCF)?;
         Ok(())
     }
@@ -13027,7 +13027,7 @@ impl<W: io::Write + ?Sized> WriteInst<W> for Orq<Memory, i32> {
 impl<W: io::Write + ?Sized> WriteInst<W> for Orq<_Rax, i32> {
     fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 0D id
-        puts(w, rex_byte(false, true, false, false, false))?;
+        puts(w, RexPrefix::default().byte(true, false, false, false))?;
         put(w, 0x0D)?;
         puts(w, self.1.to_le_bytes())?;
         Ok(())
@@ -19984,7 +19984,7 @@ impl<W: io::Write + ?Sized> WriteInst<W> for Sbbq<Memory, i32> {
 impl<W: io::Write + ?Sized> WriteInst<W> for Sbbq<_Rax, i32> {
     fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 1D id
-        puts(w, rex_byte(false, true, false, false, false))?;
+        puts(w, RexPrefix::default().byte(true, false, false, false))?;
         put(w, 0x1D)?;
         puts(w, self.1.to_le_bytes())?;
         Ok(())
@@ -22888,7 +22888,7 @@ impl<W: io::Write + ?Sized> WriteInst<W> for Subq<Memory, i32> {
 impl<W: io::Write + ?Sized> WriteInst<W> for Subq<_Rax, i32> {
     fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 2D id
-        puts(w, rex_byte(false, true, false, false, false))?;
+        puts(w, RexPrefix::default().byte(true, false, false, false))?;
         put(w, 0x2D)?;
         puts(w, self.1.to_le_bytes())?;
         Ok(())
@@ -23302,7 +23302,7 @@ impl<W: io::Write + ?Sized> WriteInst<W> for Testq<Memory, i32> {
 impl<W: io::Write + ?Sized> WriteInst<W> for Testq<_Rax, i32> {
     fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ A9 id
-        puts(w, rex_byte(false, true, false, false, false))?;
+        puts(w, RexPrefix::default().byte(true, false, false, false))?;
         put(w, 0xA9)?;
         puts(w, self.1.to_le_bytes())?;
         Ok(())
@@ -24431,7 +24431,7 @@ impl<W: io::Write + ?Sized> WriteInst<W> for Xorq<Memory, i32> {
 impl<W: io::Write + ?Sized> WriteInst<W> for Xorq<_Rax, i32> {
     fn write_inst(&self, w: &mut W) -> io::Result<()> {
         // REX.W+ 35 id
-        puts(w, rex_byte(false, true, false, false, false))?;
+        puts(w, RexPrefix::default().byte(true, false, false, false))?;
         put(w, 0x35)?;
         puts(w, self.1.to_le_bytes())?;
         Ok(())

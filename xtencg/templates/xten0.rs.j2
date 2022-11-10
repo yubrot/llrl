@@ -100,7 +100,7 @@ impl<W: io::Write + ?Sized> WriteInst<W> for {{ mnemonic|capitalize }}{% call im
 {%- match rex_source -%}
 {%- when RexSource::ModRM with { w } %} modrm.rex_byte({{ w }})
 {%- when RexSource::RegInOpcode with { w } %} rio.rex_byte({{ w }})
-{%- when RexSource::Standalone with { w } %} rex_byte(false, {{ w }}, false, false, false)
+{%- when RexSource::Standalone with { w } %} RexPrefix::default().byte({{ w }}, false, false, false)
 {%- endmatch -%}
         )?;
 {%- else %}

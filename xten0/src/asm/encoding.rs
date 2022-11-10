@@ -3,20 +3,44 @@
 use heapless::Vec as HVec;
 use std::ops::Range;
 
-/// Obtain an REX prefix by encoding W, R, X, B.
-///
-/// The REX prefix must follow the Legacy prefixes and precede the Opcode.
-pub fn rex_byte(force: bool, w: bool, r: bool, x: bool, b: bool) -> Option<u8> {
-    if force || w || r || x || b {
-        Some(
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy, Default)]
+pub enum RexPrefix {
+    #[default]
+    NotRequired,
+    Required,
+    Denied,
+    Inconsistent,
+}
+
+impl RexPrefix {
+    pub fn merge(self, other: Self) -> Self {
+        use RexPrefix::*;
+        match (self, other) {
+            (NotRequired, NotRequired) => NotRequired,
+            (Required, Required) | (NotRequired, Required) | (Required, NotRequired) => Required,
+            (Denied, Denied) | (NotRequired, Denied) | (Denied, NotRequired) => Denied,
+            _ => Inconsistent,
+        }
+    }
+
+    /// Obtain an REX prefix byte by encoding W, R, X, B.
+    ///
+    /// The REX prefix byte must follow the Legacy prefixes and precede the Opcode.
+    pub fn byte(self, w: bool, r: bool, x: bool, b: bool) -> Option<u8> {
+        use RexPrefix::*;
+        let required = match (self, w || r || x || b) {
+            (NotRequired, e) => e,
+            (Required, _) => true,
+            (Denied, false) => false,
+            _ => panic!("Cannot encode AH, CH, DH, BH register with REX prefix"),
+        };
+        required.then(|| {
             0u8.set_bits(0b0100, 4..8)
                 .set_bits(w, 3..4)
                 .set_bits(r, 2..3)
                 .set_bits(x, 1..2)
-                .set_bits(b, 0..1),
-        )
-    } else {
-        None // REX prefix is unnecessary
+                .set_bits(b, 0..1)
+        })
     }
 }
 
@@ -37,8 +61,7 @@ impl ModRM {
 
     /// Obtain a REX prefix if required.
     pub fn rex_byte(&self, rex_w: bool) -> Option<u8> {
-        rex_byte(
-            self.reg.force_rex_prefix || self.rm.force_rex_prefix,
+        self.reg.rex_prefix.merge(self.rm.rex_prefix).byte(
             rex_w,
             self.reg.rex_r,
             self.rm.rex_x,
@@ -71,7 +94,7 @@ impl ModRM {
 pub struct Reg {
     pub modrm_reg: u8, // 3 bits, extended by rex_r
     pub rex_r: bool,
-    pub force_rex_prefix: bool, // REX prefix is required (for SPL, BPL, SIL, DIL)
+    pub rex_prefix: RexPrefix,
 }
 
 impl Reg {
@@ -80,15 +103,12 @@ impl Reg {
         Self {
             modrm_reg: reg & 0b111,
             rex_r: (reg & 0b1000) != 0,
-            force_rex_prefix: false,
+            rex_prefix: RexPrefix::default(),
         }
     }
 
-    pub fn force_rex_prefix(self, force_rex_prefix: bool) -> Self {
-        Self {
-            force_rex_prefix,
-            ..self
-        }
+    pub fn rex_prefix(self, rex_prefix: RexPrefix) -> Self {
+        Self { rex_prefix, ..self }
     }
 }
 
@@ -114,13 +134,13 @@ impl From<PartOfOpcode> for Reg {
 pub struct RegInOpcode {
     pub byte_added_to_opcode: u8, // 3 bits, extended by rex_b
     pub rex_b: bool,
-    pub force_rex_prefix: bool, // REX prefix is required (for SPL, BPL, SIL, DIL)
+    pub rex_prefix: RexPrefix,
 }
 
 impl RegInOpcode {
     /// Obtain a REX prefix if required.
     pub fn rex_byte(self, rex_w: bool) -> Option<u8> {
-        rex_byte(self.force_rex_prefix, rex_w, false, false, self.rex_b)
+        self.rex_prefix.byte(rex_w, false, false, self.rex_b)
     }
 }
 
@@ -130,12 +150,12 @@ impl<T: Into<Reg>> From<T> for RegInOpcode {
         let Reg {
             modrm_reg,
             rex_r,
-            force_rex_prefix,
+            rex_prefix,
         } = operand.into();
         Self {
             byte_added_to_opcode: modrm_reg,
             rex_b: rex_r,
-            force_rex_prefix,
+            rex_prefix,
         }
     }
 }
@@ -153,7 +173,7 @@ pub struct Rm {
     pub sib_index: Option<u8>, // 3 bits, extended by rex_x
     pub sib_base: Option<u8>,  // 3 bits, extended by rex_b
     pub disp: Option<Displacement>,
-    pub force_rex_prefix: bool, // REX prefix is required (for SPL, BPL, SIL, DIL)
+    pub rex_prefix: RexPrefix,
 }
 
 impl Rm {
@@ -169,7 +189,7 @@ impl Rm {
             sib_index: None,
             sib_base: None,
             disp: None,
-            force_rex_prefix: false,
+            rex_prefix: RexPrefix::default(),
         }
     }
 
@@ -258,11 +278,8 @@ impl Rm {
         self.disp.map(|d| d.bytes())
     }
 
-    pub fn force_rex_prefix(self, force_rex_prefix: bool) -> Self {
-        Self {
-            force_rex_prefix,
-            ..self
-        }
+    pub fn rex_prefix(self, rex_prefix: RexPrefix) -> Self {
+        Self { rex_prefix, ..self }
     }
 }
 

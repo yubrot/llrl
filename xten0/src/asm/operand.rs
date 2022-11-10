@@ -1,6 +1,6 @@
 // https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html
 
-use super::encoding::{Displacement, Reg, Rm, Scale};
+use super::encoding::{Displacement, Reg, RexPrefix, Rm, Scale};
 use derive_new::new;
 use std::ops::{Add, Mul, Sub};
 
@@ -185,7 +185,10 @@ pub enum Gpr8 {
     Cl,
     Dl,
     Bl,
-    // Ah, Ch, Dh, Bh are unsupported
+    Ah,
+    Ch,
+    Dh,
+    Bh,
     Spl,
     Bpl,
     Sil,
@@ -207,6 +210,10 @@ impl Gpr8 {
             Cl => 1,
             Dl => 2,
             Bl => 3,
+            Ah => 4,
+            Ch => 5,
+            Dh => 6,
+            Bh => 7,
             Spl => 4,
             Bpl => 5,
             Sil => 6,
@@ -222,20 +229,24 @@ impl Gpr8 {
         }
     }
 
-    pub fn requires_rex(self) -> bool {
-        matches!(self, Spl | Bpl | Sil | Dil)
+    pub fn rex_prefix(self) -> RexPrefix {
+        match self {
+            Spl | Bpl | Sil | Dil => RexPrefix::Required,
+            Ah | Ch | Dh | Bh => RexPrefix::Denied,
+            _ => RexPrefix::default(),
+        }
     }
 }
 
 impl From<Gpr8> for Reg {
     fn from(gpr: Gpr8) -> Self {
-        Self::new(gpr.register_code()).force_rex_prefix(gpr.requires_rex())
+        Self::new(gpr.register_code()).rex_prefix(gpr.rex_prefix())
     }
 }
 
 impl From<Gpr8> for Rm {
     fn from(gpr: Gpr8) -> Self {
-        Self::new(0b11, gpr.register_code()).force_rex_prefix(gpr.requires_rex())
+        Self::new(0b11, gpr.register_code()).rex_prefix(gpr.rex_prefix())
     }
 }
 
