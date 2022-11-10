@@ -6,7 +6,7 @@ mod obj;
 mod operand;
 mod writer;
 
-pub use inst::WriteInstExt;
+pub use inst::{WriteInst, WriteInstExt};
 pub use obj::*;
 pub use operand::*;
 pub use writer::{AddressTable, Label, Short, WriteSection, Writer};

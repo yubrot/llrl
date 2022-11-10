@@ -49,6 +49,11 @@ impl Writer {
         }
     }
 
+    /// Use the specified label at the location.
+    pub fn r#use(&mut self, location: Location, label: Label, addend: i64, ty: RelocType) {
+        self.uses.push(Use::new(location, label, addend, ty));
+    }
+
     pub fn data(&mut self) -> DataWriter {
         DataWriter(self)
     }
@@ -189,15 +194,13 @@ pub trait WriteSection {
         self.writer().defs[label.index] = Some(Def::new(label, is_global, location));
     }
 
-    /// Use the specified label at the current position + `offset_from_current`.
-    fn r#use(&mut self, offset_from_current: i64, label: Label, addend: i64, ty: RelocType)
+    /// Use the specified label at the location from `offset_from_current`.
+    fn use_relative(&mut self, offset_from_current: i64, label: Label, addend: i64, ty: RelocType)
     where
         Self: io::Write,
     {
         let location = self.location().offset(offset_from_current);
-        self.writer()
-            .uses
-            .push(Use::new(location, label, addend, ty));
+        self.writer().r#use(location, label, addend, ty)
     }
 }
 
@@ -251,7 +254,7 @@ pub struct Short<T>(pub T);
 impl WriteInst<Writer> for super::inst::Callq<Label> {
     fn write_inst(&self, w: &mut Writer) -> io::Result<()> {
         w.callq(0i32)?;
-        w.r#use(-4, self.0, -4, RelocType::PcRel32);
+        w.use_relative(-4, self.0, -4, RelocType::PcRel32);
         Ok(())
     }
 }
@@ -260,7 +263,7 @@ impl WriteInst<Writer> for super::inst::Callq<Label> {
 impl WriteInst<Writer> for super::inst::Callq<AddressTable<Label>> {
     fn write_inst(&self, w: &mut Writer) -> io::Result<()> {
         w.callq(memory(Rip + 0i32))?;
-        w.r#use(-4, self.0 .0, -4, RelocType::PcRelToAddressTable32);
+        w.use_relative(-4, self.0 .0, -4, RelocType::PcRelToAddressTable32);
         Ok(())
     }
 }
@@ -269,7 +272,7 @@ impl WriteInst<Writer> for super::inst::Callq<AddressTable<Label>> {
 impl WriteInst<Writer> for super::inst::Jmpq<Label> {
     fn write_inst(&self, w: &mut Writer) -> io::Result<()> {
         w.jmpq(0i32)?;
-        w.r#use(-4, self.0, -4, RelocType::PcRel32);
+        w.use_relative(-4, self.0, -4, RelocType::PcRel32);
         Ok(())
     }
 }
@@ -278,7 +281,7 @@ impl WriteInst<Writer> for super::inst::Jmpq<Label> {
 impl WriteInst<Writer> for super::inst::Jmpq<AddressTable<Label>> {
     fn write_inst(&self, w: &mut Writer) -> io::Result<()> {
         w.jmpq(memory(Rip + 0i32))?;
-        w.r#use(-4, self.0 .0, -4, RelocType::PcRelToAddressTable32);
+        w.use_relative(-4, self.0 .0, -4, RelocType::PcRelToAddressTable32);
         Ok(())
     }
 }
@@ -287,7 +290,7 @@ impl WriteInst<Writer> for super::inst::Jmpq<AddressTable<Label>> {
 impl WriteInst<Writer> for super::inst::Jmpq<Short<Label>> {
     fn write_inst(&self, w: &mut Writer) -> io::Result<()> {
         w.jmpq(0i8)?;
-        w.r#use(-1, self.0 .0, -1, RelocType::PcRel8);
+        w.use_relative(-1, self.0 .0, -1, RelocType::PcRel8);
         Ok(())
     }
 }
@@ -298,7 +301,7 @@ macro_rules! impl_conditional_jmp {
         impl WriteInst<Writer> for super::inst::$op<Label> {
             fn write_inst(&self, w: &mut Writer) -> io::Result<()> {
                 w.$method(0i32)?;
-                w.r#use(-4, self.0, -4, RelocType::PcRel32);
+                w.use_relative(-4, self.0, -4, RelocType::PcRel32);
                 Ok(())
             }
         }
@@ -307,7 +310,7 @@ macro_rules! impl_conditional_jmp {
         impl WriteInst<Writer> for super::inst::$op<Short<Label>> {
             fn write_inst(&self, w: &mut Writer) -> io::Result<()> {
                 w.$method(0i8)?;
-                w.r#use(-1, self.0 .0, -1, RelocType::PcRel8);
+                w.use_relative(-1, self.0 .0, -1, RelocType::PcRel8);
                 Ok(())
             }
         }
@@ -352,7 +355,7 @@ where
 {
     fn write_inst(&self, w: &mut Writer) -> io::Result<()> {
         w.movq(self.0, memory(Rip + 0i32))?;
-        w.r#use(-4, self.1, -4, RelocType::PcRel32);
+        w.use_relative(-4, self.1, -4, RelocType::PcRel32);
         Ok(())
     }
 }
@@ -364,7 +367,7 @@ where
 {
     fn write_inst(&self, w: &mut Writer) -> io::Result<()> {
         w.movq(memory(Rip + 0i32), self.1)?;
-        w.r#use(-4, self.0, -4, RelocType::PcRel32);
+        w.use_relative(-4, self.0, -4, RelocType::PcRel32);
         Ok(())
     }
 }
@@ -376,7 +379,7 @@ where
 {
     fn write_inst(&self, w: &mut Writer) -> io::Result<()> {
         w.movq(self.0, memory(Rip + 0i32))?;
-        w.r#use(-4, self.1 .0, -4, RelocType::PcRelToAddressTable32);
+        w.use_relative(-4, self.1 .0, -4, RelocType::PcRelToAddressTable32);
         Ok(())
     }
 }
@@ -390,7 +393,7 @@ where
 {
     fn write_inst(&self, w: &mut Writer) -> io::Result<()> {
         w.leaq(self.0, memory(Rip + 0i32))?;
-        w.r#use(-4, self.1, -4, RelocType::PcRel32);
+        w.use_relative(-4, self.1, -4, RelocType::PcRel32);
         Ok(())
     }
 }
@@ -402,7 +405,7 @@ where
 {
     fn write_inst(&self, w: &mut Writer) -> io::Result<()> {
         w.leaq(memory(Rip + 0i32), self.1)?;
-        w.r#use(-4, self.0, -4, RelocType::PcRel32);
+        w.use_relative(-4, self.0, -4, RelocType::PcRel32);
         Ok(())
     }
 }
@@ -639,7 +642,7 @@ mod tests {
             w.data().write_all(&[5, 6, 7, 8])?;
             w.rodata().define(baz, false);
             w.rodata().write_all(&[0; 16])?;
-            w.rodata().r#use(-8, bar, 0, RelocType::Abs64);
+            w.rodata().use_relative(-8, bar, 0, RelocType::Abs64);
             Ok(())
         });
 

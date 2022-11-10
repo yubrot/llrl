@@ -422,7 +422,7 @@ mod tests {
         let bar = w.get_label("bar");
         w.data().define(bar, true);
         w.data().write_all(&0u64.to_le_bytes())?;
-        w.data().r#use(-8, foo, 0, RelocType::Abs64);
+        w.data().use_relative(-8, foo, 0, RelocType::Abs64);
         w.produce()
     }
 
