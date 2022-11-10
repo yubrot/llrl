@@ -126,3 +126,19 @@
       [(abc _ _ (let x)) x]))
   (let ([src (cons (a 1) (cons (ab 2 3) (cons (abc 4 5 6) nil)))])
     (= 10 (fold + 0 (map test src)))))
+
+(test-backend pass
+  (builtin-op reinterpret {(forall A B) (-> A B)} "reinterpret")
+  (value-data Foo (foo I32 I32 I32 I32 I32 I32))
+  (value-data Bar (bar I64 I64 I64 I64))
+  (match (reinterpret (foo 116 123 191 26 5 6)) ; 74 7B BF 1A 05 06
+    [(bar 528280977524 111669149887 25769803781 _) #t] ; 7B_00000074 1A_000000BF 06_00000005
+    [_ #f]))
+
+(test-backend pass
+  (builtin-op reinterpret {(forall A B) (-> A B)} "reinterpret")
+  (value-data Foo (foo I32 I32 I32 I32 I32 I32))
+  (value-data Bar (bar I64 I64 I64 I64))
+  (match (reinterpret (bar 528280977524 111669149887 25769803781 123))
+    [(foo 116 123 191 26 5 6) #t]
+    [_ #f]))

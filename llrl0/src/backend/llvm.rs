@@ -267,8 +267,8 @@ impl<'ctx> Builder<'ctx> {
 
         self.report.enter_phase(Phase::Finalize);
         let tmp_dir = tempfile::TempDir::new().unwrap();
-        // TODO: Not every function in every module is needed for the main,
-        // rather most of them are there for macros. This can be stripped.
+        // TODO: Not every function in every module is needed for the main.
+        // Rather, most of them exist for macros. This can be stripped.
         let objects = modules
             .iter()
             .enumerate()

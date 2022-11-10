@@ -93,7 +93,7 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
                 None => panic!("Undefined variable: {}", id),
             },
             Rt::LocalFun(_) => {
-                panic!("Found Rt::LocalFun at Codegen, this should be erased by lowerizer")
+                panic!("Found Rt::LocalFun at Codegen, this must be erased by lowerizer")
             }
             Rt::StaticFun(capture) => match &capture.fun {
                 Ct::Id(id) => {
@@ -111,10 +111,7 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
                     let value = self.builder.build_insert_value(value, env, 1);
                     Some(value)
                 }
-                ct => panic!(
-                    "Unresolved Ct: {}, this should be resolved by lowerizer",
-                    ct
-                ),
+                ct => panic!("Unresolved Ct: {}, this must be resolved by lowerizer", ct),
             },
             Rt::Const(c) => Some(self.llvm_constant(c).as_value()),
             Rt::Call(call) => {
@@ -429,7 +426,7 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
                 Some(self.builder.build_bit_cast(ptr, env_ty))
             }
             Rt::ConstructData(_) => {
-                panic!("Found Rt::ConstructData at Codegen, this should be erased by lowerizer")
+                panic!("Found Rt::ConstructData at Codegen, this must be erased by lowerizer")
             }
             Rt::ConstructStruct(con) => {
                 let mut result = LLVMConstant::undef(self.ctx.llvm_type(&con.0)).as_value();
@@ -453,13 +450,13 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
             Rt::If(if_) => self.eval_if(&if_.0, &if_.1, &if_.2),
             Rt::While(while_) => self.eval_while(&while_.0, &while_.1),
             Rt::And(_) => {
-                panic!("Found Rt::And at Codegen, this should be erased by lowerizer")
+                panic!("Found Rt::And at Codegen, this must be erased by lowerizer")
             }
             Rt::Or(_) => {
-                panic!("Found Rt::Or at Codegen, this should be erased by lowerizer")
+                panic!("Found Rt::Or at Codegen, this must be erased by lowerizer")
             }
             Rt::Match(_) => {
-                panic!("Found Rt::Match at Codegen, this should be erased by lowerizer")
+                panic!("Found Rt::Match at Codegen, this must be erased by lowerizer")
             }
             Rt::Return(ret) => {
                 let ret = self.eval(ret)?;
@@ -471,7 +468,7 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
                 None
             }
             Rt::LetLocalFun(_) => {
-                panic!("Found Rt::LetFunction at Codegen, this should be erased by lowerizer")
+                panic!("Found Rt::LetLocalFun at Codegen, this must be erased by lowerizer")
             }
             Rt::LetVar(let_) => self.eval_let_var(&let_.0, &let_.1),
             Rt::LetCont(let_) => self.eval_let_cont(&let_.0, &let_.1),

@@ -76,6 +76,34 @@
       #f]))
 
 (test-backend pass
+  (match (syntax (sexp:bool #f))
+    [(syntax (sexp:bool #f))
+      #t]
+    [_
+      #f]))
+
+(test-backend pass
+  (match (syntax (sexp:symbol "foo"))
+    [(syntax (sexp:symbol "foo"))
+      #t]
+    [_
+      #f]))
+
+(test-backend pass
+  (match (syntax sexp:nil)
+    [(syntax sexp:nil)
+      #t]
+    [_
+      #f]))
+
+(test-backend pass
+  (match (syntax (sexp:cons (syntax (sexp:string "foo")) (syntax (sexp:string "bar"))))
+    [(syntax (sexp:cons (syntax (sexp:string "foo")) (syntax (sexp:string "bar"))))
+      #t]
+    [_
+      #f]))
+
+(test-backend pass
   (function foo)
   (match \foo
     [(syntax (sexp:use (let x)))

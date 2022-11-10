@@ -417,7 +417,7 @@ impl NativeData for NativeSyntaxMetadata {
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct NativeSexp {
-    tag: u64,
+    tag: u8,
     body: NativeSexpBody,
 }
 
