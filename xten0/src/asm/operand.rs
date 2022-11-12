@@ -46,6 +46,73 @@ impl Gpr64 {
             R15 => 15,
         }
     }
+
+    pub fn q(self) -> Gpr64 {
+        self
+    }
+
+    pub fn l(self) -> Gpr32 {
+        match self {
+            Rax => Eax,
+            Rcx => Ecx,
+            Rdx => Edx,
+            Rbx => Ebx,
+            Rsp => Esp,
+            Rbp => Ebp,
+            Rsi => Esi,
+            Rdi => Edi,
+            R8 => R8D,
+            R9 => R9D,
+            R10 => R10D,
+            R11 => R11D,
+            R12 => R12D,
+            R13 => R13D,
+            R14 => R14D,
+            R15 => R15D,
+        }
+    }
+
+    pub fn w(self) -> Gpr16 {
+        match self {
+            Rax => Ax,
+            Rcx => Cx,
+            Rdx => Dx,
+            Rbx => Bx,
+            Rsp => Sp,
+            Rbp => Bp,
+            Rsi => Si,
+            Rdi => Di,
+            R8 => R8W,
+            R9 => R9W,
+            R10 => R10W,
+            R11 => R11W,
+            R12 => R12W,
+            R13 => R13W,
+            R14 => R14W,
+            R15 => R15W,
+        }
+    }
+
+    pub fn b(self) -> Gpr8 {
+        match self {
+            Rax => Al,
+            Rcx => Cl,
+            Rdx => Dl,
+            Rbx => Bl,
+            Rsp => Spl,
+            Rbp => Bpl,
+            Rsi => Sil,
+            Rdi => Dil,
+            R8 => R8B,
+            R9 => R9B,
+            R10 => R10B,
+            R11 => R11B,
+            R12 => R12B,
+            R13 => R13B,
+            R14 => R14B,
+            R15 => R15B,
+        }
+    }
 }
 
 impl From<Gpr64> for Reg {

@@ -3,140 +3,11 @@
 (import "std/hash-map" next-power-of-two) ; NOTE: This should be moved to the appropriate module
 (import "~/util" _)
 (import "~/lowering/ir" [ir/_ _])
-(export Layout _.Layout layout: layout/_)
-(export LayoutComponent _.LayoutComponent layout-component: layout-component/_)
-(export LayoutResolver _.LayoutResolver layout-resolver/_)
 (export Class _.Class class:_ class/_)
-
-(derive (Eq Ord DebugDisplay) data Layout
-  (layout: U64 U64 Class (Array LayoutComponent)))
-
-(getter layout: layout/size layout/align layout/class layout/components)
-
-(function (layout/terminal size align cls) {(-> U64 U64 Class Layout)}
-  (layout: size align cls array/empty))
-
-(assert-eq? (size-of (Ptr U8)) 8)
-(assert-eq? (align-of (Ptr U8)) 8)
-
-(function layout/pointer {Layout}
-  (layout/terminal 8 8 class:integer))
-
-(function layout/clos {Layout}
-  (layout/terminal 16 8 class:integer))
-
-(function (layout/product components) {(-> (Array (: ir/Ct Layout)) Layout)}
-  (let* ([(layouts) (it/map (case1 (: _ (let l)) l) components)]
-         [align (it/fold [^2 (max %1 (layout/align %2))] 0 (layouts))]
-         [cls (it/fold [^2 (class/merge %1 (layout/class %2))] class:void (layouts))]
-         [offset (ref 0)]
-         [components
-           (|> components
-               (it/map (case1 (: (let ty) (layout: (let s) (let a) _ _))
-                 (set! offset (+ (aligned ~offset a) s))
-                 (layout-component: (- ~offset s) ty)))
-               collect)]
-         [size (aligned ~offset align)]
-         [cls (if (< 16 size) class:memory cls)])
-    (layout: size align cls components)))
-
-(function (layout/sum tss) {(-> (Array Layout) Layout)}
-  (let* ([align (it/fold [^2 (max %1 (layout/align %2))] 0 tss)]
-         [cls (it/fold [^2 (class/merge %1 (layout/class %2))] class:integer tss)]
-         [size (aligned (it/fold [^2 (max %1 (layout/size %2))] 0 tss) align)]
-         [cls (if (< 16 size) class:memory cls)])
-    (layout/terminal size align cls)))
-
-(instance Default.Layout (Default Layout)
-  (function default
-    (layout/terminal 0 0 class:void)))
-
-(derive (Eq Ord DebugDisplay) value-data LayoutComponent
-  (layout-component: U64 ir/Ct))
-
-(getter layout-component: layout-component/offset layout-component/ty)
-
-(derive (DebugDisplay) value-data LayoutResolver
-  (layout-resolver: (OrdMap ir/CtId (Option Layout))))
-
-(function (layout-resolver/new) {(-> LayoutResolver)}
-  (layout-resolver: ord-map/empty))
-
-(getter layout-resolver: known-layouts)
-
-(function (layout-resolver/register! defs ls) {(-> (OrdMap ir/CtId ir/Def) LayoutResolver unit)}
-  (for (: (let id) (let def)) (ord-map/elems defs)
-    (when (or (is? (ir/def:struct _) def) (is? (ir/def:union _) def))
-      (register-visit! defs ls (ir/ct:id id)))))
-
-(function (register-visit! defs ls ty) {(-> (OrdMap ir/CtId ir/Def) LayoutResolver ir/Ct Layout)}
-  (match ty
-    [(ir/ct:id (let id))
-      (match (ord-map/get? id (known-layouts ls))
-        [(some none)
-          (assert #f (string "Unsized type: " (debug id)))]
-        [(some (some (let layout)))
-          layout]
-        [none
-          (ord-map/insert! id none (known-layouts ls))
-          (let1
-            layout
-            (match (ord-map/get? id defs)
-              [(some (ir/def:struct (ir/struct: _ (let fields))))
-                (layout/product
-                  (|> fields (it/map [^1 (register-visit! defs ls %1)]) (it/zip fields) collect))]
-              [(some (ir/def:union (ir/union: (let tys))))
-                (layout/sum
-                  (|> tys (it/map [^1 (register-visit! defs ls %1)]) collect))]
-              [(some _)
-                (assert #f (string "Not a type: " (debug id)))]
-              [none
-                (assert #f (string "Unknown type: " (debug id)))])
-            (ord-map/insert! id (some layout) (known-layouts ls))
-            layout)])]
-    [_
-      (layout-resolver/get ty ls)]))
-
-(function (layout-resolver/get ty ls) {(-> ir/Ct LayoutResolver Layout)}
-  (match ty
-    [(ir/ct:id (let id))
-      (match (ord-map/get? id (known-layouts ls))
-        [(some (some (let layout)))
-          layout]
-        [_
-          (assert #f (string "Unregistered type: " (debug id)))])]
-      [(ir/ct:generic-inst _ _)
-        (assert #f "Found ct:generic-inst on layout-resolver/get")]
-      [(ir/ct:table-get _ _)
-        (assert #f "Found ct:table-get on layout-resolver/get")]
-      [(ir/ct:ptr _)
-        layout/pointer]
-      [(ir/ct:clos _ _)
-        layout/clos]
-      [(ir/ct:s (let n))
-        (let1 size (next-power-of-two (/ (+ n 7) 8))
-          (layout/terminal size size class:integer))]
-      [(ir/ct:u (let n))
-        (let1 size (next-power-of-two (/ (+ n 7) 8))
-          (layout/terminal size size class:integer))]
-      [ir/ct:f32
-        (layout/terminal 4 4 class:floating-point)]
-      [ir/ct:f64
-        (layout/terminal 8 8 class:floating-point)]
-      [ir/ct:string
-        (layout/terminal (size-of String) (align-of String) class:integer)]
-      [ir/ct:char
-        (layout/terminal (size-of Char) (align-of Char) class:integer)]
-      [(ir/ct:array _)
-        (layout/terminal (size-of (Array U8)) (align-of (Array U8)) class:integer)]
-      [ir/ct:captured-use
-        (layout/terminal (size-of ir/CapturedUse) (align-of ir/CapturedUse) class:integer)]
-      [ir/ct:unit
-        default]
-      [ir/ct:env
-        layout/pointer]
-      [(ir/ct:syntax _)
-        (layout/terminal (size-of (Syntax unit)) (align-of (Syntax unit)) class:integer)]))
+(export Layout _.Layout layout: layout/_)
+(export CompositeLayout _.CompositeLayout composite-layout: composite-layout/_)
+(export Eightbyte _.Eightbyte eightbyte: eightbyte/_)
+(export LayoutResolver _.LayoutResolver layout-resolver/_)
 
 (derive (Eq Ord DebugDisplay Hash) value-data Class
   class:void
@@ -154,7 +25,221 @@
     [(: _ class:floating-point) class:floating-point]
     [(: class:void _) class:void]))
 
-(function (aligned size align) {(-> U64 U64 U64)}
+; Information on how data is arranged in memory.
+(derive (Eq DebugDisplay) data Layout
+  (layout: U64 U64 Class (Option CompositeLayout)))
+
+(getter layout: layout/size layout/align layout/class layout/composite)
+
+(function (layout/new size align cls) {(-> U64 U64 Class Layout)}
+  (let* ([size (aligned align size)]
+         [cls
+            (cond
+              [(= size 0) class:void]
+              [(< 16 size) class:memory]
+              [else cls])])
+    (layout: size align cls none)))
+
+(function (layout/set-composite c layout) {(-> CompositeLayout Layout Layout)}
+  (if-match1 (layout: (let size) (let align) (let cls) none) layout
+    (layout: size align cls (some c))
+    (assert #f (string "layout/set-composite on " (debug layout)))))
+
+(function layout/unit {Layout}
+  (layout/new 0 0 class:void))
+
+(function (layout/integer size) {(-> U64 Layout)}
+  (layout/new size size class:integer))
+
+(function (layout/floating-point size) {(-> U64 Layout)}
+  (layout/new size size class:floating-point))
+
+(function (layout/memory size align) {(-> U64 U64 Layout)}
+  (layout/new size align class:memory))
+
+(assert-eq? (size-of (Ptr U8)) 8)
+(assert-eq? (align-of (Ptr U8)) 8)
+
+(function layout/pointer {Layout}
+  (layout/new 8 8 class:integer))
+
+(function layout/clos {Layout}
+  (layout/new 16 8 class:integer))
+
+(function layout/env {Layout}
+  layout/pointer)
+
+(function layout/string {Layout}
+  (layout/new (size-of String) (align-of String) class:integer))
+
+(function layout/char {Layout}
+  (layout/new (size-of Char) (align-of Char) class:integer))
+
+(function layout/array {Layout}
+  (layout/new (size-of (Array U8)) (align-of (Array U8)) class:integer))
+
+(function layout/captured-use {Layout}
+  (layout/new (size-of ir/CapturedUse) (align-of ir/CapturedUse) class:integer))
+
+(function layout/syntax {Layout}
+  (layout/new (size-of (Syntax unit)) (align-of (Syntax unit)) class:integer))
+
+(function (layout/product ls) {(-> (Array Layout) Layout)}
+  (let ([size (ref 0)]
+        [align (ref 0)]
+        [cls (ref class:void)]
+        [elems vector/empty]
+        [components vector/empty])
+    (for (: (let o) (let l)) (layout/it/with-offset ls)
+      (set! align (max (layout/align l) ~align))
+      (set! cls (class/merge (layout/class l) ~cls))
+      (set! size (+ o (layout/size l)))
+      (vector/push! (: o l) elems)
+      (if-match1 (some (let c)) (layout/composite l)
+        (for (: (let p) (let l)) (composite-layout/components c) (vector/push! (: (+ o p) l) components))
+        (vector/push! (: o l) components)))
+    (|> (layout/new ~size ~align ~cls)
+        (layout/set-composite (composite-layout: (vector/buffer elems) (vector/buffer components))))))
+
+(function (layout/sum ls) {(-> (Array Layout) Layout)}
+  (let ([size (ref 0)]
+        [align (ref 0)]
+        [cls (ref class:integer)])
+    (for (let l) ls
+      (set! align (max (layout/align l) ~align))
+      (set! cls (class/merge (layout/class l) ~cls))
+      (set! size (max (layout/size l) ~size)))
+    (layout/new ~size ~align ~cls)))
+
+; Get the number of eightbytes to be required for this layout.
+(function (layout/num-eightbytes l) {(-> Layout U64)}
+  (/ (+ (layout/size l) 7) 8))
+
+(function (layout/eightbytes l) {(-> Layout (Iterator Eightbyte))}
+  (it/map
+    (lambda (index)
+      (let* ([offset (* index 8)]
+             [size (min (- (layout/size l) offset) 8)]
+             [cls
+               (if-match1 (some (let c)) (layout/composite l)
+                 (|> (composite-layout/components c)
+                     (it/filter (case1 (: (let o) (let l))
+                       (and (< offset (+ o (layout/size l)))
+                            (< o (+ offset 8)))))
+                     (it/map (case1 (: _ (let l)) (layout/class l)))
+                     (it/fold class/merge class:void))
+                 (layout/class l))])
+        (eightbyte: offset size cls)))
+    (iterator/range 0 (layout/num-eightbytes l) 1)))
+
+(function (layout/size-in-stack last-value? l) {(-> Bool Layout U64)}
+  (if (and last-value? (ne? (layout/class l) class:memory))
+    0
+    (* (layout/num-eightbytes l) 8)))
+
+; Align this layout to eightbytes.
+(function (layout/in-stack l) {(-> Layout Layout)}
+  (with1 (layout: (let size) (let align) (let cls) (let c)) l
+    (layout: (layout/size-in-stack #f l) align cls c)))
+
+(function (layout/it/with-offset ls)
+  {(forall T) (-> (T Layout) (Iterator (: U64 Layout))) (where (Iterate T))}
+  (let1 offset (ref 0)
+    (it/map
+      (lambda (l)
+        (set! offset (+ (aligned (layout/align l) ~offset) (layout/size l)))
+        (: (- ~offset (layout/size l)) l))
+      ls)))
+
+(derive (Eq DebugDisplay) value-data CompositeLayout
+  (composite-layout:
+    (Array (: U64 Layout))
+    (Array (: U64 Layout))))
+
+(getter composite-layout: composite-layout/elems composite-layout/components)
+
+(derive (Eq DebugDisplay) value-data Eightbyte
+  (eightbyte: U64 U64 Class))
+
+(getter eightbyte: eightbyte/offset eightbyte/size eightbyte/class)
+
+(derive (DebugDisplay) value-data LayoutResolver
+  (layout-resolver: (OrdMap ir/CtId (Option Layout))))
+
+(function (layout-resolver/new) {(-> LayoutResolver)}
+  (layout-resolver: ord-map/empty))
+
+(getter layout-resolver: known-layouts)
+
+(function (layout-resolver/register! defs lr) {(-> (OrdMap ir/CtId ir/Def) LayoutResolver unit)}
+  (for (: (let id) (let def)) (ord-map/elems defs)
+    (when (or (is? (ir/def:struct _) def) (is? (ir/def:union _) def))
+      (register-visit! defs lr (ir/ct:id id)))))
+
+(function (register-visit! defs lr ty) {(-> (OrdMap ir/CtId ir/Def) LayoutResolver ir/Ct Layout)}
+  (if-match1 (ir/ct:id (let id)) ty
+    (match (ord-map/get? id (known-layouts lr))
+      [(some none)
+        (assert #f (string "Unsized type: " (debug id)))]
+      [(some (some (let layout)))
+        layout]
+      [none
+        (ord-map/insert! id none (known-layouts lr))
+        (let1
+          layout
+          (match (ord-map/get? id defs)
+            [(some (ir/def:struct (ir/struct: _ (let fields))))
+              (layout/product
+                (|> fields (it/map [^1 (register-visit! defs lr %1)]) collect))]
+            [(some (ir/def:union (ir/union: (let tys))))
+              (layout/sum
+                (|> tys (it/map [^1 (register-visit! defs lr %1)]) collect))]
+            [(some _)
+              (assert #f (string "Not a type: " (debug id)))]
+            [none
+              (assert #f (string "Unknown type: " (debug id)))])
+          (ord-map/insert! id (some layout) (known-layouts lr))
+          layout)])
+    (layout-resolver/get ty lr)))
+
+(function (layout-resolver/get ty lr) {(-> ir/Ct LayoutResolver Layout)}
+  (match ty
+    [(ir/ct:id (let id))
+      (if-match1 (some (some (let layout))) (ord-map/get? id (known-layouts lr))
+        layout
+        (assert #f (string "Unregistered type: " (debug id))))]
+      [(ir/ct:generic-inst _ _)
+        (assert #f "Found ct:generic-inst on layout-resolver/get")]
+      [(ir/ct:table-get _ _)
+        (assert #f "Found ct:table-get on layout-resolver/get")]
+      [(ir/ct:ptr _)
+        layout/pointer]
+      [(ir/ct:clos _ _)
+        layout/clos]
+      [(ir/ct:s (let n))
+        (layout/integer (next-power-of-two (/ (+ n 7) 8)))]
+      [(ir/ct:u (let n))
+        (layout/integer (next-power-of-two (/ (+ n 7) 8)))]
+      [ir/ct:f32
+        (layout/floating-point 4)]
+      [ir/ct:f64
+        (layout/floating-point 8)]
+      [ir/ct:string
+        layout/string]
+      [ir/ct:char
+        layout/char]
+      [(ir/ct:array _)
+        layout/array]
+      [ir/ct:captured-use
+        layout/captured-use]
+      [ir/ct:unit
+        layout/unit]
+      [ir/ct:env
+        layout/pointer]
+      [(ir/ct:syntax _)
+        layout/syntax]))
+
+(function (aligned align size) {(-> U64 U64 U64)}
   (if (ne? align 0)
     (+ size (% (- align (% size align)) align))
     size))

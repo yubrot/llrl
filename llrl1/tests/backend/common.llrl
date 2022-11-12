@@ -1,0 +1,115 @@
+(import "std/ord-map" _)
+(import "~/lowering/ir" _)
+(import "~/backend/common/mem-layout" _)
+(println! "llrl1/tests/backend/common")
+
+(assert-eq? (class/merge class:void class:void) class:void)
+(assert-eq? (class/merge class:void class:floating-point) class:floating-point)
+(assert-eq? (class/merge class:floating-point class:floating-point) class:floating-point)
+(assert-eq? (class/merge class:integer class:floating-point) class:integer)
+(assert-eq? (class/merge class:integer class:memory) class:memory)
+(assert-eq? (class/merge class:memory class:floating-point) class:memory)
+
+(assert-eq? (class/merge class:void class:void) class:void)
+(assert-eq? (layout/num-eightbytes (layout/memory 1 1)) 1)
+(assert-eq? (layout/num-eightbytes (layout/memory 12 4)) 2)
+
+(assert-eq?
+  (|> (layout/integer 4) layout/eightbytes collect)
+  (array (eightbyte: 0 4 class:integer)))
+(assert-eq?
+  (|> (layout/memory 12 4) layout/eightbytes collect)
+  (array (eightbyte: 0 8 class:memory) (eightbyte: 8 4 class:memory)))
+(assert-eq?
+  (|> (layout/product (array
+        (layout/integer 4)
+        (layout/product (array
+          (layout/floating-point 4)
+          (layout/floating-point 4)
+          (layout/floating-point 4)))))
+      layout/eightbytes
+      collect)
+  (array (eightbyte: 0 8 class:integer) (eightbyte: 8 8 class:floating-point)))
+
+(assert-eq? (layout/size-in-stack #t (layout/integer 1)) 0)
+(assert-eq? (layout/size-in-stack #f (layout/integer 1)) 8)
+(assert-eq? (layout/size-in-stack #t (layout/memory 1 1)) 8)
+(assert-eq? (layout/size-in-stack #f (layout/memory 12 4)) 16)
+
+(assert-eq? (layout/in-stack (layout/integer 1)) (layout/new 8 1 class:integer))
+(assert-eq? (layout/in-stack (layout/memory 12 4)) (layout/new 16 4 class:memory))
+
+(assert-eq?
+  (collect (layout/it/with-offset (array
+    (layout/memory 4 4)
+    (layout/memory 1 1)
+    (layout/memory 2 2)
+    (layout/memory 8 8))))
+  (array
+    (: 0 (layout/memory 4 4))
+    (: 4 (layout/memory 1 1))
+    (: 6 (layout/memory 2 2))
+    (: 8 (layout/memory 8 8))))
+
+(assert-eq?
+  (layout/product (array
+    (layout/memory 4 4)
+    (layout/memory 1 1)
+    (layout/memory 2 2)
+    (layout/memory 8 8)))
+  (layout/set-composite
+    (composite-layout:
+      (array
+        (: 0 (layout/memory 4 4))
+        (: 4 (layout/memory 1 1))
+        (: 6 (layout/memory 2 2))
+        (: 8 (layout/memory 8 8)))
+      (array
+        (: 0 (layout/memory 4 4))
+        (: 4 (layout/memory 1 1))
+        (: 6 (layout/memory 2 2))
+        (: 8 (layout/memory 8 8))))
+    (layout/new 16 8 class:memory)))
+
+(assert-eq?
+  (layout/sum (array
+    (layout/new 12 4 class:integer)
+    (layout/new 20 2 class:memory)
+    (layout/new 8 8 class:integer)))
+  (layout/new 24 8 class:memory))
+
+(let* ([id-gen (ct-id-gen/new)]
+       [a (ct-id-gen/next! id-gen)]
+       [b (ct-id-gen/next! id-gen)]
+       [c (ct-id-gen/next! id-gen)]
+       [r (layout-resolver/new)]
+       [b-composite (composite-layout:
+         (array (: 0 (layout/integer 2)) (: 2 (layout/integer 1)) (: 4 (layout/integer 2)))
+         (array (: 0 (layout/integer 2)) (: 2 (layout/integer 1)) (: 4 (layout/integer 2))))]
+       [a-composite (composite-layout:
+         (array
+           (: 0 (layout/set-composite b-composite (layout/new 6 2 class:integer)))
+           (: 6 (layout/set-composite b-composite (layout/new 6 2 class:integer)))
+           (: 12 (layout/set-composite b-composite (layout/new 6 2 class:integer))))
+         (array
+           (: 0 (layout/integer 2))
+           (: 2 (layout/integer 1))
+           (: 4 (layout/integer 2))
+           (: 6 (layout/integer 2))
+           (: 8 (layout/integer 1))
+           (: 10 (layout/integer 2))
+           (: 12 (layout/integer 2))
+           (: 14 (layout/integer 1))
+           (: 16 (layout/integer 2))))])
+  (layout-resolver/register!
+    (ord-map
+      (: a (def:struct (struct: struct-repr:standard (array (ct:id b) (ct:id b) (ct:id b)))))
+      (: b (def:struct (struct: struct-repr:standard (array (ct:s 16) (ct:s 8) (ct:s 16)))))
+      (: c (def:union (union: (array (ct:id a) ct:env)))))
+    r)
+  (assert-eq?
+    (layout-resolver/get (ct:id a) r)
+    (layout/set-composite a-composite (layout/new 18 2 class:memory)))
+  (assert-eq?
+    (layout-resolver/get (ct:id b) r)
+    (layout/set-composite b-composite (layout/new 6 2 class:integer))))
