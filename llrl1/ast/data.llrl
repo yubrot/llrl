@@ -774,6 +774,7 @@
 (derive (DebugDisplay) value-data ClassMethod
   (class-method:
     (NodeId ClassMethod)       ; id
+    Bool                       ; transparent?
     (Annotation Scheme)        ; ann
     (Option (Array Parameter)) ; params
     (Option Expr)              ; default-body
@@ -781,6 +782,7 @@
 
 (getter class-method:
   class-method/id
+  class-method/transparent?
   class-method/ann
   class-method/params
   class-method/default-body

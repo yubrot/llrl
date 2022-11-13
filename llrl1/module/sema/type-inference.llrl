@@ -471,7 +471,7 @@
 
 (function (infer-class-method! outer-scope method ctx)
   {(forall E) (-> u/Scope ClassMethod (Context E) (Result unit Error)) (where (External E))}
-  (with1 (class-method: (let id) (let ann) (let params) (let default-body) _) method
+  (with1 (class-method: (let id) _ (let ann) (let params) (let default-body) _) method
 
     (let* ([scope (u/scope/new-inner outer-scope)]
            [scheme (import-and-enter-on-scope! (annotation/body ann) scope ctx)])

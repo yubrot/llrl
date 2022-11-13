@@ -205,7 +205,7 @@
                      (ct/generic-inst (ct:id (issue-ct! id e)) inst-args)
                      (translate! e class-args))]
                  [table (alias-table/new)])
-            (for (ast/class-method: (let id) _ _ _ _) (ast/class/methods class)
+            (for (ast/class-method: (let id) _ _ _ _ _) (ast/class/methods class)
               (alias-table/put!
                 (issue-ct! id e)
                 (if-match1 (some (ast/instance-method: (let id) _ _ _ _ _ _)) (ast/instance/find-method? id src)
@@ -222,7 +222,7 @@
 
 (instance Translate.ClassMethod (Translate ast/ClassMethod (Option Def))
   (function (translate! e src)
-    (with1? (ast/class-method: (let id) (ast/annotation: _ (let scheme)) (let params) (some (let body)) (let class-id)) src
+    (with1? (ast/class-method: (let id) (let transparent?) (ast/annotation: _ (let scheme)) (let params) (some (let body)) (let class-id)) src
       (with1 (: (let ct-params) (let params) (let ret)) (translate! e (: (signature: params) scheme))
         (let1 class-con (option/force (m/module-set/ast? ast/root/class-con? class-id e))
           (def/generic
@@ -232,7 +232,8 @@
             (def/generic
               ct-params
               (def:function (function:
-                function-kind:standard
+                (if transparent? function-kind:transparent function-kind:standard)
+
                 none
                 params
                 ret

@@ -217,7 +217,7 @@
   (function (infer! classes ctx)
     (for (class: (let con) (let methods)) classes
       (setup-generic! (class-con/id con) con u/kind:constraint ctx)!
-      (for (class-method: (let id) (let ann) _ _ _) (methods)
+      (for (class-method: (let id) _ (let ann) _ _ _) (methods)
         (setup-generic! id (annotation/body ann) u/kind:value ctx)!))
 
     (for (class: (let con) (let methods)) classes
@@ -227,7 +227,7 @@
 
     (for (class: (let con) (let methods)) classes
       (fix-generic! (class-con/id con) con ctx)!
-      (for (class-method: (let id) (let ann) _ _ _) (methods)
+      (for (class-method: (let id) _ (let ann) _ _ _) (methods)
         (fix-generic! id (annotation/body ann) ctx)!))
 
     (for (let method) (|> classes (it/flat-map class/methods))

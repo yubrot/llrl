@@ -410,18 +410,17 @@ impl Translate for ast::ClassMethod {
                 env.translate_scheme(Some(self.params.as_ref()), &self.ann.body);
 
             let body = env.translate(body);
+            let kind = if self.transparent {
+                FunctionKind::Transparent
+            } else {
+                FunctionKind::Standard
+            };
 
             Some(Def::generic(
                 class_ct_params,
                 Def::generic(
                     method_ct_params,
-                    Def::Function(Function::new(
-                        None,
-                        params,
-                        ret_ty,
-                        body,
-                        FunctionKind::Standard,
-                    )),
+                    Def::Function(Function::new(None, params, ret_ty, body, kind)),
                 ),
             ))
         } else {

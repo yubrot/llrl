@@ -27,8 +27,7 @@
   (assert-eq? 101 (|> x string/unsafe-ptr (ptr/offset 1) ptr/load))
   (assert-eq? 108 (|> x string/unsafe-ptr (ptr/offset 2) ptr/load))
   (assert-eq? 108 (|> x string/unsafe-ptr (ptr/offset 3) ptr/load))
-  (assert-eq? 111 (|> x string/unsafe-ptr (ptr/offset 4) ptr/load))
-  (assert-eq? 0 (|> x string/unsafe-ptr (ptr/offset 5) ptr/load)))
+  (assert-eq? 111 (|> x string/unsafe-ptr (ptr/offset 4) ptr/load)))
 
 (assert-eq? 123 (|> 123 ptr/temporary ptr/load))
 

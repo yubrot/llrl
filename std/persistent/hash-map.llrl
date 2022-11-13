@@ -96,7 +96,7 @@
 (function tree/empty {(forall K V) (Tree K V)}
   (tree: 0 0 ptr:null ptr:null))
 
-(transparent-function (tree/new-child hash key value collision-elems)
+(function (tree/new-child hash key value collision-elems)
   {(forall K V) (-> U64 K V (Option (Array (: K V))) (Tree K V))}
   (with1 (: (let bit-index) (let hash)) (consume-hash hash)
     (match collision-elems

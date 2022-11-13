@@ -181,7 +181,7 @@
       [(boxed: ptr:null) :leaf]
       [(boxed: (ptr:non-null (let t))) (:tree t)])))
 
-(transparent-function (blacken node)
+(function (blacken node)
   {(forall K V T S) (-> (T K V) (: (S K V) Bool)) (where (NodeAdjust T Unboxed) (NodeAdjust T S) (Node S))}
   (let1 node node
     (match (adjust node)
@@ -190,7 +190,7 @@
       [_
         (: (adjust node) #t)])))
 
-(transparent-function (balance-left k v l r)
+(function (balance-left k v l r)
   {(forall K V T S U) (-> K V (T K V) (S K V) (U K V)) (where (NodeAdjust T Unboxed) (NodeAdjust T Boxed) (NodeAdjust S Boxed) (Node U))}
   (let1 l l
     (match (adjust l)
@@ -201,7 +201,7 @@
       [_
         (tree :black k v (adjust l) (adjust r))])))
 
-(transparent-function (balance-right k v l r)
+(function (balance-right k v l r)
   {(forall K V T S U) (-> K V (T K V) (S K V) (U K V)) (where (NodeAdjust S Unboxed) (NodeAdjust T Boxed) (NodeAdjust S Boxed) (Node U))}
   (let1 r r
     (match (adjust r)
@@ -212,7 +212,7 @@
       [_
         (tree :black k v (adjust l) (adjust r))])))
 
-(transparent-function (bubble-left color k v l r d)
+(function (bubble-left color k v l r d)
   {(forall K V T S U) (-> Color K V (T K V) (S K V) Bool (: (U K V) Bool)) (where (NodeAdjust T Unboxed) (NodeAdjust T Boxed) (NodeAdjust S Boxed) (Node U))}
   (if d
     (match (: color (adjust l))
@@ -226,7 +226,7 @@
         (assert #f)])
     (: (tree color k v (adjust l) (adjust r)) #f)))
 
-(transparent-function (bubble-right color k v l r d)
+(function (bubble-right color k v l r d)
   {(forall K V T S U) (-> Color K V (T K V) (S K V) Bool (: (U K V) Bool)) (where (NodeAdjust S Unboxed) (NodeAdjust T Boxed) (NodeAdjust S Boxed) (Node U))}
   (if d
     (match (: color (adjust r))

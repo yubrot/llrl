@@ -6,7 +6,7 @@
 (import "std/derive" derive/_)
 (import "std/control" _)
 (import "std/bool" Bool &&)
-(import "std/eq" Eq eq? Eq.Bool Eq.Never)
+(import "std/eq" Eq eq? ne? Eq.Bool Eq.Never)
 (import "std/ordering" Ordering ordering:_ ordering/_ Eq.Ordering)
 (export Ord compare lt? le? gt? ge? < > <= >= min max Ord._ derive/Ord)
 
@@ -18,13 +18,13 @@
         ordering:less
         ordering:greater)))
   (transparent-function (lt? a b) {(-> A A Bool)}
-    (match (compare a b) [ordering:less #t] [_ #f]))
+    (eq? (compare a b) ordering:less))
   (transparent-function (le? a b) {(-> A A Bool)}
-    (match (compare a b) [ordering:greater #f] [_ #t]))
+    (ne? (compare a b) ordering:greater))
   (transparent-function (gt? a b) {(-> A A Bool)}
-    (match (compare a b) [ordering:greater #t] [_ #f]))
+    (eq? (compare a b) ordering:greater))
   (transparent-function (ge? a b) {(-> A A Bool)}
-    (match (compare a b) [ordering:less #f] [_ #t])))
+    (ne? (compare a b) ordering:less)))
 
 (macro (< s) (compare-chain-entry \lt? s))
 (macro (> s) (compare-chain-entry \gt? s))

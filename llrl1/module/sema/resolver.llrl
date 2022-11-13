@@ -231,12 +231,12 @@
 
 (instance Resolve.ClassMethod (Resolve ClassMethod)
   (function (resolve! a ctx)
-    (with1 (class-method: (let id) (let ann) (let params) (let default-body) (let class-con)) a
+    (with1 (class-method: (let id) (let transparent?) (let ann) (let params) (let default-body) (let class-con)) a
       (let1 ann (resolve! ann ctx)!
         (local ann ctx (lambda (ctx)
           (let1 params (resolve! params ctx)!
             (local params ctx (lambda (ctx)
-              (ok (class-method: id ann params (resolve! default-body ctx)! class-con)))))))))))
+              (ok (class-method: id transparent? ann params (resolve! default-body ctx)! class-con)))))))))))
 
 (instance Resolve.InstanceCon (Resolve InstanceCon)
   (function (resolve! a ctx)

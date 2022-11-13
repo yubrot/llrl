@@ -256,6 +256,7 @@ impl topological_sort::DependencyList<NodeId<ClassCon>> for ClassCon {
 #[derive(Debug, Clone)]
 pub struct ClassMethod {
     pub id: NodeId<ClassMethod>,
+    pub transparent: bool,
     pub ann: Annotation<Scheme>,
     pub params: Option<Vec<Parameter>>,
     pub default_body: Option<Expr>,

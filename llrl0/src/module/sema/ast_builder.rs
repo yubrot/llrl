@@ -362,6 +362,7 @@ impl Build<syntax::Class<'_>> for (ClassCon, Vec<ClassMethod>) {
                 };
                 let class_method = ClassMethod {
                     id: ctx.next_id(src.name.loc, src.name.sym),
+                    transparent: src.transparent,
                     ann: scheme,
                     params,
                     default_body,

@@ -226,14 +226,14 @@
              [methods
                (it/traverse-result
                  (lambda (a)
-                   (with1 (syntax:function (let loc) _ (let name) (let params) (let scheme) (let body)) a
+                   (with1 (syntax:function (let loc) (let transparent?) (let name) (let params) (let scheme) (let body)) a
                      (let ([scheme
                              (match scheme
                                [(some (let scheme)) (build! scheme ctx)!]
                                [none (err (error:class-method-type-scheme-unspecified loc))!])]
                            [params (build! params ctx)!]
                            [default-body (when? (not (array/empty? body)) (build! (: loc body) ctx)!)])
-                       (ok (class-method: (build! name ctx)! scheme params default-body class-id)))))
+                       (ok (class-method: (build! name ctx)! transparent? scheme params default-body class-id)))))
                  methods)!]
              [method-ids (collect (it/map class-method/id methods))])
         (ok (class:
