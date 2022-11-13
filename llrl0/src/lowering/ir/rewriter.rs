@@ -35,11 +35,15 @@ pub trait Rewriter: Sized {
     fn after_rt_pat(&mut self, _pat: &mut RtPat) -> Result<(), Self::Error> {
         Ok(())
     }
-    fn after_rt_use(&mut self, _id: RtId) -> Result<(), Self::Error> {
+    fn after_rt_use(&mut self, _id: &mut RtId) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn after_rt_def(&mut self, _id: RtId, _ty: impl FnOnce() -> Ct) -> Result<(), Self::Error> {
+    fn after_rt_def(
+        &mut self,
+        _id: &mut RtId,
+        _ty: impl FnOnce() -> Ct,
+    ) -> Result<(), Self::Error> {
         Ok(())
     }
 }
@@ -166,7 +170,7 @@ impl Rewrite for Function {
 
 impl Rewrite for FunctionEnv {
     fn rewrite<T: Rewriter>(&mut self, rewriter: &mut T) -> Result<(), T::Error> {
-        rewriter.after_rt_def(self.id, || Ct::Env)?;
+        rewriter.after_rt_def(&mut self.id, || Ct::Env)?;
         rewriter.rewrite(&mut self.elems)
     }
 }
@@ -174,7 +178,7 @@ impl Rewrite for FunctionEnv {
 impl Rewrite for RtParam {
     fn rewrite<T: Rewriter>(&mut self, rewriter: &mut T) -> Result<(), T::Error> {
         rewriter.rewrite(&mut self.ty)?;
-        rewriter.after_rt_def(self.id, || self.ty.clone())
+        rewriter.after_rt_def(&mut self.id, || self.ty.clone())
     }
 }
 
@@ -190,11 +194,11 @@ impl Rewrite for Rt {
         if rewriter.before_rt(self)? {
             match self {
                 Self::Var(id, ty) => {
-                    rewriter.after_rt_use(*id)?;
+                    rewriter.after_rt_use(id)?;
                     rewriter.rewrite(ty)?;
                 }
                 Self::LocalFun(inst) => {
-                    rewriter.after_rt_use(inst.fun)?;
+                    rewriter.after_rt_use(&mut inst.fun)?;
                     rewriter.rewrite(&mut inst.args)?;
                     rewriter.rewrite(&mut inst.ty)?;
                 }
@@ -408,7 +412,7 @@ impl Rewrite for RtPat {
             match self {
                 Self::Var(id, ty, p) => {
                     rewriter.rewrite(ty)?;
-                    rewriter.after_rt_def(*id, || ty.clone())?;
+                    rewriter.after_rt_def(id, || ty.clone())?;
                     rewriter.rewrite(p)?;
                 }
                 Self::Wildcard(ty) => {
@@ -453,7 +457,7 @@ impl Rewrite for RtLocalFun {
     fn rewrite<T: Rewriter>(&mut self, rewriter: &mut T) -> Result<(), T::Error> {
         rewriter.rewrite(&mut self.params)?;
         rewriter.rewrite(&mut self.ret)?;
-        rewriter.after_rt_def(self.id, || self.ty())?;
+        rewriter.after_rt_def(&mut self.id, || Self::ty(&self.params, &self.ret))?;
         rewriter.rewrite(&mut self.body)
     }
 }
@@ -461,7 +465,7 @@ impl Rewrite for RtLocalFun {
 impl Rewrite for RtVar {
     fn rewrite<T: Rewriter>(&mut self, rewriter: &mut T) -> Result<(), T::Error> {
         rewriter.rewrite(&mut self.ty)?;
-        rewriter.after_rt_def(self.id, || self.ty.clone())?;
+        rewriter.after_rt_def(&mut self.id, || self.ty.clone())?;
         rewriter.rewrite(&mut self.init)
     }
 }
@@ -502,7 +506,7 @@ impl Rewriter for HashMap<CtId, Ct> {
 }
 
 pub fn replace_rt(src: &mut impl Rewrite, mut map: HashMap<RtId, Rt>) {
-    let _ = rewrite(src, &mut map);
+    let _ = src.rewrite(&mut map);
 }
 
 impl Rewriter for HashMap<RtId, Rt> {
@@ -513,6 +517,31 @@ impl Rewriter for HashMap<RtId, Rt> {
             if let Some(x) = self.get(&id) {
                 *rt = x.clone();
             }
+        }
+        Ok(())
+    }
+}
+
+pub fn realloc_rts(src: &mut impl Rewrite, alloc: impl FnMut() -> RtId) {
+    let _ = src.rewrite(&mut ReallocRts(alloc, HashMap::new()));
+}
+
+#[derive(Debug)]
+struct ReallocRts<F>(F, HashMap<RtId, RtId>);
+
+impl<F: FnMut() -> RtId> Rewriter for ReallocRts<F> {
+    type Error = ();
+
+    fn after_rt_def(&mut self, id: &mut RtId, _ty: impl FnOnce() -> Ct) -> Result<(), Self::Error> {
+        let new_id = (self.0)();
+        assert!(self.1.insert(*id, new_id).is_none());
+        *id = new_id;
+        Ok(())
+    }
+
+    fn after_rt_use(&mut self, id: &mut RtId) -> Result<(), Self::Error> {
+        if let Some(new_id) = self.1.get(id) {
+            *id = *new_id;
         }
         Ok(())
     }

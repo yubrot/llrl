@@ -379,6 +379,9 @@
 
 (getter rt-local-fun: rt-local-fun/id rt-local-fun/ct-params rt-local-fun/params rt-local-fun/ret rt-local-fun/body)
 
+(function (rt-local-fun/ty params ret) {(-> (Array RtParam) Ct Ct)}
+  (ct:clos (|> params (it/map rt-param/ty) collect) ret))
+
 (derive (Eq Ord DebugDisplay Hash) value-data RtVar
   (rt-var: RtId Ct Rt))
 

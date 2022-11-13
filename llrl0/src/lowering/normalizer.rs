@@ -107,7 +107,7 @@ impl<'e, E: Env> rewriter::Rewriter for Normalizer<'e, E> {
             if f.kind == FunctionKind::Transparent;
             then {
                 let args = std::mem::take(&mut call.args);
-                *rt = call_transparent(f, args);
+                *rt = call_transparent(f, args, || self.env.alloc_rt());
                 if !is_normalized {
                     self.rewrite(rt)?;
                 } else {
@@ -118,8 +118,8 @@ impl<'e, E: Env> rewriter::Rewriter for Normalizer<'e, E> {
         Ok(())
     }
 
-    fn after_rt_def(&mut self, id: RtId, ty: impl FnOnce() -> Ct) -> Result<(), ()> {
-        self.local_var_types.insert(id, ty());
+    fn after_rt_def(&mut self, id: &mut RtId, ty: impl FnOnce() -> Ct) -> Result<(), ()> {
+        self.local_var_types.insert(*id, ty());
         Ok(())
     }
 }
@@ -230,11 +230,12 @@ impl rewriter::Rewriter for ClosureConversion {
     }
 }
 
-fn call_transparent(f: &Function, args: Vec<Rt>) -> Rt {
+fn call_transparent(f: &Function, args: Vec<Rt>, alloc_rt: impl FnMut() -> RtId) -> Rt {
     assert!(f.env.is_none());
     assert_eq!(f.params.len(), args.len());
     let params = f.params.iter().map(|param| param.id);
     let mut rt = f.body.clone();
     rewriter::replace_rt(&mut rt, params.zip(args).collect());
+    rewriter::realloc_rts(&mut rt, alloc_rt);
     rt
 }

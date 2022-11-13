@@ -453,7 +453,7 @@ impl Traverse for RtLocalFun {
     fn traverse<T: Traverser>(&self, traverser: &mut T) -> Result<(), T::Error> {
         traverser.traverse(&self.params)?;
         traverser.traverse(&self.ret)?;
-        traverser.after_rt_def(self.id, || self.ty())?;
+        traverser.after_rt_def(self.id, || Self::ty(&self.params, &self.ret))?;
         traverser.traverse(&self.body)
     }
 }

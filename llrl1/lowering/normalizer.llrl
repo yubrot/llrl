@@ -62,7 +62,7 @@
     (ok (if-match ([(rt:call (rt:static-fun (ct:id (let id)) _ none) (let args)) rt]
                    [(some (processing-def: (let normalized?) (let def))) (processing-def? id (env n))]
                    [(def:function (let f (function: function-kind:transparent _ _ _ _))) def])
-      (let1 rt (call-transparent f args)
+      (let1 rt (call-transparent f args [^0 (alloc-rt! (env n))])
         (if normalized?
           (rewrite/as-changed (transformer/after-rt rt n)!)
           (rewrite/as-changed (transform n rt)!)))
@@ -70,7 +70,7 @@
 
   (function (transformer/after-rt-def id ty n)
     (ord-map/insert! id ty (local-var-types n))
-    (ok unit)))
+    (ok (rewrite/unchanged id))))
 
 (function (run-closure-conversion! funs body n)
   {(forall E) (-> (Array RtLocalFun) Rt (Normalizer E) Rt) (where (Env E))}
@@ -134,9 +134,9 @@
         [else
           (rewrite/unchanged rt)])))))
 
-(function (call-transparent f args) {(-> Function (Array Rt) Rt)}
+(function (call-transparent f args alloc-rt!) {(-> Function (Array Rt) (-> RtId) Rt)}
   (assert-is? none (function/env f))
   (assert-eq? (array/length args) (array/length (function/params f)))
-  (replace-rt
-    (ord-map/collect (it/zip (it/map rt-param/id (function/params f)) args))
-    (function/body f)))
+  (|> (function/body f)
+      (replace-rt (ord-map/collect (it/zip (it/map rt-param/id (function/params f)) args)))
+      (realloc-rts alloc-rt!)))

@@ -527,10 +527,10 @@ pub struct RtLocalFun {
 }
 
 impl RtLocalFun {
-    pub fn ty(&self) -> Ct {
+    pub fn ty(params: &[RtParam], ret: &Ct) -> Ct {
         Ct::clos(
-            self.params.iter().map(|param| param.ty.clone()).collect(),
-            self.ret.clone(),
+            params.iter().map(|param| param.ty.clone()).collect(),
+            ret.clone(),
         )
     }
 }

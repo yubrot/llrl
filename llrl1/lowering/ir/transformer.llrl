@@ -4,7 +4,7 @@
 (import "~/lowering/ir" _)
 (export Cut cut:_ Rewrite _.Rewrite rewrite: rewrite/_)
 (export Transformer transformer/_ Transform Transform._ transform)
-(export captured-vars visit-ct-uses replace-ct replace-rt)
+(export captured-vars visit-ct-uses replace-ct replace-rt realloc-rts)
 
 (value-data Cut
   cut:yes
@@ -59,11 +59,11 @@
   (function (transformer/after-rt-pat pat t) {(-> RtPat T (Result (Rewrite RtPat) Error))}
     (ok (rewrite/unchanged pat)))
 
-  (function (transformer/after-rt-use id t) {(-> RtId T (Result unit Error))}
-    (ok unit))
+  (function (transformer/after-rt-use id t) {(-> RtId T (Result (Rewrite RtId) Error))}
+    (ok (rewrite/unchanged id)))
 
-  (function (transformer/after-rt-def id ty t) {(-> RtId Ct T (Result unit Error))}
-    (ok unit)))
+  (function (transformer/after-rt-def id ty t) {(-> RtId Ct T (Result (Rewrite RtId) Error))}
+    (ok (rewrite/unchanged id))))
 
 (class (Transform A)
   (function (transform t x)
@@ -163,16 +163,13 @@
 (instance Transform.FunctionEnv (Transform FunctionEnv)
   (function (transform t x)
     (with1 (function-env: (let id) (let elems)) x
-      (let1 id (rewrite/unchanged id)
-        (transformer/after-rt-def (rewrite/value id) ct:env t)!
-        (ok (rewrite/2 x function-env: id (transform t elems)!))))))
+      (ok (rewrite/2 x function-env: (transformer/after-rt-def id ct:env t)! (transform t elems)!)))))
 
 (instance Transform.RtParam (Transform RtParam)
   (function (transform t x)
     (with1 (rt-param: (let id) (let ty)) x
-      (let ([id (rewrite/unchanged id)]
-            [ty (transform t ty)!])
-        (transformer/after-rt-def (rewrite/value id) (rewrite/value ty) t)!
+      (let* ([ty (transform t ty)!]
+             [id (transformer/after-rt-def id (rewrite/value ty) t)!])
         (ok (rewrite/2 x rt-param: id ty))))))
 
 (instance Transform.Init (Transform Init)
@@ -188,11 +185,9 @@
            [(rewrite: (let x) (let c2?))
              (match x
                [(rt:var (let id) (let ty))
-                  (transformer/after-rt-use id t)!
-                  (rewrite/2 x rt:var (rewrite/unchanged id) (transform t ty)!)]
+                 (rewrite/2 x rt:var (transformer/after-rt-use id t)! (transform t ty)!)]
                [(rt:local-fun (let id) (let args) (let ty))
-                  (transformer/after-rt-use id t)!
-                 (rewrite/3 x rt:local-fun (rewrite/unchanged id) (transform t args)! (transform t ty)!)]
+                 (rewrite/3 x rt:local-fun (transformer/after-rt-use id t)! (transform t args)! (transform t ty)!)]
                [(rt:static-fun (let fun) (let ty) (let env))
                  (rewrite/3 x rt:static-fun (transform t fun)! (transform t ty)! (transform t env)!)]
                [(rt:const (let c))
@@ -320,9 +315,9 @@
            [(rewrite: (let x) (let c2?))
              (match x
                [(rt-pat:var (let id) (let ty) (let p))
-                  (let1 ty (transform t ty)!
-                   (transformer/after-rt-def id (rewrite/value ty) t)!
-                   (rewrite/3 x rt-pat:var (rewrite/unchanged id) ty (transform t p)!))]
+                  (let* ([ty (transform t ty)!]
+                         [id (transformer/after-rt-def id (rewrite/value ty) t)!])
+                   (rewrite/3 x rt-pat:var id ty (transform t p)!))]
                [(rt-pat:wildcard (let ty))
                  (rewrite/1 x rt-pat:wildcard (transform t ty)!)]
                [(rt-pat:deref (let p))
@@ -348,22 +343,17 @@
 (instance Transform.RtLocalFun (Transform RtLocalFun)
   (function (transform t x)
     (with1 (rt-local-fun: (let id) (let ct-params) (let params) (let ret) (let body)) x
-      (let ([id (rewrite/unchanged id)]
-            [ct-params (rewrite/unchanged ct-params)]
-            [params (transform t params)!]
-            [ret (transform t ret)!])
-        (transformer/after-rt-def
-          (rewrite/value id)
-          (ct:clos (|> (rewrite/value params) (it/map rt-param/ty) collect) (rewrite/value ret))
-          t)!
+      (let* ([ct-params (rewrite/unchanged ct-params)]
+             [params (transform t params)!]
+             [ret (transform t ret)!]
+             [id (transformer/after-rt-def id (rt-local-fun/ty (rewrite/value params) (rewrite/value ret)) t)!])
         (ok (rewrite/5 x rt-local-fun: id ct-params params ret (transform t body)!))))))
 
 (instance Transform.RtVar (Transform RtVar)
   (function (transform t x)
     (with1 (rt-var: (let id) (let ty) (let init)) x
-      (let ([id (rewrite/unchanged id)]
-            [ty (transform t ty)!])
-        (transformer/after-rt-def (rewrite/value id) (rewrite/value ty) t)!
+      (let* ([ty (transform t ty)!]
+             [id (transformer/after-rt-def id (rewrite/value ty) t)!])
         (ok (rewrite/3 x rt-var: id ty (transform t init)!))))))
 
 (instance Transform.RtCont (Transform RtCont)
@@ -397,12 +387,12 @@
   (function (transformer/after-rt-use id t)
     (with1 (captured-vars: (let uses) _) t
       (ord-set/insert! id uses)
-      (ok unit)))
+      (ok (rewrite/unchanged id))))
 
   (function (transformer/after-rt-def id ty t)
     (with1 (captured-vars: _ (let defs)) t
       (ord-set/insert! id defs)
-      (ok unit))))
+      (ok (rewrite/unchanged id)))))
 
 (function (visit-ct-uses f t) {(forall T) (-> (-> CtId unit) T unit) (where (Transform T))}
   (ignore (result/unwrap* never (transform (ct-uses-visitor: f) t))))
@@ -436,3 +426,22 @@
                    [(some (let rt)) (ord-map/get? id t)])
       (rewrite/changed rt)
       (rewrite/unchanged rt)))))
+
+(function (realloc-rts alloc-rt! t) {(forall T) (-> (-> RtId) T T) (where (Transform T))}
+  (rewrite/value (result/unwrap* never (transform (realloc-rts: alloc-rt! default) t))))
+
+(value-data ReallocRts
+  (realloc-rts: (-> RtId) (OrdMap RtId RtId)))
+
+(instance Transformer.ReallocRts (forall Never) (Transformer ReallocRts Never)
+  (function (transformer/after-rt-def id ty t)
+    (with1 (realloc-rts: (let alloc-rt!) (let ids)) t
+      (let1 new-id (alloc-rt!)
+        (ord-map/insert! id new-id ids)
+        (ok (rewrite/changed new-id)))))
+
+  (function (transformer/after-rt-use id t)
+    (with1 (realloc-rts: _ (let ids)) t
+      (ok (if-match1 (some (let new-id)) (ord-map/get? id ids)
+        (rewrite/changed new-id)
+        (rewrite/unchanged id))))))
