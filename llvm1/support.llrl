@@ -1,4 +1,4 @@
-(export initialize-_)
+(export initialize-_ add-symbol!)
 
 (function (result status) {(-> I32 (Result unit unit))}
   (if (ne? status 1) (ok unit) (err unit)))
@@ -15,7 +15,11 @@
 (function (initialize-native-disassembler!) {(-> (Result unit unit))}
   (result (<initialize-native-disassembler>)))
 
+(function (add-symbol! name addr) {(-> String U64 unit)}
+  (<add-symbol> (string/c-compatible-ptr name) addr))
+
 (c-function <initialize-native-target> {(-> I32)} "llrl_LLVMInitializeNativeTarget")
 (c-function <initialize-native-asm-printer> {(-> I32)} "llrl_LLVMInitializeNativeAsmPrinter")
 (c-function <initialize-native-asm-parser> {(-> I32)} "llrl_LLVMInitializeNativeAsmParser")
 (c-function <initialize-native-disassembler> {(-> I32)} "llrl_LLVMInitializeNativeDisassembler")
+(c-function <add-symbol> {(-> (Ptr U8) U64 unit)} "LLVMAddSymbol")

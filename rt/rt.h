@@ -19,6 +19,18 @@ typedef struct {
 void llrt_init(int argc, char *argv[]);
 rt_args llrt_args();
 
+typedef struct {
+  const char *name;
+  uint64_t addr;
+} rt_symbol;
+
+typedef struct {
+  rt_symbol *ptr;
+  uint64_t len;
+} rt_symbol_array;
+
+rt_symbol_array llrt_symbols();
+
 noreturn void llrt_panic(rt_string msg);
 void llrt_exit(int32_t exitcode);
 

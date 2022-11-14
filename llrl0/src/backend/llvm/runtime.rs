@@ -21,7 +21,9 @@ impl<'ctx: 'm, 'm> Library<'ctx, 'm> {
         static INIT_LIBRARY: Once = Once::new();
 
         INIT_LIBRARY.call_once(|| {
-            llrt::register_symbols(|name, addr| unsafe { llvm::add_symbol(name, addr) });
+            for (name, addr) in llrt::symbols() {
+                unsafe { llvm::add_symbol(name, addr as *mut u8) };
+            }
         });
 
         Self {

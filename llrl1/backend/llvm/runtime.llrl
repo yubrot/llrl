@@ -4,10 +4,11 @@
 (import "~/sexp" [sexp/_ _])
 (import "~/lowering/ir" [ir/_ _])
 (import "~/backend/common/data" [data/_ _])
+(import "~/backend/common/runtime" [llrt/symbols symbols])
 (export RuntimeBuildEnv runtime-build-env/_ runtime/_ RuntimeConst RuntimeConst._)
 
-<initialize-llvm-jit-library-binding>
-(c-function <initialize-llvm-jit-library-binding> {unit} "llrt_initialize_llvm_jit_library_binding")
+(for (: (let name) (let addr)) (llrt/symbols)
+  (llvm/add-symbol! name addr))
 
 (instance Conv.From.llvm/Module.To.llvm/Context (Conv llvm/Module llvm/Context)
   (function (conv a) (llvm/module/context a)))

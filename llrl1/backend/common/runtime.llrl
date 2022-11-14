@@ -1,0 +1,11 @@
+(export symbols)
+
+(function (symbols) {(-> (Iterator (: String U64)))}
+  (it/map
+    (case1 (symbol: (let name) (let addr)) (: (string/unsafe-from-c-ptr name) addr))
+    <llrt-symbols>))
+
+(derive (Eq DebugDisplay) c-data Symbol
+  (symbol: (Ptr U8) U64))
+
+(c-function <llrt-symbols> {(Array Symbol)} "llrt_symbols")

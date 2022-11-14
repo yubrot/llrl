@@ -44,6 +44,46 @@ rt_args llrt_args() {
   return last_args;
 }
 
+#define RT_SYMBOL(name) {#name, name}
+
+static rt_symbol symbols[] = {
+  RT_SYMBOL(llrt_init),
+  RT_SYMBOL(llrt_args),
+  RT_SYMBOL(llrt_symbols),
+  RT_SYMBOL(llrt_panic),
+  RT_SYMBOL(llrt_exit),
+  RT_SYMBOL(llrt_spawn_process),
+  RT_SYMBOL(llrt_execute_process),
+  RT_SYMBOL(llrt_wait),
+  RT_SYMBOL(llrt_time),
+  RT_SYMBOL(llrt_getcwd),
+  RT_SYMBOL(llrt_string_genid),
+  RT_SYMBOL(llrt_string_eq),
+  RT_SYMBOL(llrt_string_cmp),
+  RT_SYMBOL(llrt_string_concat),
+  RT_SYMBOL(llrt_f32_to_string),
+  RT_SYMBOL(llrt_f64_to_string),
+  RT_SYMBOL(llrt_i64_to_string),
+  RT_SYMBOL(llrt_u64_to_string),
+  RT_SYMBOL(llrt_string_to_i64),
+  RT_SYMBOL(llrt_string_to_u64),
+  RT_SYMBOL(llrt_string_to_f32),
+  RT_SYMBOL(llrt_string_to_f64),
+  RT_SYMBOL(llrt_readdir),
+  RT_SYMBOL(llrt_stdin),
+  RT_SYMBOL(llrt_stdout),
+  RT_SYMBOL(llrt_stderr),
+  RT_SYMBOL(llrt_current_errno),
+  RT_SYMBOL(llrt_xxh_seed),
+};
+
+rt_symbol_array llrt_symbols() {
+  rt_symbol_array array;
+  array.ptr = &symbols[0];
+  array.len = sizeof(symbols) / sizeof(symbols[0]);
+  return array;
+}
+
 noreturn void llrt_panic(rt_string msg) {
   if (msg.len != 0) {
     fwrite(msg.ptr, sizeof(char), msg.len, stderr);

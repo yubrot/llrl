@@ -34,7 +34,7 @@ pub enum LinkError {
 
 /// A JIT execution engine.
 #[derive(Debug)]
-pub struct Engine<R: SymbolResolver = fn(&str) -> Option<*const u8>> {
+pub struct Engine<R: SymbolResolver = fn(&str) -> *const u8> {
     global: Global<R>,
     ro: Segment,
     rw: Segment,
@@ -146,11 +146,11 @@ impl<R: SymbolResolver> Global<R> {
                 Ok(())
             }
             (HashMapEntry::Vacant(e), None) => match (self.symbol_resolver)(symbol) {
-                Some(address) => {
-                    e.insert(Symbol::new(address));
+                addr if !addr.is_null() => {
+                    e.insert(Symbol::new(addr));
                     Ok(())
                 }
-                None => Err(LinkError::UndefinedSymbol(symbol.to_owned())),
+                _ => Err(LinkError::UndefinedSymbol(symbol.to_owned())),
             },
             (_, Some(_)) => Err(LinkError::DuplicateSymbol(symbol.to_owned())),
             (_, None) => Ok(()),
