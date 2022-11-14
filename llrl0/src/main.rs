@@ -58,19 +58,32 @@ fn run_pipeline() -> Result<Option<ExitStatus>> {
         pipeline.add_clang_option(clang_option);
     }
 
+    let output = match cli_options.output() {
+        Some(output) => Ok(path::Path::new(output)),
+        None => Err(tempfile::NamedTempFile::new()?.into_temp_path()),
+    };
     let run_args = cli_options.run_args();
+    let run_immediately = !run_args.is_empty() || cli_options.run() || output.is_err();
 
-    Ok(if let Some(output) = cli_options.output() {
-        let run_args = if cli_options.run() || !run_args.is_empty() {
-            Some(run_args)
-        } else {
-            None
-        };
-        pipeline.run::<DefaultBackend>(path::Path::new(output), run_args)?
-    } else {
-        let tmp_path = tempfile::NamedTempFile::new()?.into_temp_path();
-        pipeline.run::<DefaultBackend>(&tmp_path, Some(run_args))?
-    })
+    let output = match output.as_ref() {
+        Ok(path) => *path,
+        Err(tmppath) => tmppath,
+    };
+    let run_args = run_immediately.then_some(run_args);
+
+    let status = match cli_options.backend() {
+        Some("default") | None => pipeline.run::<DefaultBackend>(output, run_args)?,
+        #[cfg(feature = "llvm-backend")]
+        Some("llvm") => pipeline.run::<llrl::backend::llvm::Backend>(output, run_args)?,
+        #[cfg(feature = "chibi-backend")]
+        Some("chibi") => pipeline.run::<llrl::backend::chibi::Backend>(output, run_args)?,
+        Some(backend) => Err(io::Error::new(
+            io::ErrorKind::Other,
+            format!("Unsupported backend: {}", backend),
+        ))?,
+    };
+
+    Ok(status)
 }
 
 pub struct CliOptions<'a> {
@@ -86,6 +99,7 @@ impl<'a> CliOptions<'a> {
             .arg(Self::optimize_option())
             .arg(Self::run_option())
             .arg(Self::output_option())
+            .arg(Self::backend_option())
             .arg(Self::clang_option_option())
             .arg(Self::entry_argument())
             .arg(Self::run_argument())
@@ -180,6 +194,19 @@ impl<'a> CliOptions<'a> {
 
     fn output(&self) -> Option<&str> {
         self.matches.value_of("output")
+    }
+
+    fn backend_option() -> clap::Arg<'static, 'a> {
+        clap::Arg::with_name("backend")
+            .long("backend")
+            .short("b")
+            .help("Sets the backend")
+            .value_name("BACKEND")
+            .possible_values(&["default", "llvm", "chibi"])
+    }
+
+    fn backend(&self) -> Option<&str> {
+        self.matches.value_of("backend")
     }
 
     fn clang_option_option() -> clap::Arg<'static, 'a> {

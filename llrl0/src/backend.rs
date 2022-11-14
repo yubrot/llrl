@@ -2,10 +2,15 @@
 
 use std::path;
 
+#[cfg(feature = "chibi-backend")]
+pub mod chibi;
 #[cfg(feature = "llvm-backend")]
 pub mod llvm;
 pub mod native;
 pub mod unit;
+
+#[cfg(all(feature = "chibi-backend", not(feature = "llvm-backend")))]
+pub use self::chibi as default;
 
 #[cfg(feature = "llvm-backend")]
 pub use self::llvm as default;
