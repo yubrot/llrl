@@ -11,4 +11,5 @@
 (import "~/pass-manager" _)
 (import "~/builder" _ [build! builder/build!])
 (import "~/execution-engine" _)
+(import "~/symbols" _)
 (export _)

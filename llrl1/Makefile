@@ -1,4 +1,4 @@
-FLAGS=-pllvm:../llvm1 -c../llvm1/support.c -c-I../rt `llvm-config --cppflags --ldflags --libs --system-libs | sed -e 's/-\([^ ]*\)/-c-\1/g'` -c-lstdc++
+FLAGS=-pllvm:../llvm1 -c../llvm1/compat.c -c-I../rt `llvm-config --cppflags --ldflags --libs --system-libs | sed -e 's/-\([^ ]*\)/-c-\1/g'` -c-lstdc++
 
 all: llrl1
 

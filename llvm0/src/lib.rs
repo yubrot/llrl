@@ -24,6 +24,8 @@ pub mod target_machine;
 pub mod types;
 pub mod value;
 
+pub mod symbols;
+
 // TODO: ir_writer, metadata, memory_buffer
 
 pub use self::basic_block::BasicBlock;

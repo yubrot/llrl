@@ -1,0 +1,12 @@
+(export symbols)
+
+(function (symbols) {(-> (Iterator (: String U64)))}
+  (it/map
+    (case1 (symbol: (let name) (let addr)) (: (string/unsafe-from-c-ptr name) addr))
+    <llvm-symbols>))
+
+(derive (Eq DebugDisplay) c-data Symbol
+  (symbol: (Ptr U8) U64))
+
+(c-function <llvm-symbols> {(Array Symbol)} "llvm_symbols")
+

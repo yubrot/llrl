@@ -18,8 +18,8 @@
 (function (add-symbol! name addr) {(-> String U64 unit)}
   (<add-symbol> (string/c-compatible-ptr name) addr))
 
-(c-function <initialize-native-target> {(-> I32)} "llrl_LLVMInitializeNativeTarget")
-(c-function <initialize-native-asm-printer> {(-> I32)} "llrl_LLVMInitializeNativeAsmPrinter")
-(c-function <initialize-native-asm-parser> {(-> I32)} "llrl_LLVMInitializeNativeAsmParser")
-(c-function <initialize-native-disassembler> {(-> I32)} "llrl_LLVMInitializeNativeDisassembler")
+(c-function <initialize-native-target> {(-> I32)} "LLVM_InitializeNativeTarget")
+(c-function <initialize-native-asm-printer> {(-> I32)} "LLVM_InitializeNativeAsmPrinter")
+(c-function <initialize-native-asm-parser> {(-> I32)} "LLVM_InitializeNativeAsmParser")
+(c-function <initialize-native-disassembler> {(-> I32)} "LLVM_InitializeNativeDisassembler")
 (c-function <add-symbol> {(-> (Ptr U8) U64 unit)} "LLVMAddSymbol")
