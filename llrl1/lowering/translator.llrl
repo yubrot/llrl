@@ -66,12 +66,7 @@
              (translate! e (: (signature: params) (option/force (m/module-set/scheme? id e))))])
       (def/generic
         ct-params
-        (def:function (function:
-          (if transparent? function-kind:transparent function-kind:standard)
-          none
-          params
-          ret
-          (translate! e body)))))))
+        (def:function (function/standard none params ret (translate! e body) transparent?))))))
 
 (instance Translate.Parameter (Translate ast/Parameter RtId)
   (function (translate! e src)
@@ -84,15 +79,13 @@
              (if-match1 (some (: (let params) (let ret))) (ast/type/fun? ty)
                (: (translate! e params) (translate! e ret))
                (: array/empty (translate! e ty)))])
-      (def:function (function:
-        function-kind:standard
+      (def:function (function/standard
         none
         params
         ret
-        (rt:c-call
-          c-name
-          (ct:clos (|> params (it/map rt-param/ty) collect) ret)
-          (|> params (it/map conv) collect)))))))
+        (rt:call (rt-callee:c-direct c-name ret) (|> params (it/map conv) collect))
+        ; Set to false to keep the evaluation order consistent, but it could be set to true:
+        #f)))))
 
 (instance Translate.BuiltinOp (Translate ast/BuiltinOp Def)
   (function (translate! e src)
@@ -101,8 +94,7 @@
              (translate! e (: signature:unspecified scheme))])
       (def/generic
         ct-params
-        (def:function (function:
-          function-kind:transparent
+        (def:function (function/standard
           none
           params
           ret
@@ -110,7 +102,9 @@
             (option/force (m/module-set/symbol? id e))
             builtin-name
             (|> ct-params (it/map ct:id) collect)
-            (|> params (it/map conv) collect))))))))
+            (|> params (it/map conv) collect)
+            ret)
+          #t))))))
 
 (instance Translate.MacroId (Translate (ast/NodeId ast/Macro) Ct)
   (function (translate! e src)
@@ -149,8 +143,7 @@
              (translate! e (: signature:unspecified (option/force (m/module-set/scheme? id e))))])
       (def/generic
         ct-params
-        (def:function (function:
-          function-kind:transparent
+        (def:function (function/standard
           none
           params
           ret
@@ -158,7 +151,8 @@
             ret
             (let1 type-con (option/force (m/module-set/ast? ast/root/data-type-con? type-con e))
               (option/force (ast/data-type-con/index-of? id type-con)))
-            (|> params (it/map conv) collect))))))))
+            (|> params (it/map conv) collect))
+          #t))))))
 
 (instance Translate.BuiltinTypeCon (Translate ast/BuiltinTypeCon Def)
   (function (translate! e src)
@@ -175,8 +169,7 @@
              (translate! e (: signature:unspecified (option/force (m/module-set/scheme? id e))))])
       (def/generic
         ct-params
-        (def:function (function:
-          function-kind:transparent
+        (def:function (function/standard
           none
           params
           ret
@@ -184,7 +177,9 @@
             (option/force (m/module-set/symbol? id e))
             builtin-name
             (|> ct-params (it/map ct:id) collect)
-            (|> params (it/map conv) collect))))))))
+            (|> params (it/map conv) collect)
+            ret)
+          #t))))))
 
 (instance Translate.ValueConField (Translate ast/ValueConField Ct)
   (function (translate! e src)
@@ -231,13 +226,7 @@
               (translate! e (ast/class-con/ty-params class-con)))
             (def/generic
               ct-params
-              (def:function (function:
-                (if transparent? function-kind:transparent function-kind:standard)
-
-                none
-                params
-                ret
-                (translate! e body))))))))))
+              (def:function (function/standard none params ret (translate! e body) transparent?)))))))))
 
 (instance Translate.InstanceMethod (Translate ast/InstanceMethod Def)
   (function (translate! e src)
@@ -251,12 +240,7 @@
             (translate! e (ast/instance-con/s-params inst-con)))
           (def/generic
             ct-params
-            (def:function (function:
-              (if transparent? function-kind:transparent function-kind:standard)
-              none
-              params
-              ret
-              (translate! e body)))))))))
+            (def:function (function/standard none params ret (translate! e body) transparent?))))))))
 
 (instance Translate.Init (Translate ast/Expr Init)
   (function (translate! e src)
@@ -336,7 +320,7 @@
             (rt:construct-syntax
               (m/symbol/loc (option/force (m/module-set/symbol? id e)))
               (translate! e (get args[0])))
-            (rt:call (translate! e callee) (translate! e args)))]
+            (rt:call (rt-callee:standard (translate! e callee)) (translate! e args)))]
         [(ast/expr-rep:unresolved-capture _)
           (assert #f "Found expr-rep:unresolved-capture at translator")]
         [(ast/expr-rep:capture (let construct))
@@ -540,7 +524,7 @@
     [(: "syntax" 1) (ct:syntax (ct:id (get args[0])))]
     [(: (let name) (let arity)) (assert #f (string "Unsupported builtin-ct " name " (arity=" arity ")"))]))
 
-(function (builtin-rt symbol name ct-args args) {(-> m/Symbol String (Array Ct) (Array Rt) Rt)}
+(function (builtin-rt symbol name ct-args args ret) {(-> m/Symbol String (Array Ct) (Array Rt) Ct Rt)}
   (match (: name (array/length ct-args) (array/length args))
     [(: "no-op" _ 1) (get args[0])]
     [(: "size-of" 1 _) (rt:nullary (nullary:size-of (get ct-args[0])))]
@@ -639,6 +623,12 @@
     [(: "integer.to-ptr" 1 1) (rt:unary (unary:i-to-ptr (get ct-args[0])) (get args[0]))]
     [(: "syntax" 1 1) (rt:construct-syntax (m/symbol/loc symbol) (get args[0]))]
     [(: "panic" _ 1) (rt:unary unary:panic (get args[0]))]
+    [(: "call.main" _ 1) (rt:call (rt-callee:main-indirect (get args[0])) array/empty)]
+    [(: "call.macro" _ 2) (rt:call (rt-callee:macro-indirect (get args[0]) ret) (array (get args[1])))]
+    [(: "call.c" _ _)
+      (if-match1 (some (: (let a) (let args))) (array/split-first? args)
+        (rt:call (rt-callee:c-indirect a ret) args)
+        (assert #f "Unsupported builtin-rt call.c (arity=0)"))]
     [(: (let name) (let ct-arity) (let arity))
       (assert #f (string "Unsupported builtin-rt " name " (ct-arity=" ct-arity ") (arity=" arity ")"))]))
 

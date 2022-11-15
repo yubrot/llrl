@@ -26,7 +26,8 @@
      [rewrite/2 ([a A] [b B])]
      [rewrite/3 ([a A] [b B] [c C])]
      [rewrite/4 ([a A] [b B] [c C] [d D])]
-     [rewrite/5 ([a A] [b B] [c C] [d D] [e E])])
+     [rewrite/5 ([a A] [b B] [c C] [d D] [e E])]
+     [rewrite/6 ([a A] [b B] [c C] [d D] [e E] [f F])])
     (function ($name alt handler ($for-each [$x _] $args $x))
       {(forall ($for-each [_ $X] $args $X) R)
        (-> R (-> ($for-each [_ $X] $args $X) R) ($for-each [_ $X] $args (Rewrite $X)) (Rewrite R))}
@@ -157,8 +158,14 @@
 
 (instance Transform.Function (Transform Function)
   (function (transform t x)
-    (with1 (function: (let kind) (let env) (let params) (let ret) (let body)) x
-      (ok (rewrite/5 x function: (rewrite/unchanged kind) (transform t env)! (transform t params)! (transform t ret)! (transform t body)!)))))
+    (with1 (function: (let kind) (let env) (let params) (let ret) (let body) (let transparent?)) x
+      (ok (rewrite/6 x function:
+        (rewrite/unchanged kind)
+        (transform t env)!
+        (transform t params)!
+        (transform t ret)!
+        (transform t body)!
+        (rewrite/unchanged transparent?))))))
 
 (instance Transform.FunctionEnv (Transform FunctionEnv)
   (function (transform t x)
@@ -194,8 +201,6 @@
                  (rewrite/1 x rt:const (transform t c)!)]
                [(rt:call (let callee) (let args))
                  (rewrite/2 x rt:call (transform t callee)! (transform t args)!)]
-               [(rt:c-call (let sym) (let ty) (let args))
-                 (rewrite/3 x rt:c-call (rewrite/unchanged sym) (transform t ty)! (transform t args)!)]
                [(rt:cont-call (let id) (let args) (let ret))
                  (rewrite/3 x rt:cont-call (rewrite/unchanged id) (transform t args)! (transform t ret)!)]
                [(rt:nullary (let op))
@@ -243,6 +248,20 @@
            [(rewrite: (let x) (let c3?))
              (transformer/after-rt x t)!])
       (ok (rewrite: x (or c1? c2? c3?))))))
+
+(instance Transform.RtCallee (Transform RtCallee)
+  (function (transform t x)
+    (ok (match x
+      [(rt-callee:standard (let rt))
+        (rewrite/1 x rt-callee:standard (transform t rt)!)]
+      [(rt-callee:c-direct (let name) (let ret))
+        (rewrite/2 x rt-callee:c-direct (rewrite/unchanged name) (transform t ret)!)]
+      [(rt-callee:c-indirect (let rt) (let ret))
+        (rewrite/2 x rt-callee:c-indirect (transform t rt)! (transform t ret)!)]
+      [(rt-callee:main-indirect (let rt))
+        (rewrite/1 x rt-callee:main-indirect (transform t rt)!)]
+      [(rt-callee:macro-indirect (let rt) (let ret))
+        (rewrite/2 x rt-callee:macro-indirect (transform t rt)! (transform t ret)!)]))))
 
 (instance Transform.Nullary (Transform Nullary)
   (function (transform t x)

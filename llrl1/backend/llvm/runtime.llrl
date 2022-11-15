@@ -40,8 +40,8 @@
       (llvm/const (conv m) (bit-cast (pointer i8) ,var)))))
 
 (class (RuntimeBuildEnv E) (where (Conv E llvm/Module))
-  (function (runtime-build-env/capture-runtime-function! name tyf env)
-    {(-> String (-> llvm/Context llvm/Type) E llvm/Value)}))
+  (function (runtime-build-env/capture-runtime-function! name ty env)
+    {(-> String (-> llvm/Type) E llvm/Value)}))
 
 ($$ begin
   ($for-each
@@ -54,7 +54,8 @@
      [llrt-string-concat "llrt_string_concat" (-> (: (pointer i8) i64) (: (pointer i8) i64) (: (pointer i8) i64))])
 
     (function (($symbol-concat capture- $name ($symbol "!")) env)
-      (runtime-build-env/capture-runtime-function! $symbol [^1 (llvm/type %1 $ty)] env))))
+      {(forall E) (-> E llvm/Value) (where (RuntimeBuildEnv E))}
+      (runtime-build-env/capture-runtime-function! $symbol [^0 (llvm/type (conv (conv-to llvm/Module env)) $ty)] env))))
 
 (function (runtime/build-panic! builder env msg)
   {(forall E) (-> llvm/Builder E llvm/Value llvm/Value) (where (RuntimeBuildEnv E))}

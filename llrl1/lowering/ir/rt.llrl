@@ -3,6 +3,7 @@
 (import "~/lowering/ir/ct" Ct _.Ct ct:_ ct/_ CtId _.CtId)
 (export RtId _.RtId rt-id/_ RtIdGen _.RtIdGen rt-id-gen/_)
 (export Rt _.Rt rt:_ rt/_)
+(export RtCallee _.RtCallee rt-callee:_ rt-callee/_)
 (export Nullary _.Nullary nullary:_)
 (export Unary _.Unary unary:_)
 (export Binary _.Binary binary:_)
@@ -40,9 +41,8 @@
   (rt:static-fun Ct Ct (Option Rt)) ; (rt:static-fun fun ty env), fun will be simplified to (ct:id _) by normalizer
   (rt:const Const)
 
-  (rt:call Rt (Array Rt))                    ; (rt:call callee args)
-  (rt:c-call String Ct (Array Rt))           ; (rt:c-call sym ty args)
-  (rt:cont-call RtId (Array Rt) (Option Ct)) ; (rt:cont-call cont args ret)
+  (rt:call RtCallee (Array Rt))              ; callee args
+  (rt:cont-call RtId (Array Rt) (Option Ct)) ; cont args ret-ty
   (rt:nullary Nullary)
   (rt:unary Unary Rt)
   (rt:binary Binary Rt Rt)
@@ -73,7 +73,9 @@
 
 (function (rt/autocall fun ty autocall) {(-> Ct Ct Bool Rt)}
   (if autocall
-    (rt:call (rt:static-fun fun (ct:clos array/empty ty) none) array/empty)
+    (rt:call
+      (rt-callee:standard (rt:static-fun fun (ct:clos array/empty ty) none))
+      array/empty)
     (rt:static-fun fun ty none)))
 
 (function (rt/seq stmts ret) {(-> (Array Rt) Rt Rt)}
@@ -114,8 +116,7 @@
     [(rt:local-fun _ _ (let ty)) ty]
     [(rt:static-fun _ (let ty) _) ty]
     [(rt:const (let c)) (const/ty c)]
-    [(rt:call (let callee) _) (ct/force-clos-ret (rt/ty callee)?)]
-    [(rt:c-call _ (let ty) _) (ct/force-clos-ret ty)]
+    [(rt:call (let callee) _) (rt-callee/ret-ty callee)?]
     [(rt:cont-call _ _ (let ret)) (id ret)?]
     [(rt:nullary (let op)) (nullary/ty op)?]
     [(rt:unary (let op) (let a)) (unary/ty op a)?]
@@ -138,6 +139,23 @@
     [(rt:let-local-fun _ (let body)) (rt/ty body)?]
     [(rt:let-var _ (let body)) (rt/ty body)?]
     [(rt:let-cont _ (let body)) (rt/ty body)?])))
+
+; Since llrl basically does not support raw functions as values, raw function calls can only be
+; expressed as a specific form of `RtCallee`.
+(derive (Eq Ord DebugDisplay Hash) data RtCallee
+  (rt-callee:standard Rt)            ; clos
+  (rt-callee:c-direct String Ct)     ; label ret-ty
+  (rt-callee:c-indirect Rt Ct)       ; addr ret-ty
+  (rt-callee:main-indirect Rt)       ; addr
+  (rt-callee:macro-indirect Rt Ct))  ; addr ret-ty
+
+(function (rt-callee/ret-ty r) {(-> RtCallee (Option Ct))}
+  (some (match r
+    [(rt-callee:standard (let rt)) (ct/force-clos-ret (rt/ty rt)?)]
+    [(rt-callee:c-direct _ (let ty)) ty]
+    [(rt-callee:c-indirect _ (let ty)) ty]
+    [(rt-callee:main-indirect _) (ct:u 1)]
+    [(rt-callee:macro-indirect _ (let ty)) ty])))
 
 (derive (Eq Ord DebugDisplay Hash) value-data Nullary
   (nullary:uninitialized Ct)

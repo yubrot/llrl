@@ -59,9 +59,11 @@
       (: cut:no (rewrite/unchanged rt)))))
 
   (function (transformer/after-rt rt n)
-    (ok (if-match ([(rt:call (rt:static-fun (ct:id (let id)) _ none) (let args)) rt]
+    (ok (if-match ([(rt:call (rt-callee:standard (let callee)) (let args)) rt]
+                   [(rt:static-fun (ct:id (let id)) _ none) callee]
                    [(some (processing-def: (let normalized?) (let def))) (processing-def? id (env n))]
-                   [(def:function (let f (function: function-kind:transparent _ _ _ _))) def])
+                   [(def:function (let f)) def]
+                   [#t (function/transparent? f)])
       (let1 rt (call-transparent f args [^0 (alloc-rt! (env n))])
         (if normalized?
           (rewrite/as-changed (transformer/after-rt rt n)!)
@@ -104,7 +106,7 @@
             (option/force (ord-map/get? id lifted-funs))
             (def/generic
               ct-params
-              (def:function (function: function-kind:standard function-env params ret body)))
+              (def:function (function/standard function-env params ret body #f)))
             env)))
 
       (let1 body (cc lifted-funs ord-map/empty captured-env body)

@@ -9,6 +9,7 @@
   arg:optimize
   arg:run
   arg:verbose
+  (arg:backend String)
   (arg:clang-option String)
   (arg:output String)
   (arg:package String)
@@ -34,7 +35,8 @@
 
     ($for-each
       [$id $short $long]
-      ([arg:clang-option "-c" "--clang-option"]
+      ([arg:backend "-b" "--backend"]
+       [arg:clang-option "-c" "--clang-option"]
        [arg:output "-o" "--output"]
        [arg:package "-p" "--package"])
       [(or (eq? arg $short) (eq? arg $long))
@@ -110,6 +112,11 @@
           (set! run? #t)]
         [arg:verbose
           (pipeline/set-verbose! #t pipeline)]
+        [(arg:backend (let backend))
+          (match backend
+            ["default"]
+            ["llvm"]
+            [_ (error! (string "Unsupported backend: " backend))])]
         [(arg:clang-option (let opt))
           (pipeline/add-clang-option! opt pipeline)]
         [(arg:output (let out))
@@ -149,6 +156,7 @@
   (println! "    -v, --verbose     Enables verbose output")
   (println! "")
   (println! "OPTIONS:")
+  (println! "    -b, --backend <BACKEND>                                 Sets the backend [possible values: default, llvm, chibi]")
   (println! "    -c, --clang-option <OPTION>...                          Adds an option to be passed to clang")
   (println! "    -o, --output <OUTPUT>                                   Sets the destination of the executable")
   (println! "    -p, --package <DIRPATH> or <PACKAGE-NAME>:<DIRPATH>...  Adds a package reference")

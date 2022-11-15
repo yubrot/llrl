@@ -79,7 +79,7 @@ impl<'ctx> ContextArtifact<'ctx> {
         // Set struct bodies
         for (id, def) in defs {
             if let Def::Struct(ref def) = **def {
-                // Bacause currently we always use C-compatible structures, there is no difference by def.repr
+                // Bacause currently we always use C-compatible structures, there is no difference depending on def.repr
                 let ty = self.structs.get(id).unwrap();
                 ty.set_body(&self.llvm_type_all(&def.fields), false);
             }
@@ -121,7 +121,11 @@ impl<'ctx> ContextArtifact<'ctx> {
         tys.into_iter().map(|ty| self.llvm_type(ty)).collect()
     }
 
-    pub fn c_function_type(&self, args: &[LLVMValue<'ctx, '_>], ret: &Ct) -> CFunctionType<'ctx> {
+    pub fn c_function_signature(
+        &self,
+        args: &[LLVMValue<'ctx, '_>],
+        ret: &Ct,
+    ) -> CFunctionSignature<'ctx> {
         let mut params = args.iter().map(|a| a.get_type()).collect::<Vec<_>>();
         let mut ret = match ret {
             Ct::Unit => llvm_type!(*self, void).as_type(),
@@ -138,9 +142,9 @@ impl<'ctx> ContextArtifact<'ctx> {
                 false
             };
 
-        CFunctionType::new(
-            return_by_pointer_store,
+        CFunctionSignature::new(
             llvm_type!(*self, (function(...{ params }) { ret })),
+            return_by_pointer_store,
         )
     }
 }
@@ -184,9 +188,9 @@ impl<'ctx> FunctionSymbol<'ctx> {
 }
 
 #[derive(Debug, Clone, Copy, new)]
-pub struct CFunctionType<'ctx> {
-    pub return_by_pointer_store: bool,
+pub struct CFunctionSignature<'ctx> {
     pub ty: LLVMFunctionType<'ctx>,
+    pub return_by_pointer_store: bool,
 }
 
 macro_rules! get_intrinsic_function {
@@ -304,14 +308,14 @@ impl<'ctx: 'm, 'm> ModuleArtifact<'ctx, 'm> {
     pub fn capture_c_function(
         &mut self,
         name: &str,
-        function_ty: impl FnOnce() -> CFunctionType<'ctx>,
+        sig: impl FnOnce() -> CFunctionSignature<'ctx>,
     ) -> CFunctionArtifact<'ctx, 'm> {
         if let Some(function) = self.c_functions.get(name) {
             return *function;
         }
-        let ty = function_ty();
-        let function = self.module.add_function(name, ty.ty);
-        let artifact = CFunctionArtifact::new(function, ty);
+        let sig = sig();
+        let function = self.module.add_function(name, sig.ty);
+        let artifact = CFunctionArtifact::new(function, sig);
         self.c_functions.insert(name.to_string(), artifact);
         artifact
     }
@@ -369,7 +373,7 @@ pub struct FunctionArtifact<'ctx: 'm, 'm> {
 #[derive(Debug, Clone, Copy, new)]
 pub struct CFunctionArtifact<'ctx: 'm, 'm> {
     pub value: LLVMFunction<'ctx, 'm>,
-    pub ty: CFunctionType<'ctx>,
+    pub sig: CFunctionSignature<'ctx>,
 }
 
 #[derive(Debug, Clone, Default)]
