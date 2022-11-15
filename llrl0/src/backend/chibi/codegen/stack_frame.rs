@@ -1,5 +1,4 @@
 use super::Context;
-use crate::backend::native::calling::CallConv;
 use crate::backend::native::mem_layout::{Class, Layout};
 use crate::lowering::ir::*;
 use std::collections::HashMap;
@@ -63,10 +62,8 @@ struct StackFrameBuilder<'a> {
 
 impl<'a> StackFrameBuilder<'a> {
     fn collect(&mut self, f: &Function) {
-        let call_conv = CallConv::from(f.kind);
-
         if let Some(env) = f.env.as_ref() {
-            assert_eq!(call_conv, CallConv::Default);
+            assert_eq!(f.kind, FunctionKind::Standard);
             // save the env pointer in StackFrame
             self.add_var(env.id, &Ct::Env);
 
@@ -76,13 +73,13 @@ impl<'a> StackFrameBuilder<'a> {
         }
 
         if self.ctx.layout(&f.ret).class == Class::Memory {
-            assert_ne!(call_conv, CallConv::Main);
+            assert_ne!(f.kind, FunctionKind::Main);
             // save the ret pointer in StackFrame
             let offset = self.allocate(&Layout::pointer());
             assert!(self.frame.ret_ptr.replace(offset).is_none());
         }
 
-        if call_conv == CallConv::Macro {
+        if f.kind == FunctionKind::Macro {
             // Save the macro input (Syntax Sexp)
             assert_eq!(f.params.len(), 1);
             let param = &f.params[0];

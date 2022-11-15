@@ -90,6 +90,7 @@ pub struct Function {
     pub ret: Ct,
     pub body: Rt,
     pub kind: FunctionKind,
+    pub transparent: bool,
 }
 
 impl Function {
@@ -104,8 +105,18 @@ impl Function {
         Ct::clos(Vec::new(), Ct::BOOL)
     }
 
+    pub fn standard(
+        env: Option<FunctionEnv>,
+        params: Vec<RtParam>,
+        ret: Ct,
+        body: Rt,
+        transparent: bool,
+    ) -> Self {
+        Self::new(env, params, ret, body, FunctionKind::Standard, transparent)
+    }
+
     pub fn r#macro(param: RtParam, ret: Ct, body: Rt) -> Self {
-        Self::new(None, vec![param], ret, body, FunctionKind::Macro)
+        Self::new(None, vec![param], ret, body, FunctionKind::Macro, false)
     }
 
     pub fn main(mut inits: Vec<Init>) -> Self {
@@ -122,6 +133,7 @@ impl Function {
             ret.ty,
             Rt::seq(stmts, ret.expr),
             FunctionKind::Main,
+            false,
         )
     }
 }
@@ -130,7 +142,6 @@ impl Function {
 pub enum FunctionKind {
     Standard,
     Macro,
-    Transparent,
     Main,
 }
 

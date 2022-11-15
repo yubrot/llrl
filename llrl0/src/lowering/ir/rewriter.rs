@@ -214,10 +214,6 @@ impl Rewrite for Rt {
                     rewriter.rewrite(&mut call.callee)?;
                     rewriter.rewrite(&mut call.args)?;
                 }
-                Self::CCall(call) => {
-                    rewriter.rewrite(&mut call.ty)?;
-                    rewriter.rewrite(&mut call.args)?;
-                }
                 Self::ContCall(call) => {
                     rewriter.rewrite(&mut call.args)?;
                     rewriter.rewrite(&mut call.ret)?;
@@ -303,6 +299,31 @@ impl Rewrite for Rt {
         } else {
             Ok(())
         }
+    }
+}
+
+impl Rewrite for RtCallee {
+    fn rewrite<T: Rewriter>(&mut self, rewriter: &mut T) -> Result<(), T::Error> {
+        match self {
+            Self::Standard(rt) => {
+                rewriter.rewrite(rt)?;
+            }
+            Self::CDirect(_, ret) => {
+                rewriter.rewrite(ret)?;
+            }
+            Self::CIndirect(rt, ret) => {
+                rewriter.rewrite(rt)?;
+                rewriter.rewrite(ret)?;
+            }
+            Self::MainIndirect(rt) => {
+                rewriter.rewrite(rt)?;
+            }
+            Self::MacroIndirect(rt, ret) => {
+                rewriter.rewrite(rt)?;
+                rewriter.rewrite(ret)?;
+            }
+        }
+        Ok(())
     }
 }
 

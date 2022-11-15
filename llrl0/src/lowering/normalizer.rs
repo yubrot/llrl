@@ -100,11 +100,11 @@ impl<'e, E: Env> rewriter::Rewriter for Normalizer<'e, E> {
     fn after_rt(&mut self, rt: &mut Rt) -> Result<(), ()> {
         if_chain! {
             if let Rt::Call(call) = rt;
-            if let Rt::StaticFun(ref capture) = call.callee;
+            if let RtCallee::Standard(Rt::StaticFun(ref capture)) = call.callee;
             if let Ct::Id(id) = capture.fun;
             if let Some(ProcessingDef { is_normalized, def }) = self.env.get_processing_def(id);
             if let Def::Function(f) = def.as_ref();
-            if f.kind == FunctionKind::Transparent;
+            if f.transparent;
             then {
                 let args = std::mem::take(&mut call.args);
                 *rt = call_transparent(f, args, || self.env.alloc_rt());
@@ -178,12 +178,8 @@ impl ClosureConversion {
                 .map(|id| FunctionEnv::new(id, env_params.clone()));
             let def = Def::generic(
                 fun.ct_params,
-                Def::Function(Function::new(
-                    env,
-                    fun.params,
-                    fun.ret,
-                    fun.body,
-                    FunctionKind::Standard,
+                Def::Function(Function::standard(
+                    env, fun.params, fun.ret, fun.body, false,
                 )),
             );
             normalizer.env.define_ct(id, def);

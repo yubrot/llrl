@@ -1,6 +1,5 @@
 use super::runtime;
-use super::{CFunctionArtifact, ContextArtifact, FunctionArtifact, ModuleArtifact};
-use crate::backend::native::calling::CallConv;
+use super::{CFunctionType, ContextArtifact, FunctionArtifact, ModuleArtifact};
 use crate::backend::native::data::NativeSexp;
 use crate::lowering::ir::*;
 use derive_new::new;
@@ -14,7 +13,8 @@ pub fn c_main_adapter<'ctx: 'm, 'm>(
     let c_main_ty = llvm_type!(*module, (function(i32 (ptr (ptr u8))) i32));
     let c_main = module.module().add_function("main", c_main_ty);
     let llrt_init_ty = llvm_type!(*module, (function(i32 (ptr (ptr u8))) void));
-    let llrt_init = module.capture_c_function("llrt_init", || llrt_init_ty);
+    let llrt_init =
+        module.capture_c_function("llrt_init", || CFunctionType::new(false, llrt_init_ty));
     let entry_bb = c_main.append_block("entry");
     let builder = LLVMBuilder::new(entry_bb);
     builder.build_call(llrt_init.value, &c_main.params());
@@ -34,12 +34,12 @@ pub fn function_body<'ctx: 'm, 'm>(
 
     let (ret_pointer, env_param, params) = {
         let mut params = function.value.params();
-        let ret_pointer = if function.symbol.call_conv == CallConv::Macro {
+        let ret_pointer = if function.symbol.kind == FunctionKind::Macro {
             Some(params.remove(0))
         } else {
             None
         };
-        let env_param = if function.symbol.call_conv == CallConv::Default {
+        let env_param = if function.symbol.kind == FunctionKind::Standard {
             Some(params.remove(0))
         } else {
             None
@@ -116,26 +116,37 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
             Rt::Const(c) => Some(self.llvm_constant(c).as_value()),
             Rt::Call(call) => {
                 let args = self.eval_all(&call.args)?;
-                let clos = self.eval(&call.callee)?;
-                Some(self.eval_call(clos, &args))
-            }
-            Rt::CCall(call) => {
-                let args = self.eval_all(&call.args)?;
-                let ctx = self.ctx;
-                let f = self
-                    .module
-                    .capture_c_function(&call.sym, || match &call.ty {
-                        Ct::Clos(ref clos) => {
-                            let params = ctx.llvm_type_all(&clos.0);
-                            let ret = match clos.1 {
-                                Ct::Unit => llvm_type!(*ctx, void).as_type(),
-                                ref ty => ctx.llvm_type(ty),
-                            };
-                            llvm_type!(*ctx, (function(...{params}) {ret}))
-                        }
-                        ty => panic!("CCall type is not a function type: {}", ty),
-                    });
-                Some(self.eval_c_call(f, &args))
+
+                match call.callee {
+                    RtCallee::Standard(ref callee) => {
+                        let clos = self.eval(callee)?;
+                        Some(self.eval_call(clos, &args))
+                    }
+                    RtCallee::CDirect(ref name, ref ret) => {
+                        let f = self
+                            .module
+                            .capture_c_function(name, || self.ctx.c_function_type(&args, ret));
+                        Some(self.eval_c_call(f.value, f.ty, &args))
+                    }
+                    RtCallee::CIndirect(ref addr, ref ret) => {
+                        let addr = self.eval(addr)?;
+                        let ty = self.ctx.c_function_type(&args, ret);
+                        Some(self.eval_c_indirect_call(addr, ty, &args))
+                    }
+                    // At this time, both mains and macros are called with the C calling conventions.
+                    RtCallee::MainIndirect(ref addr) => {
+                        assert!(args.is_empty());
+                        let addr = self.eval(addr)?;
+                        let ty = self.ctx.c_function_type(&args, &Ct::BOOL);
+                        Some(self.eval_c_indirect_call(addr, ty, &args))
+                    }
+                    RtCallee::MacroIndirect(ref addr, ref ret) => {
+                        assert_eq!(args.len(), 1);
+                        let addr = self.eval(addr)?;
+                        let ty = self.ctx.c_function_type(&args, ret);
+                        Some(self.eval_c_indirect_call(addr, ty, &args))
+                    }
+                }
             }
             Rt::ContCall(call) => {
                 let args = self.eval_all(&call.args)?;
@@ -497,15 +508,14 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
 
     fn eval_c_call(
         &mut self,
-        cfun: CFunctionArtifact<'ctx, 'm>,
+        value: impl LLVMAnyValue<'ctx, 'm>,
+        ty: CFunctionType<'ctx>,
         args: &[LLVMValue<'ctx, 'm>],
     ) -> LLVMValue<'ctx, 'm> {
-        if cfun.return_by_pointer_store {
-            let ret_param = cfun.value.params()[0];
+        if ty.return_by_pointer_store {
             let ret_ptr = self.builder.build_entry_alloca(
                 "rettmp",
-                ret_param
-                    .get_type()
+                ty.ty.param_types()[0]
                     .as_type_of::<LLVMPointerType>()
                     .unwrap()
                     .element_type(),
@@ -513,16 +523,28 @@ impl<'a, 'ctx: 'm, 'm> Codegen<'a, 'ctx, 'm> {
             let args = std::iter::once(ret_ptr)
                 .chain(args.iter().copied())
                 .collect::<Vec<_>>();
-            self.builder.build_call(cfun.value, &args);
+            self.builder.build_call(value, &args);
             self.builder.build_load(ret_ptr)
         } else {
-            let ret = self.builder.build_call(cfun.value, args);
+            let ret = self.builder.build_call(value, args);
             if ret.get_type().is_sized() {
                 ret
             } else {
                 self.llvm_constant(&Const::Unit).as_value()
             }
         }
+    }
+
+    fn eval_c_indirect_call(
+        &mut self,
+        addr: impl LLVMAnyValue<'ctx, 'm>,
+        ty: CFunctionType<'ctx>,
+        args: &[LLVMValue<'ctx, 'm>],
+    ) -> LLVMValue<'ctx, 'm> {
+        let f = self
+            .builder
+            .build_bit_cast(addr, llvm_type!(*self.ctx, (ptr { ty.ty })));
+        self.eval_c_call(f, ty, args)
     }
 
     fn eval_if(&mut self, cond: &Rt, then: &Rt, else_: &Rt) -> Option<LLVMValue<'ctx, 'm>> {

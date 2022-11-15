@@ -1,7 +1,7 @@
 //! x64 assembler.
 
 mod encoding;
-mod inst;
+pub mod inst;
 mod obj;
 mod operand;
 mod writer;

@@ -32,7 +32,6 @@
 //! * Main: No environemnt is passed.
 
 use super::{Context, FunctionSymbol};
-use crate::backend::native::calling::CallConv;
 use crate::backend::native::data::*;
 use crate::backend::native::mem_layout::{Class, Layout};
 use crate::lowering::ir::{self, *};
@@ -82,7 +81,7 @@ pub fn object(
         if let Def::Function(ref f) = **def {
             let name = id.index().to_string();
             function_labels.insert(*id, w.get_label(&name));
-            let symbol = FunctionSymbol::new(name, f.kind.into(), f.ty());
+            let symbol = FunctionSymbol::new(name, f.kind, f.ty());
             ctx.define_function_symbol(*id, symbol);
         }
     }
@@ -98,7 +97,7 @@ pub fn object(
     if let Some(main) = main {
         let name = "llrl_main".to_string();
         let label = w.get_label(&name);
-        let symbol = FunctionSymbol::new(name, CallConv::Main, Function::main_ty());
+        let symbol = FunctionSymbol::new(name, FunctionKind::Main, Function::main_ty());
         ctx.define_main_function_symbol(symbol);
 
         w.define(label, true);
@@ -196,7 +195,7 @@ impl<'a> FunctionCodegen<'a> {
             }
         }
 
-        if CallConv::from(f.kind) == CallConv::Macro {
+        if f.kind == FunctionKind::Macro {
             assert!(f.env.is_none());
             let offset = *self.stack_frame.var_offsets.get(&f.params[0].id).unwrap();
             self.w.movq(memory(Rbp + offset), Rsi)?;
@@ -249,8 +248,41 @@ impl<'a> FunctionCodegen<'a> {
                 ct => panic!("Unresolved Ct: {}, this must be resolved by lowerizer", ct),
             },
             Rt::Const(c) => Some(self.eval_const(c)?),
-            Rt::Call(call) => self.eval_call(&call.callee, &call.args)?,
-            Rt::CCall(call) => self.eval_c_call(&call.sym, &call.ty, &call.args)?,
+            Rt::Call(call) => match call.callee {
+                RtCallee::Standard(ref callee) => self.eval_call(callee, &call.args)?,
+                RtCallee::CDirect(ref sym, ref ret) => self.eval_c_call(
+                    |self_| Ok(Some(AddressTable(self_.w.get_label(sym)))),
+                    ret,
+                    &call.args,
+                )?,
+                RtCallee::CIndirect(ref addr, ref ret) => self.eval_c_call(
+                    |self_| {
+                        eval_continues!(self_.eval(addr)?);
+                        Ok(Some(Rax))
+                    },
+                    ret,
+                    &call.args,
+                )?,
+                // At this time, both mains and macros are called with the C calling conventions.
+                RtCallee::MainIndirect(ref addr) => self.eval_c_call(
+                    |self_| {
+                        assert!(call.args.is_empty());
+                        eval_continues!(self_.eval(addr)?);
+                        Ok(Some(Rax))
+                    },
+                    &Ct::BOOL,
+                    &call.args,
+                )?,
+                RtCallee::MacroIndirect(ref addr, ref ret) => self.eval_c_call(
+                    |self_| {
+                        assert_eq!(call.args.len(), 1);
+                        eval_continues!(self_.eval(addr)?);
+                        Ok(Some(Rax))
+                    },
+                    ret,
+                    &call.args,
+                )?,
+            },
             Rt::ContCall(call) => self.eval_cont_call(call.cont, &call.args)?,
             Rt::Nullary(nullary) => self.eval_nullary(nullary)?,
             Rt::Unary(unary) => self.eval_unary(&unary.0, &unary.1)?,
@@ -453,13 +485,28 @@ impl<'a> FunctionCodegen<'a> {
         Ok(Some(ret))
     }
 
-    fn eval_c_call(&mut self, sym: &str, ty: &Ct, args: &[Rt]) -> io::Result<Option<Layout>> {
-        let Ct::Clos(callee_ty) = ty else {
-            panic!("Type error: Callee is not a closure")
+    fn eval_c_call<F>(
+        &mut self,
+        c_fun: impl FnOnce(&mut Self) -> io::Result<Option<F>>,
+        ret: &Ct,
+        args: &[Rt],
+    ) -> io::Result<Option<Layout>>
+    where
+        inst::Callq<F>: WriteInst<Writer>,
+    {
+        let ret = self.ctx.layout(ret);
+        let Some(call_args) = args
+            .iter()
+            .map(|a| Some(self.ctx.layout(a.ty()?.as_ref())))
+            .collect::<Option<Vec<_>>>()
+            .map(|args| CallArg::c_args(args, &ret))
+        else {
+            for a in args {
+                eval_continues!(self.eval(a)?);
+            }
+            panic!("Evaluation must not return")
         };
 
-        let ret = self.ctx.layout(&callee_ty.1);
-        let call_args = CallArg::c_args(callee_ty.0.iter().map(|a| self.ctx.layout(a)), &ret);
         let (stack_args, reg_args) = args
             .iter()
             .zip(call_args.iter().copied())
@@ -473,6 +520,8 @@ impl<'a> FunctionCodegen<'a> {
             let layout = eval_continues!(self.eval(arg)?);
             self.push(&layout)?;
         }
+
+        let c_fun = eval_continues!(c_fun(self)?);
 
         // Pop register args to specific registers
         for (_, c) in reg_args {
@@ -491,8 +540,7 @@ impl<'a> FunctionCodegen<'a> {
             self.w.leaq(Rdi, memory(Rsp + offset as i32))?;
         }
 
-        let c_fun = self.w.get_label(sym);
-        self.w.callq(AddressTable(c_fun))?;
+        self.w.callq(c_fun)?;
 
         self.shrink_stack(&call_frame.remnants_after_call())?;
 

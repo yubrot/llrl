@@ -1,4 +1,3 @@
-use crate::backend::native::calling::CallConv;
 use crate::backend::native::mem_layout::{Layout, LayoutResolver};
 use crate::lowering::ir::*;
 use derive_new::new;
@@ -57,6 +56,6 @@ impl Context {
 #[derive(PartialEq, Eq, Debug, Clone, new)]
 pub struct FunctionSymbol {
     pub name: String,
-    pub call_conv: CallConv,
+    pub kind: FunctionKind,
     pub ty: Ct,
 }

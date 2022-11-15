@@ -121,6 +121,7 @@ impl fmt::Display for Function {
         writeln!(f, "  ret = {}", self.ret)?;
         writeln!(f, "  body = {}", self.body)?;
         writeln!(f, "  kind = {}", self.kind)?;
+        writeln!(f, "  transparent = {}", self.transparent)?;
         write!(f, "}}")
     }
 }
@@ -130,7 +131,6 @@ impl fmt::Display for FunctionKind {
         match self {
             Self::Standard => write!(f, "standard"),
             Self::Macro => write!(f, "macro"),
-            Self::Transparent => write!(f, "transparent"),
             Self::Main => write!(f, "main"),
         }
     }
@@ -183,7 +183,6 @@ impl fmt::Display for Rt {
             Self::StaticFun(capture) => write!(f, "{}", capture),
             Self::Const(c) => write!(f, "{}", c),
             Self::Call(call) => write!(f, "{}({})", call.callee, call.args.iter().format(", ")),
-            Self::CCall(call) => write!(f, "@{}({})", call.sym, call.args.iter().format(", ")),
             Self::ContCall(call) => write!(f, "{}({})", call.cont, call.args.iter().format(", ")),
             Self::Nullary(nullary) => write!(f, "{}()", nullary),
             Self::Unary(unary) => write!(f, "{}({})", unary.0, unary.1),
@@ -226,6 +225,18 @@ impl fmt::Display for Rt {
             Self::LetCont(let_) => {
                 write!(f, "letc({} in {})", let_.0.iter().format(", "), let_.1)
             }
+        }
+    }
+}
+
+impl fmt::Display for RtCallee {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Standard(rt) => write!(f, "{}", rt),
+            Self::CDirect(name, ret) => write!(f, "$c:{}[{}]", name, ret),
+            Self::CIndirect(rt, ret) => write!(f, "$c:({})[{}]", rt, ret),
+            Self::MainIndirect(rt) => write!(f, "$main:({})", rt),
+            Self::MacroIndirect(rt, _) => write!(f, "$macro:({})", rt),
         }
     }
 }
