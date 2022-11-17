@@ -152,27 +152,32 @@ impl TestTarget {
                     build_modules(sources, Default::default(), &(), &mut ctx.report);
                 cond.run(&modules, &errors, ctx);
             }
-            Self::Backend => {
-                let backend = DefaultBackend::from(BackendOptions::default());
-                self.run_backend(sources, cond, backend, ctx);
-            }
-            Self::Std => {
-                let backend = DefaultBackend::from(BackendOptions::default());
-                self.run_backend(sources, cond, backend, ctx);
+            Self::Backend | Self::Std => {
+                #[cfg(feature = "llvm-backend")]
+                {
+                    let backend = crate::backend::llvm::Backend::from(BackendOptions::default());
+                    self.run_backend(&sources, cond, backend, ctx);
+                }
+                #[cfg(feature = "chibi-backend")]
+                {
+                    let backend = crate::backend::chibi::Backend::from(BackendOptions::default());
+                    self.run_backend(&sources, cond, backend, ctx);
+                }
             }
         }
     }
 
     fn run_backend<B: Backend + ExecuteMain>(
         &self,
-        sources: Vec<Source>,
+        sources: &[Source],
         cond: &TestCondition,
         backend: B,
         ctx: &mut TestContext,
     ) {
         let lowerizer = Lowerizer::new(backend);
         let entry_points = vec![Path::current()].into_iter().collect();
-        let (modules, errors) = build_modules(sources, entry_points, &lowerizer, &mut ctx.report);
+        let (modules, errors) =
+            build_modules(sources.to_vec(), entry_points, &lowerizer, &mut ctx.report);
         cond.run(&modules, &errors, ctx);
 
         if matches!(cond, TestCondition::Pass(_)) {

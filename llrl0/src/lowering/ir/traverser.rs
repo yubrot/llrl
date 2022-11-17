@@ -210,10 +210,6 @@ impl Traverse for Rt {
                     traverser.traverse(&call.callee)?;
                     traverser.traverse(&call.args)?;
                 }
-                Self::CCall(call) => {
-                    traverser.traverse(&call.ty)?;
-                    traverser.traverse(&call.args)?;
-                }
                 Self::ContCall(call) => {
                     traverser.traverse(&call.args)?;
                     traverser.traverse(&call.ret)?;
@@ -299,6 +295,31 @@ impl Traverse for Rt {
         } else {
             Ok(())
         }
+    }
+}
+
+impl Traverse for RtCallee {
+    fn traverse<T: Traverser>(&self, traverser: &mut T) -> Result<(), T::Error> {
+        match self {
+            Self::Standard(rt) => {
+                traverser.traverse(rt)?;
+            }
+            Self::CDirect(_, ret) => {
+                traverser.traverse(ret)?;
+            }
+            Self::CIndirect(rt, ret) => {
+                traverser.traverse(rt)?;
+                traverser.traverse(ret)?;
+            }
+            Self::MainIndirect(rt) => {
+                traverser.traverse(rt)?;
+            }
+            Self::MacroIndirect(rt, ret) => {
+                traverser.traverse(rt)?;
+                traverser.traverse(ret)?;
+            }
+        }
+        Ok(())
     }
 }
 

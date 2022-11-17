@@ -12,7 +12,8 @@ version = "0.1.0"
 name = "llrl"
 
 [features]
-default = ["llvm-backend"]
+chibi-backend = ["xten0"]
+default = ["llvm-backend", "chibi-backend"]
 llvm-backend = ["llvm0"]
 
 [dependencies]
@@ -34,3 +35,4 @@ smallvec = "1"
 tempfile = "3"
 thiserror = "1"
 typed-arena = "2"
+xten0 = {path = "../xten0", optional = true}

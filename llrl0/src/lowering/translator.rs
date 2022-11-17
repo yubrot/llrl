@@ -151,15 +151,16 @@ impl Translate for ast::Function {
 
         let (ct_params, params, ret_ty) = env.translate_scheme(Some(self.params.as_ref()), scheme);
         let body = env.translate(&self.body);
-        let kind = if self.transparent {
-            FunctionKind::Transparent
-        } else {
-            FunctionKind::Standard
-        };
 
         Def::generic(
             ct_params,
-            Def::Function(Function::new(None, params, ret_ty, body, kind)),
+            Def::Function(Function::standard(
+                None,
+                params,
+                ret_ty,
+                body,
+                self.transparent,
+            )),
         )
     }
 }
@@ -190,18 +191,15 @@ impl Translate for ast::CFunction {
         };
 
         let args = params.iter().map(|p| Rt::Var(p.id, p.ty.clone())).collect();
-        let ty = Ct::clos(
-            params.iter().map(|p| p.ty.clone()).collect(),
-            ret_ty.clone(),
-        );
-        let rt = Rt::c_call(self.c_name.clone(), ty, args);
+        let callee = RtCallee::CDirect(self.c_name.clone(), ret_ty.clone());
 
-        Def::Function(Function::new(
+        Def::Function(Function::standard(
             None,
             params,
             ret_ty,
-            rt,
-            FunctionKind::Standard,
+            Rt::call(callee, args),
+            // Set to false to keep the evaluation order consistent, but it could be set to true:
+            false,
         ))
     }
 }
@@ -215,17 +213,11 @@ impl Translate for ast::BuiltinOp {
 
         let ct_args = ct_params.iter().map(|p| Ct::Id(*p)).collect();
         let args = params.iter().map(|p| Rt::Var(p.id, p.ty.clone())).collect();
-        let rt = builtin_rt(symbol, &self.builtin_name, ct_args, args);
+        let rt = builtin_rt(symbol, &self.builtin_name, ct_args, args, &ret_ty);
 
         Def::generic(
             ct_params,
-            Def::Function(Function::new(
-                None,
-                params,
-                ret_ty,
-                rt,
-                FunctionKind::Transparent,
-            )),
+            Def::Function(Function::standard(None, params, ret_ty, rt, true)),
         )
     }
 }
@@ -297,13 +289,7 @@ impl Translate for ast::DataValueCon {
 
         Def::generic(
             ct_params,
-            Def::Function(Function::new(
-                None,
-                params,
-                ret_ty,
-                rt,
-                FunctionKind::Transparent,
-            )),
+            Def::Function(Function::standard(None, params, ret_ty, rt, true)),
         )
     }
 }
@@ -329,17 +315,11 @@ impl Translate for ast::BuiltinValueCon {
 
         let ct_args = ct_params.iter().map(|p| Ct::Id(*p)).collect();
         let args = params.iter().map(|p| Rt::Var(p.id, p.ty.clone())).collect();
-        let rt = builtin_rt(symbol, &self.builtin_name, ct_args, args);
+        let rt = builtin_rt(symbol, &self.builtin_name, ct_args, args, &ty);
 
         Def::generic(
             ct_params,
-            Def::Function(Function::new(
-                None,
-                params,
-                ty,
-                rt,
-                FunctionKind::Transparent,
-            )),
+            Def::Function(Function::standard(None, params, ty, rt, true)),
         )
     }
 }
@@ -410,17 +390,18 @@ impl Translate for ast::ClassMethod {
                 env.translate_scheme(Some(self.params.as_ref()), &self.ann.body);
 
             let body = env.translate(body);
-            let kind = if self.transparent {
-                FunctionKind::Transparent
-            } else {
-                FunctionKind::Standard
-            };
 
             Some(Def::generic(
                 class_ct_params,
                 Def::generic(
                     method_ct_params,
-                    Def::Function(Function::new(None, params, ret_ty, body, kind)),
+                    Def::Function(Function::standard(
+                        None,
+                        params,
+                        ret_ty,
+                        body,
+                        self.transparent,
+                    )),
                 ),
             ))
         } else {
@@ -443,17 +424,18 @@ impl Translate for ast::InstanceMethod {
             env.translate_scheme(Some(self.params.as_ref()), scheme);
 
         let body = env.translate(&self.body);
-        let kind = if self.transparent {
-            FunctionKind::Transparent
-        } else {
-            FunctionKind::Standard
-        };
 
         Def::generic(
             inst_ct_params,
             Def::generic(
                 method_ct_params,
-                Def::Function(Function::new(None, params, ret_ty, body, kind)),
+                Def::Function(Function::standard(
+                    None,
+                    params,
+                    ret_ty,
+                    body,
+                    self.transparent,
+                )),
             ),
         )
     }
@@ -556,7 +538,7 @@ impl Translate for ast::Expr {
                     }
                 }
                 let callee = env.translate(&apply.callee);
-                Rt::call(callee, args)
+                Rt::call(RtCallee::Standard(callee), args)
             }
             ast::ExprRep::Capture(ref use_) => {
                 let construct = *use_.get_resolved();
@@ -791,7 +773,13 @@ fn builtin_ct(name: &str, args: &[CtId]) -> Ct {
     }
 }
 
-fn builtin_rt(symbol: &Symbol, name: &str, mut ct_args: Vec<Ct>, mut args: Vec<Rt>) -> Rt {
+fn builtin_rt(
+    symbol: &Symbol,
+    name: &str,
+    mut ct_args: Vec<Ct>,
+    mut args: Vec<Rt>,
+    ret_ty: &Ct,
+) -> Rt {
     use std::mem::take;
 
     match (name, ct_args.as_mut_slice(), args.as_mut_slice()) {
@@ -896,6 +884,16 @@ fn builtin_rt(symbol: &Symbol, name: &str, mut ct_args: Vec<Ct>, mut args: Vec<R
         ("integer.to-ptr", [ty], [a]) => Rt::unary(Unary::IToPtr(take(ty)), take(a)),
         ("syntax", [_], [a]) => Rt::construct_syntax(symbol.loc, take(a)),
         ("panic", _, [a]) => Rt::unary(Unary::Panic, take(a)),
+        ("call.main", _, [a]) => Rt::call(RtCallee::MainIndirect(take(a)), Vec::new()),
+        ("call.macro", _, [a, s]) => Rt::call(
+            RtCallee::MacroIndirect(take(a), ret_ty.clone()),
+            vec![take(s)],
+        ),
+        ("call.c", _, [_, ..]) => {
+            let addr = args.remove(0);
+            let args = std::mem::take(&mut args);
+            Rt::call(RtCallee::CIndirect(addr, ret_ty.clone()), args)
+        }
         (name, _, _) => panic!(
             "Unsupported builtin-value {} (ct_args={}, args={})",
             name,

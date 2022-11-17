@@ -1,7 +1,5 @@
 //! Provides bindings to call native targeting backend's functions.
 
-// NOTE: Can we use utilities like libffi to support a wider variety of functions?
-
 use super::data::{NativeResult, NativeSexp, NativeString, NativeSyntax, NativeValue};
 use crate::lowering::ir::*;
 
@@ -27,22 +25,4 @@ pub unsafe fn native_main(f: *const ()) -> impl Fn() -> bool {
     let f = std::mem::transmute::<_, NativeMain>(f);
 
     move || f()
-}
-
-/// Native function calling convention.
-#[derive(PartialEq, Eq, Debug, Clone, Copy)]
-pub enum CallConv {
-    Default,
-    Macro, // NativeMacro
-    Main,  // NativeMain
-}
-
-impl From<FunctionKind> for CallConv {
-    fn from(kind: FunctionKind) -> Self {
-        match kind {
-            FunctionKind::Standard | FunctionKind::Transparent => Self::Default,
-            FunctionKind::Macro => Self::Macro,
-            FunctionKind::Main => Self::Main,
-        }
-    }
 }

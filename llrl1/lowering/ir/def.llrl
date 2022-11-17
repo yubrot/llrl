@@ -74,9 +74,21 @@
 (getter union: union/tys)
 
 (derive (DebugDisplay) value-data Function
-  (function: FunctionKind (Option FunctionEnv) (Array RtParam) Ct Rt))
+  (function:
+    FunctionKind
+    (Option FunctionEnv)
+    (Array RtParam)
+    Ct
+    Rt
+    Bool))
 
-(getter function: function/kind function/env function/params function/ret function/body)
+(getter function:
+  function/kind
+  function/env
+  function/params
+  function/ret
+  function/body
+  function/transparent?)
 
 (function (function/ty f) {(-> Function Ct)}
   (ct:clos (collect (it/map rt-param/ty (function/params f))) (function/ret f)))
@@ -84,8 +96,12 @@
 (function function/main-ty {Ct}
   (ct:clos array/empty (ct:u 1)))
 
+(function (function/standard env params ret body transparent?)
+  {(-> (Option FunctionEnv) (Array RtParam) Ct Rt Bool Function)}
+  (function: function-kind:standard env params ret body transparent?))
+
 (function (function/macro param ret body) {(-> RtParam Ct Rt Function)}
-  (function: function-kind:macro none (array param) ret body))
+  (function: function-kind:macro none (array param) ret body #f))
 
 (function (function/main inits) {(-> (Array Init) Function)}
   (with1
@@ -94,12 +110,11 @@
       (: ret-expr inits)
       (: (rt:const (const/bool #f)) inits))
     (let1 body (rt/seq (collect (it/map init/expr inits)) ret-expr)
-      (function: function-kind:main none array/empty (ct:u 1) body))))
+      (function: function-kind:main none array/empty (ct:u 1) body #f))))
 
 (derive (Eq Ord DebugDisplay Hash) value-data FunctionKind
   function-kind:standard
   function-kind:macro
-  function-kind:transparent
   function-kind:main)
 
 (derive (Eq DebugDisplay) value-data FunctionEnv

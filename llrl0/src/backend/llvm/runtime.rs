@@ -98,38 +98,52 @@ impl<'ctx: 'm, 'm> LLVMTypeBuilder<'ctx> for Library<'ctx, 'm> {
     }
 }
 
-pub fn data_as_llvm_constant<'ctx: 'm, 'm, T: NativeData>(
-    value: T,
+pub fn data_as_llvm_constant<'ctx: 'm, 'm>(
+    rep: &Rep,
     module: &'m LLVMModule<'ctx>,
 ) -> LLVMConstant<'ctx, 'm> {
-    let buf = if value.has_indirect_data() {
-        let mut buf = {
-            debug_assert_eq!(value.direct_data().len() % size_of::<usize>(), 0);
-            let len = value.direct_data().len() / size_of::<usize>();
-            let data = &value.direct_data()[0];
-
-            unsafe { std::slice::from_raw_parts(data as *const u8 as *const u64, len) }
-                .iter()
-                .map(|b| llvm_constant!(*module, (usize {*b})).as_constant())
-                .collect::<Vec<_>>()
-        };
-
-        value.traverse_indirect_data(&mut |offset, data| {
-            debug_assert_eq!(offset % size_of::<usize>(), 0);
-            let offset = offset / size_of::<usize>();
-            let body = data_as_llvm_constant(data, module);
-            buf[offset] = llvm_constant!(*module, (ptr_to_int usize {body}));
-        });
-
-        LLVMConstantArray::get(llvm_type!(*module, usize), &buf)
-    } else {
-        let buf = value
-            .direct_data()
+    fn array<'c, T: Copy>(ty: LLVMIntegerType<'c>, elems: &[T]) -> LLVMConstantArray<'c, 'c>
+    where
+        u64: From<T>,
+    {
+        let elems = elems
             .iter()
-            .map(|b| llvm_constant!(*module, (u8 {*b})).as_constant())
+            .map(|e| LLVMConstantInt::get(ty, u64::from(*e), false).as_constant())
             .collect::<Vec<_>>();
+        LLVMConstantArray::get(ty, &elems)
+    }
 
-        LLVMConstantArray::get(llvm_type!(*module, u8), &buf)
+    let buf = match rep.align {
+        8 => {
+            let mut buf = reinterpret_bytes::<u64>(&rep.direct)
+                .iter()
+                .map(|b| llvm_constant!(*module, (u64 { *b })).as_constant())
+                .collect::<Vec<_>>();
+            for (offset, rep) in rep.indirect.iter() {
+                let body = data_as_llvm_constant(rep, module);
+                buf[offset / 8] = llvm_constant!(*module, (ptr_to_int usize {body}));
+            }
+            LLVMConstantArray::get(llvm_type!(*module, u64), &buf)
+        }
+        4 => {
+            assert!(rep.indirect.is_empty());
+            array(
+                llvm_type!(*module, u32),
+                reinterpret_bytes::<u32>(&rep.direct),
+            )
+        }
+        2 => {
+            assert!(rep.indirect.is_empty());
+            array(
+                llvm_type!(*module, u16),
+                reinterpret_bytes::<u16>(&rep.direct),
+            )
+        }
+        1 => {
+            assert!(rep.indirect.is_empty());
+            array(llvm_type!(*module, u8), &rep.direct)
+        }
+        align => panic!("Unsupported data alignment: {}", align),
     };
     let var = module.add_global("", buf.get_type(), None);
     var.set_linkage(llvm::Linkage::Internal);
@@ -345,7 +359,7 @@ pub fn syntax_type(ctx: &LLVMContext) -> LLVMType {
     llvm_type!(ctx, (ptr u8)).as_type()
 }
 
-pub fn syntax_constant<'ctx: 'm, 'm, T: NativeValue + NativeData>(
+pub fn syntax_constant<'ctx: 'm, 'm, T: NativeValue + Embed>(
     src: &Syntax<T::HostValue>,
     module: &'m LLVMModule<'ctx>,
 ) -> LLVMConstant<'ctx, 'm>
@@ -354,7 +368,8 @@ where
     Syntax<T::HostValue>: Clone,
 {
     // TODO: Reduce allocation (We don't need to allocate memories for temporary NativeSyntax)
-    data_as_llvm_constant(NativeSyntaxBuffer::<T>::from_host(src.clone()), module)
+    let rep = Rep::of(&NativeSyntaxBuffer::<T>::from_host(src.clone()));
+    data_as_llvm_constant(&rep, module)
 }
 
 pub fn build_syntax_construct<'ctx: 'm, 'm>(
@@ -396,4 +411,11 @@ pub fn syntax_metadata_constant<'ctx: 'm, 'm>(
 ) -> LLVMConstant<'ctx, 'm> {
     let NativeSyntaxMetadata { ip, ir } = NativeSyntaxMetadata::from_host(*src);
     llvm_constant!(*module, [(u32 ip) (u32 ir)]).as_constant()
+}
+
+fn reinterpret_bytes<T>(buf: &[u8]) -> &[T] {
+    assert_eq!(buf.len() % size_of::<T>(), 0);
+    unsafe {
+        std::slice::from_raw_parts(&buf[0] as *const _ as *const T, buf.len() / size_of::<T>())
+    }
 }

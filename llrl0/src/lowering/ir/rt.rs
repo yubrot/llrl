@@ -38,7 +38,6 @@ pub enum Rt {
     Const(Const),
 
     Call(Box<RtCall>),
-    CCall(Box<RtCCall>),
     ContCall(Box<RtContCall>),
     Nullary(Nullary),
     Unary(Box<(Unary, Rt)>),
@@ -75,12 +74,8 @@ impl Rt {
         Self::StaticFun(Box::new(RtStaticFunCapture::new(fun, ty, env)))
     }
 
-    pub fn call(callee: Self, args: Vec<Self>) -> Self {
+    pub fn call(callee: RtCallee, args: Vec<Self>) -> Self {
         Self::Call(Box::new(RtCall::new(callee, args)))
-    }
-
-    pub fn c_call(name: String, ty: Ct, args: Vec<Self>) -> Self {
-        Self::CCall(Box::new(RtCCall::new(name, ty, args)))
     }
 
     pub fn cont_call(id: RtId, args: Vec<Self>, ret: Option<Ct>) -> Self {
@@ -90,7 +85,7 @@ impl Rt {
     pub fn autocall(fun: Ct, ty: Ct, autocall: bool) -> Self {
         if autocall {
             Self::call(
-                Rt::static_fun(fun, Ct::clos(Vec::new(), ty), None),
+                RtCallee::Standard(Rt::static_fun(fun, Ct::clos(Vec::new(), ty), None)),
                 Vec::new(),
             )
         } else {
@@ -213,8 +208,7 @@ impl Rt {
             Rt::LocalFun(inst) => Cow::Borrowed(&inst.ty),
             Rt::StaticFun(capture) => Cow::Borrowed(&capture.ty),
             Rt::Const(c) => c.ty(),
-            Rt::Call(call) => Ct::clos_ret(call.callee.ty()?),
-            Rt::CCall(call) => Ct::clos_ret(Cow::Borrowed(&call.ty)),
+            Rt::Call(call) => call.callee.ret_ty()?,
             Rt::ContCall(call) => Cow::Borrowed(call.ret.as_ref()?),
             Rt::Nullary(nullary) => nullary.ty()?,
             Rt::Unary(unary) => unary.0.ty(&unary.1)?,
@@ -248,15 +242,30 @@ impl Default for Rt {
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Hash, new)]
 pub struct RtCall {
-    pub callee: Rt,
+    pub callee: RtCallee,
     pub args: Vec<Rt>,
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Hash, new)]
-pub struct RtCCall {
-    pub sym: String,
-    pub ty: Ct,
-    pub args: Vec<Rt>,
+/// Since llrl basically does not support raw functions as values, raw function calls can only be
+/// expressed as a specific form of `RtCallee`.
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Hash)]
+pub enum RtCallee {
+    Standard(Rt),          // (clos)
+    CDirect(String, Ct),   // (label, ret_ty)
+    CIndirect(Rt, Ct),     // (addr, ret_ty)
+    MainIndirect(Rt),      // (addr)
+    MacroIndirect(Rt, Ct), // (addr, ret_ty)
+}
+
+impl RtCallee {
+    pub fn ret_ty(&self) -> Option<Cow<Ct>> {
+        Some(match self {
+            Self::Standard(rt) => Ct::clos_ret(rt.ty()?),
+            Self::CDirect(_, ty) | Self::CIndirect(_, ty) => Cow::Borrowed(ty),
+            Self::MainIndirect(_) => Cow::Owned(Ct::BOOL),
+            Self::MacroIndirect(_, ty) => Cow::Borrowed(ty),
+        })
+    }
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Hash, new)]

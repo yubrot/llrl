@@ -4,10 +4,25 @@
 (import "~/lowering/ir" [ir/_ _])
 (import "~/backend/common/mem-layout" Layout layout:)
 (import "~/backend/llvm/runtime" _)
-(export TypeEnv type-env/_ BuildEnv build-env/_ codegen/_)
+(export TypeEnv type-env/_ BuildEnv build-env/_)
+(export CFunctionSignature _.CFunctionSignature c-function-signature: c-function-signature/_)
+(export codegen/_)
 
 (class (TypeEnv E) (where (Conv E llvm/Context))
   (function (type-env/get-type? id env) {(-> ir/CtId E (Option llvm/Type))}))
+
+(class (BuildEnv E) (where (TypeEnv E) (RuntimeBuildEnv E))
+  (function (build-env/capture-function! id env) {(-> ir/CtId E llvm/Value)})
+  (function (build-env/capture-c-function! name sig env)
+    {(-> String (-> CFunctionSignature) E (: llvm/Value CFunctionSignature))})
+  (function (build-env/capture-intrinsic-function! name ty env)
+    {(-> String (-> llvm/Type) E llvm/Value)}))
+
+(derive (DebugDisplay) value-data CFunctionSignature
+  (c-function-signature: llvm/Type Bool))
+
+(getter c-function-signature:
+  c-function-signature/type c-function-signature/return-by-pointer-store?)
 
 (function (codegen/type env ty) {(forall E) (-> E ir/Ct llvm/Type) (where (TypeEnv E))}
   (let1 (rec ty) (codegen/type env ty)
@@ -50,16 +65,22 @@
       [(ir/ct:syntax _)
         (runtime/syntax/type (conv env))])))
 
-(function (codegen/union-type layout ctx) {(-> Layout llvm/Context llvm/Type)}
+(function (codegen/union-type ctx layout) {(-> llvm/Context Layout llvm/Type)}
   (with1 (layout: (let size) (let align) _ _) layout
     (if (ne? align 0)
       (llvm/type ctx (array (integer ,(conv (* align 8))) ,(conv (/ size align))))
       (llvm/type ctx (array i1 0)))))
 
-(class (BuildEnv E) (where (TypeEnv E) (RuntimeBuildEnv E))
-  (function (build-env/capture-function! id env) {(-> ir/CtId E llvm/Value)})
-  (function (build-env/capture-c-function! name tyf env) {(-> String (-> llvm/Context llvm/Type) E (: llvm/Value Bool))}) ; (: cfun return-by-pointer-store?)
-  (function (build-env/capture-intrinsic-function! name tyf env) {(-> String (-> llvm/Context llvm/Type) E llvm/Value)}))
+(function (codegen/c-function-signature env args ret)
+  {(forall E) (-> E (Array llvm/Value) ir/Ct CFunctionSignature) (where (TypeEnv E) (Conv E llvm/DataLayout))}
+  (let* ([params (|> args (it/map llvm/value/type) collect)]
+         [ret (if-match1 ir/ct:unit ret (llvm/type (conv env) void) (codegen/type env ret))])
+    ; TODO: This adjustment is not accurate. We need to follow the System V ABI.
+    (if (and (llvm/type/sized? ret)
+             (< (* 2 8) (llvm/data-layout/type-alloc-size (conv env) ret)))
+      (let1 params (array/unshift (llvm/type (conv env) (pointer ,ret)) params)
+        (c-function-signature: (llvm/type (conv env) (-> ,@params void)) #t))
+      (c-function-signature: (llvm/type (conv env) (-> ,@params ,ret)) #f))))
 
 ($$ begin
   ($for-each
@@ -92,14 +113,15 @@
      [memmove-i64 "llvm.memmove.p0i8.p0i8.i64" (-> (pointer i8) (pointer i8) i64 i1 void)])
 
     (function (($symbol-concat capture- $name ($symbol "!")) env)
-      (build-env/capture-intrinsic-function! $symbol [^1 (llvm/type %1 $ty)] env))))
+      {(forall E) (-> E llvm/Value) (where (BuildEnv E))}
+      (build-env/capture-intrinsic-function! $symbol [^0 (llvm/type (conv-to llvm/Context env) $ty)] env))))
 
 (function (codegen/c-main-adapter! llrl-main env)
   {(forall E) (-> llvm/Value E unit) (where (BuildEnv E))}
   (let* ([c-main-ty (llvm/type (conv env) (-> i32 (pointer (pointer i8)) i32))]
          [c-main (llvm/module/add-function! "main" c-main-ty (conv env))]
          [llrt-init-ty (llvm/type (conv env) (-> i32 (pointer (pointer i8)) void))]
-         [llrt-init (runtime-build-env/capture-runtime-function! "llrt_init" [^1 llrt-init-ty] env)]
+         [llrt-init (runtime-build-env/capture-runtime-function! "llrt_init" [^0 llrt-init-ty] env)]
          [argc (get (llvm/function/params c-main)[0])]
          [argv (get (llvm/function/params c-main)[1])])
     (llvm/with-builder (llvm/function/append-block! "entry" c-main) (lambda (builder)
@@ -111,65 +133,79 @@
 (function (codegen/function-body! name value f env)
   {(forall E) (-> String llvm/Value ir/Function E unit) (where (BuildEnv E))}
   (llvm/with-builder (llvm/function/append-block! "entry" value) (lambda (builder)
-    (with1 (ir/function: _ (let fenv) (let fparams) _ (let fbody)) f
-      (let* ([local-values ord-map/empty]
-             [params (llvm/function/params value)]
-             [env-param (get params[0])]
-             [params (array/skip 1 params)])
-        ; Bind arguments
-        (for (: (ir/rt-param: (let id) _) (let p)) (it/zip fparams params)
-          (ord-map/insert! id p local-values))
+    (with ([(ir/function: (let kind) (let fenv) (let fparams) _ (let fbody) _) f]
+           [(let local-values) ord-map/empty]
+           [(let params) (llvm/function/params value)]
+           [(: (let ret-pointer) (let env-param) (let params))
+             (match kind
+               [ir/function-kind:standard
+                 (: none (some (get params[0])) (array/skip 1 params))]
+               [ir/function-kind:macro
+                 (: (some (get params[0])) none (array/skip 1 params))]
+               [ir/function-kind:main
+                 (: none none params)])])
 
-      (when-match1 (some (ir/function-env: (let id) (let felems))) fenv
+      ; Bind arguments
+      (for (: (ir/rt-param: (let id) _) (let p)) (it/zip fparams params)
+        (ord-map/insert! id p local-values))
+
+      (when-match ([(some (ir/function-env: (let id) (let felems))) fenv]
+                   [(some (let env-param)) env-param])
         ; Bind an environment argument
         (ord-map/insert! id env-param local-values)
 
-        (let* ([elem-tys
-                 (|> felems
-                     (it/map (case1 (ir/rt-param: _ (let ty)) (codegen/type env ty)))
-                     collect)]
-               [env-param
-                 (llvm/build! builder (bit-cast ,env-param (pointer (: ,@elem-tys))))])
+        (let* ([elem-tys (|> felems (it/map [^1 (codegen/type env (ir/rt-param/ty %1))]) collect)]
+               [env-param (llvm/build! builder (bit-cast ,env-param (pointer (: ,@elem-tys))))])
           ; Bind the environment argument elements
-          (for (: (let i) (ir/rt-param: (let id) _)) (it/with-index felems)
-            (ord-map/insert! id (llvm/build! builder (load (struct-gep ,env-param ,(conv i)))) local-values))))
+          (for (: (let i) (let felem)) (it/with-index felems)
+            (ord-map/insert!
+              (ir/rt-param/id felem)
+              (llvm/build! builder (load (struct-gep ,env-param ,(conv i))))
+              local-values))))
 
-      (let1 ctx (build-context: env builder local-values ord-map/empty)
+      (let1 ctx (build-context: env builder ret-pointer local-values ord-map/empty)
         (when-match1 (some (let ret)) (codegen/expr! ctx fbody)
-          (llvm/build! builder (ret ,ret))))))))
+          (codegen/return! ctx ret))))))
   unit)
 
 (data (BuildContext E)
-  (build-context: E llvm/Builder (OrdMap ir/RtId llvm/Value) (OrdMap ir/RtId Cont)))
+  (build-context: E llvm/Builder (Option llvm/Value) (OrdMap ir/RtId llvm/Value) (OrdMap ir/RtId Cont)))
 
-(instance Conv.From.BuildContext.To.llvm/Context (forall E) (Conv (BuildContext E) llvm/Context) (where (TypeEnv E))
+; Delegate (Conv _ {llvm/Context,llvm/Module,llvm/DataLayout}) to build-env: E
+
+(instance Conv.From.BuildContext.To.llvm/Context (forall E) (Conv (BuildContext E) llvm/Context) (where (Conv E llvm/Context))
   (function (conv ctx) (conv (build-env ctx))))
 
-(instance Conv.From.BuildContext.To.llvm/Module (forall E) (Conv (BuildContext E) llvm/Module) (where (RuntimeBuildEnv E))
+(instance Conv.From.BuildContext.To.llvm/Module (forall E) (Conv (BuildContext E) llvm/Module) (where (Conv E llvm/Module))
   (function (conv ctx) (conv (build-env ctx))))
 
-(instance Conv.From.BuildContext.To.llvm/DataLayout (forall E) (Conv (BuildContext E) llvm/DataLayout) (where (RuntimeBuildEnv E))
+(instance Conv.From.BuildContext.To.llvm/DataLayout (forall E) (Conv (BuildContext E) llvm/DataLayout) (where (Conv E llvm/Module))
   (function (conv ctx) (llvm/module/data-layout (conv ctx))))
+
+; Shorthand (Conv _ llvm/Builder)
 
 (instance Conv.From.BuildContext.To.llvm/Builder (forall E) (Conv (BuildContext E) llvm/Builder)
   (function (conv ctx) (llvm-builder ctx)))
 
+; Delegate ({TypeEnv,RuntimeBuildEnv,BuildEnv} _) to build-env: E
+
 (instance TypeEnv.BuildContext (forall E) (TypeEnv (BuildContext E)) (where (TypeEnv E))
-  (function (type-env/get-type? id ctx) (type-env/get-type? id (build-env ctx))))
+  (function (type-env/get-type? id ctx)
+    (type-env/get-type? id (build-env ctx))))
 
 (instance RuntimeBuildEnv.BuildContext (forall E) (RuntimeBuildEnv (BuildContext E)) (where (RuntimeBuildEnv E))
-  (function (runtime-build-env/capture-runtime-function! name tyf ctx)
-    (runtime-build-env/capture-runtime-function! name tyf (build-env ctx))))
+  (function (runtime-build-env/capture-runtime-function! name ty ctx)
+    (runtime-build-env/capture-runtime-function! name ty (build-env ctx))))
 
 (instance BuildEnv.BuildContext (forall E) (BuildEnv (BuildContext E)) (where (BuildEnv E))
   (function (build-env/capture-function! id ctx)
     (build-env/capture-function! id (build-env ctx)))
-  (function (build-env/capture-c-function! name tyf ctx)
-    (build-env/capture-c-function! name tyf (build-env ctx)))
-  (function (build-env/capture-intrinsic-function! name tyf ctx)
-    (build-env/capture-intrinsic-function! name tyf (build-env ctx))))
+  (function (build-env/capture-c-function! name sig ctx)
+    (build-env/capture-c-function! name sig (build-env ctx)))
+  (function (build-env/capture-intrinsic-function! name ty ctx)
+    (build-env/capture-intrinsic-function! name ty (build-env ctx))))
 
-(getter build-context: build-env llvm-builder local-values local-conts)
+(getter build-context: build-env llvm-builder ret-pointer local-values local-conts)
 
 (function (codegen/expr! ctx rt)
   {(forall E) (-> (BuildContext E) ir/Rt (Option llvm/Value)) (where (BuildEnv E))}
@@ -193,37 +229,32 @@
     [(ir/rt:const (let c))
       (some (codegen/const! ctx c))]
     [(ir/rt:call (let callee) (let args))
-      (let* ([callee (codegen/expr! ctx callee)?]
-             [args (vector/buffer (it/traverse-option [^1 (codegen/expr! ctx %1)] args)?)]
-             [fp (llvm/build! (conv ctx) (extract-value ,callee 0))]
-             [env (llvm/build! (conv ctx) (extract-value ,callee 1))])
-        (some (llvm/build! (conv ctx) (call ,fp ,@(array/unshift env args)))))]
-    [(ir/rt:c-call (let name) (let ty) (let args))
       (let1 args (vector/buffer (it/traverse-option [^1 (codegen/expr! ctx %1)] args)?)
-        (with1
-          (: (let cfun) (let return-by-pointer-store?))
-          (build-env/capture-c-function!
-            name
-            (lambda (_)
-              (if-match1 (ir/ct:clos (let args) (let ret)) ty
-                (let ([args (|> args (it/map [^1 (codegen/type ctx %1)]) collect)]
-                      [ret
-                        (if-match1 ir/ct:unit ret
-                          (llvm/type (conv ctx) void)
-                          (codegen/type ctx ret))])
-                  (llvm/type (conv ctx) (-> ,@args ,ret)))
-                (assert #f (string "c-call type is not a function type: " (debug ty)))))
-            ctx)
-          (some
-            (if return-by-pointer-store?
-              (let* ([ret-param (get (llvm/function/params cfun)[0])]
-                     [ret-ptr (llvm/build! (conv ctx) (entry-alloca "rettmp" ,(|> ret-param llvm/value/type llvm/type/element-type)))])
-                (llvm/build! (conv ctx) (call ,cfun ,@(array/unshift ret-ptr args)))
-                (llvm/build! (conv ctx) (load ,ret-ptr)))
-              (let1 ret (llvm/build! (conv ctx) (call ,cfun ,@args))
-                (if (|> ret llvm/value/type llvm/type/sized?)
-                  ret
-                  (codegen/const! ctx ir/const:unit)))))))]
+
+        (match callee
+          [(ir/rt-callee:standard (let callee))
+            (let1 clos (codegen/expr! ctx callee)?
+              (some (codegen/call! ctx clos args)))]
+          [(ir/rt-callee:c-direct (let name) (let ret))
+            (with1
+              (: (let value) (let sig))
+              (build-env/capture-c-function! name [^0 (codegen/c-function-signature ctx args ret)] ctx)
+              (some (codegen/c-call! ctx value sig args)))]
+          [(ir/rt-callee:c-indirect (let addr) (let ret))
+            (let* ([addr (codegen/expr! ctx addr)?]
+                   [sig (codegen/c-function-signature ctx args ret)])
+              (some (codegen/c-indirect-call! ctx addr sig args)))]
+          ; At this time, both mains and macros are called with the C calling conventions.
+          [(ir/rt-callee:main-indirect (let addr))
+            (assert (array/empty? args))
+            (let* ([addr (codegen/expr! ctx addr)?]
+                   [sig (codegen/c-function-signature ctx args (ir/ct:u 1))])
+              (some (codegen/c-indirect-call! ctx addr sig args)))]
+          [(ir/rt-callee:macro-indirect (let addr) (let ret))
+            (assert-eq? (array/length args) 1)
+            (let* ([addr (codegen/expr! ctx addr)?]
+                   [sig (codegen/c-function-signature ctx args ret)])
+              (some (codegen/c-indirect-call! ctx addr sig args)))]))]
     [(ir/rt:cont-call (let id) (let args) _)
       (let ([args (vector/buffer (it/traverse-option [^1 (codegen/expr! ctx %1)] args)?)]
             [cont (option/force (ord-map/get? id (local-conts ctx)))])
@@ -500,8 +531,7 @@
     [(ir/rt:match _ _)
       (assert #f "Found rt:match at codegen, this must be erased by lowerizer")]
     [(ir/rt:return (let ret))
-      (llvm/build! (conv ctx) (ret ,(codegen/expr! ctx ret)?))
-      none]
+      (codegen/return! ctx (codegen/expr! ctx ret)?)]
     [ir/rt:never
       (llvm/build! (conv ctx) unreachable)
       none]
@@ -534,6 +564,29 @@
 
         (cont/continue! ctx merge-cont))]))
 
+(function (codegen/call! ctx clos args)
+  {(forall E) (-> (BuildContext E) llvm/Value (Array llvm/Value) llvm/Value) (where (BuildEnv E))}
+  (let* ([fp (llvm/build! (conv ctx) (extract-value ,clos 0))]
+         [env (llvm/build! (conv ctx) (extract-value ,clos 1))])
+    (llvm/build! (conv ctx) (call ,fp ,@(array/unshift env args)))))
+
+(function (codegen/c-call! ctx value sig args)
+  {(forall E) (-> (BuildContext E) llvm/Value CFunctionSignature (Array llvm/Value) llvm/Value) (where (BuildEnv E))}
+  (if (c-function-signature/return-by-pointer-store? sig)
+    (let* ([ret-ptr-ty (get (|> sig c-function-signature/type llvm/type/param-types)[0])]
+           [ret-ptr (llvm/build! (conv ctx) (entry-alloca "rettmp" ,(llvm/type/element-type ret-ptr-ty)))])
+      (llvm/build! (conv ctx) (call ,value ,@(array/unshift ret-ptr args)))
+      (llvm/build! (conv ctx) (load ,ret-ptr)))
+    (let1 ret (llvm/build! (conv ctx) (call ,value ,@args))
+      (if (|> ret llvm/value/type llvm/type/sized?)
+        ret
+        (codegen/const! ctx ir/const:unit)))))
+
+(function (codegen/c-indirect-call! ctx addr sig args)
+  {(forall E) (-> (BuildContext E) llvm/Value CFunctionSignature (Array llvm/Value) llvm/Value) (where (BuildEnv E))}
+  (let1 f (llvm/build! (conv ctx) (bit-cast ,addr (pointer ,(c-function-signature/type sig))))
+    (codegen/c-call! ctx f sig args)))
+
 (function (codegen-fp-op! ctx name f32f f64f x)
   (let1 ty (llvm/value/type x)
     (cond
@@ -560,6 +613,15 @@
         (assert #f (string "Cannot determine the size of stackalloc: " num)))]
     [ir/location:stack-dynamic
       (llvm/build! (conv ctx) (array-alloca "" ,ty ,num))]))
+
+(function (codegen/return! ctx x)
+  {(forall E) (-> (BuildContext E) llvm/Value (Option llvm/Value)) (where (BuildEnv E))}
+  (if-match1 (some (let ptr)) (ret-pointer ctx)
+    (begin
+      (llvm/build! (conv ctx) (store ,x ,ptr))
+      (llvm/build! (conv ctx) ret-void))
+    (llvm/build! (conv ctx) (ret ,x)))
+  none)
 
 (function (codegen/const! ctx c)
   {(forall E) (-> (BuildContext E) ir/Const llvm/Value) (where (BuildEnv E))}

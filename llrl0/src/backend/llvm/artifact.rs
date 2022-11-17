@@ -1,6 +1,5 @@
 use super::codegen;
 use super::runtime;
-use crate::backend::native::calling::CallConv;
 use crate::backend::native::mem_layout::LayoutResolver;
 use crate::lowering::ir::*;
 use derive_new::new;
@@ -80,7 +79,7 @@ impl<'ctx> ContextArtifact<'ctx> {
         // Set struct bodies
         for (id, def) in defs {
             if let Def::Struct(ref def) = **def {
-                // Bacause currently we always use C-compatible structures, there is no difference by def.repr
+                // Bacause currently we always use C-compatible structures, there is no difference depending on def.repr
                 let ty = self.structs.get(id).unwrap();
                 ty.set_body(&self.llvm_type_all(&def.fields), false);
             }
@@ -121,6 +120,33 @@ impl<'ctx> ContextArtifact<'ctx> {
     pub fn llvm_type_all<'a>(&self, tys: impl IntoIterator<Item = &'a Ct>) -> Vec<LLVMType<'ctx>> {
         tys.into_iter().map(|ty| self.llvm_type(ty)).collect()
     }
+
+    pub fn c_function_signature(
+        &self,
+        args: &[LLVMValue<'ctx, '_>],
+        ret: &Ct,
+    ) -> CFunctionSignature<'ctx> {
+        let mut params = args.iter().map(|a| a.get_type()).collect::<Vec<_>>();
+        let mut ret = match ret {
+            Ct::Unit => llvm_type!(*self, void).as_type(),
+            ty => self.llvm_type(ty),
+        };
+
+        // TODO: This adjustment is not accurate. We need to follow the System V ABI.
+        let return_by_pointer_store =
+            if ret.is_sized() && 2 * 8 < self.data_layout.type_alloc_size(ret) {
+                params.insert(0, llvm_type!(*self, (ptr { ret })).as_type());
+                ret = llvm_type!(*self, void).as_type();
+                true
+            } else {
+                false
+            };
+
+        CFunctionSignature::new(
+            llvm_type!(*self, (function(...{ params }) { ret })),
+            return_by_pointer_store,
+        )
+    }
 }
 
 impl<'ctx> LLVMTypeBuilder<'ctx> for ContextArtifact<'ctx> {
@@ -132,22 +158,20 @@ impl<'ctx> LLVMTypeBuilder<'ctx> for ContextArtifact<'ctx> {
 #[derive(Debug, Clone)]
 pub struct FunctionSymbol<'ctx> {
     pub name: String,
-    pub call_conv: CallConv,
+    pub kind: FunctionKind,
     pub ty: LLVMFunctionType<'ctx>,
 }
 
 impl<'ctx> FunctionSymbol<'ctx> {
     pub fn new(name: String, def: &Function, ctx: &ContextArtifact<'ctx>) -> Self {
-        let call_conv = CallConv::from(def.kind);
-
-        let param_tys = (call_conv == CallConv::Default)
+        let param_tys = (def.kind == FunctionKind::Standard)
             .then(|| ctx.llvm_type(&Ct::Env))
             .into_iter()
             .chain(def.params.iter().map(|p| ctx.llvm_type(&p.ty)))
             .collect::<Vec<_>>();
         let ret_ty = ctx.llvm_type(&def.ret);
 
-        let ty = if call_conv == CallConv::Macro {
+        let ty = if def.kind == FunctionKind::Macro {
             let mut param_tys = param_tys;
             param_tys.insert(0, llvm_type!(*ctx, (ptr { ret_ty })).as_type());
             llvm_type!(*ctx, (function(...{param_tys}) void))
@@ -157,10 +181,16 @@ impl<'ctx> FunctionSymbol<'ctx> {
 
         Self {
             name,
-            call_conv,
+            kind: def.kind,
             ty,
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, new)]
+pub struct CFunctionSignature<'ctx> {
+    pub ty: LLVMFunctionType<'ctx>,
+    pub return_by_pointer_store: bool,
 }
 
 macro_rules! get_intrinsic_function {
@@ -245,7 +275,7 @@ impl<'ctx: 'm, 'm> ModuleArtifact<'ctx, 'm> {
         assert_eq!(main.kind, FunctionKind::Main);
         let symbol = FunctionSymbol::new("llrl_main".to_string(), &main, ctx);
         let value = self.module.add_function("llrl_main", symbol.ty);
-        let function = FunctionArtifact::new(symbol, value);
+        let function = FunctionArtifact::new(value, symbol);
         codegen::function_body(&function, &main, self, ctx);
 
         assert!(ctx.main_function_symbol.is_none());
@@ -271,35 +301,21 @@ impl<'ctx: 'm, 'm> ModuleArtifact<'ctx, 'm> {
                 .unwrap_or_else(|| panic!("Unresolved function symbol: {}", id))
                 .clone();
             let value = module.add_function(&symbol.name, symbol.ty);
-            FunctionArtifact::new(symbol, value)
+            FunctionArtifact::new(value, symbol)
         })
     }
 
     pub fn capture_c_function(
         &mut self,
         name: &str,
-        function_ty: impl FnOnce() -> LLVMFunctionType<'ctx>,
+        sig: impl FnOnce() -> CFunctionSignature<'ctx>,
     ) -> CFunctionArtifact<'ctx, 'm> {
         if let Some(function) = self.c_functions.get(name) {
             return *function;
         }
-
-        let function_ty = function_ty();
-        let ret_ty = function_ty.return_type();
-
-        // TODO: This adjustment is probably not enough. We need to follow the System V ABI.
-        let (function_ty, return_by_pointer_store) =
-            if ret_ty.is_sized() && 2 * 8 < self.module.data_layout().type_alloc_size(ret_ty) {
-                let mut params = function_ty.param_types();
-                let ret = function_ty.return_type();
-                params.insert(0, llvm_type!(*self, (ptr { ret })).as_type());
-                (llvm_type!(*self, (function(...{params}) void)), true)
-            } else {
-                (function_ty, false)
-            };
-
-        let function = self.module.add_function(name, function_ty);
-        let artifact = CFunctionArtifact::new(function, return_by_pointer_store);
+        let sig = sig();
+        let function = self.module.add_function(name, sig.ty);
+        let artifact = CFunctionArtifact::new(function, sig);
         self.c_functions.insert(name.to_string(), artifact);
         artifact
     }
@@ -350,14 +366,14 @@ impl<'ctx: 'm, 'm> runtime::BuildContext<'ctx, 'm> for ModuleArtifact<'ctx, 'm> 
 
 #[derive(Debug, Clone, new)]
 pub struct FunctionArtifact<'ctx: 'm, 'm> {
-    pub symbol: FunctionSymbol<'ctx>,
     pub value: LLVMFunction<'ctx, 'm>,
+    pub symbol: FunctionSymbol<'ctx>,
 }
 
 #[derive(Debug, Clone, Copy, new)]
 pub struct CFunctionArtifact<'ctx: 'm, 'm> {
     pub value: LLVMFunction<'ctx, 'm>,
-    pub return_by_pointer_store: bool,
+    pub sig: CFunctionSignature<'ctx>,
 }
 
 #[derive(Debug, Clone, Default)]

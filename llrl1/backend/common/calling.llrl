@@ -1,0 +1,7 @@
+; Provides bindings to call native targeting backend's functions.
+
+(import "~/lowering/ir" [ir/_ _])
+(export unsafe-call-macro unsafe-call-main)
+
+(builtin-op unsafe-call-macro {(-> (Ptr U8) (ir/S ir/CapturedUse) (Result (ir/S ir/CapturedUse) String))} "call.macro")
+(builtin-op unsafe-call-main {(-> (Ptr U8) Bool)} "call.main")

@@ -36,8 +36,7 @@
     (backend/codegen! #f b)
 
     (if-match1 (some (let symbol)) (context-artifact/function-symbol? id (context-artifact b))
-      ; TODO: Verify that symbol is macro
-      (executor/unsafe-call-macro! symbol s (executor b))
+      (executor/unsafe-call-macro symbol s (executor b))
       (err (string "macro not found: " (debug id)))))
 
   (function (backend/complete! report b)
@@ -80,7 +79,7 @@
 
   (report/on (backend/report b) phase:jit
     (if-match1 (some (let symbol)) (|> b context-artifact context-artifact/main-function-symbol?)
-      (ok (executor/unsafe-call-main! symbol (executor b)))
+      (ok (executor/unsafe-call-main symbol (executor b)))
       (err "main not found"))))
 
 (function (backend/codegen! build-main? b) {(-> Bool Backend unit)}

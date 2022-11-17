@@ -1,7 +1,7 @@
 use crate::lowering::ir::{CapturedUse, Sexp, Syntax, SyntaxBody, SyntaxMetadata};
 use derive_new::new;
 use memoffset::offset_of;
-use std::mem::{size_of, ManuallyDrop};
+use std::mem::{align_of, size_of, ManuallyDrop};
 
 /// Interconversion with the equivalent value representation in the host environment.
 pub trait NativeValue: Sized {
@@ -12,84 +12,76 @@ pub trait NativeValue: Sized {
     fn from_host(host_value: Self::HostValue) -> Self;
 }
 
-/// Conversion to static data of the native environment.
-pub trait NativeData {
-    /// Treat the value as data, without considering indirect references.
-    fn direct_data(&self) -> &[u8];
-
-    fn has_indirect_data(&self) -> bool {
-        let mut has_indirect_data = false;
-        self.traverse_indirect_data(&mut |_, _| {
-            has_indirect_data = true;
-        });
-        has_indirect_data
-    }
-
-    /// Traverse indirect references of the value. Each indirect reference is represented as
-    /// a pair of NativeData and an offset on the data where the indirect reference is placed.
-    /// Therefore, each offset must be aligned with the alignment of pointers.
-    fn traverse_indirect_data(&self, f: &mut dyn FnMut(usize, &dyn NativeData)) {
-        self.traverse_indirect_data_(NativeIndirectDataHandler::new(0, f))
-    }
-
-    fn traverse_indirect_data_(&self, _handler: NativeIndirectDataHandler) {}
+/// Data represented by bytes and indirect references.
+#[derive(PartialEq, Eq, Debug, Clone, new)]
+pub struct Rep {
+    pub align: usize,
+    pub direct: Vec<u8>,
+    pub indirect: Vec<(usize, Rep)>,
 }
 
-#[derive(new)]
-pub struct NativeIndirectDataHandler<'a> {
-    offset: usize,
-    handler: &'a mut dyn FnMut(usize, &dyn NativeData),
+impl Rep {
+    pub fn zero(size: usize, align: usize) -> Self {
+        Self::new(align, vec![0; size], Vec::new())
+    }
+
+    pub fn bytes(bytes: &[u8]) -> Self {
+        Self::new(1, bytes.to_vec(), Vec::new())
+    }
+
+    pub fn of<T: Embed>(value: &T) -> Self {
+        let mut rep = Self::zero(size_of::<T>(), align_of::<T>());
+        value.embed(RepWriter::new(&mut rep, 0));
+        rep
+    }
 }
 
-impl<'a> NativeIndirectDataHandler<'a> {
-    pub fn offset(&mut self, offset: usize) -> NativeIndirectDataHandler {
-        NativeIndirectDataHandler {
-            offset: self.offset + offset,
-            handler: self.handler,
+pub trait Embed {
+    fn embed(&self, w: RepWriter<'_>);
+}
+
+macro_rules! impl_embed_primitive {
+    ($ty:ty, |$self:ident, $w:ident| $bytes:expr) => {
+        impl Embed for $ty {
+            fn embed(&$self, mut $w: RepWriter<'_>) {
+                $w.write(&$bytes);
+            }
         }
-    }
-
-    pub fn handle(&mut self, data: &dyn NativeData) {
-        (self.handler)(self.offset, data);
-    }
+    };
 }
 
-impl<T: NativeData + ?Sized> NativeData for &'_ T {
-    fn direct_data(&self) -> &[u8] {
-        T::direct_data(self)
-    }
+impl_embed_primitive!(bool, |self, w| [*self as u8]);
+impl_embed_primitive!(u8, |self, w| [*self]);
+impl_embed_primitive!(u16, |self, w| self.to_le_bytes());
+impl_embed_primitive!(u32, |self, w| self.to_le_bytes());
+impl_embed_primitive!(u64, |self, w| self.to_le_bytes());
+impl_embed_primitive!(f32, |self, w| self.to_bits().to_le_bytes());
+impl_embed_primitive!(f64, |self, w| self.to_bits().to_le_bytes());
+impl_embed_primitive!(char, |self, w| (*self as u32).to_le_bytes());
 
-    fn has_indirect_data(&self) -> bool {
-        T::has_indirect_data(self)
-    }
-
-    fn traverse_indirect_data_(&self, handler: NativeIndirectDataHandler) {
-        T::traverse_indirect_data_(self, handler)
-    }
+/// An utility to build `Rep`.
+#[derive(Debug, new)]
+pub struct RepWriter<'a> {
+    rep: &'a mut Rep,
+    offset: usize,
 }
 
-impl NativeData for str {
-    fn direct_data(&self) -> &[u8] {
-        self.as_bytes()
+impl<'a> RepWriter<'a> {
+    pub fn write(&mut self, src: &[u8]) {
+        self.rep.direct[self.offset..self.offset + src.len()].copy_from_slice(src);
     }
 
-    fn has_indirect_data(&self) -> bool {
-        false
-    }
-}
-
-impl NativeData for [u8] {
-    fn direct_data(&self) -> &[u8] {
-        self
+    pub fn offset(&mut self, offset: usize) -> RepWriter {
+        RepWriter::new(self.rep, self.offset + offset)
     }
 
-    fn has_indirect_data(&self) -> bool {
-        false
+    pub fn put(&mut self, offset: usize, a: &(impl Embed + ?Sized)) {
+        a.embed(self.offset(offset));
     }
-}
 
-fn sized_direct_data<T>(value: &T) -> &[u8] {
-    unsafe { std::slice::from_raw_parts(value as *const T as *const u8, size_of::<T>()) }
+    pub fn reference(&mut self, offset: usize, rep: Rep) {
+        self.rep.indirect.push((offset + self.offset, rep));
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -141,17 +133,10 @@ impl NativeValue for NativeString {
     }
 }
 
-impl NativeData for NativeString {
-    fn direct_data(&self) -> &[u8] {
-        sized_direct_data(self)
-    }
-
-    fn has_indirect_data(&self) -> bool {
-        true
-    }
-
-    fn traverse_indirect_data_(&self, mut handler: NativeIndirectDataHandler) {
-        handler.offset(offset_of!(Self, ptr)).handle(&self.as_str());
+impl Embed for NativeString {
+    fn embed(&self, mut w: RepWriter<'_>) {
+        w.reference(offset_of!(Self, ptr), Rep::bytes(self.as_str().as_bytes()));
+        w.put(offset_of!(Self, len), &self.len);
     }
 }
 
@@ -171,13 +156,9 @@ impl NativeValue for NativeChar {
     }
 }
 
-impl NativeData for NativeChar {
-    fn direct_data(&self) -> &[u8] {
-        sized_direct_data(self)
-    }
-
-    fn has_indirect_data(&self) -> bool {
-        false
+impl Embed for NativeChar {
+    fn embed(&self, mut w: RepWriter<'_>) {
+        w.put(0, &self.0);
     }
 }
 
@@ -208,13 +189,10 @@ impl NativeValue for NativeCapturedUse {
     }
 }
 
-impl NativeData for NativeCapturedUse {
-    fn direct_data(&self) -> &[u8] {
-        sized_direct_data(self)
-    }
-
-    fn has_indirect_data(&self) -> bool {
-        false
+impl Embed for NativeCapturedUse {
+    fn embed(&self, mut w: RepWriter<'_>) {
+        w.put(offset_of!(Self, tag), &self.tag);
+        w.put(offset_of!(Self, node_id), &self.node_id);
     }
 }
 
@@ -276,23 +254,12 @@ impl<T: NativeValue, E: NativeValue> NativeValue for NativeResult<T, E> {
     }
 }
 
-impl<T: NativeData, E: NativeData> NativeData for NativeResult<T, E> {
-    fn direct_data(&self) -> &[u8] {
-        sized_direct_data(self)
-    }
-
-    fn has_indirect_data(&self) -> bool {
+impl<T: Embed, E: Embed> Embed for NativeResult<T, E> {
+    fn embed(&self, mut w: RepWriter<'_>) {
+        w.put(offset_of!(Self, tag), &self.tag);
         match self.as_inner() {
-            Ok(a) => a.has_indirect_data(),
-            Err(a) => a.has_indirect_data(),
-        }
-    }
-
-    fn traverse_indirect_data_(&self, mut handler: NativeIndirectDataHandler) {
-        let handler = handler.offset(offset_of!(Self, body));
-        match self.as_inner() {
-            Ok(a) => a.traverse_indirect_data_(handler),
-            Err(a) => a.traverse_indirect_data_(handler),
+            Ok(a) => w.put(offset_of!(Self, body), a),
+            Err(a) => w.put(offset_of!(Self, body), a),
         }
     }
 }
@@ -329,17 +296,9 @@ where
     }
 }
 
-impl<T: NativeData> NativeData for NativeSyntax<T> {
-    fn direct_data(&self) -> &[u8] {
-        sized_direct_data(self)
-    }
-
-    fn has_indirect_data(&self) -> bool {
-        true
-    }
-
-    fn traverse_indirect_data_(&self, mut handler: NativeIndirectDataHandler) {
-        handler.handle(unsafe { &*self.0 });
+impl<T: Embed> Embed for NativeSyntax<T> {
+    fn embed(&self, mut w: RepWriter<'_>) {
+        w.reference(0, Rep::of(unsafe { &*self.0 }));
     }
 }
 
@@ -370,18 +329,10 @@ where
     }
 }
 
-impl<T: NativeData> NativeData for NativeSyntaxBuffer<T> {
-    fn direct_data(&self) -> &[u8] {
-        sized_direct_data(self)
-    }
-
-    fn has_indirect_data(&self) -> bool {
-        self.body.has_indirect_data()
-    }
-
-    fn traverse_indirect_data_(&self, mut handler: NativeIndirectDataHandler) {
-        self.body
-            .traverse_indirect_data_(handler.offset(offset_of!(Self, body)));
+impl<T: Embed> Embed for NativeSyntaxBuffer<T> {
+    fn embed(&self, mut w: RepWriter<'_>) {
+        w.put(offset_of!(Self, metadata), &self.metadata);
+        w.put(offset_of!(Self, body), &self.body);
     }
 }
 
@@ -404,13 +355,10 @@ impl NativeValue for NativeSyntaxMetadata {
     }
 }
 
-impl NativeData for NativeSyntaxMetadata {
-    fn direct_data(&self) -> &[u8] {
-        sized_direct_data(self)
-    }
-
-    fn has_indirect_data(&self) -> bool {
-        false
+impl Embed for NativeSyntaxMetadata {
+    fn embed(&self, mut w: RepWriter<'_>) {
+        w.put(offset_of!(Self, ip), &self.ip);
+        w.put(offset_of!(Self, ir), &self.ir);
     }
 }
 
@@ -544,37 +492,38 @@ impl NativeValue for NativeSexp {
         }
     }
 }
-
-impl NativeData for NativeSexp {
-    fn direct_data(&self) -> &[u8] {
-        sized_direct_data(self)
-    }
-
-    fn has_indirect_data(&self) -> bool {
-        matches!(
-            self.into_view(),
-            NativeSexpView::Symbol(_) | NativeSexpView::String(_) | NativeSexpView::Cons(_)
-        )
-    }
-
-    fn traverse_indirect_data_(&self, mut handler: NativeIndirectDataHandler) {
-        let mut handler = handler.offset(offset_of!(Self, body));
-        match self.into_view() {
+impl Embed for NativeSexp {
+    fn embed(&self, mut w: RepWriter<'_>) {
+        w.put(offset_of!(Self, tag), &self.tag);
+        let mut w = w.offset(offset_of!(Self, body));
+        match &self.into_view() {
+            NativeSexpView::Integer(s) => {
+                w.put(offset_of!(NativeSexpInteger, signed), &s.signed);
+                w.put(offset_of!(NativeSexpInteger, value), &s.value);
+            }
+            NativeSexpView::FPNumber(s) => {
+                w.put(offset_of!(NativeSexpFPNumber, value), &s.value);
+            }
+            NativeSexpView::Bool(s) => {
+                w.put(offset_of!(NativeSexpBool, value), &s.value);
+            }
             NativeSexpView::Symbol(s) => {
-                s.value
-                    .traverse_indirect_data_(handler.offset(offset_of!(NativeSexpSymbol, value)));
+                w.put(offset_of!(NativeSexpSymbol, value), &s.value);
             }
             NativeSexpView::String(s) => {
-                s.value
-                    .traverse_indirect_data_(handler.offset(offset_of!(NativeSexpString, value)));
+                w.put(offset_of!(NativeSexpString, value), &s.value);
             }
-            NativeSexpView::Cons(c) => {
-                c.car
-                    .traverse_indirect_data_(handler.offset(offset_of!(NativeSexpCons, car)));
-                c.cdr
-                    .traverse_indirect_data_(handler.offset(offset_of!(NativeSexpCons, cdr)));
+            NativeSexpView::Char(s) => {
+                w.put(offset_of!(NativeSexpChar, value), &s.value);
             }
-            _ => {}
+            NativeSexpView::Cons(s) => {
+                w.put(offset_of!(NativeSexpCons, car), &s.car);
+                w.put(offset_of!(NativeSexpCons, cdr), &s.cdr);
+            }
+            NativeSexpView::Nil(_) => {}
+            NativeSexpView::Use(s) => {
+                w.put(offset_of!(NativeSexpUse, value), &s.value);
+            }
         }
     }
 }

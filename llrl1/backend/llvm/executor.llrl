@@ -1,8 +1,8 @@
-(import "std/memory" size-of align-of reinterpret ptr:_)
-(import "std/phantom" _)
+(import "std/memory" size-of align-of ptr/_)
 (import "llvm" [llvm/_ _])
 (import "~/util" _)
 (import "~/lowering/ir" [ir/_ _])
+(import "~/backend/common/calling" unsafe-call-main unsafe-call-macro)
 (import "~/backend/llvm/artifact" FunctionSymbol function-symbol/_)
 (export Executor _.Executor executor/_)
 
@@ -45,20 +45,19 @@
 (function (executor/remove-modules! executor) {(-> Executor (Array llvm/Module))}
   (llvm/execution-engine/remove-modules! (engine executor)))
 
-; Caller must ensure that the function named `name` exists and it is compatible with the type F.
-(function (executor/unsafe-get-closure! name sig executor) {(forall F) (-> String (Phantom F) Executor F)}
-  (let1 address (llvm/execution-engine/get-function-address name (engine executor))
-    (assert (ne? 0 address) (string "Function not found: " name))
-    (let1 closure-rep {(: U64 (Ptr U8))} (: address ptr:null)
-      (reinterpret closure-rep))))
+(function (executor/get-function-address name executor) {(-> String Executor (Ptr U8))}
+  (let1 addr (llvm/execution-engine/get-function-address name (engine executor))
+    (assert (ne? 0 addr) (string "Function not found: " name))
+    (ptr/from-address addr)))
 
-(function (executor/unsafe-call-main! symbol executor)
-  {(-> FunctionSymbol Executor Bool)}
-  ((executor/unsafe-get-closure! (function-symbol/name symbol) (phantom (-> Bool)) executor)))
-
-(function (executor/unsafe-call-macro! symbol s executor)
+(function (executor/unsafe-call-macro symbol s executor)
   {(-> FunctionSymbol (ir/S ir/CapturedUse) Executor (Result (ir/S ir/CapturedUse) String))}
-  ((executor/unsafe-get-closure! (function-symbol/name symbol) (phantom (-> (ir/S ir/CapturedUse) (Result (ir/S ir/CapturedUse) String))) executor) s))
+  (assert-eq? (function-symbol/kind symbol) ir/function-kind:macro)
+  (unsafe-call-macro (executor/get-function-address (function-symbol/name symbol) executor) s))
+
+(function (executor/unsafe-call-main symbol executor) {(-> FunctionSymbol Executor Bool)}
+  (assert-eq? (function-symbol/kind symbol) ir/function-kind:main)
+  (unsafe-call-main (executor/get-function-address (function-symbol/name symbol) executor)))
 
 (function (assert-data-layout-matches-native-environment dl)
   ; NOTE: llrl assumes that the native environment (i.e., at the time of executing
