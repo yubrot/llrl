@@ -1,6 +1,6 @@
-# llrl: Lisp-like programming language powered by Rust + LLVM
+# llrl programming language
 
-llrl is an experimental **L**isp-**l**ike programming language powered by **R**ust and **L**LVM.
+llrl is an experimental programming language.
 
 <p align="center">
 <img src="./examples/images/1.png">
@@ -10,28 +10,37 @@ llrl is an experimental **L**isp-**l**ike programming language powered by **R**u
 
 ## Features
 
-llrl is not a highly carefully designed programming language, but it mainly borrows its design from OCaml, Rust, Haskell, and Scheme.
+llrl mainly borrows its design from OCaml, Rust, Haskell, and Scheme.
 
-- **Self-hosting compiler implementation**
 - **Statically-typed**
   - Hindley-Milner based type system
   - Supports type classes
 - **Lisp-like syntax + macros**
   - Uses S-expressions to write programs
-  - Macros are compiled and executed by LLVM JIT
+  - Macros are compiled and executed at compile-time (JIT)
+- **Self-hosting compiler implementation**
+  - There are [Rust implementation (llrl0)](./llrl0) and [llrl implementation (llrl1)](./llrl1)
+- **Multiple backends**
+  - `llvm` backend (works with [The LLVM Compiler Infrastructure](https://llvm.org/))
+  - `chibi` backend (works with [xten](./xten0); xten is a low-level `x86_64` library including assembler and JIT linker, made for llrl)
+
+llrl supports several well-known high-level language features:
+
 - Modules
 - Closures
 - Algebraic data types
 - Pattern matching
 - ...
 
-## Goals and Non-goals
+## History, Goals, and Non-goals
 
 llrl was originally started by learning [LLVM Kaleidoscope Tutorial](https://llvm.org/docs/tutorial/index.html) in Rust. This tutorial is great for learning LLVM frontend basics, but as [the tutorial conclusion suggests](https://llvm.org/docs/tutorial/OCamlLangImpl8.html), there are a lot of things to do to make our compiler more practical.
 
-The goal of llrl is **not** to create a modern, practical programming language. Instead, llrl focuses to make a compiler [self-hosted](<https://en.wikipedia.org/wiki/Self-hosting_(compilers)>). To achieve this with [LLVM-C API](https://llvm.org/doxygen/group__LLVMC.html), we need to implement more language features like strings, pointers, etc. On the other hand, Implementing self-hosting compiler does not require a rich runtime system including garbage collections, exception handling, etc. llrl uses [Boehm garbage collector](https://en.wikipedia.org/wiki/Boehm_garbage_collector) and does not support any exception mechanism (error handling is mainly done with the `Result` type).
+The first goal of llrl was **not** to create a modern, feature-rich practical programming language. Instead, llrl focuses to make a compiler [self-hosted](<https://en.wikipedia.org/wiki/Self-hosting_(compilers)>). To achieve this with [LLVM-C API](https://llvm.org/doxygen/group__LLVMC.html), we need to implement more language features like strings, pointers, etc. On the other hand, Implementing self-hosting compiler does not require a rich runtime system including garbage collections, exception handling, etc. llrl also uses [Boehm garbage collector](https://en.wikipedia.org/wiki/Boehm_garbage_collector) and does not support any exception mechanism to simplify the implementation. Error handling is mainly done with the `Result` type.
+This goal has been achieved and can be tested by `make self-hosting1lll` in `llrl1/`.
 
-This goal has been achieved and can be tested by `make self-hosting` in `llrl1/`.
+After achieving self-hosting, I set my next goal to remove the LLVM dependency from llrl implementation. With this goal, I sought to gain a better understanding of how the compiler backend does its job.
+Since llrl has Lisp-like macros as a language feature, I made my own assembler [xten](./xten0) (which can be used in Rust code) and used it to implement a code generator targeting x86_64. The design of the code generator implementation is based on the pattern used in [chibicc](https://github.com/rui314/chibicc) and [An Incremental Approach to Compiler Construction](http://scheme2006.cs.uchicago.edu/11-ghuloum.pdf).
 
 ### Roadmap
 
@@ -93,19 +102,32 @@ This goal has been achieved and can be tested by `make self-hosting` in `llrl1/`
   - [x] Code generation
   - [x] Driver
   - [x] Self-hosting
+- [x] xten0: JIT/AOT compilation tools for llrl0
+  - [x] Assembler
+  - [x] ELF executable producer
+  - [x] JIT linker
+- [x] llrl0 chibi backend (x86_64 targeting backend with xten0)
+- [ ] xten1: re-implementation of xten0 for llrl
+- [ ] llrl1 chibi backend
 
 ## Usage
 
 Since `llrl0` is a standalone executable, you can simply run it with `cargo run` or `cargo build`.
 
 ```shell
-cargo install --path llrl0 --offline
-llrl0 --help
-llrl0 -O examples/fibonacci-numbers
+$ cargo install --path llrl0 --offline
+$ llrl0 --help
+$ llrl0 -O examples/fibonacci-numbers
 
 # or
 
-cargo run -- -O examples/fibonacci-numbers
+$ cargo run -- -O examples/fibonacci-numbers
+```
+
+Now `llrl0` can run without LLVM.
+
+```shell
+$ cargo install --path llrl0 --offline --no-default-features -F chibi-backend
 ```
 
 ### Requirements
@@ -115,7 +137,8 @@ cargo run -- -O examples/fibonacci-numbers
 - glibc
   - Not tested other C libraries but llrl depends a few implementation-details of glibc (check at [rt/rt.c](./rt/rt.c))
 - clang
-- LLVM 11.0
+- (optional) LLVM 11.0
+  - Enabled by default in [llrl0](./llrl0) with `llvm-backend` feature
   - I use [llvmenv](https://github.com/llvmenv/llvmenv) for building LLVM
 - Boehm GC 8.0
   - On Arch Linux, you can install Boehm GC by simply running `pacman -S gc`

@@ -13,11 +13,13 @@ pub mod render;
 static CSV: &str = include_str!("./x86.csv");
 
 fn main() -> io::Result<()> {
+    // CSV -> Vec<Spec>
     let specs = CSV
         .lines()
         .filter_map(Spec::from_csv_line)
         .collect::<Vec<_>>();
 
+    // Vec<Spec> -> BTreeSet<String, Vec<Instruction>>
     let mut inst_set = build_instruction_set(specs).map_err(to_io_error)?;
     validate_instruction_set(&inst_set).map_err(to_io_error)?;
 
