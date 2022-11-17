@@ -1211,7 +1211,7 @@ impl<'a> FunctionCodegen<'a> {
                     self.w.xorl(Edx, Edx)?;
                 } else {
                     // {rax, rdx} <- {data-ptr, len}
-                    let label = self.embed_rodata(s.as_str())?;
+                    let label = self.embed_rodata(&Rep::bytes(s.as_bytes()))?;
                     self.w.leaq(Rax, label)?;
                     self.w.movq(Rdx, s.len() as i64)?;
                 }
@@ -1223,7 +1223,7 @@ impl<'a> FunctionCodegen<'a> {
             }
             Const::SyntaxSexp(_, sexp) => {
                 let sexp = NativeSyntax::<NativeSexp>::from_host(sexp.as_ref().clone());
-                let label = self.embed_rodata(&sexp)?;
+                let label = self.embed_rodata(&Rep::of(&sexp))?;
                 self.w.movq(Rax, label)?;
                 Layout::syntax()
             }
@@ -1258,21 +1258,18 @@ impl<'a> FunctionCodegen<'a> {
         Ok(())
     }
 
-    fn embed_rodata<T: NativeData + ?Sized>(&mut self, data: &T) -> io::Result<Label> {
+    fn embed_rodata(&mut self, rep: &Rep) -> io::Result<Label> {
+        self.w.rodata().align(rep.align as u64)?;
         let label = self.w.issue_label();
         let location = self.w.rodata().location();
         self.w.rodata().define(label, false);
-        self.w.rodata().write_all(data.direct_data())?;
-
-        let mut result = Ok(label);
-        data.traverse_indirect_data(&mut |offset, data| match self.embed_rodata(data) {
-            Ok(label) => {
-                let location = location.offset(offset as i64);
-                self.w.r#use(location, label, 0, RelocType::Abs64);
-            }
-            Err(err) => result = Err(err),
-        });
-        result
+        self.w.rodata().write_all(&rep.direct)?;
+        for (offset, rep) in rep.indirect.iter() {
+            let label = self.embed_rodata(rep)?;
+            let location = location.offset(*offset as i64);
+            self.w.r#use(location, label, 0, RelocType::Abs64);
+        }
+        Ok(label)
     }
 }
 

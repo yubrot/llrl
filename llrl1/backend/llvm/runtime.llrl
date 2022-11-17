@@ -1,4 +1,4 @@
-(import "std/memory" reinterpret size-of align-of ptr/_)
+(import "std/memory" reinterpret size-of ptr/_)
 (import "llvm" [llvm/_ _])
 (import "~/util" _)
 (import "~/sexp" [sexp/_ _])
@@ -16,28 +16,40 @@
 (instance Conv.From.llvm/Builder.To.llvm/Context (Conv llvm/Builder llvm/Context)
   (function (conv a) (llvm/builder/context a)))
 
-(function (data-as-llvm-constant m value) {(forall A) (-> llvm/Module A llvm/Value) (where (data/Data A))}
-  (let1
-    buf
-    (if (is? (some _) (|> value data/indirect-data it/first?))
-      (let* ([direct-data (data/direct-data value)]
-             [_ (assert-eq? (% (array/length direct-data) (size-of U64)) 0)]
-             [len (/ (array/length direct-data) (size-of U64))]
-             [ptr (ptr/cast (array/ptr direct-data))]
-             [buf (|> (array/unsafe-from-ptr ptr len) (it/map [^1 (llvm/const (conv m) (u64 ,%1))]) collect)])
-        (for (: (let offset) (let d)) (data/indirect-data value)
-          (assert-eq? (% offset (size-of U64)) 0)
-          (let ([offset (/ offset (size-of U64))]
-                [body (data-as-llvm-constant m d)])
-            (set! buf[offset] (llvm/const (conv m) (ptr-to-int i64 ,body)))))
-        (llvm/const (conv m) (array-of i64 ,@buf)))
-      (let1 buf (|> value data/direct-data (it/map [^1 (llvm/const (conv m) (u8 ,%1))]) collect)
-        (llvm/const (conv m) (array-of i8 ,@buf))))
-    (let1 var (llvm/module/add-global! "" (llvm/value/type buf) none m)
+(function (data-as-llvm-constant m rep) {(-> llvm/Module data/Rep llvm/Value)}
+  (with1 (data/rep: (let align) (let direct) (let indirect)) rep
+    (let* ([buf
+             (match align
+               [8
+                 (let1 buf (|> direct reinterpret-bytes (it/map [^1 (llvm/const (conv m) (u64 ,%1))]) collect)
+                   (for (: (let offset) (let rep)) indirect
+                     (set! buf[(/ offset 8)] (llvm/const (conv m) (ptr-to-int i64 ,(data-as-llvm-constant m rep)))))
+                   (llvm/const (conv m) (array-of i64 ,@buf)))]
+               [4
+                 (assert (vector/empty? indirect))
+                 (let1 buf (|> direct reinterpret-bytes (it/map [^1 (llvm/const (conv m) (u32 ,%1))]) collect)
+                   (llvm/const (conv m) (array-of i32 ,@buf)))]
+               [2
+                 (assert (vector/empty? indirect))
+                 (let1 buf (|> direct reinterpret-bytes (it/map [^1 (llvm/const (conv m) (u16 ,%1))]) collect)
+                   (llvm/const (conv m) (array-of i16 ,@buf)))]
+               [1
+                 (assert (vector/empty? indirect))
+                 (let1 buf (|> direct (it/map [^1 (llvm/const (conv m) (u8 ,%1))]) collect)
+                   (llvm/const (conv m) (array-of i8 ,@buf)))]
+               [_
+                 (assert #f (string "Unsupported data alignment: " align))])]
+           [var (llvm/module/add-global! "" (llvm/value/type buf) none m)])
       (llvm/global-value/set-linkage! llvm/linkage/internal var)
       (llvm/global-variable/set-constant?! #t var)
       (llvm/global-variable/set-initializer! (some buf) var)
       (llvm/const (conv m) (bit-cast (pointer i8) ,var)))))
+
+(function (reinterpret-bytes bytes) {(forall A) (-> (Array U8) (Array A))}
+  (assert-eq? (% (array/length bytes) (size-of A)) 0)
+  (let ([len (/ (array/length bytes) (size-of A))]
+        [ptr (ptr/cast (array/ptr bytes))])
+    (array/unsafe-from-ptr ptr len)))
 
 (class (RuntimeBuildEnv E) (where (Conv E llvm/Module))
   (function (runtime-build-env/capture-runtime-function! name ty env)
@@ -192,5 +204,5 @@
 
 (instance RuntimeConst.Sexp (RuntimeConst (ir/S ir/CapturedUse))
   (function (runtime/const m a)
-    (with1 (: _ (let buffer)) (|> a data/indirect-data it/first? option/force)
-      (data-as-llvm-constant m buffer))))
+    (with1 (: _ (let rep)) (|> a data/rep/of data/rep/indirect it/first? option/force)
+      (data-as-llvm-constant m rep))))

@@ -93,13 +93,13 @@ test1ccl: llrl1cc
 test1ccc: llrl1cc
 	./llrl1cc -b chibi $(FLAGS) tests/all
 
-# self-hosting test
-.PHONY: slll slcc scll sccc
-slll: llrl1ll llrl1lll
+# self-hosting test (llrl1 2nd and 3rd gen match the executable binary)
+.PHONY: self-hosting1lll self-hosting1lcc self-hosting1cll self-hosting1ccc
+self-hosting1lll: llrl1ll llrl1lll
 	diff llrl1ll llrl1lll
-slcc: llrl1lc llrl1lcc
+self-hosting1lcc: llrl1lc llrl1lcc
 	diff llrl1lc llrl1lcc
-scll: llrl1cl llrl1cll
+self-hosting1cll: llrl1cl llrl1cll
 	diff llrl1cl llrl1cll
-sccc: llrl1cc llrl1ccc
+self-hosting1ccc: llrl1cc llrl1ccc
 	diff llrl1cc llrl1ccc

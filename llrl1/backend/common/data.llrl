@@ -2,110 +2,105 @@
 (import "~/util" _)
 (import "~/sexp" [sexp/_ _])
 (import "~/lowering/ir" [ir/_ _])
-(export Data Data._ direct-data indirect-data data-rep DataRep)
+(export Rep _.Rep rep: rep/_ Embed Embed._ embed! reference!)
 
-(function (plain-data value) {(forall A) (-> A (Array U8))}
-  (shallow-copy (array/unsafe-from-ptr (|> value ptr/temporary ptr/cast) (size-of A))))
+; Data represented by bytes and indirect references.
+(derive (Eq DebugDisplay) data Rep
+  (rep: U64 (Array U8) (Vector (: U64 Rep))))
 
-; Conversion to static data
-(class (Data A)
-  (function (direct-data value) {(-> A (Array U8))}
-    (plain-data value))
+(getter rep: rep/align rep/direct rep/indirect)
 
-  (function (indirect-data value) {(-> A (Iterator (: U64 DataRep)))}
-    iterator/empty)
+(function (rep/zero size align) {(-> U64 U64 Rep)}
+  (rep: align (array/new 0 size) vector/empty))
 
-  (function (indirect-data-with-offset offset value) {(-> U64 A (Iterator (: U64 DataRep)))}
-    (it/map (case1 (: (let o) (let d)) (: (+ o offset) d)) (indirect-data value)))
+(function (rep/bytes bytes) {(-> (Array U8) Rep)}
+  (rep: 1 bytes vector/empty))
 
-  (function (data-rep value) {(-> A DataRep)}
-    (data-rep: [^0 (direct-data value)] [^0 (indirect-data value)])))
+(function (rep/of value) {(forall A) (-> A Rep) (where (Embed A))}
+  (let1 rep (rep/zero (size-of A) (align-of A))
+    (embed! 0 value rep)
+    rep))
 
-; Boxed data representation
-(data DataRep
-  (data-rep: (-> (Array U8)) (-> (Iterator (: U64 DataRep)))))
+(class (Embed A)
+  (function (embed! offset a rep) {(-> U64 A Rep unit)}
+    (|> rep rep/direct array/ptr (ptr/add offset) ptr/cast (ptr/store! a))))
 
-(instance Data.DataRep (Data DataRep)
-  (function (direct-data value)
-    (with1 (data-rep: (let direct-data) _) value
-      (direct-data)))
+(function (reference! offset r rep) {(-> U64 Rep Rep unit)}
+  (vector/push! (: offset r) (rep/indirect rep)))
 
-  (function (indirect-data value)
-    (with1 (data-rep: _ (let indirect-data)) value
-      (indirect-data)))
+; primitives
+($$ begin
+  ($for-each $ty [Bool U8 U16 U32 U64 F32 F64 Char]
+    (instance ($symbol-concat Embed. $ty) (Embed $ty))))
 
-  (function (data-rep value)
-    value))
-
-; string = [ ptr:8 | len:8 ] (*1)
+; string = [ ptr:8 | len:8 ]
 ;   where
-;     ptr -> body
-;     body = [ data:<len> ]
-(assert-eq? (size-of String) 16) ; (*1)
-; TODO: Assert that the pointer is at offset=0
+;     ptr -> [ data:<len> ]
+(assert-eq? (size-of String) 16)
+; TODO: Assert that `ptr` is at offset=0, `body` is at offset=8
+(instance Embed.String (Embed String)
+  (function (embed! offset a rep)
+    (reference! offset (|> a string/bytes collect rep/bytes) rep)
+    (embed! (+ offset 8) (string/length a) rep)))
 
-(instance Data.String (Data String)
-  (function (indirect-data s)
-    (let1 body (data-rep: [^0 (|> s string/bytes collect)] [^0 iterator/empty])
-      (iterator/only (: 0 body)))))
+; captured-use = [ tag:8 | node-id:8 ]
+; TODO: Assert that `tag` is at offset=0, `node-id` is at offset=8
+(assert-eq? (size-of ir/CapturedUse) 16)
+(instance Embed.ir/CapturedUse (Embed ir/CapturedUse))
 
-; char = [ value:4 ] (*1)
-(assert-eq? (size-of Char) 4) ; (*1)
-
-(instance Data.Char (Data Char))
-
-; captured-use = [ tag:8 | node-id:8 ] (*1)
-(assert-eq? (size-of ir/CapturedUse) 16) ; (*1)
-
-(instance Data.CapturedUse (Data ir/CapturedUse))
-
-; s = [ ptr:8 ] (*1)
+; s = [ ptr:8 ]
 ;   where
 ;     ptr -> s-buffer
-(assert-eq? (size-of (ir/S ir/CapturedUse)) 8) ; (*1)
+(assert-eq? (size-of (ir/S ir/CapturedUse)) 8)
+(instance Embed.S (Embed (ir/S ir/CapturedUse))
+  (function (embed! offset a rep)
+    (reference! offset (rep/of (s-buffer: (sexp/s/location a) (sexp/s/rep a))) rep)))
 
-(instance Data.S (Data (ir/S ir/CapturedUse))
-  (function (indirect-data value)
-    (iterator/only (: 0 (data-rep (: (sexp/s/location value) (sexp/s/rep value)))))))
+(value-data SBuffer
+  (s-buffer: ir/SyntaxMetadata (sexp/SRep ir/CapturedUse)))
 
-; s-buffer = [ syntax-metadata:8 | s-rep:24 ] (*1)
-;   where
-;     s-rep = [ tag:8 | body:16 ] (*2)
-(assert-eq? (size-of ir/SyntaxMetadata) 8) ; (*1)
-(assert-eq? (size-of (sexp/SRep ir/CapturedUse)) 24) ; (*1)
-(assert-eq? (align-of (sexp/SRep ir/CapturedUse)) 8) ; (*2)
+; s-buffer = [ syntax-metadata:8 | s-rep:24 ]
+(assert-eq? (size-of SBuffer) 32)
+(instance Embed.SBuffer (Embed SBuffer)
+  (function (embed! offset a rep)
+    (with1 (s-buffer: (let metadata) (let body)) a
+    (embed! offset metadata rep)
+    (embed! (+ offset 8) body rep))))
 
-(instance Data.SBuffer (Data (: ir/SyntaxMetadata (sexp/SRep ir/CapturedUse)))
-  (function (direct-data value)
-    (let1 buf (plain-data value)
-      ; To make the binary of the self-hosting compiler consistent, we need to zero uninitialized areas manually...
-      (let1 tag {(Ptr U64)} (|> buf array/ptr (ptr/add 8) ptr/cast)
-        (ptr/store! (|> tag ptr/load (conv-to U8) conv) tag))
-      (match value
-        [(: _ (sexp/s-rep:fp-number _))
-          (array/fill! 0 (array/subarray 24 32 buf))]
-        [(: _ (sexp/s-rep:bool _))
-          (array/fill! 0 (array/subarray 24 32 buf))]
-        [(: _ (sexp/s-rep:char _))
-          (array/fill! 0 (array/subarray 24 32 buf))]
-        [(: _ sexp/s-rep:nil)
-          (array/fill! 0 (array/subarray 16 32 buf))]
-        [_])
-      buf))
+; syntax-metadata = [ ip:4 | ir: 4 ]
+(assert-eq? (size-of ir/SyntaxMetadata) 8)
+(instance Embed.ir/SyntaxMetadata (Embed ir/SyntaxMetadata))
 
-  (function (indirect-data value)
-    (match value
-      [(: _ (sexp/s-rep:symbol (let s)))
-        (indirect-data-with-offset 16 s)]
-      [(: _ (sexp/s-rep:string (let s)))
-        (indirect-data-with-offset 16 s)]
-      [(: _ (sexp/s-rep:cons (let car) (let cdr)))
-        (it/chain (indirect-data-with-offset 16 car)
-                  (indirect-data-with-offset 24 cdr))]
-      [_
-        iterator/empty])))
-
-; syntax-metadata = [ interned-path:4 | interned-location-range:4 ] (*1)
-(assert-eq? (size-of ir/SyntaxMetadata) 8) ; (*1)
-
-(instance Data.SyntaxMetadata (Data ir/SyntaxMetadata))
+; s-rep = [ tag:8 | body:16 ]
+(assert-eq? (size-of (sexp/SRep ir/CapturedUse)) 24)
+(instance Embed.SRep (Embed (sexp/SRep ir/CapturedUse))
+  (function (embed! offset a rep)
+    (match a
+      [(sexp/s-rep:integer (let signed?) (let v))
+        (embed! offset 0 {U8} rep)
+        (embed! (+ offset 8) signed? rep)
+        (embed! (+ offset 16) v rep)]
+      [(sexp/s-rep:fp-number (let v))
+        (embed! offset 1 {U8} rep)
+        (embed! (+ offset 8) v rep)]
+      [(sexp/s-rep:bool (let v))
+        (embed! offset 2 {U8} rep)
+        (embed! (+ offset 8) v rep)]
+      [(sexp/s-rep:symbol (let s))
+        (embed! offset 3 {U8} rep)
+        (embed! (+ offset 8) s rep)]
+      [(sexp/s-rep:string (let s))
+        (embed! offset 4 {U8} rep)
+        (embed! (+ offset 8) s rep)]
+      [(sexp/s-rep:char (let c))
+        (embed! offset 5 {U8} rep)
+        (embed! (+ offset 8) c rep)]
+      [(sexp/s-rep:cons (let car) (let cdr))
+        (embed! offset 6 {U8} rep)
+        (embed! (+ offset 8) car rep)
+        (embed! (+ offset 16) cdr rep)]
+      [sexp/s-rep:nil
+        (embed! offset 7 {U8} rep)]
+      [(sexp/s-rep:pure (let v))
+        (embed! offset 8 {U8} rep)
+        (embed! (+ offset 8) v rep)])))
