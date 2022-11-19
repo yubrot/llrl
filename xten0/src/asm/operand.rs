@@ -547,164 +547,157 @@ impl_add_idxs!(Gpr64, i32); // GP + disp32 + IndexScale
 
 /// A memory operand. Semantically equivalent to `[..]` in Intel assembler syntax.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
-pub struct Memory<T = Rm>(pub T);
+pub struct Memory(pub EncodedAddress);
 
 impl From<Memory> for Rm {
-    fn from(Memory(rm): Memory) -> Self {
+    fn from(Memory(EncodedAddress(rm)): Memory) -> Self {
         rm
     }
 }
 
+pub fn memory(addr: impl Into<EncodedAddress>) -> Memory {
+    Memory(addr.into())
+}
+
+/// An encoded (and type-erased) memory address.
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
+pub struct EncodedAddress(Rm);
+
 // i32 -> Address<(), i32, ()>
-impl From<Memory<i32>> for Rm {
-    fn from(Memory(disp): Memory<i32>) -> Self {
-        Self::from(Memory(Address::from(disp)))
+impl From<i32> for EncodedAddress {
+    fn from(disp: i32) -> Self {
+        Self::from(Address::from(disp))
     }
 }
 
 // Gpr64 -> Address<Gpr64, (), ()>
-impl From<Memory<Gpr64>> for Rm {
-    fn from(Memory(gpr): Memory<Gpr64>) -> Self {
-        Self::from(Memory(Address::from(gpr)))
+impl From<Gpr64> for EncodedAddress {
+    fn from(gpr: Gpr64) -> Self {
+        Self::from(Address::from(gpr))
     }
 }
 
 // Rip -> Address<Rip, (), ()>
-impl From<Memory<Rip>> for Rm {
-    fn from(Memory(rip): Memory<Rip>) -> Self {
-        Self::from(Memory(Address::from(rip)))
+impl From<Rip> for EncodedAddress {
+    fn from(rip: Rip) -> Self {
+        Self::from(Address::from(rip))
     }
 }
 
 // [disp32]
-impl From<Memory<Address<(), i32, ()>>> for Rm {
-    fn from(Memory(Address { disp, .. }): Memory<Address<(), i32, ()>>) -> Self {
+impl From<Address<(), i32, ()>> for EncodedAddress {
+    fn from(Address { disp, .. }: Address<(), i32, ()>) -> Self {
         assert!(0 <= disp);
-        Self::new(0b00, 0b100) // Use SIB
-            .sib_base(0b0101) // No base register is encoded and use disp32
-            .sib_index(0b0100) // No index register is encoded
-            .disp(disp)
+        Self(
+            Rm::new(0b00, 0b100) // Use SIB
+                .sib_base(0b0101) // No base register is encoded and use disp32
+                .sib_index(0b0100) // No index register is encoded
+                .disp(disp),
+        )
     }
 }
 
 // [disp32 + IndexScale]
-impl From<Memory<Address<(), i32, IndexScale>>> for Rm {
-    fn from(Memory(Address { disp, idxs, .. }): Memory<Address<(), i32, IndexScale>>) -> Self {
-        Self::new(0b00, 0b100) // Use SIB
-            .sib_base(0b0101) // No base register is encoded and use disp32
-            .sib_index(idxs.index.register_code())
-            .sib_scale(idxs.scale)
-            .disp(disp)
+impl From<Address<(), i32, IndexScale>> for EncodedAddress {
+    fn from(Address { disp, idxs, .. }: Address<(), i32, IndexScale>) -> Self {
+        Self(
+            Rm::new(0b00, 0b100) // Use SIB
+                .sib_base(0b0101) // No base register is encoded and use disp32
+                .sib_index(idxs.index.register_code())
+                .sib_scale(idxs.scale)
+                .disp(disp),
+        )
     }
 }
 
 // [RIP]
-impl From<Memory<Address<Rip, (), ()>>> for Rm {
-    fn from(Memory(addr): Memory<Address<Rip, (), ()>>) -> Self {
-        Self::from(Memory(addr + 0))
+impl From<Address<Rip, (), ()>> for EncodedAddress {
+    fn from(addr: Address<Rip, (), ()>) -> Self {
+        Self::from(addr + 0)
     }
 }
 
 // [RIP + disp32]
-impl From<Memory<Address<Rip, i32, ()>>> for Rm {
-    fn from(Memory(Address { disp, .. }): Memory<Address<Rip, i32, ()>>) -> Self {
-        Self::new(0b00, 0b0101) // Use RIP-relative addressing
-            .disp(disp)
+impl From<Address<Rip, i32, ()>> for EncodedAddress {
+    fn from(Address { disp, .. }: Address<Rip, i32, ()>) -> Self {
+        Self(
+            Rm::new(0b00, 0b0101) // Use RIP-relative addressing
+                .disp(disp),
+        )
     }
 }
 
 // [GP64]
-impl From<Memory<Address<Gpr64, (), ()>>> for Rm {
-    fn from(Memory(Address { base, .. }): Memory<Address<Gpr64, (), ()>>) -> Self {
-        match base {
+impl From<Address<Gpr64, (), ()>> for EncodedAddress {
+    fn from(Address { base, .. }: Address<Gpr64, (), ()>) -> Self {
+        Self(match base {
             // SIB-byte required for RSP-based or R12-based addressing.
             Rsp | R12 => {
-                Self::new(0b00, 0b100) // Use SIB
+                Rm::new(0b00, 0b100) // Use SIB
                     .sib_base(base.register_code())
                     .sib_index(0b0100) // No index register is encoded
             }
             // Using RBP or R13 without displacement must be done using mod=01 with a displacement of 0.
             Rbp | R13 => {
-                Self::new(0b01, base.register_code()) // Use disp8
+                Rm::new(0b01, base.register_code()) // Use disp8
                     .disp(0i8)
             }
-            _ => Self::new(0b00, base.register_code()),
-        }
+            _ => Rm::new(0b00, base.register_code()),
+        })
     }
 }
 
 // [GP64 + disp]
-impl<Disp> From<Memory<Address<Gpr64, Disp, ()>>> for Rm
+impl<Disp> From<Address<Gpr64, Disp, ()>> for EncodedAddress
 where
     Disp: Into<Displacement>,
 {
-    fn from(Memory(Address { base, disp, .. }): Memory<Address<Gpr64, Disp, ()>>) -> Self {
+    fn from(Address { base, disp, .. }: Address<Gpr64, Disp, ()>) -> Self {
         let disp = disp.into();
-        match base {
+        Self(match base {
             // SIB-byte required for RSP-based or R12-based addressing.
             Rsp | R12 => {
-                Self::new(disp.modrm_mod(), 0b100) // Use SIB and use dispN
+                Rm::new(disp.modrm_mod(), 0b100) // Use SIB and use dispN
                     .sib_base(base.register_code())
                     .sib_index(0b0100) // No index register is encoded
                     .disp(disp)
             }
-            _ => Self::new(disp.modrm_mod(), base.register_code()).disp(disp),
-        }
+            _ => Rm::new(disp.modrm_mod(), base.register_code()).disp(disp),
+        })
     }
 }
 
 // [GP64 + IndexScale]
-impl From<Memory<Address<Gpr64, (), IndexScale>>> for Rm {
-    fn from(Memory(Address { base, idxs, .. }): Memory<Address<Gpr64, (), IndexScale>>) -> Self {
-        match base {
+impl From<Address<Gpr64, (), IndexScale>> for EncodedAddress {
+    fn from(Address { base, idxs, .. }: Address<Gpr64, (), IndexScale>) -> Self {
+        Self(match base {
             // Explicit displacement is required to be used with RBP or R13.
             Rbp | R13 => {
-                Self::new(0b01, 0b100) // Use SIB and disp8
+                Rm::new(0b01, 0b100) // Use SIB and disp8
                     .sib_base(base.register_code())
                     .sib_index(idxs.index.register_code())
                     .sib_scale(idxs.scale)
                     .disp(0i8)
             }
-            _ => Self::new(0b00, 0b100) // Use SIB
+            _ => Rm::new(0b00, 0b100) // Use SIB
                 .sib_base(base.register_code())
                 .sib_index(idxs.index.register_code())
                 .sib_scale(idxs.scale),
-        }
+        })
     }
 }
 
 // [GP64 + disp + IndexScale]
-impl<Disp> From<Memory<Address<Gpr64, Disp, IndexScale>>> for Rm
-where
-    Disp: Into<Displacement>,
-{
-    fn from(
-        Memory(Address { base, disp, idxs }): Memory<Address<Gpr64, Disp, IndexScale>>,
-    ) -> Self {
+impl<Disp: Into<Displacement>> From<Address<Gpr64, Disp, IndexScale>> for EncodedAddress {
+    fn from(Address { base, disp, idxs }: Address<Gpr64, Disp, IndexScale>) -> Self {
         let disp = disp.into();
-        Self::new(disp.modrm_mod(), 0b100) // Use SIB and dispN
-            .sib_base(base.register_code())
-            .sib_index(idxs.index.register_code())
-            .sib_scale(idxs.scale)
-            .disp(disp)
-    }
-}
-
-/// A type-erased memory operand.
-pub fn memory<A: MemoryAddress>(address: A) -> Memory {
-    A::common_rep(Memory(address))
-}
-
-pub trait MemoryAddress: Sized {
-    fn common_rep(m: Memory<Self>) -> Memory;
-}
-
-impl<T> MemoryAddress for T
-where
-    Rm: From<Memory<T>>,
-{
-    fn common_rep(m: Memory<Self>) -> Memory {
-        Memory(m.into())
+        Self(
+            Rm::new(disp.modrm_mod(), 0b100) // Use SIB and dispN
+                .sib_base(base.register_code())
+                .sib_index(idxs.index.register_code())
+                .sib_scale(idxs.scale)
+                .disp(disp),
+        )
     }
 }
 

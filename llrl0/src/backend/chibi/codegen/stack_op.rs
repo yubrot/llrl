@@ -116,8 +116,8 @@ pub trait StackOpWriter {
     /// Load a value from the specified memory area.
     fn load<A, Ao>(&mut self, addr: A, layout: &Layout) -> io::Result<()>
     where
-        A: Copy + std::ops::Add<i32, Output = Ao> + MemoryAddress,
-        Ao: Copy + std::ops::Add<i32, Output = Ao> + MemoryAddress,
+        A: Copy + std::ops::Add<i32, Output = Ao> + Into<EncodedAddress>,
+        Ao: Copy + std::ops::Add<i32, Output = Ao> + Into<EncodedAddress>,
     {
         if let Ok(assigns) = RegAssign::build(
             layout,
@@ -139,8 +139,8 @@ pub trait StackOpWriter {
     /// Store the last value in the specified memory area.
     fn store<A, Ao>(&mut self, addr: A, layout: &Layout) -> io::Result<()>
     where
-        A: Copy + std::ops::Add<i32, Output = Ao> + MemoryAddress,
-        Ao: Copy + std::ops::Add<i32, Output = Ao> + MemoryAddress,
+        A: Copy + std::ops::Add<i32, Output = Ao> + Into<EncodedAddress>,
+        Ao: Copy + std::ops::Add<i32, Output = Ao> + Into<EncodedAddress>,
     {
         if let Ok(assigns) = RegAssign::build(
             layout,
@@ -332,16 +332,16 @@ impl EightbyteReg for AssignedReg {
 }
 
 /// Shorthand for addresses that can be offset by integers.
-pub trait LoadStoreAddress: Copy + MemoryAddress {
-    type OffsetAddress: MemoryAddress;
+pub trait LoadStoreAddress: Copy + Into<EncodedAddress> {
+    type OffsetAddress: Into<EncodedAddress>;
 
     fn offset(self, offset: i32) -> Self::OffsetAddress;
 }
 
 impl<A, Ao> LoadStoreAddress for A
 where
-    A: Copy + std::ops::Add<i32, Output = Ao> + MemoryAddress,
-    Ao: MemoryAddress,
+    A: Copy + std::ops::Add<i32, Output = Ao> + Into<EncodedAddress>,
+    Ao: Into<EncodedAddress>,
 {
     type OffsetAddress = Ao;
 
