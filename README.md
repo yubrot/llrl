@@ -1,12 +1,12 @@
 # llrl programming language
 
-llrl is an experimental programming language.
+llrl is an experimental Lisp-like programming language.
 
 <p align="center">
 <img src="./examples/images/1.png">
 </p>
 
-- [Implementation notes (Japanese)](https://yubrot.github.io/2021/07/llrl/)
+- [Implementation notes (Japanese)](https://zenn.dev/yubrot/articles/eaaeeab742b4a1)
 
 ## Features
 
@@ -18,7 +18,7 @@ llrl mainly borrows its design from OCaml, Rust, Haskell, and Scheme.
 - **Lisp-like syntax + macros**
   - Uses S-expressions to write programs
   - Macros are compiled and executed at compile-time (JIT)
-- **Self-hosting compiler implementation**
+- **Self-hosting AOT compiler implementation**
   - There are [Rust implementation (llrl0)](./llrl0) and [llrl implementation (llrl1)](./llrl1)
 - **Multiple backends**
   - `llvm` backend (works with [The LLVM Compiler Infrastructure](https://llvm.org/))
@@ -124,7 +124,7 @@ $ llrl0 -O examples/fibonacci-numbers
 $ cargo run -- -O examples/fibonacci-numbers
 ```
 
-Now `llrl0` can run without LLVM.
+Notice that `llrl0` can also run without LLVM.
 
 ```shell
 $ cargo install --path llrl0 --offline --no-default-features -F chibi-backend
@@ -137,10 +137,10 @@ $ cargo install --path llrl0 --offline --no-default-features -F chibi-backend
 - glibc
   - Not tested other C libraries but llrl depends a few implementation-details of glibc (check at [rt/rt.c](./rt/rt.c))
 - clang
-- (optional) LLVM 11.0
+- (optional) LLVM 11
   - Enabled by default in [llrl0](./llrl0) with `llvm-backend` feature
   - I use [llvmenv](https://github.com/llvmenv/llvmenv) for building LLVM
-- Boehm GC 8.0
+- Boehm GC 8
   - On Arch Linux, you can install Boehm GC by simply running `pacman -S gc`
 
 ### Editor support
