@@ -71,9 +71,9 @@ impl ModRM {
 
     /// Obtain a ModR/M byte.
     pub fn byte(&self) -> u8 {
-        0u8.set_bits(self.rm.modrm_mod, 6..8)
-            .set_bits(self.reg.modrm_reg, 3..6)
-            .set_bits(self.rm.modrm_rm, 0..3)
+        0u8.set_bits(self.rm.mod_rm_mod, 6..8)
+            .set_bits(self.reg.mod_rm_reg, 3..6)
+            .set_bits(self.rm.mod_rm_rm, 0..3)
     }
 
     /// Obtain a SIB byte, if required for this ModR/M.
@@ -92,7 +92,7 @@ impl ModRM {
 /// This type includes an optional REX.r, which is an extension of ModRM.reg.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
 pub struct Reg {
-    pub modrm_reg: u8, // 3 bits, extended by rex_r
+    pub mod_rm_reg: u8, // 3 bits, extended by rex_r
     pub rex_r: bool,
     pub rex_prefix: RexPrefix,
 }
@@ -101,7 +101,7 @@ impl Reg {
     pub fn new(reg: u8) -> Self {
         assert!(reg <= 0b1111);
         Self {
-            modrm_reg: reg & 0b111,
+            mod_rm_reg: reg & 0b111,
             rex_r: (reg & 0b1000) != 0,
             rex_prefix: RexPrefix::default(),
         }
@@ -148,12 +148,12 @@ impl RegInOpcode {
 impl<T: Into<Reg>> From<T> for RegInOpcode {
     fn from(operand: T) -> Self {
         let Reg {
-            modrm_reg,
+            mod_rm_reg,
             rex_r,
             rex_prefix,
         } = operand.into();
         Self {
-            byte_added_to_opcode: modrm_reg,
+            byte_added_to_opcode: mod_rm_reg,
             rex_b: rex_r,
             rex_prefix,
         }
@@ -165,8 +165,8 @@ impl<T: Into<Reg>> From<T> for RegInOpcode {
 /// This type includes an optional REX.b, an optional SIB, and an optional Displacement.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
 pub struct Rm {
-    pub modrm_mod: u8, // 2 bits
-    pub modrm_rm: u8,  // 3 bits, extended by rex_b
+    pub mod_rm_mod: u8, // 2 bits
+    pub mod_rm_rm: u8,  // 3 bits, extended by rex_b
     pub rex_x: bool,
     pub rex_b: bool,
     pub sib_scale: Option<Scale>,
@@ -177,12 +177,12 @@ pub struct Rm {
 }
 
 impl Rm {
-    pub fn new(modrm_mod: u8, rm: u8) -> Self {
-        assert!(modrm_mod <= 0b11);
+    pub fn new(mod_rm_mod: u8, rm: u8) -> Self {
+        assert!(mod_rm_mod <= 0b11);
         assert!(rm <= 0b1111);
         Self {
-            modrm_mod,
-            modrm_rm: rm & 0b111,
+            mod_rm_mod,
+            mod_rm_rm: rm & 0b111,
             rex_x: false,
             rex_b: (rm & 0b1000) != 0, // REX.b is used to extend ModRM.rm
             sib_scale: None,
@@ -223,7 +223,7 @@ impl Rm {
 
     /// Whether the SIB byte is present or not, as determined by ModRM.mod and ModRM.rm.
     pub fn sib_present(&self) -> bool {
-        self.modrm_mod != 0b11 && self.modrm_rm == 0b100
+        self.mod_rm_mod != 0b11 && self.mod_rm_rm == 0b100
     }
 
     /// Obtain a SIB byte, if required.
@@ -251,17 +251,17 @@ impl Rm {
     /// Get the length of the Displacement, as determined by ModRM.mod, ModRM.rm, and SIB, in bytes.
     #[allow(clippy::if_same_then_else)]
     pub fn disp_size(&self) -> Option<u8> {
-        if self.modrm_mod == 0b01 {
+        if self.mod_rm_mod == 0b01 {
             // [GP + disp8]
             Some(1)
-        } else if self.modrm_mod == 0b10 {
+        } else if self.mod_rm_mod == 0b10 {
             // [GP + disp32]
             Some(4)
-        } else if self.modrm_mod == 0b00 && self.modrm_rm == 0b101 {
+        } else if self.mod_rm_mod == 0b00 && self.mod_rm_rm == 0b101 {
             // [RIP + disp32] (RIP-relative addressing)
             Some(4)
         } else if self.sib_present()
-            && self.modrm_mod == 0b00
+            && self.mod_rm_mod == 0b00
             && !self.rex_b
             && self.sib_base == Some(0b101)
         {
@@ -301,7 +301,7 @@ impl Displacement {
     ///
     /// In x64 instruction encoding, the use of Displacement is usually specified in the ModRM.mod field.
     /// See also: `Rm::disp_size`
-    pub fn modrm_mod(&self) -> u8 {
+    pub fn mod_rm_mod(&self) -> u8 {
         match self {
             Disp8(_) => 0b01,
             Disp32(_) => 0b10,

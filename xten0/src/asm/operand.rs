@@ -319,11 +319,11 @@ impl From<Gpr8> for Rm {
 
 pub use Gpr8::*;
 
-// 64-bit instruction pointer register.
+/// 64-bit instruction pointer register.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
 pub struct Rip;
 
-// XMM register.
+/// XMM register.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
 pub enum Xmm {
     Xmm0,
@@ -657,12 +657,12 @@ where
         Self(match base {
             // SIB-byte required for RSP-based or R12-based addressing.
             Rsp | R12 => {
-                Rm::new(disp.modrm_mod(), 0b100) // Use SIB and use dispN
+                Rm::new(disp.mod_rm_mod(), 0b100) // Use SIB and use dispN
                     .sib_base(base.register_code())
                     .sib_index(0b0100) // No index register is encoded
                     .disp(disp)
             }
-            _ => Rm::new(disp.modrm_mod(), base.register_code()).disp(disp),
+            _ => Rm::new(disp.mod_rm_mod(), base.register_code()).disp(disp),
         })
     }
 }
@@ -692,7 +692,7 @@ impl<Disp: Into<Displacement>> From<Address<Gpr64, Disp, IndexScale>> for Encode
     fn from(Address { base, disp, idxs }: Address<Gpr64, Disp, IndexScale>) -> Self {
         let disp = disp.into();
         Self(
-            Rm::new(disp.modrm_mod(), 0b100) // Use SIB and dispN
+            Rm::new(disp.mod_rm_mod(), 0b100) // Use SIB and dispN
                 .sib_base(base.register_code())
                 .sib_index(idxs.index.register_code())
                 .sib_scale(idxs.scale)
