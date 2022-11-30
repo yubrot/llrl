@@ -1,10 +1,10 @@
 (no-implicit-std)
 
-(import "std/prelude/stage-0" _)
+(import "std/prelude/stage-1" _)
 (import "std/num-literals" _)
 (import "std/preprocess" $$)
-(import "std/integer" Integer Integer._)
-(export Bits bw<< bw>> bw& bw| bw^ bw! popcount Bits._)
+(import "std/integer" Integer Integer._ Sub._)
+(export Bits bw<< bw>> bw& bw| bw^ bw! popcount Bits._ bits)
 
 (class (Bits A)
   (function (bw<< a b) {(-> A A A)})
@@ -44,3 +44,22 @@
 (builtin-op <integer/xor> {(forall A) (-> A A A) (where (Integer A))} "integer.xor")
 (builtin-op <integer/complement> {(forall A) (-> A A) (where (Integer A))} "integer.complement")
 (builtin-op <integer/popcount> {(forall A) (-> A A) (where (Integer A))} "integer.popcount")
+
+(macro (bits s)
+  (s/match s
+    [(_ ,@ss)
+      (expand-bits ss '0)]
+    [_
+      (err "Expected (bits (value bitwidth) ...)")]))
+
+(function (expand-bits s r) {(-> (Syntax Sexp) (Syntax Sexp) (Result (Syntax Sexp) String))}
+  (s/match s
+    [()
+      (ok r)]
+    [([,s ,(s:integer #f (let n))] ,@ss)
+      (expand-bits
+        ss
+        `(,\bw| (,\bw<< ,r ,(s:integer #f n))
+                (,\bw& ,s ,(s:integer #f (- (bw<< 1 n) 1)))))]
+    [_
+      (err "Expected (bits (value bitwidth) ...)")]))
