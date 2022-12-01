@@ -55,7 +55,7 @@
 
   (function (transformer/before-rt rt n)
     (ok (if-match1 (rt:let-local-fun (let funs) (let body)) rt
-      (: cut:no (rewrite/changed (run-closure-conversion! funs body n)))
+      (: cut:yes (rewrite/as-changed (transform n (run-closure-conversion! funs body n))!))
       (: cut:no (rewrite/unchanged rt)))))
 
   (function (transformer/after-rt rt n)

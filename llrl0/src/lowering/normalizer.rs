@@ -93,8 +93,11 @@ impl<'e, E: Env> rewriter::Rewriter for Normalizer<'e, E> {
             let funs = std::mem::take(&mut let_.0);
             let body = std::mem::take(&mut let_.1);
             *rt = ClosureConversion::run(funs, body, self)?;
+            self.rewrite(rt)?;
+            Ok(false)
+        } else {
+            Ok(true)
         }
-        Ok(true)
     }
 
     fn after_rt(&mut self, rt: &mut Rt) -> Result<(), ()> {

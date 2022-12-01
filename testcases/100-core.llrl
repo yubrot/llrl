@@ -346,3 +346,8 @@
         (match (h pair)
           [(: 1 2) #t]
           [_ #f])))))
+
+(test-backend pass
+  (let ([(f g) (g)])
+    (let ([(g) #t])
+      (f g))))
