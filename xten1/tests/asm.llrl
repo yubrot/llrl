@@ -128,3 +128,176 @@
           "mov [" (debug ra) " + " (debug rb) " * 4], rcx\n"
           "mov [" (debug ra) " - 8 + " (debug rb) "], rcx\n"
           "mov [" (debug ra) " - 512 + " (debug rb) " * 4], rcx")))))
+
+(function (asm f) {(-> (-> (Vector U8) (Result unit unit)) (Array U8))}
+  (let1 buf vector/empty
+    (f buf)
+    (vector/buffer buf)))
+
+(assert-asm!
+  (asm (lambda (w)
+    (adcb! w (memory rax) bl)!
+    (adcb! w r13b (memory r9))!
+    (adcb! w spl 13 {I8})!
+    (adcb! w (memory (+. rax (*. rcx 4))) -7 {I8})))
+  "
+    adcb [rax], bl
+    adcb r13b, [r9]
+    adcb spl, 13
+    adcb [rax + rcx * 4], -7
+  ")
+
+(assert-asm!
+  (asm (lambda (w)
+    (adcw! w cx bx)!
+    (adcw! w (memory 11) bx)!
+    (adcw! w cx (memory (+. rip 5)))!
+    (adcw! w r11w 1234 {I16})))
+  "
+    adcw cx, bx
+    adcw [11], bx
+    adcw cx, [rip + 5]
+    adcw r11w, 1234
+  ")
+
+(assert-asm!
+  (asm (lambda (w)
+    (adcl! w |:eax 4444 {I32})!
+    (adcl! w (memory (+. rbx 124 {I8})) esi)!
+    (adcl! w ebx 32 {I8})!
+    (adcl! w ecx 100000 {I32})))
+  "
+    adcd eax, 4444
+    adcd [rbx + 124], esi
+    adcd ebx, 32
+    adcd ecx, 100000
+  ")
+
+(assert-asm!
+  (asm (lambda (w)
+    (adcq! w r13 (memory rax))!
+    (adcq! w (memory r10) 124680 {I32})))
+  "
+    adcq r13, [rax]
+    adcq [r10], 124680
+  ")
+
+(assert-asm!
+  (asm (lambda (w)
+    (addpd! w xmm7 xmm1)!
+    (addps! w xmm10 (memory rdi))!
+    (addss! w xmm4 (memory rax))!
+    (andpd! w xmm10 xmm15)))
+  "
+    addpd xmm7, xmm1
+    addps xmm10, [rdi]
+    addss xmm4, [rax]
+    andpd xmm10, xmm15
+  ")
+
+(assert-asm!
+  (asm (lambda (w)
+    (blendpd! w xmm4 xmm5 6 {I8})!
+    (blendpd! w xmm4 (memory (+. rax 4 {I8})) 6 {I8})!
+    (blendvpd! w xmm2 xmm3 |:xmm0)))
+  "
+    blendpd xmm4, xmm5, 6
+    blendpd xmm4, [rax + 4], 6
+    blendvpd xmm2, xmm3, xmm0
+  ")
+
+(assert-asm!
+  (asm (lambda (w)
+    (bswap! w ebx)!
+    (bswap! w rsp)!
+    (btq! w (memory (+. rax (*. rbx 8) 1024)) 5 {I8})!
+    (cli! w)!
+    (extractps! w rcx xmm4 4 {I8})!
+    (setb! w dl)))
+  "
+    bswap ebx
+    bswap rsp
+    btq [rax + rbx * 8 + 1024], 5
+    cli
+    extractps rcx, xmm4, 4
+    setb dl
+  ")
+
+(assert-asm!
+  (asm (lambda (w)
+    (callq! w 2 {I32})! ; call rdi :: F2 /r (2 bytes)
+    (callq! w rdi)!
+    (callq! w (memory (+. rax r10)))!
+    (jae! w 0 {I8})!
+    (retq! w)!
+    (verw! w ax)))
+  "
+    call hoge
+    call rdi
+    hoge:
+    call [rax + r10]
+    jae fuga
+    fuga:
+    retq
+    verw ax
+  ")
+
+(assert-asm!
+  (asm (lambda (w)
+    (crc32b! w r10d dl)!
+    (crc32b! w rbx dl)!
+    (crc32w! w eax cx)!
+    (crc32l! w ebx edx)))
+  "
+    crc32b r10d, dl
+    crc32b rbx, dl
+    crc32w eax, cx
+    crc32d ebx, edx
+  ")
+
+(assert-asm!
+  (asm (lambda (w)
+    (divb! w (memory rax))!
+    (divw! w ax)!
+    (divl! w ecx)!
+    (divq! w r10)))
+  "
+    divb [rax]
+    divw ax
+    divd ecx
+    divq r10
+  ")
+
+(assert-asm!
+  (asm (lambda (w)
+    (movl! w ebx 1234 {I32})!
+    (movl! w r10d 1234 {I32})!
+    (movq! w rdx 1234 {I32})!
+    (movq! w r11 1234 {I32})))
+  "
+    mov ebx, 1234
+    mov r10d, 1234
+    mov rdx, 1234
+    mov r11, 1234
+  ")
+
+(assert-asm!
+  (asm (lambda (w)
+    (pushq! w 5 {I8})!
+    ; (pushq! w 1000 {I16})! ; NOTE: GAS encodes this as `68 id`, not `66 68 iw`
+    (pushq! w 70000 {I32})!
+    (pushq! w (memory rbx))!
+    (pushq! w rcx)!
+    (pushw! w ax)!
+    (popq! w rbx)!
+    (popw! w (memory rax))))
+  "
+    pushq 5
+    /* pushq 1000 */
+    pushq 70000
+    pushq [rbx]
+    pushq rcx
+    pushw ax
+    popq rbx
+    popw [rax]
+  ")
