@@ -112,7 +112,6 @@ trait Context: Sized {
     where
         Self: 'a;
 
-    // TODO: Abstract with GATs (rust-lang/rust#44265)
     fn on<'a>(&'a mut self, bind: &impl Bind) -> Result<Self::LocalContext<'a>>;
 
     fn resolve(&mut self, target: &mut impl Resolve) -> Result<()> {

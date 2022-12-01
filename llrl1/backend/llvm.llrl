@@ -1,6 +1,6 @@
 (import "std/phantom" _)
 (import "std/io" [io/_ _])
-(import "std/system" Process process/_)
+(import "std/system" process/_ with-process!)
 (import "std/ord-map" _)
 (import "llvm" [llvm/_ _])
 (import "~/util" _)
@@ -154,14 +154,14 @@
           (when (backend/verbose? b)
             (eprintln! "### link")
             (eprintln! "clang " (it/format " " args)))
-          (let* ([proc (enforce-io-success! (process/spawn! "clang" args))]
-                 [status (process/wait! proc)])
-            (when (backend/verbose? b)
-              (eprintln! "### clang output")
-              (eprintln! (enforce-io-success! (|> proc process/out read-string-to-end!))))
-            (if-match1 (some 0) status
-              (ok unit)
-              (err (enforce-io-success! (|> proc process/err read-string-to-end!)))))))))))
+          (enforce-io-success! (with-process! "clang" args (lambda (proc)
+            (let1 status (process/wait! proc)
+              (when (backend/verbose? b)
+                (eprintln! "### clang output")
+                (eprintln! (|> proc process/out read-string-to-end!)!))
+              (ok (if-match1 (some 0) status
+                (ok unit)
+                (err (|> proc process/err read-string-to-end!)!)))))))))))))
 
 (function (expand-libllrt! dir) {(-> String (Result unit io/IoError))}
   (io/with-file! (io/path dir "libllrt.a") "w" [^1 (write-bytes! (resources/llrt-archive) %1)]))

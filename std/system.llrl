@@ -3,6 +3,7 @@
 (import "std/prelude/stage-1" _)
 (import "std/integer" _.I32)
 (import "std/option" _.Option)
+(import "std/result" result/and)
 (import "std/memory" Ptr ptr:_)
 (import "std/iterator" _)
 (import "std/it" it/_)
@@ -10,7 +11,7 @@
 (import "std/vector" vector/_ _.Vector)
 (import "std/string" string/_)
 (import "std/io" IoError io-error/_ File file/_)
-(export args exit! random! Process process/_ time)
+(export args exit! random! Process process/_ with-process! time)
 
 (function (args) {(-> (Array String))}
   (with1 (<args>: (let argc) (let argv)) <args>
@@ -74,6 +75,18 @@
     (file/close! in)
     (let1 status (<wait> pid)
       (when? (<= 0 status) status)))) ; FIXME: Identify waitpid errors, SIGNALED, and STOPPED
+
+(function (process/close! proc) {(-> Process (Result unit IoError))}
+  (let ([r1 (file/close! (process/in proc))]
+        [r2 (file/close! (process/out proc))]
+        [r3 (file/close! (process/err proc))])
+    (result/and r1 r2 r3)))
+
+(function (with-process! name args f) {(forall T A) (-> String (T String) (-> Process (Result A IoError)) (Result A IoError)) (where (Iterate T))}
+  (let* ([proc (process/spawn! name args)!]
+         [ret (f proc)])
+    (ignore (process/close! proc))
+    ret))
 
 (c-function time {(-> F64)} "llrt_time")
 
