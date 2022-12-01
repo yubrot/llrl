@@ -6,7 +6,7 @@
 (import "std/s" s/length)
 (import "std/integer" _.U64)
 (import "std/access" unsafe-get unsafe-set!)
-(import "std/memory" Ptr ptr:null ptr/_)
+(import "std/memory" Ptr ptr:null ptr/_ size-of)
 (import "std/ref" Ref ref ref/_ _.Ref)
 (import "std/iterator" _)
 (export Array array array/_ _.Array)
@@ -177,6 +177,15 @@
     (while (< ~i l)
       (array/swap! ~i (- r ~i) t)
       (set! i (+ ~i 1)))))
+
+; Caller must ensure that the function is called immediately (inlined) and the returned array
+; does not escape from the current call stack.
+(transparent-function (array/unsafe-temporary-bytearray a) {(forall A) (-> A (Array U8))}
+  (array/unsafe-from-ptr (ptr/cast (ptr/temporary a)) (size-of A)))
+
+; Get the bytes of the data in little endian.
+(function (array/bytearray a) {(forall A) (-> A (Array U8))}
+  (shallow-copy (array/unsafe-temporary-bytearray a)))
 
 ; ---------------------------
 

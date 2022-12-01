@@ -55,20 +55,16 @@
 
 (instance Hash.U8 (Hash U8)
   (function (hash! s a)
-    (let1 tmp (array/unsafe-stackalloc-uninitialized 1)
-      (|> tmp array/ptr ptr/cast (ptr/store! a))
-      (hasher/write! tmp s)))
+    (hasher/write! (array/unsafe-temporary-bytearray a) s))
 
   (function (hash-array! s a)
     (hasher/write! a s)))
 
 ($$ begin
-  ($for-each [$ty $size] ([U16 2] [U32 4] [U64 8] [I8 1] [I16 2] [I32 4] [I64 8] [F32 4] [F64 8])
+  ($for-each $ty (U16 U32 U64 I8 I16 I32 I64 F32 F64)
     (instance ($symbol-concat Hash. $ty) (Hash $ty)
       (function (hash! s a)
-        (let1 tmp (array/unsafe-stackalloc-uninitialized $size)
-          (|> tmp array/ptr ptr/cast (ptr/store! a))
-          (hasher/write! tmp s))))))
+        (hasher/write! (array/unsafe-temporary-bytearray a) s)))))
 
 (instance Hash.Ptr (forall A) (Hash (Ptr A))
   (function (hash! s a)

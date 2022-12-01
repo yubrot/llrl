@@ -3,7 +3,7 @@
 (import "std/prelude/stage-1" _)
 (import "std/integer" _.U32)
 (import "std/memory" Ptr)
-(import "std/array" array/_ _.Array)
+(import "std/array" _.Array array/_)
 (import "std/internal/utf-8" [utf-8/_ _])
 (import "std/hash" Hash hash! Hash.U32)
 (export Char char/_ _.Char)
@@ -57,7 +57,7 @@
 
 (instance Display.Char (Display Char)
   (function (display! w a)
-    (let1 tmp (array/unsafe-stackalloc-uninitialized 4)
+    (let1 tmp (array/unsafe-temporary-bytearray 0 {U64})
       (match (|> a char/unicode-scalar utf-8/encode utf-8/encode/force-success)
         [(utf-8/complete:latin (let a))
           (set! tmp[0] a)

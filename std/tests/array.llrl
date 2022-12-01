@@ -143,3 +143,8 @@
 (assert-eq? "(array (some #t) (some #f) none)" (string (debug (array (some #t) (some #f) none))))
 
 (assert-eq? (array 1 2 3) (collect (rev-iterate (array 3 2 1))))
+
+; 4d 5c 6b 7a
+(assert-eq? (array/unsafe-temporary-bytearray 2053856333 {I32}) (array 77 92 107 122))
+; 34 12
+(assert-eq? (array/bytearray 4660 {U16}) (array 52 18))
