@@ -557,7 +557,7 @@ mod tests {
             Ok(())
         });
 
-        assert_as!(
+        assert_asm!(
             o.text,
             r#"
                 fib:

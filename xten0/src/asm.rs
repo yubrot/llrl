@@ -24,7 +24,7 @@ mod tests {
 
     #[test]
     fn test_inst() {
-        assert_as!(
+        assert_asm!(
             asm(|w| {
                 w.adcb(memory(Rax), Bl)?;
                 w.adcb(R13B, memory(R9))?;
@@ -39,7 +39,7 @@ mod tests {
                 adcb [rax + rcx * 4], -7
             "#
         );
-        assert_as!(
+        assert_asm!(
             asm(|w| {
                 w.adcw(Cx, Bx)?;
                 w.adcw(memory(11), Bx)?;
@@ -54,7 +54,7 @@ mod tests {
                 adcw r11w, 1234
             "#
         );
-        assert_as!(
+        assert_asm!(
             asm(|w| {
                 w.adcl(_Eax, 4444)?;
                 w.adcl(memory(Rbx + 124i8), Esi)?;
@@ -69,7 +69,7 @@ mod tests {
                 adcd ecx, 100000
             "#
         );
-        assert_as!(
+        assert_asm!(
             asm(|w| {
                 w.adcq(R13, memory(Rax))?;
                 w.adcq(memory(R10), 124680i32)?;
@@ -80,7 +80,7 @@ mod tests {
                 adcq [r10], 124680
             "#
         );
-        assert_as!(
+        assert_asm!(
             asm(|w| {
                 w.addpd(Xmm7, Xmm1)?;
                 w.addps(Xmm10, memory(Rdi))?;
@@ -95,7 +95,7 @@ mod tests {
                 andpd xmm10, xmm15
             "#
         );
-        assert_as!(
+        assert_asm!(
             asm(|w| {
                 w.blendpd(Xmm4, Xmm5, 6i8)?;
                 w.blendpd(Xmm4, memory(Rax + 4i8), 6i8)?;
@@ -108,7 +108,7 @@ mod tests {
                 blendvpd xmm2, xmm3, xmm0
             "#
         );
-        assert_as!(
+        assert_asm!(
             asm(|w| {
                 w.bswap(Ebx)?;
                 w.bswap(Rsp)?;
@@ -127,7 +127,7 @@ mod tests {
                 setb dl
             "#
         );
-        assert_as!(
+        assert_asm!(
             asm(|w| {
                 w.callq(2)?; // call rdi :: F2 /r (2 bytes)
                 w.callq(Rdi)?;
@@ -148,7 +148,7 @@ mod tests {
                 verw ax
             "#
         );
-        assert_as!(
+        assert_asm!(
             asm(|w| {
                 w.crc32b(R10D, Dl)?;
                 w.crc32b(Rbx, Dl)?;
@@ -163,7 +163,7 @@ mod tests {
                 crc32d ebx, edx
             "#
         );
-        assert_as!(
+        assert_asm!(
             asm(|w| {
                 w.divb(memory(Rax))?;
                 w.divw(Ax)?;
@@ -178,7 +178,7 @@ mod tests {
                 divq r10
             "#
         );
-        assert_as!(
+        assert_asm!(
             asm(|w| {
                 w.movl(Ebx, 1234i32)?;
                 w.movl(R10D, 1234i32)?;
@@ -193,7 +193,7 @@ mod tests {
                 mov r11, 1234
             "#
         );
-        assert_as!(
+        assert_asm!(
             asm(|w| {
                 w.pushq(5i8)?;
                 // w.pushq(1000i16)?; // NOTE: GAS encodes this as `68 id`, not `66 68 iw`

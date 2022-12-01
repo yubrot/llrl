@@ -807,7 +807,7 @@ mod tests {
                 if ra == rb {
                     continue;
                 }
-                assert_as!(movq(ra, rb), "movq {}, {}", sa, sb);
+                assert_asm!(movq(ra, rb), "movq {}, {}", sa, sb);
             }
         }
     }
@@ -815,32 +815,33 @@ mod tests {
     #[test]
     fn gpr32() {
         // It also tests with PartOfOpcode
-        assert_as!(negl(Eax), "neg eax");
-        assert_as!(negl(Ecx), "neg ecx");
-        assert_as!(negl(R13D), "neg r13d");
+        assert_asm!(negl(Eax), "neg eax");
+        assert_asm!(negl(Ecx), "neg ecx");
+        assert_asm!(negl(R13D), "neg r13d");
     }
 
     #[test]
     fn gpr16() {
         // It also tests with RegInOpcode
-        assert_as!(movw(Ax, 30000), "movw ax, 30000");
-        assert_as!(movw(R8W, -1234), "movw r8w, -1234");
+        assert_asm!(movw(Ax, 30000), "movw ax, 30000");
+        assert_asm!(movw(R8W, -1234), "movw r8w, -1234");
     }
 
     #[test]
     fn gpr8() {
         // It also tests force_rex_prefix
-        assert_as!(movb(Al, Cl), "movb al, cl");
-        assert_as!(movb(memory(Rax + Rcx * 2), Dl), "movb [rax + rcx * 2], dl");
-        assert_as!(movb(Spl, Bl), "movb spl, bl");
-        assert_as!(movb(Al, Dil), "movb al, dil");
+        assert_asm!(movb(Al, Cl), "movb al, cl");
+        assert_asm!(movb(memory(Rax + Rcx * 2), Dl), "movb [rax + rcx * 2], dl");
+        assert_asm!(movb(Spl, Bl), "movb spl, bl");
+        assert_asm!(movb(Al, Dil), "movb al, dil");
+        assert_asm!(movb(Ah, Cl), "movb ah, cl");
     }
 
     #[test]
     fn xmm() {
-        assert_as!(movsd(Xmm1, Xmm3), "movsd xmm1, xmm3");
-        assert_as!(movsd(Xmm10, memory(Rdx)), "movsd xmm10, [rdx]");
-        assert_as!(
+        assert_asm!(movsd(Xmm1, Xmm3), "movsd xmm1, xmm3");
+        assert_asm!(movsd(Xmm10, memory(Rdx)), "movsd xmm10, [rdx]");
+        assert_asm!(
             movsd(Xmm4, memory(Rax + Rcx * 8 - 8i8)),
             "movsd xmm4, [rax + rcx * 8 - 8]"
         );
@@ -849,25 +850,25 @@ mod tests {
     #[test]
     fn memory_address() {
         // absolute addressing
-        assert_as!(movq(memory(124), Rax), "mov [124], rax");
-        assert_as!(movq(memory(124 + Rcx * 2), Rax), "mov [124 + rcx * 2], rax");
-        assert_as!(
+        assert_asm!(movq(memory(124), Rax), "mov [124], rax");
+        assert_asm!(movq(memory(124 + Rcx * 2), Rax), "mov [124 + rcx * 2], rax");
+        assert_asm!(
             movq(memory(1024 + Rdx * 4), Rax),
             "mov [1024 + rdx * 4], rax"
         );
-        assert_as!(
+        assert_asm!(
             movq(memory(4096 + R14 * 8), Rax),
             "mov [4096 + r14 * 8], rax"
         );
 
         // RIP-relative addressing
-        assert_as!(movq(memory(Rip), Rcx), "mov [rip], rcx");
-        assert_as!(movq(memory(Rip + 16), Rcx), "mov [rip + 16], rcx");
-        assert_as!(movq(memory(Rip - 64), Rcx), "mov [rip - 64], rcx");
+        assert_asm!(movq(memory(Rip), Rcx), "mov [rip], rcx");
+        assert_asm!(movq(memory(Rip + 16), Rcx), "mov [rip + 16], rcx");
+        assert_asm!(movq(memory(Rip - 64), Rcx), "mov [rip - 64], rcx");
 
         // $disp + $disp
-        assert_as!(movq(memory(Rip - 64 + 32), Rcx), "mov [rip - 32], rcx");
-        assert_as!(movq(memory(Rip + 64 - 32), Rcx), "mov [rip + 32], rcx");
+        assert_asm!(movq(memory(Rip - 64 + 32), Rcx), "mov [rip - 32], rcx");
+        assert_asm!(movq(memory(Rip + 64 - 32), Rcx), "mov [rip + 32], rcx");
 
         for (ra, sa) in general_purpose_registers() {
             for (rb, sb) in general_purpose_registers() {
@@ -876,7 +877,7 @@ mod tests {
                 }
 
                 // [Base], [Base + disp8], [Base + disp32]
-                assert_as!(
+                assert_asm!(
                     [
                         movq(memory(ra), rb),
                         movq(memory(ra + 12i8), rb),
@@ -900,8 +901,8 @@ mod tests {
 
                 // Cannot use RSP as an index register
                 if rb != Rsp {
-                    // [Base + Index] *2, [Base + disp8 + Index], [Base + disp32 + Index]
-                    assert_as!(
+                    // [Base + Idxs], [Base + Idxs], [Base + disp8 + Idxs], [Base + disp32 + Idxs]
+                    assert_asm!(
                         [
                             movq(memory(ra + rb), Rcx),
                             movq(memory(ra + rb * 4), Rcx),

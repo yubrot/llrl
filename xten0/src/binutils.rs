@@ -78,7 +78,7 @@ pub fn disasm(mc: &[u8]) -> String {
         .join("\n")
 }
 
-macro_rules! assert_as {
+macro_rules! assert_asm {
     ($src:expr, $( $t:tt )*) => {
         let dest = format!($( $t )*);
         assert_eq!(
