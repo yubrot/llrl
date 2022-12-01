@@ -1,0 +1,130 @@
+(import "~/tests/binutils" assert-asm!)
+(import "~/asm/encoding" _)
+(import "~/asm/operand" _)
+(import "~/asm/inst" _)
+(println! "xten1/tests/asm")
+
+; movq r/m64 r64: Move r64 to r/m64.
+(function (movq dest src) {(forall A B) (-> A B (Array U8)) (where (Conv A Rm) (Conv B Reg))}
+  ; REX.W+ 89 /r
+  (let1 mrm (mod-rm/new src dest)
+    (collect (it/concat
+      (mod-rm/rex-byte? mrm #t)     ; REX prefix
+      (array 137 (mod-rm/byte mrm)) ; Opcode, ModR/M
+      (mod-rm/sib-byte? mrm)        ; SIB
+      (mod-rm/disp-bytes mrm)))))   ; Displacement
+
+; negl r/m32: Two's complement negate r/m32.
+(function (negl operand) {(forall A) (-> A (Array U8)) (where (Conv A Rm))}
+  ; F7 /3
+  (let1 mrm (mod-rm/new (part-of-opcode: 3) operand)
+    (collect (it/concat
+      (mod-rm/rex-byte? mrm #f)     ; REX prefix
+      (array 247 (mod-rm/byte mrm)) ; Opcode, ModR/M
+      (mod-rm/sib-byte? mrm)        ; SIB
+      (mod-rm/disp-bytes mrm)))))   ; Displacement
+
+; movw r16, imm16: Move imm16 to r16.
+(function (movw dest src) {(forall A B) (-> A I16 (Array U8)) (where (Conv A Reg))}
+  ; B8 +rw +iw
+  (let1 rio (reg-in-opcode/new dest)
+    (collect (it/concat
+      (some 102)                       ; Mandatory prefix
+      (reg-in-opcode/rex-byte? rio #f) ; REX prefix
+      (some (+ 184 (reg-in-opcode/byte-added-to-opcode rio))) ; Opcode
+      (array/bytearray src)))))        ; Immediate
+
+; movb r/m8 r8: Move r8 to r/m8.
+(function (movb dest src) {(forall A B) (-> A B (Array U8)) (where (Conv A Rm) (Conv B Reg))}
+  ; 88 /r
+  (let1 mrm (mod-rm/new src dest)
+    (collect (it/concat
+      (mod-rm/rex-byte? mrm #f)     ; REX prefix
+      (array 136 (mod-rm/byte mrm)) ; Opcode, ModR/M
+      (mod-rm/sib-byte? mrm)        ; SIB
+      (mod-rm/disp-bytes mrm)))))   ; Displacement
+
+; movsd xmm1, xmm2/m64: Move scalar double-precision floating-point value from xmm2/m64 to xmm1 register.
+(function (movsd dest src) {(forall A B) (-> A B (Array U8)) (where (Conv A Reg) (Conv B Rm))}
+  ; F2 0F 10 /r
+  (let1 mrm (mod-rm/new dest src)
+    (collect (it/concat
+      (some 242)                      ; Mandatory prefix
+      (mod-rm/rex-byte? mrm #f)       ; REX prefix
+      (array 15 16 (mod-rm/byte mrm)) ; Opcode, ModR/M
+      (mod-rm/sib-byte? mrm)          ; SIB
+      (mod-rm/disp-bytes mrm)))))     ; Displacement
+
+(function general-purpose-registers
+  (array
+    rax rbx
+    rsp r12   ; special case 1
+    rbp r13   ; special case 2
+    r14 r15)) ; An extension bit is necessary
+
+(for (let ra) general-purpose-registers
+  (for (let rb) general-purpose-registers
+    (when (ne? ra rb)
+      (assert-asm! (movq ra rb) "movq " (debug ra) ", " (debug rb)))))
+
+(assert-asm! (negl eax) "neg eax")
+(assert-asm! (negl ecx) "neg ecx")
+(assert-asm! (negl r13d) "neg r13d")
+
+; It also tests with RegInOpcode
+(assert-asm! (movw ax 30000) "movw ax, 30000")
+(assert-asm! (movw r8w -1234) "movw r8w, -1234")
+
+; It also tests force_rex_prefix
+(assert-asm! (movb al cl) "movb al, cl")
+(assert-asm! (movb (memory (+. rax (*. rcx 2))) dl) "movb [rax + rcx * 2], dl")
+(assert-asm! (movb spl bl) "movb spl, bl")
+(assert-asm! (movb al dil) "movb al, dil")
+(assert-asm! (movb ah cl) "movb ah, cl")
+
+(assert-asm! (movsd xmm1 xmm3) "movsd xmm1, xmm3")
+(assert-asm! (movsd xmm10 (memory rdx)) "movsd xmm10, [rdx]")
+(assert-asm! (movsd xmm4 (memory (+. rax (*. rcx 8) -8 {I8}))) "movsd xmm4, [rax + rcx * 8 - 8]")
+
+; absolute addressing
+(assert-asm! (movq (memory 124) rax) "mov [124], rax")
+(assert-asm! (movq (memory (+. 124 (*. rcx 2))) rax) "mov [124 + rcx * 2], rax")
+(assert-asm! (movq (memory (+. 1024 (*. rdx 4))) rax) "mov [1024 + rdx * 4], rax")
+(assert-asm! (movq (memory (+. 4096 (*. r14 8))) rax) "mov [4096 + r14 * 8], rax")
+
+; RIP-relative addressing
+(assert-asm! (movq (memory rip) rcx) "mov [rip], rcx")
+(assert-asm! (movq (memory (+. rip 16)) rcx) "mov [rip + 16], rcx")
+(assert-asm! (movq (memory (+. rip -64)) rcx) "mov [rip - 64], rcx")
+
+(assert-asm! (movq (memory (+. rip -64 32)) rcx) "mov [rip - 32], rcx")
+(assert-asm! (movq (memory (+. rip 64 -32)) rcx) "mov [rip + 32], rcx")
+(assert-asm! (movq (memory (+. r14 12 {I8})) r13) "mov [r14 + 12], r13")
+(assert-asm! (movq (memory (+. r14 1024)) r13) "mov [r14 + 1024], r13")
+
+(for (let ra) general-purpose-registers
+  (for (let rb) general-purpose-registers
+    (when (ne? ra rb)
+      ; [base], [base + disp8], [base + disp32]
+      (assert-asm!
+        (collect (it/concat
+          (movq (memory ra) rb)
+          (movq (memory (+. ra 12 {I8})) rb)
+          (movq (memory (+. ra 1024)) rb)))
+        "mov [" (debug ra) "], " (debug rb) "\n"
+        "mov [" (debug ra) " + 12], " (debug rb) "\n"
+        "mov [" (debug ra) " + 1024], " (debug rb))
+
+      ; Cannot use RSP as an index register
+      (when (ne? rb rsp)
+        ; [base + idxs], [base + idxs], [base + disp8 + idxs], [base + disp32 + idxs]
+        (assert-asm!
+          (collect (it/concat
+            (movq (memory (+. ra rb)) rcx)
+            (movq (memory (+. ra (*. rb 4))) rcx)
+            (movq (memory (+. ra -8 {I8} rb)) rcx)
+            (movq (memory (+. ra -512 (*. rb 4))) rcx)))
+          "mov [" (debug ra) " + " (debug rb) "], rcx\n"
+          "mov [" (debug ra) " + " (debug rb) " * 4], rcx\n"
+          "mov [" (debug ra) " - 8 + " (debug rb) "], rcx\n"
+          "mov [" (debug ra) " - 512 + " (debug rb) " * 4], rcx")))))

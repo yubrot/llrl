@@ -1,0 +1,302 @@
+; https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html
+
+(import "std/s" s/foldl)
+(import "~/asm/encoding" _)
+(export _.To.Reg _.To.Rm)
+(export Gpr64 _.Gpr64 gpr64/_)
+(export Gpr32 _.Gpr32 gpr32/_)
+(export Gpr16 _.Gpr16 gpr16/_)
+(export Gpr8 _.Gpr8 gpr8/_)
+(export rax rcx rdx rbx rsp rbp rsi rdi r8 r9 r10 r11 r12 r13 r14 r15)
+(export eax ecx edx ebx esp ebp esi edi r8d r9d r10d r11d r12d r13d r14d r15d)
+(export ax cx dx bx sp bp si di r8w r9w r10w r11w r12w r13w r14w r15w)
+(export al cl dl bl ah ch dh bh spl bpl sil dil r8b r9b r10b r11b r12b r13b r14b r15b)
+(export Rip _.Rip rip)
+(export Xmm _.Xmm xmm/_)
+(export xmm0 xmm1 xmm2 xmm3 xmm4 xmm5 xmm6 xmm7 xmm8 xmm9 xmm10 xmm11 xmm12 xmm13 xmm14 xmm15)
+(export Memory _.Memory Address _.Address IndexScale _.IndexScale *. +. memory)
+(export |_ Eq.|_ DebugDisplay.|_)
+
+; 64-bit general-purpose (GP) register.
+(derive (Eq DebugDisplay) value-data Gpr64
+  rax rcx rdx rbx rsp rbp rsi rdi r8 r9 r10 r11 r12 r13 r14 r15)
+
+; 32-bit general-purpose (GP) register.
+(derive (Eq DebugDisplay) value-data Gpr32
+  eax ecx edx ebx esp ebp esi edi r8d r9d r10d r11d r12d r13d r14d r15d)
+
+; 16-bit general-purpose (GP) register.
+(derive (Eq DebugDisplay) value-data Gpr16
+  ax cx dx bx sp bp si di r8w r9w r10w r11w r12w r13w r14w r15w)
+
+; 8-bit general-purpose (GP) register.
+(derive (Eq DebugDisplay) value-data Gpr8
+  al cl dl bl ah ch dh bh spl bpl sil dil r8b r9b r10b r11b r12b r13b r14b r15b)
+
+(instance Conv.From.Gpr64.To.Reg (Conv Gpr64 Reg)
+  (function (conv r) (reg/new (gpr64/register-code r))))
+
+(instance Conv.From.Gpr64.To.Rm (Conv Gpr64 Rm)
+  (function (conv r) (rm/new 3 (gpr64/register-code r))))
+
+(instance Conv.From.Gpr32.To.Reg (Conv Gpr32 Reg)
+  (function (conv r) (reg/new (gpr32/register-code r))))
+
+(instance Conv.From.Gpr32.To.Rm (Conv Gpr32 Rm)
+  (function (conv r) (rm/new 3 (gpr32/register-code r))))
+
+(instance Conv.From.Gpr16.To.Reg (Conv Gpr16 Reg)
+  (function (conv r) (reg/new (gpr16/register-code r))))
+
+(instance Conv.From.Gpr16.To.Rm (Conv Gpr16 Rm)
+  (function (conv r) (rm/new 3 (gpr16/register-code r))))
+
+(instance Conv.From.Gpr8.To.Reg (Conv Gpr8 Reg)
+  (function (conv r)
+    (|> (reg/new (gpr8/register-code r))
+        (reg/set-rex-prefix (gpr8/rex-prefix r)))))
+
+(instance Conv.From.Gpr8.To.Rm (Conv Gpr8 Rm)
+  (function (conv r)
+    (|> (rm/new 3 (gpr8/register-code r))
+        (rm/set-rex-prefix (gpr8/rex-prefix r)))))
+
+(function (gpr64/q r) {(-> Gpr64 Gpr64)}
+  r)
+
+(function (gpr64/l r) {(-> Gpr64 Gpr32)}
+  (match r
+    [rax eax] [rcx ecx] [rdx edx] [rbx ebx] [rsp esp] [rbp ebp] [rsi esi] [rdi edi]
+    [r8 r8d] [r9 r9d] [r10 r10d] [r11 r11d] [r12 r12d] [r13 r13d] [r14 r14d] [r15 r15d]))
+
+(function (gpr64/w r) {(-> Gpr64 Gpr16)}
+  (match r
+    [rax ax] [rcx cx] [rdx dx] [rbx bx] [rsp sp] [rbp bp] [rsi si] [rdi di]
+    [r8 r8w] [r9 r9w] [r10 r10w] [r11 r11w] [r12 r12w] [r13 r13w] [r14 r14w] [r15 r15w]))
+
+(function (gpr64/b r) {(-> Gpr64 Gpr8)}
+  (match r
+    [rax al] [rcx cl] [rdx dl] [rbx bl] [rsp spl] [rbp bpl] [rsi sil] [rdi dil]
+    [r8 r8b] [r9 r9b] [r10 r10b] [r11 r11b] [r12 r12b] [r13 r13b] [r14 r14b] [r15 r15b]))
+
+(function (gpr64/register-code r) {(-> Gpr64 U8)}
+  (match r
+    [rax 0] [rcx 1] [rdx 2] [rbx 3] [rsp 4] [rbp 5] [rsi 6] [rdi 7]
+    [r8 8] [r9 9] [r10 10] [r11 11] [r12 12] [r13 13] [r14 14] [r15 15]))
+
+(function (gpr32/register-code r) {(-> Gpr32 U8)}
+  (match r
+    [eax 0] [ecx 1] [edx 2] [ebx 3] [esp 4] [ebp 5] [esi 6] [edi 7]
+    [r8d 8] [r9d 9] [r10d 10] [r11d 11] [r12d 12] [r13d 13] [r14d 14] [r15d 15]))
+
+(function (gpr16/register-code r) {(-> Gpr16 U8)}
+  (match r
+    [ax 0] [cx 1] [dx 2] [bx 3] [sp 4] [bp 5] [si 6] [di 7]
+    [r8w 8] [r9w 9] [r10w 10] [r11w 11] [r12w 12] [r13w 13] [r14w 14] [r15w 15]))
+
+(function (gpr8/register-code r) {(-> Gpr8 U8)}
+  (match r
+    [al 0] [cl 1] [dl 2] [bl 3] [ah 4] [ch 5] [dh 6] [bh 7] [spl 4] [bpl 5] [sil 6] [dil 7]
+    [r8b 8] [r9b 9] [r10b 10] [r11b 11] [r12b 12] [r13b 13] [r14b 14] [r15b 15]))
+
+(function (gpr8/rex-prefix r) {(-> Gpr8 RexPrefix)}
+  (match r
+    [spl rex-prefix:required]
+    [bpl rex-prefix:required]
+    [sil rex-prefix:required]
+    [dil rex-prefix:required]
+    [ah rex-prefix:denied]
+    [ch rex-prefix:denied]
+    [dh rex-prefix:denied]
+    [bh rex-prefix:denied]
+    [_ default]))
+
+; 64-bit instruction pointer register.
+(derive (Eq DebugDisplay) value-data Rip
+  rip)
+
+; XMM register.
+(derive (Eq DebugDisplay) value-data Xmm
+  xmm0 xmm1 xmm2 xmm3 xmm4 xmm5 xmm6 xmm7 xmm8 xmm9 xmm10 xmm11 xmm12 xmm13 xmm14 xmm15)
+
+(instance Conv.From.Xmm.To.Reg (Conv Xmm Reg)
+  (function (conv xmm) (reg/new (xmm/encoding-index xmm))))
+
+(instance Conv.From.Xmm.To.Rm (Conv Xmm Rm)
+  (function (conv xmm) (rm/new 3 (xmm/encoding-index xmm))))
+
+(function (xmm/encoding-index xmm) {(-> Xmm U8)}
+  (match xmm
+    [xmm0 0] [xmm1 1] [xmm2 2] [xmm3 3] [xmm4 4] [xmm5 5] [xmm6 6] [xmm7 7]
+    [xmm8 8] [xmm9 9] [xmm10 10] [xmm11 11] [xmm12 12] [xmm13 13] [xmm14 14] [xmm15 15]))
+
+; Since classes in llrl are a bit more inconvenient than Rust's traits due to the lack of
+; associated types, the types defined below are a little less strict than xten0 types.
+
+; A memory operand.
+(derive (Eq DebugDisplay) data Memory
+  (memory: Address))
+
+(instance Conv.From.Memory.To.Rm (Conv Memory Rm)
+  (function (conv m)
+    (match m
+      ; [disp32]
+      [(memory: (address: none (some (let disp)) none))
+        (assert (<= 0 (displacement/offset disp)))
+        (|> (rm/new 0 4) ; Use SIB
+            (rm/set-sib-base 5) ; No base register is encoded and use disp32
+            (rm/set-sib-index 4) ; No index register is encoded
+            (rm/set-disp (displacement/offset disp)))] ; disp32
+      ; [disp32 + IndexScale]
+      [(memory: (address: none (some (let disp)) (some (index-scale: (let index) (let scale)))))
+        (|> (rm/new 0 4) ; Use SIB
+            (rm/set-sib-base 5) ; No base register is encoded and use disp32
+            (rm/set-sib-index (gpr64/register-code index))
+            (rm/set-sib-scale scale)
+            (rm/set-disp (displacement/offset disp)))] ; disp32
+      ; [RIP]
+      [(memory: (address: (some (right rip)) none none))
+        (|> (rm/new 0 5) ; Use RIP-relative addressing
+            (rm/set-disp 0))] ; disp32
+      ; [RIP + disp32]
+      [(memory: (address: (some (right rip)) (some (let disp)) none))
+        (|> (rm/new 0 5) ; Use RIP-relative addressing
+            (rm/set-disp (displacement/offset disp)))] ; disp32
+      ; [GP64]
+      [(memory: (address: (some (left (let base))) none none))
+        (cond
+          ; SIB-byte required for RSP-based or R12-based addressing.
+          [(or (eq? base rsp) (eq? base r12))
+            (|> (rm/new 0 4) ; Use SIB
+                (rm/set-sib-base (gpr64/register-code base))
+                (rm/set-sib-index 4))] ; No index register is encoded
+          ; Using RBP or R13 without displacement must be done using mod=01 with a displacement of 0.
+          [(or (eq? base rbp) (eq? base r13))
+            (|> (rm/new 1 (gpr64/register-code base)) ; Use disp8
+                (rm/set-disp 0 {I8}))]
+          [else
+            (rm/new 0 (gpr64/register-code base))])]
+      ; [GP64 + disp]
+      [(memory: (address: (some (left (let base))) (some (let disp)) none))
+        (if (or (eq? base rsp) (eq? base r12))
+          ; SIB-byte required for RSP-based or R12-based addressing.
+          (|> (rm/new (displacement/mod-rm-mod disp) 4) ; Use SIB and use dispN
+              (rm/set-sib-base (gpr64/register-code base))
+              (rm/set-sib-index 4) ; No index register is encoded
+              (rm/set-disp disp))
+          (|> (rm/new (displacement/mod-rm-mod disp) (gpr64/register-code base))
+              (rm/set-disp disp)))]
+      ; [GP64 + IndexScale]
+      [(memory: (address: (some (left (let base))) none (some (index-scale: (let index) (let scale)))))
+        (if (or (eq? base rbp) (eq? base r13))
+          ; Explicit displacement is required to be used with RBP or R13.
+          (|> (rm/new 1 4) ; Use SIB and disp8
+              (rm/set-sib-base (gpr64/register-code base))
+              (rm/set-sib-index (gpr64/register-code index))
+              (rm/set-sib-scale scale)
+              (rm/set-disp 0 {I8}))
+          (|> (rm/new 0 4) ; Use SIB
+              (rm/set-sib-base (gpr64/register-code base))
+              (rm/set-sib-index (gpr64/register-code index))
+              (rm/set-sib-scale scale)))]
+      ; [GP64 + disp + IndexScale]
+      [(memory: (address: (some (left (let base))) (some (let disp)) (some (index-scale: (let index) (let scale)))))
+        (|> (rm/new (displacement/mod-rm-mod disp) 4) ; Use SIB and dispN
+            (rm/set-sib-base (gpr64/register-code base))
+            (rm/set-sib-index (gpr64/register-code index))
+            (rm/set-sib-scale scale)
+            (rm/set-disp disp))]
+      [_
+        (assert #f "Unknown Address format")])))
+
+; Memory address. `Base + Disp + Idxs`
+(derive (Eq DebugDisplay) value-data Address
+  (address: (Option (Either Gpr64 Rip)) (Option Displacement) (Option IndexScale)))
+
+(instance Conv.From.Gpr64.To.Address (Conv Gpr64 Address)
+  (function (conv r) (address: (some (left r)) none none)))
+
+(instance Conv.From.Rip.To.Address (Conv Rip Address)
+  (function (conv r) (address: (some (right r)) none none)))
+
+(instance Conv.From.I8.To.Address (Conv I8 Address)
+  (function (conv i) (address: none (some (displacement:8 i)) none)))
+
+(instance Conv.From.I32.To.Address (Conv I32 Address)
+  (function (conv i) (address: none (some (displacement:32 i)) none)))
+
+(instance Conv.From.IndexScale.To.Address (Conv IndexScale Address)
+  (function (conv idxs) (address: none none (some idxs))))
+
+(function (merge-address a b)
+  {(forall A B) (-> A B Address) (where (Conv A Address) (Conv B Address))}
+  (with1 (address: (let base) (let disp) (let idxs)) (conv b)
+      (|> (conv a) (merge-base base) (merge-disp disp) (merge-idxs idxs))))
+
+(function (merge-base b a)
+  (match (: a b)
+    [(: (let a) none)
+      a]
+    [(: (address: none (let disp) (let idxs)) (let b (some _)))
+      (address: b disp idxs)]
+    [(: (address: (some _) _ _) (some (left (let b))))
+      (merge-idxs (some (*. b scale:1)) a)] ; base:gp + base:gp -> base:gp + idxs:(gp * 1)
+    [(: (address: (some (let a)) _ _) (some (let b)))
+      (assert #f (string "Invalid memory address: " (debug a) " + " (debug b)))]))
+
+(function (merge-disp b a)
+  (match (: a b)
+    [(: (let a) none)
+      a]
+    [(: (address: (let base) none (let idxs)) (let b (some _)))
+      (address: base b idxs)]
+    [(: (address: (let base) (some (displacement:8 (let a))) (let idxs)) (some (displacement:8 (let b))))
+      (address: base (some (displacement:8 (+ a b))) idxs)]
+    [(: (address: (let base) (some (displacement:32 (let a))) (let idxs)) (some (displacement:32 (let b))))
+      (address: base (some (displacement:32 (+ a b))) idxs)]
+    [(: (address: _ (some (let a)) _) (some (let b)))
+      (assert #f (string "Invalid memory address: " (debug a) " + " (debug b)))]))
+
+(function (merge-idxs b a)
+  (match (: a b)
+    [(: (let a) none)
+      a]
+    [(: (address: (let base) (let disp) none) (let b (some _)))
+      (assert (ne? (some (right rip)) base)
+              (string "Invalid memory address: " (debug base) " + " (debug b)))
+      (address: base disp b)]
+    [(: (address: _ _ (some (let a))) (some (let b)))
+      (assert #f (string "Invalid memory address: " (debug a) " + " (debug b)))]))
+
+; Pair of SIB.scale and SIB.index.
+(derive (Eq DebugDisplay) value-data IndexScale
+  (index-scale: Gpr64 Scale))
+
+; Semantically equivalent to `index * scale` in Intel assembler syntax.
+(function (*. index scale) {(forall S) (-> Gpr64 S IndexScale) (where (Conv S Scale))}
+  ; This implies that `(gpr64/register-code index)` will never be 4 (0b100).
+  (assert (ne? index rsp) "Cannot use RSP as an index register")
+  (index-scale: index (conv scale)))
+
+; Semantically equivalent to `a + b` in Intel assembler syntax.
+(macro (+. s)
+  (s/match s
+    [(_ ,a ,@bs)
+      (s/foldl [^2 `(,\merge-address ,%1 ,%2)] a bs)]
+    [_
+      (err "Expected (+. a b) or (+. a b c)")]))
+
+; Semantically equivalent to `[..]` in Intel assembler syntax.
+(function (memory addr) {(forall A) (-> A Memory) (where (Conv A Address))}
+  (memory: (conv addr)))
+
+; Some fixed operands:
+(derive (Eq DebugDisplay) value-data |Al |:al)
+(derive (Eq DebugDisplay) value-data |Ax |:ax)
+(derive (Eq DebugDisplay) value-data |Eax |:eax)
+(derive (Eq DebugDisplay) value-data |Rax |:rax)
+(derive (Eq DebugDisplay) value-data |Cl |:cl)
+(derive (Eq DebugDisplay) value-data |Dx |:dx)
+(derive (Eq DebugDisplay) value-data |Xmm0 |:xmm0)
+(derive (Eq DebugDisplay) value-data |1 |:1)
+(derive (Eq DebugDisplay) value-data |3 |:3)
