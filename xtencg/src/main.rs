@@ -49,10 +49,17 @@ fn main() -> io::Result<()> {
     monomorphise_instruction_set(&mut inst_set);
 
     {
-        let mut path = workspace;
+        let mut path = workspace.clone();
         path.extend(["xten0", "src", "asm", "inst.rs"]);
         let mut file = File::create(path)?;
         writeln!(&mut file, "{}", render::xten0(&inst_set))?;
+    }
+
+    {
+        let mut path = workspace;
+        path.extend(["xten1", "asm", "inst.llrl"]);
+        let mut file = File::create(path)?;
+        writeln!(&mut file, "{}", render::xten1(&inst_set))?;
     }
 
     Ok(())

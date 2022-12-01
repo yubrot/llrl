@@ -1,5 +1,5 @@
 use crate::instr::*;
-use askama::{Error, Template};
+use askama::Template;
 
 #[derive(Template)]
 #[template(path = "supported-instructions.md.j2")]
@@ -21,9 +21,20 @@ pub fn xten0(inst_set: &InstructionSet) -> String {
     Xten0 { inst_set }.render().unwrap()
 }
 
+#[derive(Template)]
+#[template(path = "xten1.llrl.j2", escape = "none")]
+struct Xten1<'a> {
+    inst_set: &'a InstructionSet,
+}
+
+pub fn xten1(inst_set: &InstructionSet) -> String {
+    Xten1 { inst_set }.render().unwrap()
+}
+
 mod filters {
     use super::*;
-    use std::error::Error as StdError;
+    use std::borrow::Cow;
+    use std::error::Error;
     use std::fmt;
 
     #[derive(Debug, Clone, Copy)]
@@ -35,10 +46,10 @@ mod filters {
         }
     }
 
-    impl StdError for InternalError {}
+    impl Error for InternalError {}
 
-    pub fn internal_error(msg: &'static str) -> Error {
-        Error::Custom(Box::new(InternalError(msg)))
+    pub fn internal_error(msg: &'static str) -> askama::Error {
+        askama::Error::Custom(Box::new(InternalError(msg)))
     }
 
     pub fn mdtableescape(s: &str) -> askama::Result<String> {
@@ -63,6 +74,34 @@ mod filters {
             },
             Operand::Rm(_, _) | Operand::Xmmm(_) => Err(internal_error("monomorphise")),
             Operand::Fixed(s) => Ok(s),
+        }
+    }
+
+    pub fn llrlbool(value: &bool) -> askama::Result<&'static str> {
+        Ok(match value {
+            true => "#t",
+            false => "#f",
+        })
+    }
+
+    pub fn llrloperand(op: &Operand) -> askama::Result<Cow<'static, str>> {
+        match op {
+            Operand::R(Some(Size::B)) => Ok("Gpr8".into()),
+            Operand::R(Some(Size::W)) => Ok("Gpr16".into()),
+            Operand::R(Some(Size::D)) => Ok("Gpr32".into()),
+            Operand::R(Some(Size::O) | None) => Ok("Gpr64".into()),
+            Operand::R(Some(Size::O2)) => Err(internal_error("Gpr128")),
+            Operand::M(_) => Ok("Memory".into()),
+            Operand::Xmm => Ok("Xmm".into()),
+            Operand::Rel(s) | Operand::Imm(s) => match s {
+                Size::B => Ok("I8".into()),
+                Size::W => Ok("I16".into()),
+                Size::D => Ok("I32".into()),
+                Size::O => Ok("I64".into()),
+                Size::O2 => Err(internal_error("Size::O2 is unsupported")),
+            },
+            Operand::Rm(_, _) | Operand::Xmmm(_) => Err(internal_error("monomorphise")),
+            Operand::Fixed(s) => Ok(s.replace('_', "|").into()),
         }
     }
 }
