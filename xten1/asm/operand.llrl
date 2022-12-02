@@ -240,7 +240,7 @@
     [(: (address: none (let disp) (let idxs)) (let b (some _)))
       (address: b disp idxs)]
     [(: (address: (some _) _ _) (some (left (let b))))
-      (merge-idxs (some (*. b scale:1)) a)] ; base:gp + base:gp -> base:gp + idxs:(gp * 1)
+      (merge-idxs (some (*. b 1)) a)] ; base:gp + base:gp -> base:gp + idxs:(gp * 1)
     [(: (address: (some (let a)) _ _) (some (let b)))
       (assert #f (string "Invalid memory address: " (debug a) " + " (debug b)))]))
 
@@ -273,7 +273,7 @@
   (index-scale: Gpr64 Scale))
 
 ; Semantically equivalent to `index * scale` in Intel assembler syntax.
-(function (*. index scale) {(forall S) (-> Gpr64 S IndexScale) (where (Conv S Scale))}
+(function (*. index scale) {(-> Gpr64 U8 IndexScale)}
   ; This implies that `(gpr64/register-code index)` will never be 4 (0b100).
   (assert (ne? index rsp) "Cannot use RSP as an index register")
   (index-scale: index (conv scale)))

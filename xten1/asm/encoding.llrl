@@ -277,18 +277,14 @@
 (instance Default.Scale (Default Scale)
   (function default scale:1))
 
-($$ begin
-  ($for-each $ty [U8 U16 U32 U64 I8 I16 I32 I64]
-    (instance ($symbol-concat Conv.From. $ty .To.Scale) (Conv $ty Scale)
-      (function (conv s)
-        (match s
-          [1 scale:1]
-          [2 scale:2]
-          [4 scale:4]
-          [8 scale:8]
-          [(let i) (assert #f (string "Unsupported Scale: " i))])))))
-
-
+(instance Conv.From.U8.To.Scale (Conv U8 Scale)
+  (function (conv s)
+    (match s
+      [1 scale:1]
+      [2 scale:2]
+      [4 scale:4]
+      [8 scale:8]
+      [(let i) (assert #f (string "Unsupported Scale: " i))])))
 
 (function (scale/bits s) {(-> Scale U8)}
   (match s

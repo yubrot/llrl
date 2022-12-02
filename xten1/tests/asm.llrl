@@ -1,9 +1,7 @@
 (import "std/memory" ptr/_)
 (import "~/tests/binutils" assert-asm!)
+(import "~/asm" _)
 (import "~/asm/encoding" _)
-(import "~/asm/operand" _)
-(import "~/asm/inst" _)
-(import "~/asm/obj" _)
 (println! "xten1/tests/asm")
 
 ; movq r/m64 r64: Move r64 to r/m64.
@@ -316,3 +314,169 @@
   (assert-eq? (array/subarray 0 4 buf) (array 0 1 2 3))
   (assert-eq? (array/subarray 8 9 buf) (array 8))
   (assert-eq? (array/subarray 11 12 buf) (array 11)))
+
+(function (obj f) {(-> (-> Writer (Result unit unit)) Object)}
+  (let1 w (writer/new)
+    (f w)
+    (result/unwrap* [^1 (assert #f (string "Failed to produce object: " %1))] (writer/produce w))))
+
+(let* ([dummy-location (location: location-section:bss 0)]
+       [fib-location (ref dummy-location)]
+       [fib2-location (ref dummy-location)]
+       [fib3-location (ref dummy-location)]
+       [call-fib-location (ref dummy-location)]
+       [call-fib2-location (ref dummy-location)]
+       [o (obj (lambda (w)
+          (let ([fib (writer/get-label! "fib" w)]
+                [fib2 (writer/get-label! "fib2" w)]
+                [fib3 (writer/get-label! "fib3" w)]
+                [l1 (writer/issue-label! w)]
+                [l2 (writer/issue-label! w)])
+
+            (set! fib-location (.define! w fib #t))
+            (cmpl! w edi 1 {I8})!
+            (jle! w (short: l2))!
+            (movl! w edx 1 {I32})!
+            (movl! w eax 1 {I32})!
+            (movl! w ecx 0 {I32})!
+
+            (.define! w l1 #f)
+            (movl! w esi eax)!
+            (addl! w eax ecx)!
+            (addl! w edx 1 {I8})!
+            (movl! w ecx esi)!
+            (cmpl! w edi edx)!
+            (jne! w (short: l1))!
+            (retq! w)!
+
+            (.define! w l2 #f)
+            (movl! w eax 1 {I32})!
+            (retq! w)!
+
+            (set! fib2-location (.define! w fib2 #t))
+            (addl! w edi 1 {I8})!
+            (callq! w (address-table: fib))!
+            (set! call-fib-location (.location w))
+            (retq! w)!
+
+            (set! fib3-location (.define! w fib3 #t))
+            (addl! w edi 1 {I8})!
+            (callq! w (address-table: fib2))!
+            (set! call-fib2-location (.location w))
+            (retq! w)!
+
+            (ok unit))))])
+
+  (assert-asm! (object/text o) "
+    fib:
+      cmp edi, 0x1
+      jle 2f
+      mov edx, 0x1
+      mov eax, 0x1
+      mov ecx, 0x0
+    1:
+      mov esi, eax
+      add eax, ecx
+      add edx, 0x1
+      mov ecx, esi
+      cmp edi, edx
+      jne 1b
+      ret
+    2:
+      mov eax, 0x1
+      ret
+
+    fib2:
+      add edi, 0x1
+      call [rip + fib@GOTPCREL]
+      ret
+
+    fib3:
+      add edi, 0x1
+      call [rip + fib2@GOTPCREL]
+      ret
+  ")
+
+  (assert-eq?
+    (object/symbols o)
+    (array
+      (symbol: "fib" (binding:global (some ~fib-location)))
+      (symbol: "fib2" (binding:global (some ~fib2-location)))
+      (symbol: "fib3" (binding:global (some ~fib3-location)))))
+
+  (assert-eq?
+    (object/relocs o)
+    (array
+      (reloc:
+        (location/offset -4 ~call-fib-location)
+        (reloc-target:symbol "fib")
+        -4
+        reloc-type:pc-rel-to-address-table32)
+      (reloc:
+        (location/offset -4 ~call-fib2-location)
+        (reloc-target:symbol "fib2")
+        -4
+        reloc-type:pc-rel-to-address-table32))))
+
+(let1
+  o
+  (obj (lambda (w)
+    (let ([foo (writer/get-label! "foo" w)]
+          [bar (writer/get-label! "bar" w)]
+          [baz (writer/get-label! "baz" w)]
+          [d (writer/data w)]
+          [r (writer/rodata w)])
+      (.define! d foo #t)
+      (write-bytes! (array 0 1 2 3 4) d)!
+      (.align! d 2)!
+      (.define! d bar #t)
+      (write-bytes! (array 5 6 7 8) d)!
+
+      (.define! r baz #f)
+      (write-bytes! (array/new 0 16) r)!
+      (.use-relative! r -8 bar 0 reloc-type:abs64)
+
+      (ok unit))))
+
+  (assert-eq?
+    (object/symbols o)
+    (array
+      (symbol: "bar" (binding:global (some (location: location-section:data 6))))
+      (symbol: "baz" (binding:local (location: location-section:rodata 0)))
+      (symbol: "foo" (binding:global (some (location: location-section:data 0))))))
+
+  (assert-eq?
+    (object/relocs o)
+    (array
+      (reloc:
+        (location: location-section:rodata 8)
+        (reloc-target:symbol "bar")
+        0
+        reloc-type:abs64))))
+
+(let1
+  o
+  (obj (lambda (w)
+    (let ([foo (writer/get-label! "foo" w)]
+          [bar (writer/get-label! "bar" w)]
+          [baz (writer/get-label! "baz" w)]
+          [b (writer/bss w)])
+      (.define! b foo #t)
+      (.allocate! b 4)!
+
+      (.align! b 2)!
+      (.define! b bar #t)
+      (.allocate! b 2)!
+
+      (.align! b 8)!
+      (.define! b baz #t)
+      (.allocate! b 8)!
+
+      (ok unit))))
+
+  (assert-eq?
+    (object/symbols o)
+    (array
+      (symbol: "bar" (binding:global (some (location: location-section:bss 4))))
+      (symbol: "baz" (binding:global (some (location: location-section:bss 8))))
+      (symbol: "foo" (binding:global (some (location: location-section:bss 0)))))))
