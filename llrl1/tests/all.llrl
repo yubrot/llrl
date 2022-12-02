@@ -16,3 +16,5 @@
 (import "~/tests/module")
 (import "~/tests/backend/common")
 (import "~/tests/testcases")
+
+(println! "done.")

@@ -12,3 +12,5 @@
 (import "~/tests/builder")
 (import "~/tests/execution-engine")
 (import "~")
+
+(println! "done.")

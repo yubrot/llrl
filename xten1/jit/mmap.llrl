@@ -1,0 +1,107 @@
+(import "std/bits" _)
+(import "std/memory" ptr/_)
+(import "std/integer" Integer._ integer/max)
+(export Mmap _.Mmap mmap/_)
+(export Error _.Error error:_)
+(export Protect _.Protect protect:_)
+
+; Memory area mapped by `mmap(2)`.
+(derive (DebugDisplay) data Mmap
+  (mmap: (Ptr U8) U64 (Ref Protect)))
+
+(function mmap/page-size 4096)
+
+; Create a new memory map near the specified address.
+(function (mmap/new-near! hint-addr pages protect) {(-> (Ptr U8) U64 Protect (Result Mmap Error))}
+  (let1
+    ptr
+    (<mmap>
+      hint-addr
+      (* pages mmap/page-size)
+      (protect-flag protect)
+      (bw| MAP_PRIVATE MAP_ANONYMOUS)
+      -1
+      0)
+
+    (if (ne? (ptr/address ptr) integer/max)
+      (ok (mmap: ptr pages (ref protect)))
+      (err (error-from-current-errno)))))
+
+(function (mmap/ptr mmap) {(-> Mmap (Ptr U8))}
+  (with1 (mmap: (let ptr) _ _) mmap
+    ptr))
+
+(function (mmap/pages mmap) {(-> Mmap U64)}
+  (with1 (mmap: _ (let pages) _) mmap
+    pages))
+
+(function (mmap/size mmap) {(-> Mmap U64)}
+  (* (mmap/pages mmap) mmap/page-size))
+
+(function (mmap/protect mmap) {(-> Mmap Protect)}
+  (with1 (mmap: _ _ (let protect)) mmap
+    ~protect))
+
+; Set the access protections of this map.
+(function (mmap/set-protect! protect mmap) {(-> Protect Mmap (Result unit Error))}
+  (with1 (mmap: (let ptr) (let pages) (let current)) mmap
+    (if (ne? ~current protect)
+      (if (eq? (<mprotect> ptr (* pages mmap/page-size) (protect-flag protect)) 0)
+        (begin
+          (set! current protect)
+          (ok unit))
+        (err (error-from-current-errno)))
+      (ok unit))))
+
+; Unmap the Mmap.
+(function (mmap/unmap! mmap) {(-> Mmap (Result unit Error))}
+  (with1 (mmap: (let ptr) (let pages) _) mmap
+  (if (eq? (<munmap> ptr (* pages mmap/page-size)) 0)
+    (ok unit)
+    (err (error-from-current-errno)))))
+
+(derive (Eq DebugDisplay) value-data Error
+  error:invalid-argument
+  error:not-enough-memory
+  error:unknown)
+
+(instance Display.Error (Display Error)
+  (function (display! w a)
+    (match a
+      [error:invalid-argument (display! w "Invalid argument")]
+      [error:not-enough-memory (display! w "Not enough memory")]
+      [error:unknown (display! w "Unknown")])))
+
+; Create a Error from `errno`.
+(function (error-from-current-errno) {(-> Error)}
+  (match <current-errno>
+    [22 error:invalid-argument]
+    [12 error:not-enough-memory]
+    [_ error:unknown]))
+
+; An access protection of `Mmap`.
+(derive (Eq DebugDisplay) value-data Protect
+  protect:none
+  protect:read-only
+  protect:read-write
+  protect:read-exec)
+
+(function (protect-flag p) {(-> Protect I32)}
+  (match p
+    [protect:none PROT_NONE]
+    [protect:read-only PROT_READ]
+    [protect:read-write (bw| PROT_READ PROT_WRITE)]
+    [protect:read-exec (bw| PROT_READ PROT_EXEC)]))
+
+(c-function <current-errno> {I32} "llrt_current_errno")
+(c-function <mmap> {(-> (Ptr U8) U64 I32 I32 I32 I64 (Ptr U8))} "mmap")
+(c-function <mprotect> {(-> (Ptr U8) U64 I32 I32)} "mprotect")
+(c-function <munmap> {(-> (Ptr U8) U64 I32)} "munmap")
+
+(function PROT_NONE 0)
+(function PROT_READ 1)
+(function PROT_WRITE 2)
+(function PROT_EXEC 4)
+
+(function MAP_PRIVATE 2)
+(function MAP_ANONYMOUS 32)

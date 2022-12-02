@@ -1,0 +1,74 @@
+(import "std/memory" ptr/_)
+(import "std/box" box/unsafe-ptr)
+(import "~/jit/mmap" _)
+(import "~/jit/segment" _)
+(import "~/jit/table" _)
+(println! "xten1/tests/jit")
+
+(let* ([some-heap-space (box 0)]
+       [some-heap-ptr (box/unsafe-ptr some-heap-space)]
+       [mmap
+         (result/unwrap* [^1 (assert #f (string "mmap: " %1))]
+                         (mmap/new-near! some-heap-ptr 2 protect:read-write))])
+  (assert
+    (< (abs (- (|> mmap mmap/ptr ptr/address conv) {I64}
+               (|> some-heap-ptr ptr/address conv)))
+       (* 2 1024 1024 1024)))
+  (assert-eq? (mmap/pages mmap) 2)
+  (assert-eq? (mmap/size mmap) (* 2 mmap/page-size))
+  (assert-eq? (mmap/protect mmap) protect:read-write)
+  (assert-eq? (mmap/set-protect! protect:read-only mmap) (ok unit))
+  (assert-eq? (mmap/protect mmap) protect:read-only)
+
+  (assert-eq? (mmap/unmap! mmap) (ok unit)))
+
+(let* (
+  [some-heap-space (box 0)]
+  [some-heap-ptr (box/unsafe-ptr some-heap-space)]
+  [segment (segment/new some-heap-ptr protect:read-only)]
+  [(allocate! size)
+    (result/unwrap*
+      [^1 (assert #f (string "segment/allocate!: " %1))]
+      (segment/allocate! size segment))]
+
+  [part1 (allocate! (* 1024 5))]
+  [_ (assert-eq? (option/map mmap/protect (segment-part/mmap? part1)) (some protect:read-only))]
+  [_ (assert-eq? (segment-part/size part1) (* 1024 5))]
+
+  [_
+    (assert-eq?
+      (segment-part/with-protect! protect:read-write part1 (lambda (ptr)
+        (assert-eq? (option/map mmap/protect (segment-part/mmap? part1)) (some protect:read-write))
+        (ptr/copy! (array/ptr (array/new 0 (* 1024 5))) (* 1024 5) ptr)))
+      (ok unit))]
+
+  [part2 (allocate! 1024)]
+  ; protection setting is restored
+  [_ (assert-eq? (option/map mmap/protect (segment-part/mmap? part2)) (some protect:read-only))]
+  [_ (assert-eq? (segment-part/size part2) 1024)]
+
+  ; existing mmap is used: total 1024 * 6 bytes
+  [_ (assert-eq? (|> part1 segment-part/ptr (ptr/add (* 1024 5))) (|> part2 segment-part/ptr))]
+
+  [part3 (allocate! (* 1024 3))]
+  [_ (assert-eq? (option/map mmap/protect (segment-part/mmap? part3)) (some protect:read-only))]
+  [_ (assert-eq? (segment-part/size part3) (* 1024 3))]
+
+  ; new mmap is created
+  [_ (assert-ne? (|> part2 segment-part/ptr (ptr/add (* 1024 3))) (|> part3 segment-part/ptr))]
+
+  [part4 (allocate! 0)]
+  [_ (assert-eq? (option/map mmap/protect (segment-part/mmap? part4)) none)]
+  [_ (assert-eq? (segment-part/size part4) 0)])
+
+  (assert-eq? (segment/dispose! segment) (ok unit)))
+
+(let* ([some-heap-space (box 0)]
+       [some-heap-ptr (box/unsafe-ptr some-heap-space)]
+       [table (table/new some-heap-ptr)])
+
+  (for (let i) (iterator/range 0 {U64} 522 1)
+    (let1 ptr (result/unwrap* [^1 (assert #f (string "table/put!: " %1))] (table/put! i table))
+      (assert-eq? (ptr/load ptr) i)))
+
+  (assert-eq? (table/dispose! table) (ok unit)))
