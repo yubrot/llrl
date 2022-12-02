@@ -1,0 +1,108 @@
+(import "std/integer" Integer._ integer/_)
+(export Object _.Object object: object/_)
+(export Symbol _.Symbol symbol: symbol/_)
+(export Binding _.Binding binding:_)
+(export Location _.Location location: location/_)
+(export LocationSection _.LocationSection location-section:_)
+(export Reloc _.Reloc reloc: reloc/_)
+(export RelocTarget _.RelocTarget reloc-target:_)
+(export RelocType _.RelocType reloc-type:_ reloc-type/_)
+
+; An abstract representation of an object containing machine code and data.
+(derive (DebugDisplay) data Object
+  (object:
+    (Array U8)       ; text
+    (Array U8)       ; data
+    (Array U8)       ; rodata
+    U64              ; bss
+    (Array Symbol)   ; symbols
+    (Array Reloc)))  ; relocs
+
+(function (object/text o) (with1 (object: (let text) _ _ _ _ _) o text))
+(function (object/data o) (with1 (object: _ (let d) _ _ _ _) o d))
+(function (object/rodata o) (with1 (object: _ _ (let d) _ _ _) o d))
+(function (object/bss o) (with1 (object: _ _ _ (let bss) _ _) o bss))
+(function (object/symbols o) (with1 (object: _ _ _ _ (let symbols) _) o symbols))
+(function (object/relocs o) (with1 (object: _ _ _ _ _ (let relocs)) o relocs))
+
+; A symbol on an object.
+(derive (Eq DebugDisplay) data Symbol
+  (symbol: String Binding))
+
+(function (symbol/name s) (with1 (symbol: (let name) _) s name))
+(function (symbol/binding s) (with1 (symbol: _ (let binding)) s binding))
+
+(derive (Eq DebugDisplay) value-data Binding
+  ; Local symbols. The definition corresponding to a symbol must always exist.
+  (binding:local Location)
+  ; Global symbols. The definition corresponding to a symbol may be external.
+  (binding:global (Option Location)))
+
+; Location of the definition.
+(derive (Eq DebugDisplay) value-data Location
+  (location: LocationSection U64))
+
+(function (location/section l) (with1 (location: (let section) _) l section))
+(function (location/position l) (with1 (location: _ (let position)) l position))
+
+; Adjust `location/position` with offset.
+(function (location/offset offset l) {(-> I64 Location Location)}
+  (with1 (location: (let section) (let pos)) l
+    (location: section (conv (+ (conv pos) offset)))))
+
+(derive (Eq DebugDisplay) value-data LocationSection
+  location-section:text
+  location-section:data
+  location-section:rodata
+  location-section:bss)
+
+; A relocation. Set `target + addend` to `location` by `ty`.
+(derive (Eq DebugDisplay) data Reloc
+  (reloc: Location RelocTarget I64 RelocType))
+
+(function (reloc/location r) (with1 (reloc: (let location) _ _ _) r location))
+(function (reloc/target r) (with1 (reloc: _ (let target) _ _) r target))
+(function (reloc/addend r) (with1 (reloc: _ _ (let addend) _) r addend))
+(function (reloc/ty r) (with1 (reloc: _ _ _ (let ty)) r ty))
+
+(derive (Eq DebugDisplay) value-data RelocTarget
+  (reloc-target:symbol String)
+  (reloc-target:section LocationSection))
+
+(derive (Eq DebugDisplay) value-data RelocType
+  ; Program counter relative offset as 8-bit signed.
+  ; This corresponds to the relocation type `R_X86_64_PC8`.
+  reloc-type:pc-rel8
+  ; Program counter relative offset as 32-bit signed.
+  ; This corresponds to the relocation type `R_X86_64_PC32`.
+  reloc-type:pc-rel32
+  ; Program counter relative offset to the address table as 32-bit signed.
+  ; This corresponds to the relocation type `R_X86_64_GOTPCREL`.
+  reloc-type:pc-rel-to-address-table32
+  ; Absolute address as 64-bit unsigned.
+  ; This corresponds to the relocation type `R_X86_64_64`.
+  reloc-type:abs64)
+
+; If a relocation with this `RelocType` can be resolved statically, resolves it.
+; Returns #t if the relocation is resolved.
+(function (reloc-type/resolve-statically! reloc-type def-pos use-pos addend buf)
+  {(-> RelocType U64 U64 I64 (Array U8) Bool)}
+  (match reloc-type
+    ; S + A - P
+    [reloc-type:pc-rel8
+      (let1 value (- (+ (conv def-pos) addend) (conv use-pos))
+        (assert (<= (conv-from I8 integer/min) value (conv-from I8 integer/max))
+                (string "Cannot encode offset=" value " as PcRel8"))
+        (array/copy! (array/bytearray (conv-to I8 value)) (array/skip use-pos buf))
+        #t)]
+    ; S + A - P
+    [reloc-type:pc-rel32
+      (let1 value (- (+ (conv def-pos) addend) (conv use-pos))
+        (assert (<= (conv-from I32 integer/min) value (conv-from I32 integer/max))
+                (string "Cannot encode offset=" value " as PcRel32"))
+        (array/copy! (array/bytearray (conv-to I32 value)) (array/skip use-pos buf))
+        #t)]
+    [reloc-type:pc-rel-to-address-table32
+      #f]
+    [reloc-type:abs64
+      #f]))

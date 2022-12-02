@@ -1,7 +1,9 @@
+(import "std/memory" ptr/_)
 (import "~/tests/binutils" assert-asm!)
 (import "~/asm/encoding" _)
 (import "~/asm/operand" _)
 (import "~/asm/inst" _)
+(import "~/asm/obj" _)
 (println! "xten1/tests/asm")
 
 ; movq r/m64 r64: Move r64 to r/m64.
@@ -301,3 +303,16 @@
     popq rbx
     popw [rax]
   ")
+
+(let1 buf (array 0 {U8} 1 2 3 4 5 6 7 8 9 10 11)
+  (assert-eq? (reloc-type/resolve-statically! reloc-type:pc-rel8 4 9 0 buf) #t)
+  (assert-eq? (|> buf array/ptr (ptr/add 9) ptr/cast ptr/load) -5 {I8})
+  (assert-eq? (reloc-type/resolve-statically! reloc-type:pc-rel8 4 10 0 buf) #t)
+  (assert-eq? (|> buf array/ptr (ptr/add 10) ptr/cast ptr/load) -6 {I8})
+  (assert-eq? (reloc-type/resolve-statically! reloc-type:pc-rel32 10 4 -1 buf) #t)
+  (assert-eq? (|> buf array/ptr (ptr/add 4) ptr/cast ptr/load) 5 {I32})
+  (assert-eq? (reloc-type/resolve-statically! reloc-type:abs64 6 2 0 buf) #f)
+  (assert-eq? (reloc-type/resolve-statically! reloc-type:pc-rel-to-address-table32 6 2 0 buf) #f)
+  (assert-eq? (array/subarray 0 4 buf) (array 0 1 2 3))
+  (assert-eq? (array/subarray 8 9 buf) (array 8))
+  (assert-eq? (array/subarray 11 12 buf) (array 11)))
