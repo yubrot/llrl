@@ -1,0 +1,185 @@
+(import "std/hash-map" _)
+(import "std/box" box/unsafe-ptr)
+(import "std/memory" ptr/_ ptr:_)
+(import "std/integer" Integer._ integer/_)
+(import "~/asm/obj" _)
+(import "~/jit/error" Error _.Error error:_)
+(import "~/jit/mmap" Protect _.Protect protect:_)
+(import "~/jit/segment" Segment _.Segment segment/_ SegmentPart _.SegmentPart segment-part/_)
+(import "~/jit/address-table" AddressTable _.AddressTable address-table/_)
+(import "~/jit/symbol-table" SymbolTable _.SymbolTable symbol-table/_ [symbol-resolver/_ _-resolver])
+(export Error _.Error error:_)
+(export Engine _.Engine engine/_)
+(export symbol-resolver/_)
+
+; A JIT execution engine.
+(data Engine
+  (engine: SymbolTable AddressTable Segment Segment Segment)) ; symbol-table address-table ro rw rx
+
+; Initializes the JIT engine.
+(function (engine/new symbol-resolver) {(-> (-> String (Ptr U8)) Engine)}
+  (let1 hint-addr (box/unsafe-ptr (box 0))
+    (engine:
+      (symbol-table/new symbol-resolver)
+      (address-table/new hint-addr)
+      (segment/new hint-addr protect:read-only)
+      (segment/new hint-addr protect:read-write)
+      (segment/new hint-addr protect:read-exec))))
+
+; Register the pointer corresponding to the symbol.
+(function (engine/register! symbol ptr engine) {(-> String (Ptr U8) Engine (Result unit Error))}
+  (with1 (engine: (let st) _ _ _ _) engine
+    (symbol-table/bind! symbol (some ptr) st)))
+
+; Get the pointer corresponding to the symbol.
+(function (engine/get? symbol engine) {(-> String Engine (Option (Ptr U8)))}
+  (with1 (engine: (let st) _ _ _ _) engine
+    (symbol-table/resolve? symbol st)))
+
+; Add an object. All symbols and relocations are immediately resolved.
+(function (engine/add-object! obj engine) {(-> Object Engine (Result unit Error))}
+  (with ([(engine: (let st) (let at) (let ro) (let rw) (let rx)) engine]
+         [(object: (let text) (let rwdata) (let rodata) (let bss) (let symbols) (let relocs)) obj])
+    (let* ([text-size (|> text array/length align-16)]
+           [rwdata-size (|> rwdata array/length align-16)]
+           [rodata-size (|> rodata array/length align-16)]
+           [bss-size (|> bss align-16)]
+
+           ; allocate spaces on segments
+           [rx (result/map-err conv (segment/allocate! text-size rx))!]
+           [rw (result/map-err conv (segment/allocate! (+ rwdata-size bss-size) rw))!]
+           [ro (result/map-err conv (segment/allocate! rodata-size ro))!])
+
+      (relax-memory-protection! rx rw ro (lambda (rx rw ro)
+        (let* ([text-buf (array/unsafe-from-ptr rx text-size)]
+               [rwdata-buf (array/unsafe-from-ptr rw rwdata-size)]
+               [rodata-buf (array/unsafe-from-ptr ro rodata-size)]
+               [bss-buf (array/unsafe-from-ptr (ptr/add rwdata-size rw) bss-size)])
+
+          ; load
+          (when (not (array/empty? text)) (array/copy! text text-buf))
+          (when (not (array/empty? rwdata)) (array/copy! rwdata rwdata-buf))
+          (when (not (array/empty? rodata)) (array/copy! rodata rodata-buf))
+          (when (ne? bss-size 0) (array/fill! 0 bss-buf))
+
+          ; link
+          (let* ([locator (locator: (array/ptr text-buf) (array/ptr rwdata-buf) (array/ptr rodata-buf) (array/ptr bss-buf))]
+                 [linker (linker: st at locator hash-map/empty)])
+            (for (symbol: (let name) (let binding)) symbols
+              (linker/bind! name binding linker)!)
+            (for (let reloc) relocs
+              (linker/relocate! reloc linker)!))
+
+          (ok unit))))!
+
+      (ok unit))))
+
+; Dispose the ExecutionEngine. Internal AddressTable and Segments will be disposed.
+(function (engine/dispose! engine) {(-> Engine (Result unit Error))}
+  (with1 (engine: _ (let at) (let ro) (let rw) (let rx)) engine
+    (result/map-err conv (address-table/dispose! at))!
+    (result/map-err conv (segment/dispose! ro))!
+    (result/map-err conv (segment/dispose! rw))!
+    (result/map-err conv (segment/dispose! rx))!
+    (ok unit)))
+
+(function (align-16 s) {(-> U64 U64)}
+  (* (/ (+ s 15) 16) 16))
+
+(function (relax-memory-protection! rx rw ro f)
+  {(forall A) (-> SegmentPart SegmentPart SegmentPart (-> (Ptr U8) (Ptr U8) (Ptr U8) (Result A Error)) (Result A Error))}
+  (result/map-err conv
+    (segment-part/with-protect! protect:read-write rx (lambda (rx)
+      (result/map-err conv
+        (segment-part/with-protect! protect:read-write rw (lambda (rw)
+          (result/map-err conv
+            (segment-part/with-protect! protect:read-write ro (lambda (ro)
+              (f rx rw ro))))!)))!)))!)
+
+(data Locator
+  (locator: (Ptr U8) (Ptr U8) (Ptr U8) (Ptr U8))) ; text rwdata rodata bss
+
+(function (locate location locator) {(-> Location Locator (Ptr U8))}
+  (with ([(locator: (let text) (let rwdata) (let rodata) (let bss)) locator]
+         [(location: (let section) (let position)) location])
+    (match section
+      [location-section:text (ptr/add position text)]
+      [location-section:data (ptr/add position rwdata)]
+      [location-section:rodata (ptr/add position rodata)]
+      [location-section:bss (ptr/add position bss)])))
+
+(data Linker
+  (linker: SymbolTable AddressTable Locator (HashMap String (Ptr U8))))
+
+(function (linker/bind! symbol binding linker) {(-> String Binding Linker (Result unit Error))}
+  (with1 (linker: (let st) _ (let locator) (let local-symbols)) linker
+    (match binding
+      [(binding:local (let loc))
+        (if (hash-map/has? symbol local-symbols)
+          (err (error:duplicate-symbol symbol))
+          (begin
+            (ok (hash-map/insert! symbol (locate loc locator) local-symbols))
+            (ok unit)))]
+      [(binding:global (let loc?))
+        (symbol-table/bind! symbol (option/map [^1 (locate %1 locator)] loc?) st)])))
+
+(function (linker/relocate! reloc linker) {(-> Reloc Linker (Result unit Error))}
+  (with ([(linker: _ _ (let locator) _) linker]
+         [(reloc: (let dest-loc) _ (let addend) (let reloc-ty)) reloc])
+    (let* ([dest (locate dest-loc locator)]
+           [dest-pos (|> dest ptr/address conv) {I64}])
+      (match reloc-ty
+        ; S + A - P
+        [reloc-type:pc-rel8
+          (let* ([src (linker/reloc-target-direct reloc linker)!]
+                 [src-pos (|> src ptr/address conv) {I64}]
+                 [value (- (+ src-pos addend) dest-pos)])
+            (if (<= (conv-from I8 integer/min) value (conv-from I8 integer/max))
+              (ok (ptr/store! (conv-to I8 value) (ptr/cast dest)))
+              (err (error:offset-out-of-range reloc-ty value))))]
+        ; S + A - P
+        [reloc-type:pc-rel32
+          (let* ([src (linker/reloc-target-direct reloc linker)!]
+                 [src-pos (|> src ptr/address conv) {I64}]
+                 [value (- (+ src-pos addend) dest-pos)])
+            (if (<= (conv-from I32 integer/min) value (conv-from I32 integer/max))
+              (ok (ptr/store! (conv-to I32 value) (ptr/cast dest)))
+              (err (error:offset-out-of-range reloc-ty value))))]
+        ; <AddressTableEntry> + A - P
+        [reloc-type:pc-rel-to-address-table32
+          (let* ([src (linker/reloc-target-address-table-entry! reloc linker)!]
+                 [src-pos (|> src ptr/address conv) {I64}]
+                 [value (- (+ src-pos addend) dest-pos)])
+            (if (<= (conv-from I32 integer/min) value (conv-from I32 integer/max))
+              (ok (ptr/store! (conv-to I32 value) (ptr/cast dest)))
+              (err (error:offset-out-of-range reloc-ty value))))]
+        ; S + A
+        [reloc-type:abs64
+          (let* ([src (linker/reloc-target-direct reloc linker)!]
+                 [src-pos (|> src ptr/address conv) {I64}]
+                 [value (+ src-pos addend)])
+            (ok (ptr/store! value (ptr/cast dest))))]))))
+
+(function (linker/reloc-target-direct reloc linker) {(-> Reloc Linker (Result (Ptr U8) Error))}
+  (with1 (linker: (let st) _ (let locator) (let local-symbols)) linker
+    (match (reloc/target reloc)
+      [(reloc-target:symbol (let symbol))
+        (if-match1
+          (some (let ptr))
+          (option/or (hash-map/get? symbol local-symbols) (symbol-table/resolve? symbol st))
+          (ok ptr)
+          (err (error:undefined-symbol symbol)))]
+      [(reloc-target:section (let section))
+        (ok (locate (location: section 0) locator))])))
+
+(function (linker/reloc-target-address-table-entry! reloc linker) {(-> Reloc Linker (Result (Ptr (Ptr U8)) Error))}
+  (with1 (linker: (let st) (let at) _ _) linker
+    (match (reloc/target reloc)
+      [(reloc-target:symbol (let symbol))
+        (if-match1
+          (some (let ptr))
+          (result/map-err conv (address-table/prepare! symbol [^0 (symbol-table/resolve? symbol st)] at))!
+          (ok ptr)
+          (err (error:undefined-symbol symbol)))]
+      [(reloc-target:section (let section))
+        (err (error:unsupported-section-relocation (reloc/ty reloc)))])))

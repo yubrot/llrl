@@ -1,0 +1,27 @@
+(import "std/hash-map" _)
+(import "~/jit/mmap" Error _.Error)
+(import "~/jit/table" _)
+(export AddressTable _.AddressTable address-table/_)
+
+(derive (DebugDisplay) data AddressTable
+  (address-table: (HashMap String (Ptr (Ptr U8))) (Table (Ptr U8))))
+
+(function (address-table/new hint-addr) {(-> (Ptr U8) AddressTable)}
+  (address-table: hash-map/empty (table/new hint-addr)))
+
+; Dispose the AddressTable. Internal `Table` will be disposed.
+(function (address-table/dispose! at) {(-> AddressTable (Result unit Error))}
+  (with1 (address-table: _ (let payload)) at
+    (result/map-err conv (table/dispose! payload))))
+
+(function (address-table/prepare! symbol resolve-symbol? at)
+  {(-> String (-> (Option (Ptr U8))) AddressTable (Result (Option (Ptr (Ptr U8))) Error))}
+  (with1 (address-table: (let entries) (let payload)) at
+    (ok
+      (if-match1 (some (let entry)) (hash-map/get? symbol entries)
+        (some entry)
+        (if-match1 (some (let ptr)) (resolve-symbol?)
+          (let1 entry (result/map-err conv (table/put! ptr payload))!
+            (hash-map/insert! symbol entry entries)
+            (some entry))
+          none)))))
