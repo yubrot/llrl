@@ -98,6 +98,13 @@
 (assert-eq? "x" (string/replace "" "x" ""))
 (assert-eq? "xaxbxcx" (string/replace "" "x" "abc"))
 
+(assert-eq? "" (string/remove-start "abc" ""))
+(assert-eq? "def" (string/remove-start "abc" "abcdef"))
+(assert-eq? "cabc" (string/remove-start "ab" "ababcabc"))
+(assert-eq? "" (string/remove-end "def" ""))
+(assert-eq? "abc" (string/remove-end "def" "abcdef"))
+(assert-eq? "defd" (string/remove-end "ef" "defdefef"))
+
 (assert-eq? (array) (collect (string/split "" "")))
 (assert-eq? (array "a") (collect (string/split "" "a")))
 (assert-eq? (array "a" "b" "c") (collect (string/split "" "abc")))

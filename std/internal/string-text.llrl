@@ -177,6 +177,18 @@
     [none
       s]))
 
+(function (string/remove-start prefix s) {(-> String String String)}
+  (let ([s (ref s)]
+        [l (string/length prefix)])
+    (while (string/starts-with? prefix ~s) (set! s (string/skip l ~s)))
+    ~s))
+
+(function (string/remove-end suffix s) {(-> String String String)}
+  (let ([s (ref s)]
+        [l (string/length suffix)])
+    (while (string/ends-with? suffix ~s) (set! s (string/take (- (string/length ~s) l) ~s)))
+    ~s))
+
 (function (string/split sep s) {(-> String String (Iterator String))}
   (when (string/empty? sep)
     (return (it/map [^1 (string/from-chars (iterator/only %1))] (string/chars s))))
