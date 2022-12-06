@@ -1,0 +1,46 @@
+(import "std/hash-map" _)
+(import "std/memory" ptr:null)
+(import "~/jit/error" _)
+(export SymbolTable _.SymbolTable symbol-table/_)
+(export nop-resolver dl-resolver)
+
+(data SymbolTable
+  (symbol-table: (HashMap String (Ptr U8)) (-> String (Ptr U8))))
+
+(function (symbol-table/new resolver) {(-> (-> String (Ptr U8)) SymbolTable)}
+  (symbol-table: hash-map/empty resolver))
+
+(function (symbol-table/bind! symbol ptr? st)
+  {(-> String (Option (Ptr U8)) SymbolTable (Result unit Error))}
+  (with1 (symbol-table: (let entries) (let resolver)) st
+    (match (: (hash-map/get? symbol entries) ptr?)
+      [(: none (some (let ptr)))
+        (hash-map/insert! symbol ptr entries)
+        (ok unit)]
+      ; NOTE: Should we defer use of the `resolver` until `SymbolTable::resolve`?
+      ; The current implementation has the assumption that any symbols that are not known
+      ; at bind time are given by the `resolver`.
+      [(: none none)
+        (match (resolver symbol)
+          [ptr:null
+            (err (error:undefined-symbol symbol))]
+          [(let ptr)
+            (hash-map/insert! symbol ptr entries)
+            (ok unit)])]
+      [(: (some _) (some _))
+        (err (error:duplicate-symbol symbol))]
+      [(: (some _) none)
+        (ok unit)])))
+
+
+(function (symbol-table/resolve? symbol st) {(-> String SymbolTable (Option (Ptr U8)))}
+  (with1 (symbol-table: (let entries) _) st
+    (hash-map/get? symbol entries)))
+
+(function (nop-resolver sym) {(-> String (Ptr U8))}
+  ptr:null)
+
+(function (dl-resolver sym) {(-> String (Ptr U8))}
+  (<dlsym> ptr:null (string/c-compatible-ptr sym)))
+
+(c-function <dlsym> {(-> (Ptr U8) (Ptr U8) (Ptr U8))} "dlsym")

@@ -1,0 +1,89 @@
+(import "std/io" [io/_ _])
+(import "std/integer" Integer._ integer/to-string)
+(import "std/system" random! process/_ with-process!)
+(export readelf! asm! disasm! assert-asm! with-tempdir!)
+(println! "xten1/tests/binutils")
+
+(function (readelf! args) {(-> (Array String) String)}
+  (exec! "readelf" args))
+
+(function (asm! code) {(-> String (Array U8))}
+  (with-tempdir! (lambda (dir)
+    ; Write to asm.S
+    (enforce-io-success!
+      (io/with-file! (io/path dir "asm.S") "w" [^1 (fprintln! %1 ".intel_syntax noprefix\n" code)]))
+
+    ; Assemble asm.S to asm.o
+    (exec! "as" (array "-o" (io/path dir "asm.o") (io/path dir "asm.S")))
+
+    ; Extract .text section into mc.bin
+    (exec! "objcopy" (array "--dump-section" (string ".text=" (io/path dir "mc.bin")) (io/path dir "asm.o")))
+
+    ; Read the machine-code from mc.bin
+    (enforce-io-success! (io/with-file! (io/path dir "mc.bin") "rb" read-bytes-to-end!)))))
+
+(function (disasm! mc) {(-> (Array U8) String)}
+  (with-tempdir! (lambda (dir)
+    ; Write to mc.bin
+    (enforce-io-success!
+      (io/with-file! (io/path dir "mc.bin") "wb" [^1 (write-bytes! mc %1)]))
+
+    ; Disassemble mc.bin
+    (|> (exec! "objdump" (array "-D" "-b" "binary" "-m" "i386:x86-64" (io/path dir "mc.bin")))
+        ; Omit encoding parts
+        string/split-lines
+        (it/skip 7)
+        (it/map extract-disasm-instruction-part)
+        (string/join "\n")))))
+
+(function (extract-disasm-instruction-part s) {(-> String String)}
+  (let* ([chars (collect (string/chars s))]
+         [i (ref 0)]
+         [l (array/length chars)]
+         [(eat! pats)
+           (while
+             (and (<= (+ ~i (array/length pats)) l)
+                  (|> (it/with-index pats)
+                      (it/all? (case1 (: (let offset) (let pat))
+                        (pat (get chars[(+ ~i offset)]))))))
+             (set! i (+ ~i (array/length pats))))]
+         [(space? c) (match c [#\  #t] [#\\t #t] [#\\r #t] [#\\n #t] [_ #f])]
+         [(hex? c) (or (<= #\0 c #\9) (<= #\a c #\f))]
+         [(colon? c) (eq? c #\:)])
+    (eat! (array space?))
+    (eat! (array hex?))
+    (eat! (array colon?))
+    (eat! (array space?))
+    (eat! (array hex? hex? space?))
+    (eat! (array space?))
+    (string/from-chars (array/skip ~i chars))))
+
+(let1 0x90 144
+  (assert-eq? (asm! "nop") (array 0x90))
+  (assert-eq? (disasm! (array 0x90)) "nop"))
+
+(macro (assert-asm! s)
+  (s/match s
+    [(_ ,src ,@dest)
+      (ok `(,\assert-eq? (,\disasm! ,src) (,\disasm! (,\asm! (,\string ,@dest)))))]
+    [_
+      (err "Expected (assert-asm! src ..)")]))
+
+(function (exec! program args) {(-> String (Array String) String)}
+  (enforce-io-success! (with-process! program args (lambda (proc)
+    (if-match1 (some 0) (process/wait! proc)
+      (|> proc process/out read-string-to-end!)
+      (assert #f (|> proc process/err read-string-to-end!)!))))))
+
+(function (with-tempdir! f) {(forall A) (-> (-> String A) A)}
+  (let* ([buf (array/new 0 {U8} 8)]
+         [_ (random! buf)]
+         [dirname (string "xten-tmp-" (string/join "" (it/map [^1 (integer/to-string 16 %1)] buf)))]
+         [dirpath (io/path "/tmp" dirname)]
+         [_ (enforce-io-success! (io/directory/create! dirpath))]
+         [ret (f dirpath)]
+         [_ (enforce-io-success! (io/remove-all! dirpath))])
+    ret))
+
+(function (enforce-io-success! result) {(forall A) (-> (Result A io/IoError) A)}
+  (result/unwrap* [^1 (assert #f (string %1))] result))

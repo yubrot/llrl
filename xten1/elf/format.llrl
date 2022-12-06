@@ -1,0 +1,503 @@
+(import "std/hash-map" _)
+(import "std/bits" _)
+(import "~/asm/obj" RelocType reloc-type:_)
+(export StrtabIndex _.StrtabIndex strtab-index/_)
+(export Strtab _.Strtab strtab/_)
+(export SymtabIndex _.SymtabIndex symtab-index/_)
+(export Symtab _.Symtab symtab/_)
+(export Symbol _.Symbol symbol: symbol/_)
+(export SymbolType _.SymbolType symbol-type:_)
+(export SymbolVisibility _.SymbolVisibility symbol-visibility:_)
+(export Rela _.Rela rela/_)
+(export RelaEntry _.RelaEntry rela-entry: rela-entry/_)
+(export RelocationType _.RelocationType relocation-type:_)
+(export Shndx _.Shndx shndx/_)
+(export Section _.Section section/_)
+(export SectionBody _.SectionBody section-body:_ section-body/_)
+(export SectionType _.SectionType section-type:_)
+(export Elf _.Elf elf/_ Elf/AddSection)
+(export ObjectType _.ObjectType object-type:_)
+
+; String table index.
+(derive (Eq Ord DebugDisplay Hash) value-data StrtabIndex
+  (strtab-index: U32))
+
+(function strtab-index/null (strtab-index: 0))
+
+(function (<strtab-index/value> index) {(-> StrtabIndex U32)}
+  (with1 (strtab-index: (let value)) index value))
+
+; String table section.
+(derive (DebugDisplay) data Strtab
+  (strtab: String (Vector U8) (HashMap String StrtabIndex))) ; name payload map
+
+(function (strtab/new name) {(-> String Strtab)}
+  (strtab:
+    name
+    (vector 0) ; reserved entry (StrtabIndex::NULL)
+    (hash-map (: "" strtab-index/null))))
+
+(function (strtab/get! name strtab) {(-> String Strtab StrtabIndex)}
+  (with1 (strtab: _ (let payload) (let map)) strtab
+    (if-match1 (some (let index)) (hash-map/get? name map)
+      index
+      (let1 index (|> payload vector/length conv strtab-index:)
+        (vector/append! (string/unsafe-array name) payload)
+        (vector/push! 0 payload)
+        (hash-map/insert! name index map)
+        index))))
+
+; Symbol table index.
+(derive (Eq Ord DebugDisplay Hash) value-data SymtabIndex
+  (symtab-index: U32))
+
+(function symtab-index/undef (symtab-index: 0))
+
+(function (<symtab-index/value> index) {(-> SymtabIndex U32)}
+  (with1 (symtab-index: (let value)) index value))
+
+; Symbol table section.
+(derive (DebugDisplay) data Symtab
+  (symtab:
+    String                     ; name
+    Strtab                     ; strtab
+    (Ref (Option SymtabIndex)) ; first-nonlocal-index
+    (Vector U8)))              ; payload
+
+(function (symtab/new name strtab) {(-> String Strtab Symtab)}
+  (symtab: name strtab (ref none) (vector/new 0 symbol/size))) ; reserved entry (symtab-index/undef)
+
+(function (<symtab/next-index> symtab) {(-> Symtab SymtabIndex)}
+  (with1 (symtab: _ _ _ (let payload)) symtab
+    (symtab-index: (conv (/ (vector/length payload) symbol/size)))))
+
+(function (symtab/add! symbol symtab) {(-> Symbol Symtab SymtabIndex)}
+  (with ([(symtab: _ (let strtab) (let first-nonlocal-index) (let payload)) symtab]
+         [(symbol: (let name) (let ty) (let vis) (let shndx) (let value) (let size)) symbol])
+    (let* ([index (<symtab/next-index> symtab)]
+           [name (strtab/get! name strtab)]
+           [bind (option/unwrap 0 (option/map [^1 1] ~first-nonlocal-index))])
+      (vector/append! (|> name <strtab-index/value> array/bytearray) payload)
+      (vector/push! (bits [bind 4] [(conv-to U8 ty) 4]) payload)
+      (vector/push! (conv-to U8 vis) payload)
+      (vector/append! (|> shndx <shndx/value> array/bytearray) payload)
+      (vector/append! (|> value array/bytearray) payload)
+      (vector/append! (|> size array/bytearray) payload)
+      index)))
+
+; Begin writing global symbols.
+(function (symtab/begin-global! symtab) {(-> Symtab unit)}
+  (with1 (symtab: _ _ (let first-nonlocal-index) _) symtab
+    (assert-is? none ~first-nonlocal-index)
+    (set! first-nonlocal-index (some (<symtab/next-index> symtab)))))
+
+; A Symbol in the symbol table.
+(derive (DebugDisplay) data Symbol
+  (symbol:
+    String           ; name
+    SymbolType       ; ty
+    SymbolVisibility ; vis
+    Shndx            ; shndx
+    U64              ; value (On relocation object, value is the offset from the head of the section)
+    U64))            ; size
+
+(function symbol/size 24)
+
+(function (symbol/new name shndx value) {(-> String Shndx U64 Symbol)}
+  (symbol: name symbol-type:no-type symbol-visibility:default shndx value 0))
+
+(function (symbol/undef name) {(-> String Symbol)}
+  (symbol/new name shndx/undef 0))
+
+(function (symbol/file name) {(-> String Symbol)}
+  (symbol/set-type symbol-type:file (symbol/new name shndx/abs 0)))
+
+(function (symbol/section shndx) {(-> Shndx Symbol)}
+  (symbol/set-type symbol-type:section (symbol/new "" shndx 0)))
+
+(function (symbol/set-type ty sym) {(-> SymbolType Symbol Symbol)}
+  (with1 (symbol: (let name) _ (let vis) (let shndx) (let value) (let size)) sym
+    (symbol: name ty vis shndx value size)))
+
+; Symbol type.
+(derive (Eq Ord DebugDisplay Hash) value-data SymbolType
+  symbol-type:no-type ; unspecified
+  symbol-type:object  ; data object
+  symbol-type:func    ; code object
+  symbol-type:section ; associated with a sectio
+  symbol-type:file    ; file name
+  symbol-type:common  ; common data object
+  symbol-type:tls)    ; thread-local data object
+
+(instance Conv.From.SymbolType.To.U8 (Conv SymbolType U8)
+  (function (conv ty)
+    (match ty
+      [symbol-type:no-type 0]
+      [symbol-type:object 1]
+      [symbol-type:func 2]
+      [symbol-type:section 3]
+      [symbol-type:file 4]
+      [symbol-type:common 5]
+      [symbol-type:tls 6])))
+
+; Symbol visibility.
+(derive (Eq Ord DebugDisplay Hash) value-data SymbolVisibility
+  symbol-visibility:default
+  symbol-visibility:internal   ; processor specific hidden class
+  symbol-visibility:hidden     ; sym unavailable in other modules
+  symbol-visibility:protected) ; not preemptible, not exported
+
+(instance Conv.From.SymbolVisibility.To.U8 (Conv SymbolVisibility U8)
+  (function (conv vis)
+    (match vis
+      [symbol-visibility:default 0]
+      [symbol-visibility:internal 1]
+      [symbol-visibility:hidden 2]
+      [symbol-visibility:protected 3])))
+
+; Relocation section.
+(derive (DebugDisplay) data Rela
+  (rela:
+    String      ; name
+    Shndx       ; symtab
+    (Vector U8) ; payload
+    Shndx))     ; target
+
+(function (rela/new name symtab target) {(-> String Shndx Shndx Rela)}
+  (rela: name symtab vector/empty target))
+
+(function (rela/add! entry rela) {(-> RelaEntry Rela unit)}
+  (with ([(rela: _ _ (let payload) _) rela]
+         [(rela-entry: (let offset) (let sym) (let ty) (let addend)) entry])
+    (let1 info (bits [(|> sym <symtab-index/value> (conv-to U64)) 32]
+                     [(|> ty (conv-to U32) (conv-to U64)) 32])
+      (vector/append! (array/bytearray offset) payload)
+      (vector/append! (array/bytearray info) payload)
+      (vector/append! (array/bytearray addend) payload))))
+
+; A relocation entry.
+(derive (DebugDisplay) data RelaEntry
+  (rela-entry:
+    U64            ; offset from the head of the target section
+    SymtabIndex    ; sym
+    RelocationType ; ty
+    I64))          ; addend
+
+(function rela-entry/size 24)
+
+; https://wiki.osdev.org/System_V_ABI
+($$ $let
+  ([$types (
+    [none 0]
+    [($symbol "64") 1] ; S+A (absolute)
+    [($symbol "32") 10]
+    [($symbol "16") 12]
+    [($symbol "8") 14]
+    [pc64 24] ; S+A-P (PC-relative)
+    [pc32 2]
+    [pc16 13]
+    [pc8 15]
+    [got32 3] ; G+A (GOT entry index)
+    [got-pc-rel 9] ; G+GOT+A-P (PC-relative to GOT entry: GotPc32 + Got32)
+    [got-pc-rel-x 41]
+    [rex-got-pc-rel-x 42]
+    [got-off64 25] ; S+A-GOT
+    [got-pc32 26] ; GOT+A-P (PC-relative to GOT)
+    [plt32 4]
+    [copy 5]
+    [glob-dat 6]
+    [jump-slot 7]
+    [relative 8]
+    [size32 32] ; Z+A
+    [size64 33])])
+  (begin
+    (derive (Eq Ord DebugDisplay Hash) value-data RelocationType
+      ($for-each [$name $index] $types
+        ($symbol-concat relocation-type: $name)))
+
+    (instance Conv.From.RelocationType.To.U32 (Conv RelocationType U32)
+      (function (conv r)
+        (match r
+          ($for-each [$name $index] $types
+            [($symbol-concat relocation-type: $name) $index]))))))
+
+(instance Conv.From.RelocType.To.RelocationType (Conv RelocType RelocationType)
+  (function (conv r)
+    (match r
+      [reloc-type:pc-rel8 relocation-type:pc8]
+      [reloc-type:pc-rel32 relocation-type:pc32]
+      [reloc-type:pc-rel-to-address-table32 relocation-type:got-pc-rel]
+      [reloc-type:abs64 relocation-type:64])))
+
+; Section header table index.
+(derive (Eq Ord DebugDisplay Hash) value-data Shndx
+  (shndx: U16))
+
+(function shndx/undef (shndx: 0)) ; SHN_UNDEF
+(function shndx/abs (shndx: 65521)) ; SHN_ABS
+(function shndx/common (shndx: 65522)) ; SHN_COMMON
+
+(function (<shndx/value> index) {(-> Shndx U16)}
+  (with1 (shndx: (let value)) index value))
+
+(derive (DebugDisplay) data Section
+  (section:
+    String        ; name
+    SectionType   ; ty
+    U64           ; flags: attribute flags
+    U64           ; addr: virtual addr at execution
+    U32           ; link: link to another section
+    U32           ; info: additional section information
+    U64           ; align: section alignment
+    U64           ; entsize: entry size if section holds table
+    SectionBody)) ; body
+
+(function section/header-size 64)
+
+(function (section/new name ty align body)
+  {(forall A) (-> String SectionType U64 A Section) (where (Conv A SectionBody))}
+  (section: name ty 0 0 0 0 align 0 (conv body)))
+
+(function (section/name section) {(-> Section String)}
+  (with1 (section: (let name) _ _ _ _ _ _ _ _) section name))
+
+(function (section/body section) {(-> Section SectionBody)}
+  (with1 (section: _ _ _ _ _ _ _ _ (let body)) section body))
+
+(function (section/set-flags flags section) {(-> U64 Section Section)}
+  (with1 (section: (let name) (let ty) _ (let addr) (let link) (let info) (let align) (let entsize) (let body)) section
+    (section: name ty flags addr link info align entsize body)))
+
+(function (section/set-link link section) {(-> U32 Section Section)}
+  (with1 (section: (let name) (let ty) (let flags) (let addr) _ (let info) (let align) (let entsize) (let body)) section
+    (section: name ty flags addr link info align entsize body)))
+
+(function (section/set-info info section) {(-> U32 Section Section)}
+  (with1 (section: (let name) (let ty) (let flags) (let addr) (let link) _ (let align) (let entsize) (let body)) section
+    (section: name ty flags addr link info align entsize body)))
+
+(function (section/set-entsize entsize section) {(-> U64 Section Section)}
+  (with1 (section: (let name) (let ty) (let flags) (let addr) (let link) (let info) (let align) _ (let body)) section
+    (section: name ty flags addr link info align entsize body)))
+
+(function section/undef {Section}
+  (section/new "" section-type:null 0 0 {U64}))
+
+(function (section/text name body) {(-> String (Array U8) Section)}
+  (|> (section/new name section-type:progbits 16 body)
+      (section/set-flags (bw| SHF_ALLOC SHF_EXECINSTR))))
+
+(function (section/data name body) {(-> String (Array U8) Section)}
+  (|> (section/new name section-type:progbits 16 body)
+      (section/set-flags (bw| SHF_ALLOC SHF_WRITE))))
+
+(function (section/rodata name body) {(-> String (Array U8) Section)}
+  (|> (section/new name section-type:progbits 16 body)
+      (section/set-flags SHF_ALLOC)))
+
+(function (section/bss name size) {(-> String U64 Section)}
+  (|> (section/new name section-type:nobits 16 size)
+      (section/set-flags (bw| SHF_ALLOC SHF_WRITE))))
+
+(function SHF_WRITE 1)
+(function SHF_ALLOC 2)
+(function SHF_EXECINSTR 4)
+(function SHF_INFO_LINK 64)
+(function SHF_MERGE 16)
+(function SHF_STRINGS 32)
+
+(derive (DebugDisplay) value-data SectionBody
+  (section-body:bytes (Array U8))
+  (section-body:size U64))
+
+(instance Conv.From.Bytes.To.SectionBody (Conv (Array U8) SectionBody)
+  (function (conv a) (section-body:bytes a)))
+
+(instance Conv.From.Size.To.SectionBody (Conv U64 SectionBody)
+  (function (conv a) (section-body:size a)))
+
+(function (section-body/size in-elf? body) {(-> Bool SectionBody U64)}
+  (match body
+    [(section-body:bytes (let bytes)) (array/length bytes)]
+    [(section-body:size (let size)) (if in-elf? 0 size)]))
+
+(derive (Eq Ord DebugDisplay Hash) value-data SectionType
+  section-type:null
+  section-type:progbits ; Information defined by the program
+  section-type:symtab   ; Symbol table
+  section-type:strtab   ; String table
+  section-type:rela     ; Relocation entries with explicit addends
+  section-type:hash
+  section-type:dynamic
+  section-type:note
+  section-type:nobits
+  section-type:rel
+  section-type:shlib
+  section-type:dynsym)
+
+(instance Conv.From.SectionType.To.U32 (Conv SectionType U32)
+  (function (conv a)
+    (match a
+      [section-type:null 0]
+      [section-type:progbits 1]
+      [section-type:symtab 2]
+      [section-type:strtab 3]
+      [section-type:rela 4]
+      [section-type:hash 5]
+      [section-type:dynamic 6]
+      [section-type:note 7]
+      [section-type:nobits 8]
+      [section-type:rel 9]
+      [section-type:shlib 10]
+      [section-type:dynsym 11])))
+
+(derive (DebugDisplay) data Elf
+  (elf:
+    ObjectType         ; ty
+    U64                ; entry point virtual address
+    U32                ; processor-specific flags
+    (Vector Section))) ; sections
+
+(function elf/header-size 64)
+
+(function (elf/new ty entry flags) {(-> ObjectType (Option U64) (Option U32) Elf)}
+  (elf: ty (option/unwrap 0 entry) (option/unwrap 0 flags) (vector section/undef)))
+
+(function (<elf/add-shstrtab!> elf) {(-> Elf (: Shndx (Array StrtabIndex)))}
+  (with1 (elf: _ _ _ (let sections)) elf
+    (let* ([shstrtab (strtab/new ".shstrtab")]
+           [names
+             (|> (it/chain (it/map section/name sections) (some ".shstrtab"))
+                 (it/map [^1 (strtab/get! %1 shstrtab)])
+                 collect)]
+           [shndx (elf/add-section! shstrtab elf)])
+    (: shndx names))))
+
+(function (elf/write! w elf)
+  {(forall W Error) (-> W Elf (Result unit Error)) (where (Write W Error))}
+  (with ([(: (let shstrtab-shndx) (let section-names)) (<elf/add-shstrtab!> elf)]
+         [(elf: (let ty) (let entry) (let flags) (let sections)) elf])
+    (let* ([sections (vector/consume-all! sections)]
+           ; Section headers are placed after ELF header + Program header (0) + Sections, with alignment
+           [shoff (+ elf/header-size
+                     (|> sections (it/map [^1 (section-body/size #f (section/body %1))]) it/sum))]
+           [shalign (% (- 8 (% shoff 8)) 8)]
+           [shoff (+ shoff shalign)]
+           [shnum (|> sections array/length (conv-to U16))]
+           [section-offsets vector/empty])
+      ; ELF header
+      (write-bytes! ELF_MAG w)! ; 0x0-0x03
+      (write-u8! ELF_CLASS w)! ; 0x4
+      (write-u8! ELF_DATA w)! ; 0x5
+      (write-u8! ELF_VERSION w)! ; 0x6
+      (write-u8! ELF_OSABI w)! ; 0x7
+      (write-u8! ELF_ABIVERSION w)! ; 0x8
+      (write-bytes! ELF_PAD w)! ; 0x9-0xf
+      (write-u16! (conv ty) w)! ; 0x10
+      (write-u16! ELF_MACHINE w)! ; 0x12
+      (write-u32! (conv ELF_VERSION) w)! ; 0x14
+      (write-u64! entry w)! ; 0x18
+      (write-u64! 0 w)! ; 0x20: phoff: Program header offset (unsupported)
+      (write-u64! shoff w)! ; 0x28
+      (write-u32! flags w)! ; 0x30
+      (write-u16! elf/header-size w)! ; 0x34
+      (write-u16! 0 w)! ; 0x36: phentsize: Program header entry size (unsupported)
+      (write-u16! 0 w)! ; 0x38: phnum: Program header number (unsupported)
+      (write-u16! section/header-size w)! ; 0x3a
+      (write-u16! shnum w)! ; 0x3c
+      (write-u16! (<shndx/value> shstrtab-shndx) w)! ; 0x3c
+
+      ; Program header (unsupported)
+
+      ; Sections
+      (let1 offset (ref elf/header-size)
+        (for (let s) sections
+          (vector/push! ~offset section-offsets)
+          (when-match1 (section-body:bytes (let bytes)) (section/body s)
+            (write-bytes! bytes w)!
+            (set! offset (+ ~offset (array/length bytes))))))
+      (for _ (iterator/repeat shalign unit) (write-u8! 0 w)!)
+
+      ; Section header
+      (for
+        (: (section: _ (let ty) (let flags) (let addr) (let link) (let info) (let align) (let entsize) (let body))
+           (: (let offset) (let name)))
+        (it/zip sections
+                (it/zip section-offsets section-names))
+        (write-u32! (<strtab-index/value> name) w)! ; 0x0
+        (write-u32! (conv ty) w)! ; 0x4
+        (write-u64! flags w)! ; 0x8
+        (write-u64! addr w)! ; 0x10
+        (write-u64! offset w)! ; 0x18
+        (write-u64! (section-body/size #f body) w)! ; 0x20
+        (write-u32! link w)! ; 0x28
+        (write-u32! info w)! ; 0x2c
+        (write-u64! align w)! ; 0x30
+        (write-u64! entsize w)!))) ; 0x38
+  (ok unit))
+
+(function ELF_MAG {(Array U8)} (array 127 {U8} 69 76 70)) ; 0x7f 'E' 'L' 'F'
+(function ELF_CLASS {U8} 2) ; always CLASS64 on x64
+(function ELF_DATA {U8} 1) ; always LB on x64
+(function ELF_VERSION {U8} 1) ; CURRENT
+(function ELF_OSABI {U8} 0) ; No extensions or unspecified
+(function ELF_ABIVERSION {U8} 0) ; Unused for OSABI=0
+(function ELF_PAD {(Array U8)} (array/new 0 7))
+(function ELF_MACHINE {U16} 62) ; AMD64
+
+(class (Elf/AddSection S)
+  (function (elf/add-section! section elf) {(-> S Elf Shndx)}))
+
+(instance Elf/AddSection.Section (Elf/AddSection Section)
+  (function (elf/add-section! section elf)
+    (with1 (elf: _ _ _ (let sections)) elf
+      (let1 shndx (|> sections vector/length conv shndx:)
+        (vector/push! section sections)
+        shndx))))
+
+(instance Elf/AddSection.Strtab (Elf/AddSection Strtab)
+  (function (elf/add-section! section elf)
+    (with1 (strtab: (let name) (let payload) _) section
+      (elf/add-section!
+        (section/new name section-type:strtab 1 (vector/buffer payload))
+        elf))))
+
+(instance Elf/AddSection.Symtab (Elf/AddSection Symtab)
+  (function (elf/add-section! section elf)
+    (with1 (symtab: (let name) (let strtab) (let first-nonlocal-index) (let payload)) section
+      (let* ([next-index (<symtab/next-index> section)]
+             [strtab (elf/add-section! strtab elf)])
+        (elf/add-section!
+          (|> (section/new name section-type:symtab 8 (vector/buffer payload))
+              (section/set-link (|> strtab <shndx/value> conv))
+              (section/set-info (|> ~first-nonlocal-index (option/unwrap next-index) <symtab-index/value>))
+              (section/set-entsize symbol/size))
+          elf)))))
+
+(instance Elf/AddSection.Rela (Elf/AddSection Rela)
+  (function (elf/add-section! section elf)
+    (with1 (rela: (let name) (let symtab) (let payload) (let target)) section
+      (elf/add-section!
+        (|> (section/new name section-type:rela 8 (vector/buffer payload))
+            (section/set-flags SHF_INFO_LINK)
+            (section/set-link (|> symtab <shndx/value> conv))
+            (section/set-info (|> target <shndx/value> conv))
+            (section/set-entsize rela-entry/size))
+        elf))))
+
+; Object file type.
+(derive (Eq Ord DebugDisplay Hash) value-data ObjectType
+  object-type:none
+  object-type:rel
+  object-type:exec
+  object-type:dyn
+  object-type:core)
+
+(instance Conv.From.ObjectType.To.U16 (Conv ObjectType U16)
+  (function (conv ty)
+    (match ty
+      [object-type:none 0]
+      [object-type:rel 1]
+      [object-type:exec 2]
+      [object-type:dyn 3]
+      [object-type:core 4])))

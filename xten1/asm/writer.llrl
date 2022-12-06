@@ -1,0 +1,339 @@
+(import "std/ord-map" _)
+(import "~/asm/operand" Gpr64 Xmm memory Memory Address _.Address rip +.)
+(import "~/asm/inst" _)
+(import "~/asm/obj" _)
+(export Writer _.Writer writer/_)
+(export Label _.Label)
+(export Section section/writer .location .define! .use-relative!)
+(export SectionWrite .align! .allocate!)
+(export TextWriter _.TextWriter DataWriter _.DataWriter RodataWriter _.RodataWriter BssWriter _.BssWriter)
+(export AddressTable _.AddressTable address-table:)
+(export Short _.Short short:)
+(export WriteInst.Writer._)
+
+; Writer for building an object.
+(derive (DebugDisplay) data Writer
+  (writer:
+    (Vector U8)             ; text
+    (Vector U8)             ; data
+    (Vector U8)             ; rodata
+    (Ref U64)               ; bss
+    (Vector (Option Def))   ; defs (indexed by label index)
+    (Vector Use)            ; uses
+    (OrdMap String Label))) ; names
+
+(function (<text> w) (with1 (writer: (let text) _ _ _ _ _ _) w text))
+(function (<data> w) (with1 (writer: _ (let d) _ _ _ _ _) w d))
+(function (<rodata> w) (with1 (writer: _ _ (let d) _ _ _ _) w d))
+(function (<bss> w) (with1 (writer: _ _ _ (let b) _ _ _) w b))
+(function (<defs> w) (with1 (writer: _ _ _ _ (let defs) _ _) w defs))
+(function (<uses> w) (with1 (writer: _ _ _ _ _ (let uses) _) w uses))
+(function (<names> w) (with1 (writer: _ _ _ _ _ _ (let names)) w names))
+
+(function (writer/new) {(-> Writer)}
+  (writer: vector/empty vector/empty vector/empty (ref 0) vector/empty vector/empty ord-map/empty))
+
+; Issue an unnamed label.
+(function (writer/issue-label! w) {(-> Writer Label)}
+  (let1 label (label: (vector/length (<defs> w)))
+    (vector/push! none (<defs> w))
+    label))
+
+; Get an named label.
+(function (writer/get-label! name w) {(-> String Writer Label)}
+  (if-match1 (some (let label)) (ord-map/get? name (<names> w))
+    label
+    (let1 label (writer/issue-label! w)
+      (ord-map/insert! name label (<names> w))
+      label)))
+
+; Use the specified label at the location.
+(function (writer/use! location label addend ty w) {(-> Location Label I64 RelocType Writer unit)}
+  (vector/push! (use: location label addend ty) (<uses> w)))
+
+(function (writer/text w) {(-> Writer TextWriter)}
+  (text-writer: w))
+
+(function (writer/data w) {(-> Writer DataWriter)}
+  (data-writer: w))
+
+(function (writer/rodata w) {(-> Writer RodataWriter)}
+  (rodata-writer: w))
+
+(function (writer/bss w) {(-> Writer BssWriter)}
+  (bss-writer: w))
+
+; Produce an object by resolving definitions and uses.
+(function (writer/produce w) {(-> Writer (Result Object String))}
+  (let ([label-symbols ord-map/empty] ; label-index: U64 -> symbol-name: String
+        [symbols vector/empty]
+        [relocs vector/empty])
+
+    ; Named labels remain on the object as symbols.
+    (for (: (let name) (label: (let index))) (ord-map/elems (<names> w))
+      (ord-map/insert! index name label-symbols)
+      (let1
+        binding
+        (match (get (<defs> w)[index])
+          [(some (def: #f (let loc))) (binding:local loc)]
+          [(some (def: #t (let loc))) (binding:global (some loc))]
+          [none (binding:global none)])
+        (vector/push! (symbol: name binding) symbols)))
+
+    ; Uses that cannot be resolved at this time become relocations.
+    (for (use: (let loc) (label: (let index)) (let addend) (let reloc-ty)) (<uses> w)
+      (let ([target (ref none)]
+            [def (get (<defs> w)[index])])
+        (when
+          ; Determines whether a relocation is required for this use:
+          ; If the definition is within the object, try to resolve the use with the definition.
+          (if-match ([(some (def: _ (let def-loc))) def]
+                     [(some (let buf))
+                       (match? (: (location/section def-loc) (location/section loc))
+                         [(: location-section:text location-section:text) (<text> w)]
+                         [(: location-section:data location-section:data) (<data> w)]
+                         [(: location-section:rodata location-section:rodata) (<rodata> w)])])
+            ; If the resolving succeed, we don't need a relocation.
+            (not (reloc-type/resolve-statically! reloc-ty (location/position def-loc) (location/position loc) addend (vector/buffer buf)))
+            #t)
+
+          ; Relocation based on the section
+          (when-match1 (some (def: _ (let def-loc))) def
+            (set! target (some (:
+              (reloc-target:section (location/section def-loc))
+              (conv (location/position def-loc))))))
+
+          ; Relocation based on the symbol (preferred)
+          (when-match1 (some (let name)) (ord-map/get? index label-symbols)
+            (set! target (some (: (reloc-target:symbol name) 0))))
+
+          (if-match1 (some (: (let reloc-target) (let offset))) ~target
+            (vector/push! (reloc: loc reloc-target (+ offset addend) reloc-ty) relocs)
+            (err (string "Cannot resolve label=" index ": There is no symbol or definition corresponding to the label."))!))))
+
+    (ok (object:
+      (vector/buffer (<text> w))
+      (vector/buffer (<data> w))
+      (vector/buffer (<rodata> w))
+      ~(<bss> w)
+      (vector/buffer symbols)
+      (vector/buffer relocs)))))
+
+; On the Writer, a specific position on an object is identified as a label.
+; Labels may or may not be named. Named labels remain on the object as symbols.
+(derive (Eq Ord DebugDisplay) value-data Label
+  (label: U64))
+
+; A definition associated with a label. A label may or may not be associated with a definition.
+(derive (DebugDisplay) value-data Def
+  (def: Bool Location)) ; global? location
+
+; A label use. Uses that cannot be resolved at object production time become relocations.
+(derive (DebugDisplay) value-data Use
+  (use: Location Label I64 RelocType))
+
+(class (Section W)
+  ; Get the writer of this section.
+  (function (section/writer s) {(-> W Writer)})
+
+  ; Get the current location.
+  (function (.location s) {(-> W Location)})
+
+  ; Start the definition to be associated with `label`.
+  (function (.define! s label global?) {(-> W Label Bool Location)}
+    (with1 (label: (let index)) label
+      (let* ([defs (|> s section/writer <defs>)]
+             [location (.location s)])
+        (assert-is? none (get defs[index]) (string "Duplicate definition for label=" index))
+        (set! defs[index] (some (def: global? location)))
+        location)))
+
+  ; Use the specified label at the location from `offset-from-current`.
+  (function (.use-relative! s offset-from-current label addend reloc-ty) {(-> W I64 Label I64 RelocType unit)}
+    (writer/use!
+      (location/offset offset-from-current (.location s))
+      label
+      addend
+      reloc-ty
+      (section/writer s))))
+
+(class (SectionWrite W Error) (where (Section W))
+  ; Adjust alignment by writing invalid values.
+  (function (.align! sw align) {(-> W U64 (Result unit Error))}
+    (let1 current (|> sw .location location/position)
+      (when (ne? (% current align) 0)
+        (.allocate! sw (- align (% current align)))!))
+    (ok unit))
+
+  ; Allocate the specified space on this section.
+  (function (.allocate! sw size) {(-> W U64 (Result unit Error))}))
+
+; Writer behaves like TextWriter
+
+(instance Write.Writer (forall Error) (Write Writer Error)
+  (function (write-bytes! bytes w) (write-bytes! bytes (<text> w)))
+  (function (flush! w) (flush! (<text> w))))
+
+(instance Section.Writer (Section Writer)
+  (function (section/writer s) s)
+  (function (.location s) (.location (writer/text s))))
+
+(instance SectionWrite.Writer (forall Error) (SectionWrite Writer Error)
+  (function (.allocate! sw size) (.allocate! (writer/text sw) size)))
+
+; Writer for text/data/rodata
+
+($$ begin
+  ($for-each
+    [$ty $con $section $getter $zero]
+    ([TextWriter text-writer: location-section:text <text> 144] ; nop
+     [DataWriter data-writer: location-section:data <data> 0]
+     [RodataWriter rodata-writer: location-section:rodata <rodata> 0])
+
+    (derive (DebugDisplay) value-data $ty
+      ($con Writer))
+
+    (instance ($symbol-concat Write. $ty) (forall Error) (Write $ty Error)
+      (function (write-bytes! bytes w) (write-bytes! bytes (|> w section/writer $getter)))
+      (function (flush! w) (flush! (|> w section/writer $getter))))
+
+    (instance ($symbol-concat Section. $ty) (Section $ty)
+      (function (section/writer s) (with1 ($con (let w)) s w))
+      (function (.location s) (location: $section (|> s section/writer $getter vector/length))))
+
+    (instance ($symbol-concat SectionWrite. $ty) (forall Error) (SectionWrite $ty Error)
+      (function (.allocate! sw size)
+        (let1 buf (|> sw section/writer $getter)
+          (vector/reserve-free! size #f buf)
+          (for (let b) (iterator/repeat size $zero) (vector/push! b buf)))
+        (ok unit)))))
+
+; Writer for bss
+
+(derive (DebugDisplay) value-data BssWriter
+  (bss-writer: Writer))
+
+(instance Section.BssWriter (Section BssWriter)
+  (function (section/writer sw) (with1 (bss-writer: (let w)) sw w))
+  (function (.location sw) (location: location-section:bss ~(|> sw section/writer <bss>))))
+
+(instance SectionWrite.BssWriter (forall Error) (SectionWrite BssWriter Error)
+  (function (.allocate! sw size)
+    (let1 bss (|> sw section/writer <bss>)
+      (set! bss (+ ~bss size)))
+    (ok unit)))
+
+; * In this implementation, we use `reloc-type:pc-rel32` for label uses by default.
+; * We use `reloc-type:pc-rel32` for jmp instructions if the operand is wrapped by `Short`.
+; * We use `reloc-type:pc-rel-to-address-table32` for call or mov instruction if the operand is
+;   wrapped by `AddressTable`. This may be necessary for linking shared objects.
+
+; Wrapper type for address table, used to force `reloc-type:pc-rel-to-address-table32` relocation
+; for call, jmp, or mov instructions.
+(derive (Eq DebugDisplay) value-data (AddressTable A)
+  (address-table: A))
+
+; Wrapper type for short jmp, used to force `reloc-type:pc-rel8` relocation for jmp instructions.
+(derive (Eq DebugDisplay) value-data (Short A)
+  (short: A))
+
+; callq Label
+(instance WriteInst.Writer.Callq.Label (forall Error) (WriteInst Writer Error (Callq Label))
+  (function (write-inst! w inst)
+    (with1 (callq: (let label)) inst
+      (write-inst! w (callq: 0 {I32}))!
+      (.use-relative! w -4 label -4 reloc-type:pc-rel32)
+      (ok unit))))
+
+; callq (AddressTable Label)
+(instance WriteInst.Writer.Callq.AddressTableLabel (forall Error) (WriteInst Writer Error (Callq (AddressTable Label)))
+  (function (write-inst! w inst)
+    (with1 (callq: (address-table: (let label))) inst
+      (write-inst! w (callq: (memory (+. rip 0 {I32}))))!
+      (.use-relative! w -4 label -4 reloc-type:pc-rel-to-address-table32)
+      (ok unit))))
+
+; jmpq Label
+(instance WriteInst.Writer.Jmpq.Label (forall Error) (WriteInst Writer Error (Jmpq Label))
+  (function (write-inst! w inst)
+    (with1 (jmpq: (let label)) inst
+      (write-inst! w (jmpq: 0 {I32}))!
+      (.use-relative! w -4 label -4 reloc-type:pc-rel32)
+      (ok unit))))
+
+; jmpq (AddressTable Label)
+(instance WriteInst.Writer.Jmpq.AddressTableLabel (forall Error) (WriteInst Writer Error (Jmpq (AddressTable Label)))
+  (function (write-inst! w inst)
+    (with1 (jmpq: (address-table: (let label))) inst
+      (write-inst! w (jmpq: (memory (+. rip 0 {I32}))))!
+      (.use-relative! w -4 label -4 reloc-type:pc-rel-to-address-table32)
+      (ok unit))))
+
+; jmpq (Short Label)
+(instance WriteInst.Writer.Jmpq.ShortLabel (forall Error) (WriteInst Writer Error (Jmpq (Short Label)))
+  (function (write-inst! w inst)
+    (with1 (jmpq: (short: (let label))) inst
+      (write-inst! w (jmpq: 0 {I8}))!
+      (.use-relative! w -1 label -1 reloc-type:pc-rel8)
+      (ok unit))))
+
+($$ begin
+  ($for-each
+    [$tycon $vcon]
+    ([Ja ja:] [Jae jae:] [Jb jb:] [Jbe jbe:] [Jc jc:] [Je je:] [Jg jg:] [Jge jge:] [Jl jl:] [Jle jle:]
+     [Jna jna:] [Jnae jnae:] [Jnb jnb:] [Jnbe jnbe:] [Jnc jnc:] [Jne jne:] [Jng jng:] [Jnge jnge:] [Jnl jnl:] [Jnle jnle:]
+     [Jno jno:] [Jnp jnp:] [Jns jns:] [Jnz jnz:] [Jo jo:] [Jp jp:] [Jpe jpe:] [Jpo jpo:] [Js js:] [Jz jz:])
+
+    ; jCC Label
+    (instance ($symbol-concat WriteInst.Writer. $tycon .Label) (forall Error) (WriteInst Writer Error ($tycon Label))
+      (function (write-inst! w inst)
+        (with1 ($vcon (let label)) inst
+          (write-inst! w ($vcon 0 {I32}))!
+          (.use-relative! w -4 label -4 reloc-type:pc-rel32)
+          (ok unit))))
+
+    ; jCC (Short Label)
+    (instance ($symbol-concat WriteInst.Writer. $tycon .ShortLabel) (forall Error) (WriteInst Writer Error ($tycon (Short Label)))
+      (function (write-inst! w inst)
+        (with1 ($vcon (short: (let label))) inst
+          (write-inst! w ($vcon 0 {I8}))!
+          (.use-relative! w -1 label -1 reloc-type:pc-rel8)
+          (ok unit))))))
+
+($$ begin
+  ($for-each $O (Gpr64 Xmm I32)
+    ; movq Label $O
+    (instance ($symbol-concat WriteInst.Writer.Movq.Label. $O) (forall Error) (WriteInst Writer Error (Movq Label $O))
+      (function (write-inst! w inst)
+        (with1 (movq: (let label) (let o)) inst
+          (write-inst! w (movq: (memory (+. rip 0 {I32})) o))!
+          (.use-relative! w -4 label -4 reloc-type:pc-rel32)
+          (ok unit))))))
+
+($$ begin
+  ($for-each $O (Gpr64 Xmm)
+    ; movq $O Label
+    (instance ($symbol-concat WriteInst.Writer.Movq. $O .Label) (forall Error) (WriteInst Writer Error (Movq $O Label))
+      (function (write-inst! w inst)
+        (with1 (movq: (let o) (let label)) inst
+          (write-inst! w (movq: o (memory (+. rip 0 {I32}))))!
+          (.use-relative! w -4 label -4 reloc-type:pc-rel32)
+          (ok unit))))
+
+    ; movq $O (AddressTable Label)
+    (instance ($symbol-concat WriteInst.Writer.Movq. $O .AddressTableLabel) (forall Error) (WriteInst Writer Error (Movq $O (AddressTable Label)))
+      (function (write-inst! w inst)
+        (with1 (movq: (let o) (address-table: (let label))) inst
+          (write-inst! w (movq: o (memory (+. rip 0 {I32}))))!
+          (.use-relative! w -4 label -4 reloc-type:pc-rel-to-address-table32)
+          (ok unit))))))
+
+; movq (AddressTable Label) O are not provided since address tables are readonly in most cases
+
+; leaq Gpr64 Label
+(instance WriteInst.Writer.Leaq.Gpr64.Label (forall Error) (WriteInst Writer Error (Leaq Gpr64 Label))
+  (function (write-inst! w inst)
+    (with1 (leaq: (let o) (let label)) inst
+      (write-inst! w (leaq: o (memory (+. rip 0 {I32}))))!
+      (.use-relative! w -4 label -4 reloc-type:pc-rel32)
+      (ok unit))))

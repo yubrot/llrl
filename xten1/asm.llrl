@@ -1,0 +1,9 @@
+; x64 assembler.
+
+(no-implicit-std)
+
+(import "~/asm/obj" _)
+(import "~/asm/inst" _)
+(import "~/asm/operand" _)
+(import "~/asm/writer" _)
+(export _)

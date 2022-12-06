@@ -1,0 +1,241 @@
+(import "std/memory" ptr/_)
+(import "std/box" box/unsafe-ptr)
+(import "~/jit" _)
+(import "~/jit/mmap" Mmap _.Mmap mmap/_ Protect _.Protect protect:_ [_.MmapError _.Error])
+(import "~/jit/segment" Segment _.Segment segment/_ SegmentPart _.SegmentPart segment-part/_)
+(import "~/jit/table" Table _.Table table/_)
+(import "~/asm" _)
+(println! "xten1/tests/jit")
+
+; Internals
+
+(let* ([some-heap-space (box 0)]
+       [some-heap-ptr (box/unsafe-ptr some-heap-space)]
+       [mmap
+         (result/unwrap* [^1 (assert #f (string "mmap: " %1))]
+                         (mmap/new-near! some-heap-ptr 2 protect:read-write))])
+  (assert
+    (< (abs (- (|> mmap mmap/ptr ptr/address conv) {I64}
+               (|> some-heap-ptr ptr/address conv)))
+       (* 2 1024 1024 1024)))
+  (assert-eq? (mmap/pages mmap) 2)
+  (assert-eq? (mmap/size mmap) (* 2 mmap/page-size))
+  (assert-eq? (mmap/protect mmap) protect:read-write)
+  (assert-eq? (mmap/set-protect! protect:read-only mmap) (ok unit))
+  (assert-eq? (mmap/protect mmap) protect:read-only)
+
+  (assert-eq? (mmap/unmap! mmap) (ok unit)))
+
+(let* (
+  [some-heap-space (box 0)]
+  [some-heap-ptr (box/unsafe-ptr some-heap-space)]
+  [segment (segment/new some-heap-ptr protect:read-only)]
+  [(allocate! size)
+    (result/unwrap*
+      [^1 (assert #f (string "segment/allocate!: " %1))]
+      (segment/allocate! size segment))]
+
+  [part1 (allocate! (* 1024 5))]
+  [_ (assert-eq? (option/map mmap/protect (segment-part/mmap? part1)) (some protect:read-only))]
+  [_ (assert-eq? (segment-part/size part1) (* 1024 5))]
+
+  [_
+    (assert-eq?
+      (segment-part/with-protect! protect:read-write part1 (lambda (ptr)
+        (assert-eq? (option/map mmap/protect (segment-part/mmap? part1)) (some protect:read-write))
+        (ptr/copy! (array/ptr (array/new 0 (* 1024 5))) (* 1024 5) ptr)))
+      (ok unit))]
+
+  [part2 (allocate! 1024)]
+  ; protection setting is restored
+  [_ (assert-eq? (option/map mmap/protect (segment-part/mmap? part2)) (some protect:read-only))]
+  [_ (assert-eq? (segment-part/size part2) 1024)]
+
+  ; existing mmap is used: total 1024 * 6 bytes
+  [_ (assert-eq? (|> part1 segment-part/ptr (ptr/add (* 1024 5))) (|> part2 segment-part/ptr))]
+
+  [part3 (allocate! (* 1024 3))]
+  [_ (assert-eq? (option/map mmap/protect (segment-part/mmap? part3)) (some protect:read-only))]
+  [_ (assert-eq? (segment-part/size part3) (* 1024 3))]
+
+  ; new mmap is created
+  [_ (assert-ne? (|> part2 segment-part/ptr (ptr/add (* 1024 3))) (|> part3 segment-part/ptr))]
+
+  [part4 (allocate! 0)]
+  [_ (assert-eq? (option/map mmap/protect (segment-part/mmap? part4)) none)]
+  [_ (assert-eq? (segment-part/size part4) 0)])
+
+  (assert-eq? (segment/dispose! segment) (ok unit)))
+
+(let* ([some-heap-space (box 0)]
+       [some-heap-ptr (box/unsafe-ptr some-heap-space)]
+       [table (table/new some-heap-ptr)])
+
+  (for (let i) (iterator/range 0 {U64} 522 1)
+    (let1 ptr (result/unwrap* [^1 (assert #f (string "table/put!: " %1))] (table/put! i table))
+      (assert-eq? (ptr/load ptr) i)))
+
+  (assert-eq? (table/dispose! table) (ok unit)))
+
+
+; JIT Engine
+
+(function test-object-add
+  ; int add(int a, int b) {
+  ;   return a + b;
+  ; }
+  (let* ([w (writer/new)]
+         [add (writer/get-label! "add" w)])
+
+    (.define! w add #t)
+    (leal! w eax (memory (+. rdi rsi)))!
+    (retq! w)!
+
+    (writer/produce w)))
+
+(function test-object-fib
+  ; extern int add(int a, int b);
+  ;
+  ; int fib(int n) {
+  ;   int a = 0;
+  ;   int b = 1;
+  ;   for (int i = 1; i < n; ++i) {
+  ;     int c = add(a, b);
+  ;     a = b;
+  ;     b = c;
+  ;   }
+  ;   return b;
+  ; }
+  (let* ([w (writer/new)]
+         [add (writer/get-label! "add" w)]
+         [fib (writer/get-label! "fib" w)]
+         [l1 (writer/issue-label! w)]
+         [l2 (writer/issue-label! w)])
+
+    (.define! w fib #t)
+    (pushq! w rbp)!
+    (pushq! w rbx)!
+    (pushq! w rax)!
+    (movl! w eax 1 {I32})!
+    (cmpl! w edi 2 {I8})!
+    (jl! w (short: l2))!
+    (movl! w ebx edi)!
+    (subl! w ebx 1 {I8})!
+    (movl! w ebp 1 {I32})!
+    (xorl! w edi edi)!
+
+    (.define! w l1 #f)
+    (movl! w esi ebp)!
+    (callq! w (address-table: add))!
+    (movl! w edi ebp)!
+    (movl! w ebp eax)!
+    (subl! w ebx 1 {I8})!
+    (jne! w (short: l1))!
+
+    (.define! w l2 #f)
+    (addq! w rsp 8 {I8})!
+    (popq! w rbx)!
+    (popq! w rbp)!
+    (retq! w)!
+
+    (writer/produce w)))
+
+(function test-object-1
+  ; const int foo = 123;
+  (let* ([w (writer/new)]
+         [foo (writer/get-label! "foo" w)]
+         [r (writer/rodata w)])
+
+    (.define! r foo #t)
+    (write-bytes! (array/bytearray 123 {I32}) r)!
+
+    (writer/produce w)))
+
+(function test-object-2
+  ; extern int foo;
+  ; int *bar = &foo;
+  (let* ([w (writer/new)]
+         [foo (writer/get-label! "foo" w)]
+         [bar (writer/get-label! "bar" w)]
+         [d (writer/data w)])
+
+    (.define! d bar #t)
+    (write-u64! 0 d)!
+    (.use-relative! d -8 foo 0 reloc-type:abs64)
+
+    (writer/produce w)))
+
+(function test-object-3
+  ; extern int *bar;
+  ; int baz() { return *bar; }
+  (let* ([w (writer/new)]
+         [bar (writer/get-label! "bar" w)]
+         [baz (writer/get-label! "baz" w)])
+
+    (.define! w baz #t)
+    (movq! w rax bar)!
+    (movl! w eax (memory rax))!
+    (retq! w)!
+
+    (writer/produce w)))
+
+(function test-object-dl
+  ; #include <math.h>
+  ; double foo(double n) { return log10(n); }
+  (let* ([w (writer/new)]
+         [log10 (writer/get-label! "log10" w)]
+         [foo (writer/get-label! "foo" w)])
+
+    (.define! w foo #t)
+    (jmpq! w (address-table: log10))!
+
+    (writer/produce w)))
+
+(builtin-op <add> {(-> (Ptr U8) I32 I32 I32)} "call.c")
+(builtin-op <fib> {(-> (Ptr U8) I32 I32)} "call.c")
+
+(assert-is?
+  (ok unit)
+  (with-engine! symbol-resolver/nop (lambda (engine)
+    (engine/add-object! (result/force test-object-add) engine)!
+
+    (let1 add (option/force (engine/get? "add" engine))
+      (assert-eq? (<add> add 11 7) 18)
+
+      (with-engine! symbol-resolver/nop (lambda (engine2)
+        (engine/register! "add" add engine2)!
+        (engine/add-object! (result/force test-object-fib) engine2)!
+
+        (let1 fib (option/force (engine/get? "fib" engine2))
+          (assert-eq? (<fib> fib 10) 55))
+
+        (ok unit)))))))
+
+(builtin-op <baz> {(-> (Ptr U8) I32)} "call.c")
+
+(assert-is?
+  (ok unit)
+  (with-engine! symbol-resolver/nop (lambda (engine)
+    (engine/add-object! (result/force test-object-1) engine)!
+    (engine/add-object! (result/force test-object-2) engine)!
+    (engine/add-object! (result/force test-object-3) engine)!
+
+    (let ([bar (option/force (engine/get? "bar" engine))]
+          [baz (option/force (engine/get? "baz" engine))])
+      (assert-eq? (<baz> baz) 123)
+      (ptr/store! (ptr/temporary 456 {I32}) (ptr/cast bar))
+      (assert-eq? (<baz> baz) 456))
+
+    (ok unit))))
+
+(builtin-op <foo> {(-> (Ptr U8) F64 F64)} "call.c")
+
+(assert-is?
+  (ok unit)
+  (with-engine! symbol-resolver/dl (lambda (engine)
+    (engine/add-object! (result/force test-object-dl) engine)!
+
+    (let1 foo (option/force (engine/get? "foo" engine))
+      (assert-eq? (<foo> foo 1000.0) 3.0))
+
+    (ok unit))))

@@ -1,0 +1,27 @@
+(import "~/asm/obj" RelocType _.RelocType)
+(import "~/jit/mmap" [MmapError Error] [_.MmapError _.Error])
+(export Error _.Error error:_)
+
+(derive (Eq DebugDisplay) value-data Error
+  (error:mmap MmapError)
+  (error:undefined-symbol String)
+  (error:duplicate-symbol String)
+  (error:offset-out-of-range RelocType I64)
+  (error:unsupported-section-relocation RelocType))
+
+(instance Conv.From.MmapError.To.Error (Conv MmapError Error)
+  (function (conv e) (error:mmap e)))
+
+(instance Display.Error (Display Error)
+  (function (display! w a)
+    (match a
+      [(error:mmap (let e))
+        (display! w e)]
+      [(error:undefined-symbol (let s))
+        (display-all! w "Undefined symbol: " s)]
+      [(error:duplicate-symbol (let s))
+        (display-all! w "Duplicate symbol: " s)]
+      [(error:offset-out-of-range (let reloc-ty) (let offset))
+        (display-all! w "Offset " offset " is too large or too small for relocation " (debug reloc-ty))]
+      [(error:unsupported-section-relocation (let reloc-ty))
+        (display-all! w "Relocation " (debug reloc-ty) " against reloc-target:section is unsupported")])))

@@ -1,0 +1,26 @@
+(import "std/memory" size-of ptr/_)
+(import "~/jit/mmap" Error protect:_)
+(import "~/jit/segment" _)
+(export Table _.Table table/_)
+
+; Sequence of fixed-size entries built on a Segment.
+(derive (DebugDisplay) value-data (Table A)
+  (table: Segment))
+
+(function (table/new hint-addr) {(forall A) (-> (Ptr U8) (Table A))}
+  (table: (segment/new hint-addr protect:read-only)))
+
+; Add an entry. Returns the address corresponding to the entry.
+(function (table/put! entry table) {(forall A) (-> A (Table A) (Result (Ptr A) Error))}
+  (with1 (table: (let segment)) table
+    (let1 part (segment/allocate! (size-of A) segment)!
+      ; TODO: Reduce mprotect calls
+      (segment-part/with-protect! protect:read-write part (lambda (ptr)
+        (let1 ptr (ptr/cast ptr)
+          (ptr/store! entry ptr)
+          ptr))))))
+
+; Dispose the Table. Internal `Segment` will be disposed.
+(function (table/dispose! table) {(forall A) (-> (Table A) (Result unit Error))}
+  (with1 (table: (let segment)) table
+    (segment/dispose! segment)))

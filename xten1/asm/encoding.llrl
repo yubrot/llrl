@@ -1,0 +1,296 @@
+; https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html
+
+(import "std/bits" _)
+(import "std/memory" ptr/_ size-of)
+(export RexPrefix _.RexPrefix rex-prefix:_ rex-prefix/_)
+(export ModRM _.ModRM mod-rm/_)
+(export Reg _.Reg reg/_)
+(export PartOfOpcode _.PartOfOpcode part-of-opcode:)
+(export RegInOpcode _.RegInOpcode reg-in-opcode/_)
+(export Rm _.Rm rm/_)
+(export Displacement _.Displacement displacement:_ displacement/_)
+(export Scale _.Scale scale:_ scale/_)
+
+(derive (Eq DebugDisplay) value-data RexPrefix
+  rex-prefix:not-required
+  rex-prefix:required
+  rex-prefix:denied
+  rex-prefix:inconsistent)
+
+(instance Default.RexPrefix (Default RexPrefix)
+  (function default rex-prefix:not-required))
+
+(function (rex-prefix/merge a b) {(-> RexPrefix RexPrefix RexPrefix)}
+  (cond
+    [(eq? a b) a]
+    [(eq? a rex-prefix:not-required) b]
+    [(eq? rex-prefix:not-required b) a]
+    [else rex-prefix:inconsistent]))
+
+; Obtain an REX prefix byte by encoding W, R, X, B.
+; The REX prefix byte must follow the Legacy prefixes and precede the Opcode.
+(function (rex-prefix/byte? p w r x b) {(-> RexPrefix Bool Bool Bool Bool (Option U8))}
+  (when?
+    (match (: p (or w r x b))
+      [(: rex-prefix:not-required (let e)) e]
+      [(: rex-prefix:required _) #t]
+      [(: rex-prefix:denied #f) #f]
+      [_ (assert #f "Cannot encode AH, CH, DH, BH register with REX prefix")])
+    ; 0100 w r x b
+    (bits
+      [4 4]
+      [(if w 1 0) 1]
+      [(if r 1 0) 1]
+      [(if x 1 0) 1]
+      [(if b 1 0) 1])))
+
+; ModR/M and some subsequent bytes of x64 instruction encoding.
+(derive (Eq DebugDisplay) value-data ModRM
+  (mod-rm: Reg Rm))
+
+(function (mod-rm/new reg rm) {(forall A B) (-> A B ModRM) (where (Conv A Reg) (Conv B Rm))}
+  (mod-rm: (conv reg) (conv rm)))
+
+; Obtain a REX prefix if required.
+(function (mod-rm/rex-byte? r rex-w) {(-> ModRM Bool (Option U8))}
+  (with1 (mod-rm: (let reg) (let rm)) r
+    (rex-prefix/byte?
+      (rex-prefix/merge (reg/rex-prefix reg) (rm/rex-prefix rm))
+      rex-w
+      (reg/rex-r reg)
+      (rm/rex-x rm)
+      (rm/rex-b rm))))
+
+; Obtain a ModR/M byte.
+(function (mod-rm/byte r) {(-> ModRM U8)}
+  (with1 (mod-rm: (let reg) (let rm)) r
+    (bits
+      [(rm/mod-rm-mod rm) 2]
+      [(reg/mod-rm-reg reg) 3]
+      [(rm/mod-rm-rm rm) 3])))
+
+; Obtain a SIB byte, if required for this ModR/M.
+(function (mod-rm/sib-byte? r) {(-> ModRM (Option U8))}
+  (with1 (mod-rm: _ (let rm)) r
+    (rm/sib-byte? rm)))
+
+; Obtain some Displacement bytes, if required for this ModR/M.
+(function (mod-rm/disp-bytes r) {(-> ModRM (Array U8))}
+  (with1 (mod-rm: _ (let rm)) r
+    (rm/disp-bytes rm)))
+
+; ModRM.reg part of x64 instruction encoding.
+; This type includes an optional REX.r, which is an extension of ModRM.reg.
+(derive (Eq DebugDisplay) value-data Reg
+  (reg: U8 Bool RexPrefix))
+
+(instance Default.Reg (Default Reg)
+  (function default (reg/new 0)))
+
+(function (reg/mod-rm-reg reg) (with1 (reg: (let b) _ _) reg b)) ; 3 bits, extended by rex-r
+(function (reg/rex-r reg) (with1 (reg: _ (let r) _) reg r))
+(function (reg/rex-prefix reg) (with1 (reg: _ _ (let p)) reg p))
+
+(function (reg/new reg) {(-> U8 Reg)}
+  (assert (<= reg 15)) ; <= 0b1111
+  (reg: (bw& reg 7) (ne? 0 (bw& reg 8)) default)) ; [rex-r 1] [mod-rm-reg 3]
+
+(function (reg/set-rex-prefix rex-prefix reg) {(-> RexPrefix Reg Reg)}
+  (with1 (reg: (let b) (let r) _) reg
+    (reg: b r rex-prefix)))
+
+; For `/digit` opcode.
+(derive (Eq DebugDisplay) value-data PartOfOpcode
+  (part-of-opcode: U8))
+
+(instance Conv.From.PartOfOpcode.To.Reg (Conv PartOfOpcode Reg)
+  (function (conv a)
+    (with1 (part-of-opcode: (let value)) a
+      (assert (<= value 7)) ; /0../7
+      (reg/new value))))
+
+; Register code embedded in the lower 3 bits of the opcode.
+(derive (Eq DebugDisplay) value-data RegInOpcode
+  (reg-in-opcode: U8 Bool RexPrefix)) ; byte-added-to-opcode rex-b rex-prefix
+
+; This is probably not a good idea, but the information for encoding is compatible.
+(function (reg-in-opcode/new reg) {(forall A) (-> A RegInOpcode) (where (Conv A Reg))}
+  (with1 (reg: (let mod-rm-reg) (let rex-r) (let rex-prefix)) (conv reg)
+    (reg-in-opcode: mod-rm-reg rex-r rex-prefix)))
+
+(function (reg-in-opcode/byte-added-to-opcode rio) {(-> RegInOpcode U8)}
+  (with1 (reg-in-opcode: (let b) _ _) rio
+    b)) ; 3 bits, extended by rex_b
+
+; Obtain a REX prefix if required.
+(function (reg-in-opcode/rex-byte? rio rex-w) {(-> RegInOpcode Bool (Option U8))}
+  (with1 (reg-in-opcode: _ (let rex-b) (let rex-prefix)) rio
+    (rex-prefix/byte? rex-prefix rex-w #f #f rex-b)))
+
+; ModRM.rm part of x64 instruction encoding.
+; This type includes an optional REX.b, an optional SIB, and an optional Displacement.
+(derive (Eq DebugDisplay) value-data Rm
+  (rm:
+    U8                     ; mod-rm-mod (2 bits)
+    U8                     ; mod-rm-rm (3 bits)
+    Bool                   ; rex-x
+    Bool                   ; rex-b
+    (Option Scale)         ; sib-scale
+    (Option U8)            ; sib-index (3 bits, extended by rex-x)
+    (Option U8)            ; sib-base (3 bits, extended by rex-b)
+    (Option Displacement)  ; disp
+    RexPrefix))            ; rex-prefix
+
+(instance Default.Rm (Default Rm)
+  (function default (rm/new 0 0)))
+
+(function (rm/mod-rm-mod rm) {(-> Rm U8)}
+  (with1 (rm: (let mod) _ _ _ _ _ _ _ _) rm mod))
+
+(function (rm/mod-rm-rm rm) {(-> Rm U8)}
+  (with1 (rm: _ (let rm) _ _ _ _ _ _ _) rm rm))
+
+(function (rm/rex-x rm) {(-> Rm Bool)}
+  (with1 (rm: _ _ (let x) _ _ _ _ _ _) rm x))
+
+(function (rm/rex-b rm) {(-> Rm Bool)}
+  (with1 (rm: _ _ _ (let b) _ _ _ _ _) rm b))
+
+(function (rm/rex-prefix rm) {(-> Rm RexPrefix)}
+  (with1 (rm: _ _ _ _ _ _ _ _ (let p)) rm p))
+
+; Whether the SIB byte is present or not, as determined by ModRM.mod and ModRM.rm.
+(function (rm/sib-present? rm) {(-> Rm Bool)}
+  (with1 (rm: (let mod) (let rm) _ _ _ _ _ _ _) rm
+    (and (ne? mod 3) (eq? rm 4))))
+
+; Obtain a SIB byte, if required.
+(function (rm/sib-byte? rm) {(-> Rm (Option U8))}
+  (when? (rm/sib-present? rm)
+    (with1 (rm: _ _ _ _ (let scale) (let index) (let base) _ _) rm
+      (bits
+        [(option/unwrap 0 (option/map scale/bits scale)) 2]
+        [(option/unwrap 0 index) 3]
+        [(option/unwrap 0 base) 3]))))
+
+; Get the length of the Displacement, as determined by ModRM.mod, ModRM.rm, and SIB, in bytes.
+(function (rm/disp-size rm) {(-> Rm U8)}
+  (with1 (rm: (let mod) (let rm) (let rex-x) (let rex-b) _ (let sib-index) (let sib-base) (let disp) (let rex-prefix)) rm
+    (cond
+      [(eq? mod 1) 1] ; [GP + disp8]
+      [(eq? mod 2) 4] ; [GP + disp32]
+      [(and (eq? mod 0) (eq? rm 5)) 4] ; [RIP + disp32] (RIP-relative addressing)
+      [(and (eq? mod 0) (eq? rm 4) (not rex-b) (eq? sib-base (some 5))) 4] ; [disp32 + ..]
+      [else 0])))
+
+; Obtain some Displacement bytes, if required.
+(function (rm/disp-bytes rm) {( -> Rm (Array U8))}
+  (with1 (rm: _ _ _ _ _ _ _ (let disp) _) rm
+    (assert-eq? (rm/disp-size rm) (option/unwrap 0 (option/map displacement/size disp)))
+    (option/unwrap array/empty (option/map displacement/bytes disp))))
+
+(function (rm/new mod rm) {(-> U8 U8 Rm)}
+  (assert (<= mod 3)) ; <= 0b11
+  (assert (<= rm 15)) ; <= 0b1111
+  (rm:
+    mod
+    (bw& rm 7)         ; rm = [rex-b 1] [mod-rm-rm 3]
+    #f
+    (ne? 0 (bw& rm 8)) ; rm = [rex-b 1] [mod-rm-rm 3]
+    none
+    none
+    none
+    none
+    default))
+
+(function (rm/set-sib-scale scale rm) {(-> Scale Rm Rm)}
+  (assert (rm/sib-present? rm))
+  (with1 (rm: (let mod) (let rm) (let rex-x) (let rex-b) _ (let sib-index) (let sib-base) (let disp) (let rex-prefix)) rm
+    (rm: mod rm rex-x rex-b (some scale) sib-index sib-base disp rex-prefix)))
+
+(function (rm/set-sib-index index rm) {(-> U8 Rm Rm)}
+  (assert (rm/sib-present? rm))
+  (assert (<= index 15)) ; <= 0b1111
+  (with1 (rm: (let mod) (let rm) _ (let rex-b) (let sib-scale) _ (let sib-base) (let disp) (let rex-prefix)) rm
+    (rm: mod rm (ne? 0 (bw& index 8)) rex-b sib-scale (some (bw& index 7)) sib-base disp rex-prefix)))
+
+(function (rm/set-sib-base base rm) {(-> U8 Rm Rm)}
+  (assert (rm/sib-present? rm))
+  (assert (<= base 15)) ; <= 0b1111
+  (with1 (rm: (let mod) (let rm) (let rex-x) _ (let sib-scale) (let sib-index) _ (let disp) (let rex-prefix)) rm
+    ; Overwriting REX.b to extend SIB.base
+    (rm: mod rm rex-x (ne? 0 (bw& base 8)) sib-scale sib-index (some (bw& base 7)) disp rex-prefix)))
+
+(function (rm/set-disp disp rm) {(forall A) (-> A Rm Rm) (where (Conv A Displacement))}
+  (let1 disp (conv disp)
+    (assert-eq? (displacement/size disp) (rm/disp-size rm))
+    (with1 (rm: (let mod) (let rm) (let rex-x) (let rex-b) (let sib-scale) (let sib-index) (let sib-base) _ (let rex-prefix)) rm
+      (rm: mod rm rex-x rex-b sib-scale sib-index sib-base (some disp) rex-prefix))))
+
+(function (rm/set-rex-prefix rex-prefix rm) {(-> RexPrefix Rm Rm)}
+  (with1 (rm: (let mod) (let rm) (let rex-x) (let rex-b) (let sib-scale) (let sib-index) (let sib-base) (let disp) _) rm
+    (rm: mod rm rex-x rex-b sib-scale sib-index sib-base disp rex-prefix)))
+
+; Displacement part of x64 instruction encoding.
+(derive (Eq DebugDisplay) value-data Displacement
+  (displacement:8 I8)
+  (displacement:32 I32))
+
+(instance Conv.From.I8.To.Displacement (Conv I8 Displacement)
+  (function (conv offset) (displacement:8 offset)))
+
+(instance Conv.From.I32.To.Displacement (Conv I32 Displacement)
+  (function (conv offset) (displacement:32 offset)))
+
+; Get the appropriate ModRM.mod field value of this Displacement.
+; In x64 instruction encoding, the use of Displacement is usually specified in the ModRM.mod field.
+; See also: `rm/disp-size`
+(function (displacement/mod-rm-mod disp) {(-> Displacement U8)}
+  (match disp
+    [(displacement:8 _) 1]
+    [(displacement:32 _) 2]))
+
+; Get the length of this Displacement in bytes.
+; See also: `rm/disp-size`
+(function (displacement/size disp) {(-> Displacement U8)}
+  (match disp
+    [(displacement:8 _) 1]
+    [(displacement:32 _) 4]))
+
+(function (displacement/bytes disp) {(-> Displacement (Array U8))}
+  (match disp
+    [(displacement:8 (let i)) (array/bytearray i)]
+    [(displacement:32 (let i)) (array/bytearray i)]))
+
+(function (displacement/offset disp) {(-> Displacement I32)}
+  (match disp
+    [(displacement:8 (let i)) (conv i)]
+    [(displacement:32 (let i)) i]))
+
+; SIB.scale part of x64 instruction encoding.
+(derive (Eq DebugDisplay) value-data Scale
+  scale:1
+  scale:2
+  scale:4
+  scale:8)
+
+(instance Default.Scale (Default Scale)
+  (function default scale:1))
+
+(instance Conv.From.U8.To.Scale (Conv U8 Scale)
+  (function (conv s)
+    (match s
+      [1 scale:1]
+      [2 scale:2]
+      [4 scale:4]
+      [8 scale:8]
+      [(let i) (assert #f (string "Unsupported Scale: " i))])))
+
+(function (scale/bits s) {(-> Scale U8)}
+  (match s
+    [scale:1 0]
+    [scale:2 1]
+    [scale:4 2]
+    [scale:8 3]))
+
+; Encoding correctness is tested along with operand conversions.

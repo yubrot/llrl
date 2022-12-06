@@ -1,0 +1,482 @@
+(import "std/memory" ptr/_)
+(import "~/tests/binutils" assert-asm!)
+(import "~/asm" _)
+(import "~/asm/encoding" _)
+(println! "xten1/tests/asm")
+
+; movq r/m64 r64: Move r64 to r/m64.
+(function (movq dest src) {(forall A B) (-> A B (Array U8)) (where (Conv A Rm) (Conv B Reg))}
+  ; REX.W+ 89 /r
+  (let1 mrm (mod-rm/new src dest)
+    (collect (it/concat
+      (mod-rm/rex-byte? mrm #t)     ; REX prefix
+      (array 137 (mod-rm/byte mrm)) ; Opcode, ModR/M
+      (mod-rm/sib-byte? mrm)        ; SIB
+      (mod-rm/disp-bytes mrm)))))   ; Displacement
+
+; negl r/m32: Two's complement negate r/m32.
+(function (negl operand) {(forall A) (-> A (Array U8)) (where (Conv A Rm))}
+  ; F7 /3
+  (let1 mrm (mod-rm/new (part-of-opcode: 3) operand)
+    (collect (it/concat
+      (mod-rm/rex-byte? mrm #f)     ; REX prefix
+      (array 247 (mod-rm/byte mrm)) ; Opcode, ModR/M
+      (mod-rm/sib-byte? mrm)        ; SIB
+      (mod-rm/disp-bytes mrm)))))   ; Displacement
+
+; movw r16, imm16: Move imm16 to r16.
+(function (movw dest src) {(forall A B) (-> A I16 (Array U8)) (where (Conv A Reg))}
+  ; B8 +rw +iw
+  (let1 rio (reg-in-opcode/new dest)
+    (collect (it/concat
+      (some 102)                       ; Mandatory prefix
+      (reg-in-opcode/rex-byte? rio #f) ; REX prefix
+      (some (+ 184 (reg-in-opcode/byte-added-to-opcode rio))) ; Opcode
+      (array/bytearray src)))))        ; Immediate
+
+; movb r/m8 r8: Move r8 to r/m8.
+(function (movb dest src) {(forall A B) (-> A B (Array U8)) (where (Conv A Rm) (Conv B Reg))}
+  ; 88 /r
+  (let1 mrm (mod-rm/new src dest)
+    (collect (it/concat
+      (mod-rm/rex-byte? mrm #f)     ; REX prefix
+      (array 136 (mod-rm/byte mrm)) ; Opcode, ModR/M
+      (mod-rm/sib-byte? mrm)        ; SIB
+      (mod-rm/disp-bytes mrm)))))   ; Displacement
+
+; movsd xmm1, xmm2/m64: Move scalar double-precision floating-point value from xmm2/m64 to xmm1 register.
+(function (movsd dest src) {(forall A B) (-> A B (Array U8)) (where (Conv A Reg) (Conv B Rm))}
+  ; F2 0F 10 /r
+  (let1 mrm (mod-rm/new dest src)
+    (collect (it/concat
+      (some 242)                      ; Mandatory prefix
+      (mod-rm/rex-byte? mrm #f)       ; REX prefix
+      (array 15 16 (mod-rm/byte mrm)) ; Opcode, ModR/M
+      (mod-rm/sib-byte? mrm)          ; SIB
+      (mod-rm/disp-bytes mrm)))))     ; Displacement
+
+(function general-purpose-registers
+  (array
+    rax rbx
+    rsp r12   ; special case 1
+    rbp r13   ; special case 2
+    r14 r15)) ; An extension bit is necessary
+
+(for (let ra) general-purpose-registers
+  (for (let rb) general-purpose-registers
+    (when (ne? ra rb)
+      (assert-asm! (movq ra rb) "movq " (debug ra) ", " (debug rb)))))
+
+(assert-asm! (negl eax) "neg eax")
+(assert-asm! (negl ecx) "neg ecx")
+(assert-asm! (negl r13d) "neg r13d")
+
+; It also tests with RegInOpcode
+(assert-asm! (movw ax 30000) "movw ax, 30000")
+(assert-asm! (movw r8w -1234) "movw r8w, -1234")
+
+; It also tests force_rex_prefix
+(assert-asm! (movb al cl) "movb al, cl")
+(assert-asm! (movb (memory (+. rax (*. rcx 2))) dl) "movb [rax + rcx * 2], dl")
+(assert-asm! (movb spl bl) "movb spl, bl")
+(assert-asm! (movb al dil) "movb al, dil")
+(assert-asm! (movb ah cl) "movb ah, cl")
+
+(assert-asm! (movsd xmm1 xmm3) "movsd xmm1, xmm3")
+(assert-asm! (movsd xmm10 (memory rdx)) "movsd xmm10, [rdx]")
+(assert-asm! (movsd xmm4 (memory (+. rax (*. rcx 8) -8 {I8}))) "movsd xmm4, [rax + rcx * 8 - 8]")
+
+; absolute addressing
+(assert-asm! (movq (memory 124) rax) "mov [124], rax")
+(assert-asm! (movq (memory (+. 124 (*. rcx 2))) rax) "mov [124 + rcx * 2], rax")
+(assert-asm! (movq (memory (+. 1024 (*. rdx 4))) rax) "mov [1024 + rdx * 4], rax")
+(assert-asm! (movq (memory (+. 4096 (*. r14 8))) rax) "mov [4096 + r14 * 8], rax")
+
+; RIP-relative addressing
+(assert-asm! (movq (memory rip) rcx) "mov [rip], rcx")
+(assert-asm! (movq (memory (+. rip 16)) rcx) "mov [rip + 16], rcx")
+(assert-asm! (movq (memory (+. rip -64)) rcx) "mov [rip - 64], rcx")
+
+(assert-asm! (movq (memory (+. rip -64 32)) rcx) "mov [rip - 32], rcx")
+(assert-asm! (movq (memory (+. rip 64 -32)) rcx) "mov [rip + 32], rcx")
+(assert-asm! (movq (memory (+. r14 12 {I8})) r13) "mov [r14 + 12], r13")
+(assert-asm! (movq (memory (+. r14 1024)) r13) "mov [r14 + 1024], r13")
+
+(for (let ra) general-purpose-registers
+  (for (let rb) general-purpose-registers
+    (when (ne? ra rb)
+      ; [base], [base + disp8], [base + disp32]
+      (assert-asm!
+        (collect (it/concat
+          (movq (memory ra) rb)
+          (movq (memory (+. ra 12 {I8})) rb)
+          (movq (memory (+. ra 1024)) rb)))
+        "mov [" (debug ra) "], " (debug rb) "\n"
+        "mov [" (debug ra) " + 12], " (debug rb) "\n"
+        "mov [" (debug ra) " + 1024], " (debug rb))
+
+      ; Cannot use RSP as an index register
+      (when (ne? rb rsp)
+        ; [base + idxs], [base + idxs], [base + disp8 + idxs], [base + disp32 + idxs]
+        (assert-asm!
+          (collect (it/concat
+            (movq (memory (+. ra rb)) rcx)
+            (movq (memory (+. ra (*. rb 4))) rcx)
+            (movq (memory (+. ra -8 {I8} rb)) rcx)
+            (movq (memory (+. ra -512 (*. rb 4))) rcx)))
+          "mov [" (debug ra) " + " (debug rb) "], rcx\n"
+          "mov [" (debug ra) " + " (debug rb) " * 4], rcx\n"
+          "mov [" (debug ra) " - 8 + " (debug rb) "], rcx\n"
+          "mov [" (debug ra) " - 512 + " (debug rb) " * 4], rcx")))))
+
+(function (asm f) {(-> (-> (Vector U8) (Result unit unit)) (Array U8))}
+  (let1 buf vector/empty
+    (f buf)
+    (vector/buffer buf)))
+
+(assert-asm!
+  (asm (lambda (w)
+    (adcb! w (memory rax) bl)!
+    (adcb! w r13b (memory r9))!
+    (adcb! w spl 13 {I8})!
+    (adcb! w (memory (+. rax (*. rcx 4))) -7 {I8})))
+  "
+    adcb [rax], bl
+    adcb r13b, [r9]
+    adcb spl, 13
+    adcb [rax + rcx * 4], -7
+  ")
+
+(assert-asm!
+  (asm (lambda (w)
+    (adcw! w cx bx)!
+    (adcw! w (memory 11) bx)!
+    (adcw! w cx (memory (+. rip 5)))!
+    (adcw! w r11w 1234 {I16})))
+  "
+    adcw cx, bx
+    adcw [11], bx
+    adcw cx, [rip + 5]
+    adcw r11w, 1234
+  ")
+
+(assert-asm!
+  (asm (lambda (w)
+    (adcl! w |:eax 4444 {I32})!
+    (adcl! w (memory (+. rbx 124 {I8})) esi)!
+    (adcl! w ebx 32 {I8})!
+    (adcl! w ecx 100000 {I32})))
+  "
+    adcd eax, 4444
+    adcd [rbx + 124], esi
+    adcd ebx, 32
+    adcd ecx, 100000
+  ")
+
+(assert-asm!
+  (asm (lambda (w)
+    (adcq! w r13 (memory rax))!
+    (adcq! w (memory r10) 124680 {I32})))
+  "
+    adcq r13, [rax]
+    adcq [r10], 124680
+  ")
+
+(assert-asm!
+  (asm (lambda (w)
+    (addpd! w xmm7 xmm1)!
+    (addps! w xmm10 (memory rdi))!
+    (addss! w xmm4 (memory rax))!
+    (andpd! w xmm10 xmm15)))
+  "
+    addpd xmm7, xmm1
+    addps xmm10, [rdi]
+    addss xmm4, [rax]
+    andpd xmm10, xmm15
+  ")
+
+(assert-asm!
+  (asm (lambda (w)
+    (blendpd! w xmm4 xmm5 6 {I8})!
+    (blendpd! w xmm4 (memory (+. rax 4 {I8})) 6 {I8})!
+    (blendvpd! w xmm2 xmm3 |:xmm0)))
+  "
+    blendpd xmm4, xmm5, 6
+    blendpd xmm4, [rax + 4], 6
+    blendvpd xmm2, xmm3, xmm0
+  ")
+
+(assert-asm!
+  (asm (lambda (w)
+    (bswap! w ebx)!
+    (bswap! w rsp)!
+    (btq! w (memory (+. rax (*. rbx 8) 1024)) 5 {I8})!
+    (cli! w)!
+    (extractps! w rcx xmm4 4 {I8})!
+    (setb! w dl)))
+  "
+    bswap ebx
+    bswap rsp
+    btq [rax + rbx * 8 + 1024], 5
+    cli
+    extractps rcx, xmm4, 4
+    setb dl
+  ")
+
+(assert-asm!
+  (asm (lambda (w)
+    (callq! w 2 {I32})! ; call rdi :: F2 /r (2 bytes)
+    (callq! w rdi)!
+    (callq! w (memory (+. rax r10)))!
+    (jae! w 0 {I8})!
+    (retq! w)!
+    (verw! w ax)))
+  "
+    call hoge
+    call rdi
+    hoge:
+    call [rax + r10]
+    jae fuga
+    fuga:
+    retq
+    verw ax
+  ")
+
+(assert-asm!
+  (asm (lambda (w)
+    (crc32b! w r10d dl)!
+    (crc32b! w rbx dl)!
+    (crc32w! w eax cx)!
+    (crc32l! w ebx edx)))
+  "
+    crc32b r10d, dl
+    crc32b rbx, dl
+    crc32w eax, cx
+    crc32d ebx, edx
+  ")
+
+(assert-asm!
+  (asm (lambda (w)
+    (divb! w (memory rax))!
+    (divw! w ax)!
+    (divl! w ecx)!
+    (divq! w r10)))
+  "
+    divb [rax]
+    divw ax
+    divd ecx
+    divq r10
+  ")
+
+(assert-asm!
+  (asm (lambda (w)
+    (movl! w ebx 1234 {I32})!
+    (movl! w r10d 1234 {I32})!
+    (movq! w rdx 1234 {I32})!
+    (movq! w r11 1234 {I32})))
+  "
+    mov ebx, 1234
+    mov r10d, 1234
+    mov rdx, 1234
+    mov r11, 1234
+  ")
+
+(assert-asm!
+  (asm (lambda (w)
+    (pushq! w 5 {I8})!
+    ; (pushq! w 1000 {I16})! ; NOTE: GAS encodes this as `68 id`, not `66 68 iw`
+    (pushq! w 70000 {I32})!
+    (pushq! w (memory rbx))!
+    (pushq! w rcx)!
+    (pushw! w ax)!
+    (popq! w rbx)!
+    (popw! w (memory rax))))
+  "
+    pushq 5
+    /* pushq 1000 */
+    pushq 70000
+    pushq [rbx]
+    pushq rcx
+    pushw ax
+    popq rbx
+    popw [rax]
+  ")
+
+(let1 buf (array 0 {U8} 1 2 3 4 5 6 7 8 9 10 11)
+  (assert-eq? (reloc-type/resolve-statically! reloc-type:pc-rel8 4 9 0 buf) #t)
+  (assert-eq? (|> buf array/ptr (ptr/add 9) ptr/cast ptr/load) -5 {I8})
+  (assert-eq? (reloc-type/resolve-statically! reloc-type:pc-rel8 4 10 0 buf) #t)
+  (assert-eq? (|> buf array/ptr (ptr/add 10) ptr/cast ptr/load) -6 {I8})
+  (assert-eq? (reloc-type/resolve-statically! reloc-type:pc-rel32 10 4 -1 buf) #t)
+  (assert-eq? (|> buf array/ptr (ptr/add 4) ptr/cast ptr/load) 5 {I32})
+  (assert-eq? (reloc-type/resolve-statically! reloc-type:abs64 6 2 0 buf) #f)
+  (assert-eq? (reloc-type/resolve-statically! reloc-type:pc-rel-to-address-table32 6 2 0 buf) #f)
+  (assert-eq? (array/subarray 0 4 buf) (array 0 1 2 3))
+  (assert-eq? (array/subarray 8 9 buf) (array 8))
+  (assert-eq? (array/subarray 11 12 buf) (array 11)))
+
+(function (obj f) {(-> (-> Writer (Result unit unit)) Object)}
+  (let1 w (writer/new)
+    (f w)
+    (result/unwrap* [^1 (assert #f (string "Failed to produce object: " %1))] (writer/produce w))))
+
+(let* ([dummy-location (location: location-section:bss 0)]
+       [fib-location (ref dummy-location)]
+       [fib2-location (ref dummy-location)]
+       [fib3-location (ref dummy-location)]
+       [call-fib-location (ref dummy-location)]
+       [call-fib2-location (ref dummy-location)]
+       [o (obj (lambda (w)
+          (let ([fib (writer/get-label! "fib" w)]
+                [fib2 (writer/get-label! "fib2" w)]
+                [fib3 (writer/get-label! "fib3" w)]
+                [l1 (writer/issue-label! w)]
+                [l2 (writer/issue-label! w)])
+
+            (set! fib-location (.define! w fib #t))
+            (cmpl! w edi 1 {I8})!
+            (jle! w (short: l2))!
+            (movl! w edx 1 {I32})!
+            (movl! w eax 1 {I32})!
+            (movl! w ecx 0 {I32})!
+
+            (.define! w l1 #f)
+            (movl! w esi eax)!
+            (addl! w eax ecx)!
+            (addl! w edx 1 {I8})!
+            (movl! w ecx esi)!
+            (cmpl! w edi edx)!
+            (jne! w (short: l1))!
+            (retq! w)!
+
+            (.define! w l2 #f)
+            (movl! w eax 1 {I32})!
+            (retq! w)!
+
+            (set! fib2-location (.define! w fib2 #t))
+            (addl! w edi 1 {I8})!
+            (callq! w (address-table: fib))!
+            (set! call-fib-location (.location w))
+            (retq! w)!
+
+            (set! fib3-location (.define! w fib3 #t))
+            (addl! w edi 1 {I8})!
+            (callq! w (address-table: fib2))!
+            (set! call-fib2-location (.location w))
+            (retq! w)!
+
+            (ok unit))))])
+
+  (assert-asm! (object/text o) "
+    fib:
+      cmp edi, 0x1
+      jle 2f
+      mov edx, 0x1
+      mov eax, 0x1
+      mov ecx, 0x0
+    1:
+      mov esi, eax
+      add eax, ecx
+      add edx, 0x1
+      mov ecx, esi
+      cmp edi, edx
+      jne 1b
+      ret
+    2:
+      mov eax, 0x1
+      ret
+
+    fib2:
+      add edi, 0x1
+      call [rip + fib@GOTPCREL]
+      ret
+
+    fib3:
+      add edi, 0x1
+      call [rip + fib2@GOTPCREL]
+      ret
+  ")
+
+  (assert-eq?
+    (object/symbols o)
+    (array
+      (symbol: "fib" (binding:global (some ~fib-location)))
+      (symbol: "fib2" (binding:global (some ~fib2-location)))
+      (symbol: "fib3" (binding:global (some ~fib3-location)))))
+
+  (assert-eq?
+    (object/relocs o)
+    (array
+      (reloc:
+        (location/offset -4 ~call-fib-location)
+        (reloc-target:symbol "fib")
+        -4
+        reloc-type:pc-rel-to-address-table32)
+      (reloc:
+        (location/offset -4 ~call-fib2-location)
+        (reloc-target:symbol "fib2")
+        -4
+        reloc-type:pc-rel-to-address-table32))))
+
+(let1
+  o
+  (obj (lambda (w)
+    (let ([foo (writer/get-label! "foo" w)]
+          [bar (writer/get-label! "bar" w)]
+          [baz (writer/get-label! "baz" w)]
+          [d (writer/data w)]
+          [r (writer/rodata w)])
+      (.define! d foo #t)
+      (write-bytes! (array 0 1 2 3 4) d)!
+      (.align! d 2)!
+      (.define! d bar #t)
+      (write-bytes! (array 5 6 7 8) d)!
+
+      (.define! r baz #f)
+      (write-bytes! (array/new 0 16) r)!
+      (.use-relative! r -8 bar 0 reloc-type:abs64)
+
+      (ok unit))))
+
+  (assert-eq?
+    (object/symbols o)
+    (array
+      (symbol: "bar" (binding:global (some (location: location-section:data 6))))
+      (symbol: "baz" (binding:local (location: location-section:rodata 0)))
+      (symbol: "foo" (binding:global (some (location: location-section:data 0))))))
+
+  (assert-eq?
+    (object/relocs o)
+    (array
+      (reloc:
+        (location: location-section:rodata 8)
+        (reloc-target:symbol "bar")
+        0
+        reloc-type:abs64))))
+
+(let1
+  o
+  (obj (lambda (w)
+    (let ([foo (writer/get-label! "foo" w)]
+          [bar (writer/get-label! "bar" w)]
+          [baz (writer/get-label! "baz" w)]
+          [b (writer/bss w)])
+      (.define! b foo #t)
+      (.allocate! b 4)!
+
+      (.align! b 2)!
+      (.define! b bar #t)
+      (.allocate! b 2)!
+
+      (.align! b 8)!
+      (.define! b baz #t)
+      (.allocate! b 8)!
+
+      (ok unit))))
+
+  (assert-eq?
+    (object/symbols o)
+    (array
+      (symbol: "bar" (binding:global (some (location: location-section:bss 4))))
+      (symbol: "baz" (binding:global (some (location: location-section:bss 8))))
+      (symbol: "foo" (binding:global (some (location: location-section:bss 0)))))))

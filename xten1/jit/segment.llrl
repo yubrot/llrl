@@ -1,0 +1,62 @@
+(import "std/memory" ptr/_ ptr:null)
+(import "~/jit/mmap" _)
+(export Segment _.Segment segment/_)
+(export SegmentPart _.SegmentPart segment-part/_)
+
+; A collection of non-contiguous `Mmap`s with the same `Protect`.
+(derive (DebugDisplay) data Segment
+  (segment: (Ptr U8) Protect (Vector Mmap) (Ref U64))) ; hint-addr protect chunks offset
+
+(function (segment/new hint-addr protect) {(-> (Ptr U8) Protect Segment)}
+  (segment: hint-addr protect vector/empty (ref 0)))
+
+(function (segment/protect segment) {(-> Segment Protect)}
+  (with1 (segment: _ (let protect) _ _) segment protect))
+
+; Allocates free space for the specified size.
+; If there is not enough space, a new mmap is created.
+(function (segment/allocate! size segment) {(-> U64 Segment (Result SegmentPart Error))}
+  (with1 (segment: (let hint-addr) (let protect) (let chunks) (let offset)) segment
+    (when (eq? size 0) (return (ok (segment-part: none 0 0))))
+    (let1
+      mmap
+      (if-match ([(some (: (let mmap) _)) (|> chunks vector/buffer array/split-last?)]
+                 [#t (<= (+ ~offset size) (mmap/size mmap))])
+        mmap
+        (let1 mmap (mmap/new-near! hint-addr (/ (- (+ size mmap/page-size) 1) mmap/page-size) protect)!
+          (vector/push! mmap chunks)
+          (set! offset 0)
+          mmap))
+      (set! offset (+ ~offset size))
+      (ok (segment-part: (some mmap) (- ~offset size) size)))))
+
+; Dispose the Segment. Every Mmap internally allocated will be unmapped.
+(function (segment/dispose! segment) {(-> Segment (Result unit Error))}
+  (with1 (segment: _ _ (let chunks) _) segment
+    (for (let mmap) (vector/consume-all! chunks) (mmap/unmap! mmap)!))
+  (ok unit))
+
+; Free space allocated from the segment.
+(derive (DebugDisplay) data SegmentPart
+  (segment-part: (Option Mmap) U64 U64)) ; mmap offset size
+
+(function (segment-part/mmap? part) {(-> SegmentPart (Option Mmap))}
+  (with1 (segment-part: (let mmap) _ _) part mmap))
+
+(function (segment-part/size part) {(-> SegmentPart U64)}
+  (with1 (segment-part: _ _ (let size)) part size))
+
+(function (segment-part/ptr part) {(-> SegmentPart (Ptr U8))}
+  (if-match1 (segment-part: (some (let mmap)) (let offset) _) part
+    (ptr/add offset (mmap/ptr mmap))
+    ptr:null))
+
+(function (segment-part/with-protect! protect part f)
+  {(forall A) (-> Protect SegmentPart (-> (Ptr U8) A) (Result A Error))}
+  (if-match1 (segment-part: (some (let mmap)) (let offset) _) part
+    (let* ([stashed-protect (mmap/protect mmap)]
+           [_ (mmap/set-protect! protect mmap)!]
+           [result (f (ptr/add offset (mmap/ptr mmap)))]
+           [_ (mmap/set-protect! stashed-protect mmap)!])
+      (ok result))
+    (ok (f ptr:null))))
