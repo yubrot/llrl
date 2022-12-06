@@ -1,7 +1,8 @@
 (import "std/io" [io/_ _])
 (import "std/integer" Integer._ integer/to-string)
 (import "std/system" random! process/_ with-process!)
-(export readelf! asm! disasm! assert-asm!)
+(export readelf! asm! disasm! assert-asm! with-tempdir!)
+(println! "xten1/tests/binutils")
 
 (function (readelf! args) {(-> (Array String) String)}
   (exec! "readelf" args))

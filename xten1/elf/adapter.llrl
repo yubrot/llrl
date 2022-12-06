@@ -1,0 +1,78 @@
+(import "std/hash-map" _)
+(import "~/elf/format" _)
+(import "~/asm/obj" Object object/_ binding:_ location: location-section:_ [sym: symbol:] reloc: reloc-target:_)
+(export elf/relocatable-object-from)
+
+; Convert `asm::Object` into a relocatable ELF object.
+(function (elf/relocatable-object-from file obj) {(-> String Object Elf)}
+  (let* (
+    [elf (elf/new object-type:rel none none)]
+
+    [text-shndx (elf/add-section! (section/text ".text" (object/text obj)) elf)]
+    [data-shndx (elf/add-section! (section/data ".data" (object/data obj)) elf)]
+    [rodata-shndx (elf/add-section! (section/rodata ".rodata" (object/rodata obj)) elf)]
+    [bss-shndx (elf/add-section! (section/bss ".bss" (object/bss obj)) elf)]
+
+    ; LocationSection -> Shndx
+    [location-section-shndx (case
+      [location-section:text text-shndx]
+      [location-section:data data-shndx]
+      [location-section:rodata rodata-shndx]
+      [location-section:bss bss-shndx])]
+
+    [symtab (symtab/new ".symtab" (strtab/new ".strtab"))]
+
+    ; Well-known symbols
+    [_ (symtab/add! (symbol/file file) symtab)]
+    [text-symtab-index (symtab/add! (symbol/section text-shndx) symtab)]
+    [data-symtab-index (symtab/add! (symbol/section data-shndx) symtab)]
+    [rodata-symtab-index (symtab/add! (symbol/section rodata-shndx) symtab)]
+    [bss-symtab-index (symtab/add! (symbol/section bss-shndx) symtab)]
+
+    ; Symbols in the object, from locals to globals
+    [symbol-symtab-index hash-map/empty]
+    [symtab
+      (for (sym: (let name) (let binding)) (object/symbols obj)
+        (when-match1 (binding:local (location: (let sec) (let pos))) binding
+          (let1 symbol (symbol/new name (location-section-shndx sec) pos)
+            (hash-map/insert! name (symtab/add! symbol symtab) symbol-symtab-index))))
+
+      (symtab/begin-global! symtab)
+
+      (for (sym: (let name) (let binding)) (object/symbols obj)
+        (when-match1 (binding:global (let loc)) binding
+          (let1
+            symbol
+            (if-match1 (some (location: (let sec) (let pos))) loc
+              (symbol/new name (location-section-shndx sec) pos)
+              (symbol/undef name))
+            (hash-map/insert! name (symtab/add! symbol symtab) symbol-symtab-index))))
+
+      (elf/add-section! symtab elf)]
+
+    [rela-text (rela/new ".rela.text" symtab text-shndx)]
+    [rela-data (rela/new ".rela.data" symtab data-shndx)]
+    [rela-rodata (rela/new ".rela.rodata" symtab rodata-shndx)]
+  )
+    (for (reloc: (location: (let sec) (let pos)) (let target) (let addend) (let reloc-ty)) (object/relocs obj)
+      (let* (
+        [sym
+          (match target
+            [(reloc-target:symbol (let s)) (option/force (hash-map/get? s symbol-symtab-index))]
+            [(reloc-target:section location-section:text) text-symtab-index]
+            [(reloc-target:section location-section:data) data-symtab-index]
+            [(reloc-target:section location-section:rodata) rodata-symtab-index]
+            [(reloc-target:section location-section:bss) bss-symtab-index])]
+        [rela
+          (match sec
+            [location-section:text rela-text]
+            [location-section:data rela-data]
+            [location-section:rodata rela-rodata]
+            [location-section:bss (assert #f "Attempt to relocate to bss section")])]
+      )
+        (rela/add! (rela-entry: pos sym (conv reloc-ty) addend) rela)))
+    (elf/add-section! rela-text elf)
+    (elf/add-section! rela-data elf)
+    (elf/add-section! rela-rodata elf)
+
+    elf))

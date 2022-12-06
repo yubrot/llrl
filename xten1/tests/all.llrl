@@ -1,6 +1,6 @@
 (import "~/tests/binutils")
 (import "~/tests/asm")
-; (import "~/tests/elf")
+(import "~/tests/elf")
 (import "~/tests/jit")
 
 (println! "done.")
