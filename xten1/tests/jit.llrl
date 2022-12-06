@@ -194,43 +194,48 @@
 (builtin-op <add> {(-> (Ptr U8) I32 I32 I32)} "call.c")
 (builtin-op <fib> {(-> (Ptr U8) I32 I32)} "call.c")
 
-(let1 engine (engine/new symbol-resolver/nop)
-  (assert-eq? (engine/add-object! (result/force test-object-add) engine) (ok unit))
+(assert-is?
+  (ok unit)
+  (with-engine! symbol-resolver/nop (lambda (engine)
+    (engine/add-object! (result/force test-object-add) engine)!
 
-  (let1 add (option/force (engine/get? "add" engine))
-    (assert-eq? (<add> add 11 7) 18)
+    (let1 add (option/force (engine/get? "add" engine))
+      (assert-eq? (<add> add 11 7) 18)
 
-    (let1 engine2 (engine/new symbol-resolver/nop)
-      (assert-eq? (engine/register! "add" add engine2) (ok unit))
-      (assert-eq? (engine/add-object! (result/force test-object-fib) engine2) (ok unit))
+      (with-engine! symbol-resolver/nop (lambda (engine2)
+        (engine/register! "add" add engine2)!
+        (engine/add-object! (result/force test-object-fib) engine2)!
 
-      (let1 fib (option/force (engine/get? "fib" engine2))
-        (assert-eq? (<fib> fib 10) 55))
+        (let1 fib (option/force (engine/get? "fib" engine2))
+          (assert-eq? (<fib> fib 10) 55))
 
-      (assert-eq? (engine/dispose! engine2) (ok unit))))
-  (assert-eq? (engine/dispose! engine) (ok unit)))
+        (ok unit)))))))
 
 (builtin-op <baz> {(-> (Ptr U8) I32)} "call.c")
 
-(let1 engine (engine/new symbol-resolver/nop)
-  (assert-eq? (engine/add-object! (result/force test-object-1) engine) (ok unit))
-  (assert-eq? (engine/add-object! (result/force test-object-2) engine) (ok unit))
-  (assert-eq? (engine/add-object! (result/force test-object-3) engine) (ok unit))
+(assert-is?
+  (ok unit)
+  (with-engine! symbol-resolver/nop (lambda (engine)
+    (engine/add-object! (result/force test-object-1) engine)!
+    (engine/add-object! (result/force test-object-2) engine)!
+    (engine/add-object! (result/force test-object-3) engine)!
 
-  (let ([bar (option/force (engine/get? "bar" engine))]
-        [baz (option/force (engine/get? "baz" engine))])
-    (assert-eq? (<baz> baz) 123)
-    (ptr/store! (ptr/temporary 456 {I32}) (ptr/cast bar))
-    (assert-eq? (<baz> baz) 456))
+    (let ([bar (option/force (engine/get? "bar" engine))]
+          [baz (option/force (engine/get? "baz" engine))])
+      (assert-eq? (<baz> baz) 123)
+      (ptr/store! (ptr/temporary 456 {I32}) (ptr/cast bar))
+      (assert-eq? (<baz> baz) 456))
 
-  (assert-eq? (engine/dispose! engine) (ok unit)))
+    (ok unit))))
 
 (builtin-op <foo> {(-> (Ptr U8) F64 F64)} "call.c")
 
-(let1 engine (engine/new symbol-resolver/dl)
-  (assert-eq? (engine/add-object! (result/force test-object-dl) engine) (ok unit))
+(assert-is?
+  (ok unit)
+  (with-engine! symbol-resolver/dl (lambda (engine)
+    (engine/add-object! (result/force test-object-dl) engine)!
 
-  (let1 foo (option/force (engine/get? "foo" engine))
-    (assert-eq? (<foo> foo 1000.0) 3.0))
+    (let1 foo (option/force (engine/get? "foo" engine))
+      (assert-eq? (<foo> foo 1000.0) 3.0))
 
-  (assert-eq? (engine/dispose! engine) (ok unit)))
+    (ok unit))))

@@ -6,7 +6,7 @@ llrl is an experimental Lisp-like programming language.
 <img src="./examples/images/1.png">
 </p>
 
-- [Implementation notes (Japanese)](https://zenn.dev/yubrot/articles/eaaeeab742b4a1)
+- [How I created a self-hosting compiler with Rust + LLVM (Japanese)](https://zenn.dev/yubrot/articles/eaaeeab742b4a1)
 
 ## Features
 
@@ -107,12 +107,12 @@ Since llrl has Lisp-like macros as a language feature, I made my own assembler [
   - [x] ELF executable producer
   - [x] JIT linker
 - [x] llrl0 chibi backend (x86_64 targeting backend with xten0)
-- [ ] xten1: re-implementation of xten0 for llrl
+- [x] xten1: re-implementation of xten0 for llrl
 - [ ] llrl1 chibi backend
 
 ## Usage
 
-Since `llrl0` is a standalone executable, you can simply run it with `cargo run` or `cargo build`.
+Since `llrl0` is a standalone executable, you can simply install it with `cargo install`.
 
 ```shell
 $ cargo install --path llrl0 --offline
@@ -124,7 +124,7 @@ $ llrl0 -O examples/fibonacci-numbers
 $ cargo run -- -O examples/fibonacci-numbers
 ```
 
-Notice that `llrl0` can also run without LLVM.
+Each backend is enabled by a feature flag. For example, to build llrl0 without LLVM, do the following:
 
 ```shell
 $ cargo install --path llrl0 --offline --no-default-features -F chibi-backend

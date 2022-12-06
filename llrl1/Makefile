@@ -7,7 +7,7 @@ install: llrl1l
 
 # The name of the llrl1 compiler executable consists of:
 # * `llrl1`
-# * The backend id used to build it (l for LLVM, c for chibi), repeated by the number of generations
+# * The backend id used to build it (`l` for LLVM, `c` for chibi), repeated by the number of generations
 # For example, `llrl1cl` is built by the LLVM backend of `llrl1c`, where
 # `llrl1c` is built by the chibi backend of `llrl0`.
 

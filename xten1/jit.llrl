@@ -9,7 +9,7 @@
 (import "~/jit/address-table" AddressTable _.AddressTable address-table/_)
 (import "~/jit/symbol-table" SymbolTable _.SymbolTable symbol-table/_ [symbol-resolver/_ _-resolver])
 (export Error _.Error error:_)
-(export Engine _.Engine engine/_)
+(export Engine _.Engine engine/_ with-engine!)
 (export symbol-resolver/_)
 
 ; A JIT execution engine.
@@ -95,6 +95,13 @@
           (result/map-err conv
             (segment-part/with-protect! protect:read-write ro (lambda (ro)
               (f rx rw ro))))!)))!)))!)
+
+(function (with-engine! symbol-resolver f)
+  {(forall A) (-> (-> String (Ptr U8)) (-> Engine (Result A Error)) (Result A Error))}
+  (let* ([engine (engine/new symbol-resolver)]
+         [ret (f engine)]
+         [dispose (engine/dispose! engine)])
+    (result/and dispose ret)))
 
 (data Locator
   (locator: (Ptr U8) (Ptr U8) (Ptr U8) (Ptr U8))) ; text rwdata rodata bss
