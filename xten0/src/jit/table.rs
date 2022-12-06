@@ -1,4 +1,5 @@
-use super::{MmapError, Protect, Segment};
+use super::mmap::{Error, Protect};
+use super::segment::Segment;
 use std::marker::PhantomData;
 use std::mem::size_of;
 use std::ptr;
@@ -19,7 +20,7 @@ impl<T: Copy> Table<T> {
     }
 
     /// Add an entry. Returns the address corresponding to the entry.
-    pub fn put(&mut self, entry: T) -> Result<*const T, MmapError> {
+    pub fn put(&mut self, entry: T) -> Result<*const T, Error> {
         let mut part = self.segment.allocate(size_of::<T>())?;
         part.set_protect_temporarily(Protect::ReadWrite)?; // TODO: Reduce mprotect calls
         let ptr = part.as_ptr() as *mut T;

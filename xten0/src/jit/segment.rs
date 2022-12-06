@@ -1,4 +1,4 @@
-use super::{Mmap, MmapError, Protect};
+use super::mmap::{Error, Mmap, Protect};
 use derive_new::new;
 use std::ptr;
 
@@ -35,7 +35,7 @@ impl Segment {
 
     /// Allocates free space for the specified size.
     /// If there is not enough space, a new mmap is created.
-    pub fn allocate(&mut self, size: usize) -> Result<SegmentPart, MmapError> {
+    pub fn allocate(&mut self, size: usize) -> Result<SegmentPart, Error> {
         if self.last_mmap_capacity() < size {
             let pages = (size + Mmap::PAGE_SIZE - 1) / Mmap::PAGE_SIZE;
             let mmap = Mmap::new_near(self.hint_addr, pages, self.protect)?;
@@ -68,7 +68,7 @@ impl<'a> SegmentPart<'a> {
     ///
     /// The temporarily changed access protection setting is automatically restored when the
     /// `SegmentPart` is dropped.
-    pub fn set_protect_temporarily(&mut self, protect: Protect) -> Result<(), MmapError> {
+    pub fn set_protect_temporarily(&mut self, protect: Protect) -> Result<(), Error> {
         match self.mmap {
             Some(ref mut mmap) => mmap.set_protect(protect),
             None => Ok(()),

@@ -1,41 +1,26 @@
-mod mmap;
-mod segment;
-pub mod symbol_resolver;
+mod address_table;
+mod error;
+pub mod mmap;
+pub mod segment;
+mod symbol_table;
 mod table;
 
-pub use mmap::{Error as MmapError, Mmap, Protect};
-pub use segment::Segment;
-pub use symbol_resolver::SymbolResolver;
-pub use table::Table;
+pub use error::Error;
+pub use symbol_table::{resolver as symbol_resolver, Resolver as SymbolResolver};
 
 use crate::asm::{Binding, Location, LocationSection, Object, Reloc, RelocTarget, RelocType};
+use address_table::AddressTable;
+use mmap::Protect;
+use segment::Segment;
 use std::collections::{hash_map::Entry as HashMapEntry, HashMap};
 use std::ptr;
-
-#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, thiserror::Error)]
-pub enum Error {
-    #[error(transparent)]
-    Mmap(#[from] MmapError),
-    #[error(transparent)]
-    Link(#[from] LinkError),
-}
-
-#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, thiserror::Error)]
-pub enum LinkError {
-    #[error("Undefined symbol: {0}")]
-    UndefinedSymbol(String),
-    #[error("Duplicate symbol: {0}")]
-    DuplicateSymbol(String),
-    #[error("Offset {1} is too large or too small for relocation {0:?}")]
-    OffsetOutOfRange(RelocType, isize),
-    #[error("Relocation {0:?} against RelocTarget::Section is unsupported")]
-    UnsupportedSectionRelocation(RelocType),
-}
+use symbol_table::SymbolTable;
 
 /// A JIT execution engine.
 #[derive(Debug)]
 pub struct Engine<R: SymbolResolver = fn(&str) -> *const u8> {
-    global: Global<R>,
+    symbol_table: SymbolTable<R>,
+    address_table: AddressTable,
     ro: Segment,
     rw: Segment,
     rx: Segment,
@@ -47,22 +32,22 @@ impl<R: SymbolResolver> Engine<R> {
         let hint_box = Box::new(0u8);
         let hint_addr: *const u8 = &*hint_box;
         Self {
-            global: Global::new(hint_addr, symbol_resolver),
+            symbol_table: SymbolTable::new(symbol_resolver),
+            address_table: AddressTable::new(hint_addr),
             ro: Segment::new(hint_addr, Protect::ReadOnly),
             rw: Segment::new(hint_addr, Protect::ReadWrite),
             rx: Segment::new(hint_addr, Protect::ReadExec),
         }
     }
 
-    /// Register the address corresponding to the symbol.
-    pub fn register(&mut self, symbol: &str, address: *const u8) -> Result<(), Error> {
-        self.global.bind(symbol, Some(address))?;
-        Ok(())
+    /// Register the pointer corresponding to the symbol.
+    pub fn register(&mut self, symbol: &str, ptr: *const u8) -> Result<(), Error> {
+        self.symbol_table.bind(symbol, Some(ptr))
     }
 
-    /// Get the address corresponding to the symbol.
+    /// Get the pointer corresponding to the symbol.
     pub fn get(&self, symbol: &str) -> Option<*const u8> {
-        self.global.resolve(symbol)
+        self.symbol_table.resolve(symbol)
     }
 
     /// Add an object. All symbols and relocations are immediately resolved.
@@ -103,15 +88,19 @@ impl<R: SymbolResolver> Engine<R> {
             unsafe { ptr::copy(obj.rodata.as_ptr(), rodata, obj.rodata.len()) };
         }
 
-        // bind
-        let mut local = Local::new(text, data, rodata, bss, &mut self.global);
+        // link
+        let mut linker = Linker::new(
+            &mut self.symbol_table,
+            &mut self.address_table,
+            Locator::new(text, data, rodata, bss),
+        );
+
         for sym in obj.symbols.iter() {
-            local.bind(&sym.name, sym.binding)?;
+            linker.bind(&sym.name, sym.binding)?;
         }
 
-        // relocate
         for reloc in obj.relocs.iter() {
-            local.relocate(reloc)?;
+            linker.relocate(reloc)?;
         }
 
         // restore memory protection
@@ -124,83 +113,24 @@ impl<R: SymbolResolver> Engine<R> {
 }
 
 #[derive(Debug)]
-struct Global<R> {
-    symbols: HashMap<String, Symbol>,
-    symbol_resolver: R,
-    address_table: Table<*const u8>,
-}
-
-impl<R: SymbolResolver> Global<R> {
-    fn new(hint_addr: *const u8, symbol_resolver: R) -> Self {
-        Self {
-            symbols: HashMap::new(),
-            symbol_resolver,
-            address_table: Table::new(hint_addr),
-        }
-    }
-
-    fn bind(&mut self, symbol: &str, address: Option<*const u8>) -> Result<(), LinkError> {
-        match (self.symbols.entry(symbol.to_owned()), address) {
-            (HashMapEntry::Vacant(e), Some(address)) => {
-                e.insert(Symbol::new(address));
-                Ok(())
-            }
-            (HashMapEntry::Vacant(e), None) => match (self.symbol_resolver)(symbol) {
-                addr if !addr.is_null() => {
-                    e.insert(Symbol::new(addr));
-                    Ok(())
-                }
-                _ => Err(LinkError::UndefinedSymbol(symbol.to_owned())),
-            },
-            (_, Some(_)) => Err(LinkError::DuplicateSymbol(symbol.to_owned())),
-            (_, None) => Ok(()),
-        }
-    }
-
-    fn resolve(&self, symbol: &str) -> Option<*const u8> {
-        self.symbols.get(symbol).map(|sym| sym.address)
-    }
-
-    fn resolve_address_table_entry(
-        &mut self,
-        symbol: &str,
-    ) -> Result<Option<*const *const u8>, Error> {
-        self.symbols
-            .get_mut(symbol)
-            .map(|sym| sym.address_table_entry(&mut self.address_table))
-            .transpose()
-    }
-}
-
-#[derive(Debug)]
-struct Local<'a, R> {
+struct Locator {
     text: *const u8,
     data: *const u8,
     bss: *const u8,
     rodata: *const u8,
-    symbols: HashMap<&'a str, Symbol>,
-    global: &'a mut Global<R>,
 }
 
-impl<'a, R: SymbolResolver> Local<'a, R> {
-    fn new(
-        text: *mut u8,
-        data: *mut u8,
-        rodata: *mut u8,
-        bss: *mut u8,
-        global: &'a mut Global<R>,
-    ) -> Self {
+impl Locator {
+    fn new(text: *mut u8, data: *mut u8, rodata: *mut u8, bss: *mut u8) -> Self {
         Self {
             text,
             data,
             rodata,
             bss,
-            symbols: HashMap::new(),
-            global,
         }
     }
 
-    fn location_address(&self, loc: Location) -> *const u8 {
+    fn locate(&self, loc: Location) -> *const u8 {
         match loc.section {
             LocationSection::Text => self.text.wrapping_add(loc.pos as usize),
             LocationSection::Data => self.data.wrapping_add(loc.pos as usize),
@@ -208,63 +138,65 @@ impl<'a, R: SymbolResolver> Local<'a, R> {
             LocationSection::Bss => self.bss.wrapping_add(loc.pos as usize),
         }
     }
+}
 
-    fn bind(&mut self, symbol: &'a str, binding: Binding) -> Result<(), LinkError> {
-        match binding {
-            Binding::Local(loc) => {
-                let address = self.location_address(loc);
-                match self.symbols.entry(symbol) {
-                    HashMapEntry::Vacant(e) => {
-                        e.insert(Symbol::new(address));
-                        Ok(())
-                    }
-                    _ => Err(LinkError::DuplicateSymbol(symbol.to_owned())),
-                }
-            }
-            Binding::Global(loc) => {
-                let address = loc.map(|loc| self.location_address(loc));
-                self.global.bind(symbol, address)
-            }
+#[derive(Debug)]
+struct Linker<'a, R: SymbolResolver> {
+    symbol_table: &'a mut SymbolTable<R>,
+    address_table: &'a mut AddressTable,
+    locator: Locator,
+    local_symbols: HashMap<&'a str, *const u8>,
+}
+
+impl<'a, R: SymbolResolver> Linker<'a, R> {
+    fn new(
+        symbol_table: &'a mut SymbolTable<R>,
+        address_table: &'a mut AddressTable,
+        locator: Locator,
+    ) -> Self {
+        Self {
+            symbol_table,
+            address_table,
+            locator,
+            local_symbols: HashMap::new(),
         }
     }
 
-    fn resolve(&self, symbol: &'a str) -> Option<*const u8> {
-        self.symbols
-            .get(&symbol)
-            .map(|sym| sym.address)
-            .or_else(|| self.global.resolve(symbol))
-    }
-
-    fn resolve_address_table_entry(
-        &mut self,
-        symbol: &str,
-    ) -> Result<Option<*const *const u8>, Error> {
-        Ok(match self.symbols.get_mut(symbol) {
-            Some(sym) => Some(sym.address_table_entry(&mut self.global.address_table)?),
-            None => self.global.resolve_address_table_entry(symbol)?,
-        })
+    fn bind(&mut self, symbol: &'a str, binding: Binding) -> Result<(), Error> {
+        match binding {
+            Binding::Local(loc) => match self.local_symbols.entry(symbol) {
+                HashMapEntry::Vacant(e) => {
+                    e.insert(self.locator.locate(loc));
+                    Ok(())
+                }
+                _ => Err(Error::DuplicateSymbol(symbol.to_owned())),
+            },
+            Binding::Global(loc) => self
+                .symbol_table
+                .bind(symbol, loc.map(|loc| self.locator.locate(loc))),
+        }
     }
 
     fn relocate(&mut self, reloc: &'a Reloc) -> Result<(), Error> {
-        let dest = self.location_address(reloc.location) as *mut u8;
+        let dest = self.locator.locate(reloc.location) as *mut u8;
         let addend = reloc.addend as isize;
 
         match reloc.ty {
             RelocType::PcRel8 => {
                 // S + A - P
-                let src = self.reloc_target_symbol(reloc)?;
+                let src = self.reloc_target_direct(reloc)?;
                 let value = unsafe { src.wrapping_offset(addend).offset_from(dest) };
                 if value < (i8::MIN as isize) && (i8::MAX as isize) < value {
-                    Err(LinkError::OffsetOutOfRange(reloc.ty, value))?;
+                    Err(Error::OffsetOutOfRange(reloc.ty, value))?;
                 }
                 unsafe { ptr::write(dest as *mut i8, value as i8) };
             }
             RelocType::PcRel32 => {
                 // S + A - P
-                let src = self.reloc_target_symbol(reloc)?;
+                let src = self.reloc_target_direct(reloc)?;
                 let value = unsafe { src.wrapping_offset(addend).offset_from(dest) };
                 if value < (i32::MIN as isize) && (i32::MAX as isize) < value {
-                    Err(LinkError::OffsetOutOfRange(reloc.ty, value))?;
+                    Err(Error::OffsetOutOfRange(reloc.ty, value))?;
                 }
                 unsafe { ptr::write(dest as *mut i32, value as i32) };
             }
@@ -273,13 +205,13 @@ impl<'a, R: SymbolResolver> Local<'a, R> {
                 let src = self.reloc_target_address_table_entry(reloc)? as *const u8;
                 let value = unsafe { src.wrapping_offset(addend).offset_from(dest) };
                 if value < (i32::MIN as isize) && (i32::MAX as isize) < value {
-                    Err(LinkError::OffsetOutOfRange(reloc.ty, value))?;
+                    Err(Error::OffsetOutOfRange(reloc.ty, value))?;
                 }
                 unsafe { ptr::write(dest as *mut i32, value as i32) };
             }
             RelocType::Abs64 => {
                 // S + A
-                let src = self.reloc_target_symbol(reloc)?;
+                let src = self.reloc_target_direct(reloc)?;
                 let value = src.wrapping_offset(addend) as usize as u64;
                 unsafe { ptr::write(dest as *mut u64, value) };
             }
@@ -288,50 +220,29 @@ impl<'a, R: SymbolResolver> Local<'a, R> {
         Ok(())
     }
 
-    fn reloc_target_symbol(&self, reloc: &'a Reloc) -> Result<*const u8, Error> {
-        Ok(match reloc.target {
+    fn reloc_target_direct(&self, reloc: &'a Reloc) -> Result<*const u8, Error> {
+        match reloc.target {
             RelocTarget::Symbol(ref symbol) => self
-                .resolve(symbol)
-                .ok_or_else(|| LinkError::UndefinedSymbol(symbol.to_owned()))?,
-            RelocTarget::Section(section) => self.location_address(Location::new(section, 0)),
-        })
+                .local_symbols
+                .get(symbol.as_str())
+                .copied()
+                .or_else(|| self.symbol_table.resolve(symbol))
+                .ok_or_else(|| Error::UndefinedSymbol(symbol.to_owned())),
+            RelocTarget::Section(section) => Ok(self.locator.locate(Location::new(section, 0))),
+        }
     }
 
     fn reloc_target_address_table_entry(
         &mut self,
         reloc: &'a Reloc,
     ) -> Result<*const *const u8, Error> {
-        Ok(match reloc.target {
+        match reloc.target {
             RelocTarget::Symbol(ref symbol) => self
-                .resolve_address_table_entry(symbol)?
-                .ok_or_else(|| LinkError::UndefinedSymbol(symbol.to_owned()))?,
-            RelocTarget::Section(_) => Err(LinkError::UnsupportedSectionRelocation(reloc.ty))?,
-        })
-    }
-}
-
-#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
-struct Symbol {
-    address: *const u8,
-    address_table_entry: *const *const u8,
-}
-
-impl Symbol {
-    fn new(address: *const u8) -> Self {
-        Self {
-            address,
-            address_table_entry: ptr::null(),
+                .address_table
+                .prepare(symbol, || self.symbol_table.resolve(symbol))?
+                .ok_or_else(|| Error::UndefinedSymbol(symbol.to_owned())),
+            RelocTarget::Section(_) => Err(Error::UnsupportedSectionRelocation(reloc.ty)),
         }
-    }
-
-    fn address_table_entry(
-        &mut self,
-        address_table: &mut Table<*const u8>,
-    ) -> Result<*const *const u8, Error> {
-        if self.address_table_entry.is_null() {
-            self.address_table_entry = address_table.put(self.address)?;
-        }
-        Ok(self.address_table_entry)
     }
 }
 
@@ -339,27 +250,39 @@ impl Symbol {
 mod tests {
     use super::*;
     use crate::asm::*;
-    use once_cell::sync::Lazy;
     use std::io::{self, Write};
-    use std::sync::Mutex;
 
-    // extern void log_fib(int);
+    // int add(int a, int b) {
+    //   return a + b;
+    // }
+    fn test_object_add() -> io::Result<Object> {
+        let mut w = Writer::new();
+
+        let add = w.get_label("add");
+
+        w.define(add, true);
+        w.leal(Eax, memory(Rdi + Rsi))?;
+        w.retq()?;
+
+        w.produce()
+    }
+
+    // extern int add(int a, int b);
     //
     // int fib(int n) {
     //   int a = 0;
     //   int b = 1;
     //   for (int i = 1; i < n; ++i) {
-    //     int c = a + b;
+    //     int c = add(a, b);
     //     a = b;
     //     b = c;
-    //     log_fib(b);
     //   }
     //   return b;
     // }
     fn test_object_fib() -> io::Result<Object> {
         let mut w = Writer::new();
 
-        let fib_log = w.get_label("log_fib");
+        let add = w.get_label("add");
         let fib = w.get_label("fib");
         let l1 = w.issue_label();
         let l2 = w.issue_label();
@@ -367,37 +290,29 @@ mod tests {
         w.define(fib, true);
         {
             w.pushq(Rbp)?;
-            w.pushq(R15)?;
-            w.pushq(R14)?;
             w.pushq(Rbx)?;
             w.pushq(Rax)?;
-            w.movl(Ebp, 0x1)?;
+            w.movl(Eax, 0x1)?;
             w.cmpl(Edi, 0x2i8)?;
             w.jl(Short(l2))?;
             w.movl(Ebx, Edi)?;
             w.subl(Ebx, 0x1i8)?;
-            w.movl(R14D, 0x1)?;
-            w.xorl(Eax, Eax)?;
-            w.movq(R15, AddressTable(fib_log))?;
+            w.movl(Ebp, 0x1)?;
+            w.xorl(Edi, Edi)?;
         }
         w.define(l1, false);
         {
-            w.movl(Ebp, Eax)?;
-            w.addl(Ebp, R14D)?;
+            w.movl(Esi, Ebp)?;
+            w.callq(AddressTable(add))?;
             w.movl(Edi, Ebp)?;
-            w.callq(R15)?;
-            w.movl(Eax, R14D)?;
-            w.movl(R14D, Ebp)?;
+            w.movl(Ebp, Eax)?;
             w.subl(Ebx, 0x1i8)?;
             w.jne(Short(l1))?;
         }
         w.define(l2, false);
         {
-            w.movl(Eax, Ebp)?;
             w.addq(Rsp, 0x8i8)?;
             w.popq(Rbx)?;
-            w.popq(R14)?;
-            w.popq(R15)?;
             w.popq(Rbp)?;
             w.retq()?;
         }
@@ -414,8 +329,8 @@ mod tests {
         w.produce()
     }
 
-    // extern const int foo;
-    // const int *bar = &foo;
+    // extern int foo;
+    // int *bar = &foo;
     fn test_object_2() -> io::Result<Object> {
         let mut w = Writer::new();
         let foo = w.get_label("foo");
@@ -426,7 +341,7 @@ mod tests {
         w.produce()
     }
 
-    // extern const int *bar;
+    // extern int *bar;
     // int baz() { return *bar; }
     fn test_object_3() -> io::Result<Object> {
         let mut w = Writer::new();
@@ -454,24 +369,25 @@ mod tests {
     fn jit() {
         let mut engine = Engine::new(symbol_resolver::none);
 
-        static FIB_LOG: Lazy<Mutex<Vec<i32>>> = Lazy::new(|| Mutex::new(Vec::new()));
-        extern "C" fn log_fib(value: i32) {
-            FIB_LOG.lock().unwrap().push(value);
-        }
-        assert_eq!(engine.register("log_fib", log_fib as *const u8), Ok(()));
-
-        let obj = test_object_fib().unwrap();
+        let obj = test_object_add().unwrap();
         assert_eq!(engine.add_object(&obj), Ok(()));
 
-        let fib = engine.get("fib");
-        assert!(fib.is_some());
+        let add = engine.get("add").expect("add");
 
-        let fib = unsafe { std::mem::transmute::<_, extern "C" fn(i32) -> i32>(fib.unwrap()) };
+        {
+            let add = unsafe { std::mem::transmute::<_, extern "C" fn(i32, i32) -> i32>(add) };
+            assert_eq!(add(11, 7), 18);
+        }
+
+        let mut engine2 = Engine::new(symbol_resolver::none);
+        assert_eq!(engine2.register("add", add), Ok(()));
+
+        let obj = test_object_fib().unwrap();
+        assert_eq!(engine2.add_object(&obj), Ok(()));
+
+        let fib = engine2.get("fib").expect("fib");
+        let fib = unsafe { std::mem::transmute::<_, extern "C" fn(i32) -> i32>(fib) };
         assert_eq!(fib(10), 55);
-        assert_eq!(
-            FIB_LOG.lock().unwrap().as_slice(),
-            &[1, 2, 3, 5, 8, 13, 21, 34, 55]
-        );
     }
 
     #[test]
@@ -508,10 +424,10 @@ mod tests {
         let obj = test_object_dl().unwrap();
         assert_eq!(engine.add_object(&obj), Ok(()));
 
-        let fib = engine.get("foo");
-        assert!(fib.is_some());
+        let foo = engine.get("foo");
+        assert!(foo.is_some());
 
-        let foo = unsafe { std::mem::transmute::<_, extern "C" fn(f64) -> f64>(fib.unwrap()) };
+        let foo = unsafe { std::mem::transmute::<_, extern "C" fn(f64) -> f64>(foo.unwrap()) };
         assert_eq!(foo(1000.0), 3.0);
     }
 }

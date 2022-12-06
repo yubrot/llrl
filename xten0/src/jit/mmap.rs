@@ -54,14 +54,11 @@ impl Mmap {
     /// Set the access protections of this map.
     pub fn set_protect(&mut self, protect: Protect) -> Result<(), Error> {
         if self.protect != protect {
-            let prev_protect = self.protect;
-            self.protect = protect;
-            match unsafe { mprotect(self.ptr, self.pages * Self::PAGE_SIZE, protect.value()) } {
-                0 => Ok(()),
-                _ => {
-                    self.protect = prev_protect;
-                    Err(unsafe { Error::from_errno() })
-                }
+            if unsafe { mprotect(self.ptr, self.pages * Self::PAGE_SIZE, protect.value()) } == 0 {
+                self.protect = protect;
+                Ok(())
+            } else {
+                Err(unsafe { Error::from_errno() })
             }
         } else {
             Ok(())
