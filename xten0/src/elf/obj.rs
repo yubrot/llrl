@@ -34,7 +34,7 @@ where
     let mut strtab = StrtabWriter::new(&mut w)?;
     let file_str = strtab.write(file)?;
     let mut sym_strs = HashMap::new();
-    for sym in o.symbols.values() {
+    for sym in o.symbols.iter() {
         let sym_str = strtab.write(&sym.name)?;
         sym_strs.insert(sym.name.as_str(), sym_str);
     }
@@ -76,7 +76,7 @@ where
     let bss_sym = symtab.write(SymtabEntry::section(StrIndex::NULL, bss))?;
     // Symbols in the object, from locals to globals
     let mut sym_indices = HashMap::new();
-    for sym in o.symbols.values() {
+    for sym in o.symbols.iter() {
         if let Binding::Local(loc) = sym.binding {
             let sym_str = sym_strs[&sym.name.as_str()];
             sym_indices.insert(
@@ -86,7 +86,7 @@ where
         }
     }
     symtab.begin_global();
-    for sym in o.symbols.values() {
+    for sym in o.symbols.iter() {
         if let Binding::Global(loc) = sym.binding {
             let sym_str = sym_strs[&sym.name.as_str()];
             sym_indices.insert(

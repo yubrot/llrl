@@ -9,7 +9,7 @@ mod writer;
 pub use inst::{WriteInst, WriteInstExt};
 pub use obj::*;
 pub use operand::*;
-pub use writer::{AddressTable, Label, Short, WriteSection, Writer};
+pub use writer::{AddressTable, Label, SectionWrite, Short, Writer};
 
 #[cfg(test)]
 mod tests {

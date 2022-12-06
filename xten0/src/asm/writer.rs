@@ -54,6 +54,10 @@ impl Writer {
         self.uses.push(Use::new(location, label, addend, ty));
     }
 
+    pub fn text(&mut self) -> TextWriter {
+        TextWriter(self)
+    }
+
     pub fn data(&mut self) -> DataWriter {
         DataWriter(self)
     }
@@ -68,7 +72,7 @@ impl Writer {
 
     /// Produce an object by resolving definitions and uses.
     pub fn produce(mut self) -> io::Result<Object> {
-        let mut label_symbols = BTreeMap::new(); // label: Label -> symbol: String
+        let mut label_symbols = BTreeMap::new(); // label: Label -> symbol.name: String
 
         // Named labels remain on the object as symbols.
         let symbols = self
@@ -81,11 +85,10 @@ impl Writer {
                     Some(def) => Binding::Global(Some(def.location)),
                     None => Binding::Global(None),
                 };
-                let symbol = Symbol::new(name.clone(), binding);
                 label_symbols.insert(label, name.clone());
-                (name, symbol)
+                Symbol::new(name, binding)
             })
-            .collect::<BTreeMap<_, _>>();
+            .collect::<Vec<_>>();
 
         // Uses that cannot be resolved at this time become relocations.
         let mut relocs = Vec::new();
@@ -152,7 +155,6 @@ pub struct Label {
 /// A definition associated with a label. A label may or may not be associated with a definition.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy, new)]
 struct Def {
-    label: Label,
     is_global: bool,
     location: Location,
 }
@@ -166,32 +168,23 @@ struct Use {
     ty: RelocType,
 }
 
-pub trait WriteSection {
+pub trait SectionWrite {
+    /// Get the writer of this section.
     fn writer(&mut self) -> &mut Writer;
 
     /// Get the current location.
     fn location(&self) -> Location;
 
-    /// Adjust alignment by writing invalid values.
-    fn align(&mut self, align: u64) -> io::Result<()>
-    where
-        Self: io::Write,
-    {
-        while self.location().pos % align != 0 {
-            self.write_all(&[0])?;
-        }
-        Ok(())
-    }
-
     /// Start the definition to be associated with `label`.
-    fn define(&mut self, label: Label, is_global: bool) {
+    fn define(&mut self, label: Label, is_global: bool) -> Location {
         assert!(
             self.writer().defs[label.index].is_none(),
             "Duplicate definition for label={}",
             label.index
         );
         let location = self.location();
-        self.writer().defs[label.index] = Some(Def::new(label, is_global, location));
+        self.writer().defs[label.index] = Some(Def::new(is_global, location));
+        location
     }
 
     /// Use the specified label at the location from `offset_from_current`.
@@ -202,37 +195,100 @@ pub trait WriteSection {
         let location = self.location().offset(offset_from_current);
         self.writer().r#use(location, label, addend, ty)
     }
+
+    /// Adjust alignment by writing invalid values.
+    fn align(&mut self, align: u64) -> io::Result<()> {
+        let current = self.location().pos;
+        if current % align != 0 {
+            self.allocate(align - current % align)?;
+        }
+        Ok(())
+    }
+
+    /// Allocate the specified space on this section.
+    fn allocate(&mut self, size: u64) -> io::Result<()>;
 }
 
-// Writer targets the text section by default.
-impl WriteSection for Writer {
+/// Writer behaves like TextWriter
+
+impl io::Write for Writer {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.text().write(buf)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.text().flush()
+    }
+}
+
+impl SectionWrite for Writer {
     fn writer(&mut self) -> &mut Writer {
         self
     }
 
     fn location(&self) -> Location {
+        // NOTE: We cannot use self.text().location() since it requires &mut self
         Location::new(LocationSection::Text, self.text.position())
     }
 
-    fn align(&mut self, align: u64) -> io::Result<()>
-    where
-        Self: io::Write,
-    {
-        while self.location().pos % align != 0 {
-            self.write_all(&[0x90])?; // nop
-        }
-        Ok(())
+    fn allocate(&mut self, size: u64) -> io::Result<()> {
+        self.text().allocate(size)
     }
 }
 
-// WriteInstExt methods can be used directly
-impl io::Write for Writer {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.text.write(buf)
+macro_rules! section_writer {
+    ($name:ident, $field:ident, $section:path, $zero:expr) => {
+        pub struct $name<'a>(&'a mut Writer);
+
+        impl<'a> io::Write for $name<'a> {
+            fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+                self.0.$field.write(buf)
+            }
+
+            fn flush(&mut self) -> io::Result<()> {
+                self.0.$field.flush()
+            }
+        }
+
+        impl<'a> SectionWrite for $name<'a> {
+            fn writer(&mut self) -> &mut Writer {
+                self.0
+            }
+
+            fn location(&self) -> Location {
+                Location::new($section, self.0.$field.position())
+            }
+
+            fn allocate(&mut self, size: u64) -> io::Result<()> {
+                for _ in 0..size {
+                    self.write_all(&[$zero])?;
+                }
+                Ok(())
+            }
+        }
+    };
+}
+
+section_writer!(TextWriter, text, LocationSection::Text, 0x90); // nop
+section_writer!(DataWriter, data, LocationSection::Data, 0);
+section_writer!(RodataWriter, rodata, LocationSection::Rodata, 0);
+
+/// Writer for bss sections.
+#[derive(Debug)]
+pub struct BssWriter<'a>(&'a mut Writer);
+
+impl<'a> SectionWrite for BssWriter<'a> {
+    fn writer(&mut self) -> &mut Writer {
+        self.0
     }
 
-    fn flush(&mut self) -> io::Result<()> {
-        self.text.flush()
+    fn location(&self) -> Location {
+        Location::new(LocationSection::Bss, self.0.bss)
+    }
+
+    fn allocate(&mut self, size: u64) -> io::Result<()> {
+        self.0.bss += size;
+        Ok(())
     }
 }
 
@@ -398,93 +454,6 @@ where
     }
 }
 
-/// leaq Label O
-impl<O: Copy> WriteInst<Writer> for super::inst::Leaq<Label, O>
-where
-    super::inst::Leaq<Memory, O>: WriteInst<Writer>,
-{
-    fn write_inst(&self, w: &mut Writer) -> io::Result<()> {
-        w.leaq(memory(Rip + 0i32), self.1)?;
-        w.use_relative(-4, self.0, -4, RelocType::PcRel32);
-        Ok(())
-    }
-}
-
-/// Writer for data sections.
-#[derive(Debug)]
-pub struct DataWriter<'a>(&'a mut Writer);
-
-impl<'a> WriteSection for DataWriter<'a> {
-    fn writer(&mut self) -> &mut Writer {
-        self.0
-    }
-
-    fn location(&self) -> Location {
-        Location::new(LocationSection::Data, self.0.data.position())
-    }
-}
-
-impl<'a> io::Write for DataWriter<'a> {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.0.data.write(buf)
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        self.0.data.flush()
-    }
-}
-
-/// Writer for rodata sections.
-#[derive(Debug)]
-pub struct RodataWriter<'a>(&'a mut Writer);
-
-impl<'a> WriteSection for RodataWriter<'a> {
-    fn writer(&mut self) -> &mut Writer {
-        self.0
-    }
-
-    fn location(&self) -> Location {
-        Location::new(LocationSection::Rodata, self.0.rodata.position())
-    }
-}
-
-impl<'a> io::Write for RodataWriter<'a> {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.0.rodata.write(buf)
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        self.0.rodata.flush()
-    }
-}
-
-/// Writer for bss sections.
-#[derive(Debug)]
-pub struct BssWriter<'a>(&'a mut Writer);
-
-impl<'a> BssWriter<'a> {
-    pub fn align(&mut self, align: u64) {
-        if self.0.bss % align != 0 {
-            self.0.bss += align - self.0.bss % align;
-        }
-    }
-
-    pub fn allocate(&mut self, label: Label, is_global: bool, size: u64) {
-        self.define(label, is_global);
-        self.0.bss += size;
-    }
-}
-
-impl<'a> WriteSection for BssWriter<'a> {
-    fn writer(&mut self) -> &mut Writer {
-        self.0
-    }
-
-    fn location(&self) -> Location {
-        Location::new(LocationSection::Bss, self.0.bss)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::asm::*;
@@ -511,8 +480,7 @@ mod tests {
             let l1 = w.issue_label();
             let l2 = w.issue_label();
 
-            w.define(fib, true);
-            fib_location = w.location();
+            fib_location = w.define(fib, true);
             {
                 w.cmpl(Edi, 0x1i8)?;
                 w.jle(Short(l2))?;
@@ -536,8 +504,7 @@ mod tests {
                 w.retq()?;
             }
 
-            w.define(fib2, true);
-            fib2_location = w.location();
+            fib2_location = w.define(fib2, true);
             {
                 w.addl(Edi, 0x1i8)?;
                 w.callq(AddressTable(fib))?;
@@ -545,8 +512,7 @@ mod tests {
                 w.retq()?;
             }
 
-            w.define(fib3, true);
-            fib3_location = w.location();
+            fib3_location = w.define(fib3, true);
             {
                 w.addl(Edi, 0x1i8)?;
                 w.callq(AddressTable(fib2))?;
@@ -593,21 +559,11 @@ mod tests {
         assert_eq!(
             o.symbols,
             [
-                (
-                    "fib".to_string(),
-                    Symbol::new("fib".to_string(), Binding::Global(Some(fib_location))),
-                ),
-                (
-                    "fib2".to_string(),
-                    Symbol::new("fib2".to_string(), Binding::Global(Some(fib2_location))),
-                ),
-                (
-                    "fib3".to_string(),
-                    Symbol::new("fib3".to_string(), Binding::Global(Some(fib3_location))),
-                ),
+                Symbol::new("fib".to_string(), Binding::Global(Some(fib_location))),
+                Symbol::new("fib2".to_string(), Binding::Global(Some(fib2_location))),
+                Symbol::new("fib3".to_string(), Binding::Global(Some(fib3_location))),
             ]
-            .into_iter()
-            .collect(),
+            .to_vec(),
         );
         assert_eq!(
             o.relocs,
@@ -649,30 +605,20 @@ mod tests {
         assert_eq!(
             o.symbols,
             [
-                (
-                    "foo".to_string(),
-                    Symbol::new(
-                        "foo".to_string(),
-                        Binding::Global(Some(Location::new(LocationSection::Data, 0)))
-                    ),
-                ),
-                (
+                Symbol::new(
                     "bar".to_string(),
-                    Symbol::new(
-                        "bar".to_string(),
-                        Binding::Global(Some(Location::new(LocationSection::Data, 6)))
-                    ),
+                    Binding::Global(Some(Location::new(LocationSection::Data, 6)))
                 ),
-                (
+                Symbol::new(
                     "baz".to_string(),
-                    Symbol::new(
-                        "baz".to_string(),
-                        Binding::Local(Location::new(LocationSection::Rodata, 0)),
-                    ),
+                    Binding::Local(Location::new(LocationSection::Rodata, 0)),
+                ),
+                Symbol::new(
+                    "foo".to_string(),
+                    Binding::Global(Some(Location::new(LocationSection::Data, 0)))
                 ),
             ]
-            .into_iter()
-            .collect(),
+            .to_vec(),
         );
         assert_eq!(
             o.relocs,
@@ -681,7 +627,7 @@ mod tests {
                 RelocTarget::Symbol("bar".to_string()),
                 0,
                 RelocType::Abs64
-            ),]
+            )]
         );
     }
 
@@ -692,41 +638,36 @@ mod tests {
             let bar = w.get_label("bar");
             let baz = w.get_label("baz");
 
-            w.bss().allocate(foo, true, 4);
-            w.bss().align(2);
-            w.bss().allocate(bar, true, 2);
-            w.bss().align(8);
-            w.bss().allocate(baz, true, 8);
+            w.bss().define(foo, true);
+            w.bss().allocate(4)?;
+
+            w.bss().align(2)?;
+            w.bss().define(bar, true);
+            w.bss().allocate(2)?;
+
+            w.bss().align(8)?;
+            w.bss().define(baz, true);
+            w.bss().allocate(8)?;
             Ok(())
         });
 
         assert_eq!(
             o.symbols,
             [
-                (
-                    "foo".to_string(),
-                    Symbol::new(
-                        "foo".to_string(),
-                        Binding::Global(Some(Location::new(LocationSection::Bss, 0)))
-                    ),
-                ),
-                (
+                Symbol::new(
                     "bar".to_string(),
-                    Symbol::new(
-                        "bar".to_string(),
-                        Binding::Global(Some(Location::new(LocationSection::Bss, 4)))
-                    ),
+                    Binding::Global(Some(Location::new(LocationSection::Bss, 4)))
                 ),
-                (
+                Symbol::new(
                     "baz".to_string(),
-                    Symbol::new(
-                        "baz".to_string(),
-                        Binding::Global(Some(Location::new(LocationSection::Bss, 8))),
-                    ),
+                    Binding::Global(Some(Location::new(LocationSection::Bss, 8))),
+                ),
+                Symbol::new(
+                    "foo".to_string(),
+                    Binding::Global(Some(Location::new(LocationSection::Bss, 0)))
                 ),
             ]
-            .into_iter()
-            .collect(),
+            .to_vec(),
         );
     }
 }

@@ -105,7 +105,7 @@ impl<R: SymbolResolver> Engine<R> {
 
         // bind
         let mut local = Local::new(text, data, rodata, bss, &mut self.global);
-        for sym in obj.symbols.values() {
+        for sym in obj.symbols.iter() {
             local.bind(&sym.name, sym.binding)?;
         }
 

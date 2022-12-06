@@ -1,5 +1,4 @@
 use derive_new::new;
-use std::collections::BTreeMap;
 use std::io;
 
 /// An abstract representation of an object containing machine code and data.
@@ -9,7 +8,7 @@ pub struct Object {
     pub data: Vec<u8>,
     pub rodata: Vec<u8>,
     pub bss: u64,
-    pub symbols: BTreeMap<String, Symbol>,
+    pub symbols: Vec<Symbol>,
     pub relocs: Vec<Reloc>,
 }
 
