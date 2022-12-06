@@ -1,142 +1,16 @@
 //! Incomplete ELF implementation.
 
-use byteorder::WriteBytesExt;
-use std::io;
+mod adapter;
+pub mod format;
 
-mod ident;
-mod obj;
-mod program;
-mod rela;
-mod section;
-mod strtab;
-mod symtab;
-
-pub use byteorder::LittleEndian as Endian;
-pub use obj::write_relocatable_object;
-pub use program::Header as ProgramHeader;
-pub use rela::{Entry as RelaEntry, RelocationType, Writer as RelaWriter};
-pub use section::{
-    Header as SectionHeader, HeaderIndex as SectionHeaderIndex, Headers as SectionHeaders,
-    Type as SectionType, Writer as SectionWriter,
-};
-pub use strtab::{Index as StrIndex, Writer as StrtabWriter};
-pub use symtab::{Entry as SymtabEntry, Index as SymIndex, Writer as SymtabWriter};
-
-#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
-pub struct Header {
-    pub ty: Type,
-    pub entry: u64,                   // entry point virtual address
-    pub phoff: u64,                   // Program header table file offset
-    pub shoff: u64,                   // Section header table file offset
-    pub flags: u32,                   // processor-specific flags
-    pub phnum: u16,                   // Program header entry count
-    pub shnum: u16,                   // Section header table entry count
-    pub shstrndx: SectionHeaderIndex, // Section header string table index
-}
-
-impl Header {
-    pub const SIZE: u16 = 0x40;
-
-    pub fn new(ty: Type) -> Self {
-        Self {
-            ty,
-            entry: 0,
-            phoff: 0,
-            shoff: 0,
-            flags: 0,
-            phnum: 0,
-            shnum: 0,
-            shstrndx: SectionHeaderIndex::UNDEF,
-        }
-    }
-
-    pub fn program_headers(self, (phoff, phnum): (u64, u16)) -> Self {
-        Self {
-            phoff,
-            phnum,
-            ..self
-        }
-    }
-
-    pub fn section_headers(self, (shoff, shnum): (u64, u16)) -> Self {
-        Self {
-            shoff,
-            shnum,
-            ..self
-        }
-    }
-
-    pub fn shstrndx(self, shstrndx: SectionHeaderIndex) -> Self {
-        Self { shstrndx, ..self }
-    }
-
-    pub fn phsize(&self) -> usize {
-        ProgramHeader::SIZE as usize * self.phnum as usize
-    }
-
-    pub fn shsize(&self) -> usize {
-        SectionHeader::SIZE as usize * self.shnum as usize
-    }
-
-    pub fn write(&self, w: &mut impl io::Write) -> io::Result<()> {
-        ident::write(w)?;
-        w.write_u16::<Endian>(self.ty.into())?; // 0x10
-        w.write_u16::<Endian>(MACHINE)?; // 0x12
-        w.write_u32::<Endian>(VERSION)?; // 0x14
-        w.write_u64::<Endian>(self.entry)?; // 0x18
-        w.write_u64::<Endian>(self.phoff)?; // 0x20
-        w.write_u64::<Endian>(self.shoff)?; // 0x28
-        w.write_u32::<Endian>(self.flags)?; // 0x30
-        w.write_u16::<Endian>(Self::SIZE)?; // 0x34
-        w.write_u16::<Endian>(match self.phnum {
-            0 => 0,
-            _ => ProgramHeader::SIZE,
-        })?; // 0x36
-        w.write_u16::<Endian>(self.phnum)?; // 0x38
-        w.write_u16::<Endian>(match self.shnum {
-            0 => 0,
-            _ => SectionHeader::SIZE,
-        })?; // 0x3a
-        w.write_u16::<Endian>(self.shnum)?; // 0x3c
-        w.write_u16::<Endian>(self.shstrndx.into())?; // 0x3e
-        Ok(())
-    }
-}
-
-/// Object file type.
-#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
-pub enum Type {
-    None,
-    Rel,
-    Exec,
-    Dyn,
-    Core,
-}
-
-impl From<Type> for u16 {
-    fn from(ty: Type) -> Self {
-        match ty {
-            Type::None => 0,
-            Type::Rel => 1,
-            Type::Exec => 2,
-            Type::Dyn => 3,
-            Type::Core => 4,
-        }
-    }
-}
-
-pub const MACHINE: u16 = 62; // AMD64
-
-pub const VERSION: u32 = ident::VERSION as u32;
+pub use adapter::into_relocatable_object;
+pub use format::Elf;
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::asm::*;
     use crate::binutils::readelf;
-    use once_cell::sync::Lazy;
-    use regex::Regex;
-    use std::collections::HashMap;
     use std::fs::File;
     use std::io::{self, Write};
     use std::path::Path;
@@ -165,86 +39,114 @@ mod tests {
     fn create_test_elf_object(path: impl AsRef<Path>) -> io::Result<()> {
         let mut f = File::create(path)?;
         let obj = create_test_object()?;
-        write_relocatable_object(&mut f, "elf.o", &obj)?;
+        let obj = into_relocatable_object("elf.o", obj);
+        obj.write(&mut f)?;
         Ok(())
     }
 
-    static HEADER_FIELD: Lazy<Regex> = Lazy::new(|| Regex::new(r"^(.+):(.+)$").unwrap());
-    static SECTION_HEADER: Lazy<Regex> =
-        Lazy::new(|| Regex::new(r"\[\s*(\d+)\]\s*([^\s]+)\s*([^\s]+)").unwrap());
-    static SYMTAB_ENTRY: Lazy<Regex> = Lazy::new(|| {
-        Regex::new(r"(\d+):\s+(\w+)\s+(\w+)\s+(\w+)\s+(\w+)\s+(\w+)\s+(\w+)\s+([^\s]+)").unwrap()
-    });
-    static RELOC_ENTRY: Lazy<Regex> =
-        Lazy::new(|| Regex::new(r"(\w+)\s+(\w+)\s+(\w+)\s+(\w+)\s+(\w+(?: [-+] \w+)?)").unwrap());
+    fn output_lines(input: &str) -> Vec<String> {
+        input.trim().lines().map(|s| s.trim().to_owned()).collect()
+    }
 
     #[test]
     fn elf_format() {
         let dir = tempdir().unwrap();
         assert!(create_test_elf_object(dir.path().join("elf.o")).is_ok());
 
-        // header
-        let header = readelf(dir.path(), &["-h", "elf.o"]);
-        let header = header
-            .lines()
-            .filter_map(|line| {
-                let c = HEADER_FIELD.captures(line)?;
-                Some((c.get(1)?.as_str().trim(), c.get(2)?.as_str().trim()))
-            })
-            .collect::<HashMap<_, _>>();
-        assert_eq!(header.get("Class"), Some(&"ELF64"));
-        assert_eq!(header.get("Type"), Some(&"REL (Relocatable file)"));
-        assert_eq!(header.get("Number of section headers"), Some(&"11"));
-        assert_eq!(header.get("Section header string table index"), Some(&"1"));
+        assert_eq!(
+            output_lines(&readelf(dir.path(), &["-h", "elf.o"])),
+            output_lines(
+                r###"
+ELF Header:
+  Magic:   7f 45 4c 46 02 01 01 00 00 00 00 00 00 00 00 00
+  Class:                             ELF64
+  Data:                              2's complement, little endian
+  Version:                           1 (current)
+  OS/ABI:                            UNIX - System V
+  ABI Version:                       0
+  Type:                              REL (Relocatable file)
+  Machine:                           Advanced Micro Devices X86-64
+  Version:                           0x1
+  Entry point address:               0x0
+  Start of program headers:          0 (bytes into file)
+  Start of section headers:          480 (bytes into file)
+  Flags:                             0x0
+  Size of this header:               64 (bytes)
+  Size of program headers:           0 (bytes)
+  Number of program headers:         0
+  Size of section headers:           64 (bytes)
+  Number of section headers:         11
+  Section header string table index: 10
+        "###
+            )
+        );
+        assert_eq!(
+            output_lines(&readelf(dir.path(), &["-S", "elf.o"])),
+            output_lines(
+                r###"
+There are 11 section headers, starting at offset 0x1e0:
 
-        // sections
-        let sections = readelf(dir.path(), &["-S", "elf.o"]);
-        let sections = sections
-            .lines()
-            .filter_map(|line| {
-                let c = SECTION_HEADER.captures(line)?;
-                Some((c.get(1)?.as_str(), (c.get(2)?.as_str(), c.get(3)?.as_str())))
-            })
-            .collect::<HashMap<_, _>>();
-        assert_eq!(sections.get("2"), Some(&(".strtab", "STRTAB")));
-        assert_eq!(sections.get("3"), Some(&(".text", "PROGBITS")));
-        assert_eq!(sections.get("5"), Some(&(".rodata", "PROGBITS")));
-        assert_eq!(sections.get("6"), Some(&(".bss", "NOBITS")));
-        assert_eq!(sections.get("7"), Some(&(".symtab", "SYMTAB")));
-        assert_eq!(sections.get("8"), Some(&(".rela.text", "RELA")));
-
-        // symtab entries
-        let syms = readelf(dir.path(), &["-s", "elf.o"]);
-        let syms = syms
-            .lines()
-            .filter_map(|line| {
-                let c = SYMTAB_ENTRY.captures(line)?;
-                let ty = c.get(4)?.as_str();
-                let bind = c.get(5)?.as_str();
-                let ndx = c.get(7)?.as_str();
-                let name = c.get(8)?.as_str();
-                Some((name, (ty, bind, ndx)))
-            })
-            .collect::<HashMap<_, _>>();
-        assert_eq!(syms.get("elf.o"), Some(&("FILE", "LOCAL", "ABS")));
-        assert_eq!(syms.get(".text"), Some(&("SECTION", "LOCAL", "3")));
-        assert_eq!(syms.get("puts"), Some(&("NOTYPE", "GLOBAL", "UND")));
-        assert_eq!(syms.get("hello_text"), Some(&("NOTYPE", "LOCAL", "5")));
-        assert_eq!(syms.get("puts_hello"), Some(&("NOTYPE", "GLOBAL", "3")));
-
-        // rela entries
-        let relocs = readelf(dir.path(), &["-r", "elf.o"]);
-        let relocs = relocs
-            .lines()
-            .filter_map(|line| {
-                let c = RELOC_ENTRY.captures(line)?;
-                let offset = c.get(1)?.as_str().trim_start_matches('0');
-                let ty = c.get(3)?.as_str();
-                let value = c.get(5)?.as_str();
-                Some((offset, (ty, value)))
-            })
-            .collect::<HashMap<_, _>>();
-        assert_eq!(relocs.get("7"), Some(&("R_X86_64_PC32", "hello_text - 4")));
-        assert_eq!(relocs.get("d"), Some(&("R_X86_64_GOTPCREL", "puts - 4")));
+Section Headers:
+  [Nr] Name              Type             Address           Offset
+       Size              EntSize          Flags  Link  Info  Align
+  [ 0]                   NULL             0000000000000000  00000040
+       0000000000000000  0000000000000000           0     0     0
+  [ 1] .text             PROGBITS         0000000000000000  00000040
+       0000000000000016  0000000000000000  AX       0     0     16
+  [ 2] .data             PROGBITS         0000000000000000  00000056
+       0000000000000000  0000000000000000  WA       0     0     16
+  [ 3] .rodata           PROGBITS         0000000000000000  00000056
+       0000000000000006  0000000000000000   A       0     0     16
+  [ 4] .bss              NOBITS           0000000000000000  0000005c
+       0000000000000000  0000000000000000  WA       0     0     16
+  [ 5] .strtab           STRTAB           0000000000000000  0000005c
+       0000000000000022  0000000000000000           0     0     1
+  [ 6] .symtab           SYMTAB           0000000000000000  0000007e
+       00000000000000d8  0000000000000018           5     7     8
+  [ 7] .rela.text        RELA             0000000000000000  00000156
+       0000000000000030  0000000000000018   I       6     1     8
+  [ 8] .rela.data        RELA             0000000000000000  00000186
+       0000000000000000  0000000000000018   I       6     2     8
+  [ 9] .rela.rodata      RELA             0000000000000000  00000186
+       0000000000000000  0000000000000018   I       6     3     8
+  [10] .shstrtab         STRTAB           0000000000000000  00000186
+       0000000000000057  0000000000000000           0     0     1
+Key to Flags:
+  W (write), A (alloc), X (execute), M (merge), S (strings), I (info),
+  L (link order), O (extra OS processing required), G (group), T (TLS),
+  C (compressed), x (unknown), o (OS specific), E (exclude),
+  D (mbind), l (large), p (processor specific)
+"###
+            )
+        );
+        assert_eq!(
+            output_lines(&readelf(dir.path(), &["-s", "elf.o"])),
+            output_lines(
+                r###"
+Symbol table '.symtab' contains 9 entries:
+   Num:    Value          Size Type    Bind   Vis      Ndx Name
+     0: 0000000000000000     0 NOTYPE  LOCAL  DEFAULT  UND
+     1: 0000000000000000     0 FILE    LOCAL  DEFAULT  ABS elf.o
+     2: 0000000000000000     0 SECTION LOCAL  DEFAULT    1 .text
+     3: 0000000000000000     0 SECTION LOCAL  DEFAULT    2 .data
+     4: 0000000000000000     0 SECTION LOCAL  DEFAULT    3 .rodata
+     5: 0000000000000000     0 SECTION LOCAL  DEFAULT    4 .bss
+     6: 0000000000000000     0 NOTYPE  LOCAL  DEFAULT    3 hello_text
+     7: 0000000000000000     0 NOTYPE  GLOBAL DEFAULT  UND puts
+     8: 0000000000000000     0 NOTYPE  GLOBAL DEFAULT    1 puts_hello
+    "###
+            )
+        );
+        assert_eq!(
+            output_lines(&readelf(dir.path(), &["-r", "elf.o"])),
+            output_lines(
+                r###"
+Relocation section '.rela.text' at offset 0x156 contains 2 entries:
+  Offset          Info           Type           Sym. Value    Sym. Name + Addend
+000000000007  000600000002 R_X86_64_PC32     0000000000000000 hello_text - 4
+00000000000d  000700000009 R_X86_64_GOTPCREL 0000000000000000 puts - 4
+"###
+            )
+        );
     }
 }

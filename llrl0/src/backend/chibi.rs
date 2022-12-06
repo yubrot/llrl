@@ -12,7 +12,7 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::sync::Arc;
 use xten::asm::Object;
-use xten::elf::write_relocatable_object;
+use xten::elf::into_relocatable_object;
 
 mod codegen;
 mod context;
@@ -229,13 +229,14 @@ impl Builder {
         // TODO: Not every function in every module is needed for the main.
         // Rather, most of them exist for macros. This can be stripped.
         let objects = objects
-            .iter()
+            .into_iter()
             .enumerate()
             .map(|(i, obj)| {
                 let name = format!("{}.o", i);
                 let path = tmp_dir.path().join(&name);
-                let file = BufWriter::new(File::create(&path).unwrap());
-                write_relocatable_object(file, &name, obj).unwrap();
+                let mut file = BufWriter::new(File::create(&path).unwrap());
+                let obj = into_relocatable_object(&name, obj);
+                obj.write(&mut file).unwrap();
                 path
             })
             .collect::<Vec<_>>();
