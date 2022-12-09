@@ -2,7 +2,7 @@
 (import "llvm" [llvm/_ _])
 (import "~/util" _)
 (import "~/lowering/ir" [ir/_ _])
-(import "~/backend/common/mem-layout" Layout layout:)
+(import "~/backend/native/mem-layout" Layout layout:)
 (import "~/backend/llvm/runtime" _)
 (export TypeEnv type-env/_ BuildEnv build-env/_)
 (export CFunctionSignature _.CFunctionSignature c-function-signature: c-function-signature/_)

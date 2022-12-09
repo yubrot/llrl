@@ -1,4 +1,0 @@
-; Backends responsible for executable code generation and JIT execution.
-
-(import "~/backend/llvm" Backend _.Backend backend/_)
-(export [DefaultBackend Backend] [_.DefaultBackend _.Backend] [default-backend/_ backend/_])

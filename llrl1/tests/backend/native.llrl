@@ -1,7 +1,7 @@
 (import "std/ord-map" _)
 (import "~/lowering/ir" _)
-(import "~/backend/common/mem-layout" _)
-(println! "llrl1/tests/backend/common")
+(import "~/backend/native/mem-layout" _)
+(println! "llrl1/tests/backend/native")
 
 (assert-eq? (class/merge class:void class:void) class:void)
 (assert-eq? (class/merge class:void class:floating-point) class:floating-point)

@@ -1,3 +1,4 @@
+(import "std/phantom" _)
 (import "std/io" [io/_ _])
 (import "std/system" args exit!)
 (import "~/util" with-tempdir!)
@@ -135,9 +136,9 @@
     (let1 run-args (option/map vector/buffer ~run-args)
       (match
         (if-match1 (some (let output)) ~output
-          (pipeline/run! output run-args pipeline)
+          (pipeline/run! output run-args (phantom DefaultBackend) pipeline)
           (with-tempdir! (lambda (tempdir)
-            (pipeline/run! (io/path tempdir "bin") (some (option/unwrap array/empty run-args)) pipeline))))
+            (pipeline/run! (io/path tempdir "bin") (some (option/unwrap array/empty run-args)) (phantom DefaultBackend) pipeline))))
         [(ok (some (let status))) (exit! status)]
         [(ok none)]
         [(err (let e)) (error! (string e))]))))

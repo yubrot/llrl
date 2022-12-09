@@ -1,0 +1,18 @@
+(import "~/util" _)
+(export Options _.Options options: options/_)
+
+(derive (Eq DebugDisplay) value-data Options
+  (options: Bool Bool))
+
+(instance Default.Options (Default Options)
+  (function default (options: #t #f)))
+
+(getter options: options/optimize? options/verbose?)
+
+(function (options/set-optimize? optimize? options) {(-> Bool Options Options)}
+  (with1 (options: _ (let verbose?)) options
+    (options: optimize? verbose?)))
+
+(function (options/set-verbose? verbose? options) {(-> Bool Options Options)}
+  (with1 (options: (let optimize?) _) options
+    (options: optimize? verbose?)))

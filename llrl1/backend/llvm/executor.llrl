@@ -2,7 +2,7 @@
 (import "llvm" [llvm/_ _])
 (import "~/util" _)
 (import "~/lowering/ir" [ir/_ _])
-(import "~/backend/common/calling" unsafe-call-main unsafe-call-macro)
+(import "~/backend/native/calling" unsafe-call-main unsafe-call-macro)
 (import "~/backend/llvm/artifact" FunctionSymbol function-symbol/_)
 (export Executor _.Executor executor/_)
 

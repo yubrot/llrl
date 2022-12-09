@@ -3,8 +3,8 @@
 (import "~/util" _)
 (import "~/sexp" [sexp/_ _])
 (import "~/lowering/ir" [ir/_ _])
-(import "~/backend/common/data" [data/_ _])
-(import "~/backend/common/runtime" [llrt/symbols symbols])
+(import "~/backend/native/data" [data/_ _])
+(import "~/backend/native/runtime" [llrt/symbols symbols])
 (export RuntimeBuildEnv runtime-build-env/_ runtime/_ RuntimeConst RuntimeConst._)
 
 (for (: (let name) (let addr)) (llrt/symbols)

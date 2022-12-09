@@ -1,22 +1,16 @@
 (import "std/ord-map" _)
+(import "std/phantom" _)
 (import "std/hash-set" _)
 (import "std/io" [io/_ _])
 (import "std/system" process/_)
 (import "~/util" _)
-(import "~/path" Path _.Path PackageName package-name/_)
-(import "~/source-location" SourceLocationTable source-location-table/_)
-(import "~/ast" [ast/_ _])
-(import "~/report" _.Report report/_)
-(import "~/source" [source/_ _] source-set/_)
-(import "~/module" [module/_ _] module/_)
-(import "~/lowering" _.Lowerizer backend/_ lowerizer/_)
-(import "~/backend" _.DefaultBackend default-backend/_)
+(import "~/prelude-for-pipeline" _)
 (export Error _.Error error:_ Pipeline _.Pipeline pipeline/_)
 
 (value-data Error
-  (error:source (Array (: Path source/Error)))
+  (error:source (Array (: Path SourceError)))
   (error:circular-dependencies (Array Path))
-  (error:module SourceLocationTable (OrdMap module/ModuleId module/Module) Path module/Error)
+  (error:module SourceLocationTable (OrdMap ModuleId Module) Path ModuleError)
   (error:produce-executable String))
 
 (instance Display.Error (Display Error)
@@ -32,13 +26,13 @@
           (display-all! w "- " path "\n")!)
         (display! w "Modules cannot import each other.\n")]
       [(error:module (let slt) (let module-set) (let path) (let error))
-        (display-all! w (contextual: error (module/display-context module-set slt)) " (while building " path ")\n")]
+        (display-all! w (contextual: error (module-display-context module-set slt)) " (while building " path ")\n")]
       [(error:produce-executable (let e))
         (display-all! w "Failed to produce executable: " e "\n")])))
 
 (derive (DebugDisplay) data Pipeline
   (pipeline:
-    (source/Loader ast/Construct)
+    (SourceLoader ast/Construct)
     (Vector Path)
     (Vector String)
     (Ref Bool)
@@ -52,14 +46,14 @@
   verbose?)
 
 (function (pipeline/new current-path) {(-> String Pipeline)}
-  (let1 loader (source/loader/new)
-    (source/loader/add-embedded-builtin! loader)
-    (source/loader/add-embedded-std! loader)
-    (source/loader/add-package-filepath! package-name/current current-path loader)
+  (let1 loader (source-loader/new)
+    (source-loader/add-embedded-builtin! loader)
+    (source-loader/add-embedded-std! loader)
+    (source-loader/add-package-filepath! package-name/current current-path loader)
     (pipeline: loader vector/empty vector/empty (ref #f) (ref #f))))
 
 (function (pipeline/register-package! name filepath p) {(-> PackageName String Pipeline Bool)}
-  (source/loader/add-package-filepath! name filepath (source-loader p)))
+  (source-loader/add-package-filepath! name filepath (source-loader p)))
 
 (function (pipeline/add-entry-path! path p) {(-> Path Pipeline unit)}
   (vector/push! path (entry-source-paths p)))
@@ -73,16 +67,17 @@
 (function (pipeline/add-clang-option! option p) {(-> String Pipeline unit)}
   (vector/push! option (clang-options p)))
 
-(function (pipeline/run! output run-args p)
-  {(-> String (Option (Array String)) Pipeline (Result (Option I32) Error))}
+(function (pipeline/run! output run-args b p)
+  {(forall B) (-> String (Option (Array String)) (Phantom B) Pipeline (Result (Option I32) Error)) (where (Backend B) (NativeBackend B))}
   (let* ([output (io/path "." output)]
          [slt (source-location-table/new)]
          [report (report/new)]
          [source-set (source-set/collect! (entry-source-paths p) (source-loader p) slt report)]
          [source-errors (collect (source-set/errors source-set))]
          [_ (when (not (array/empty? source-errors)) (err (error:source source-errors))!)]
-         [sources (result/map-err error:circular-dependencies (source-set/resolve-dependencies-order source-set))!])
-    (default-backend/with ~(optimize? p) ~(verbose? p) (lambda (backend)
+         [sources (result/map-err error:circular-dependencies (source-set/resolve-dependencies-order source-set))!]
+         [options (backend-options: ~(optimize? p) ~(verbose? p))])
+    (backend/with options (lambda (backend)
       (let ([lowerizer (lowerizer/new backend)]
             [entry-points (hash-set/collect (entry-source-paths p))])
         (match (module/build! (vector/buffer sources) entry-points lowerizer report)
@@ -90,8 +85,8 @@
             (lowerizer/complete! report lowerizer)
             (result/map-err
               error:produce-executable
-              (default-backend/produce-executable! output (vector/buffer (clang-options p)) backend))!
-            (backend/complete! report backend)
+              (backend/produce-executable! output (vector/buffer (clang-options p)) backend))!
+            (backend/complete! report backend {B})
             (ok unit)]
           [(: (let module-set) (some (: (let path) (let error))))
             (err (error:module slt module-set path error))]))))!

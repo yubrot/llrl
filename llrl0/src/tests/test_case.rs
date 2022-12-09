@@ -167,7 +167,7 @@ impl TestTarget {
         }
     }
 
-    fn run_backend<B: Backend + ExecuteMain>(
+    fn run_backend<B: Backend + NativeBackend>(
         &self,
         sources: &[Source],
         cond: &TestCondition,

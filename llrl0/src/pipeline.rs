@@ -93,13 +93,13 @@ impl Pipeline {
         self.clang_options.push(clang_option.to_string());
     }
 
-    pub fn run<B>(
+    pub fn run<B: Backend + NativeBackend>(
         self,
         output: &path::Path,
         run_args: Option<Vec<&str>>,
     ) -> Result<Option<ExitStatus>>
     where
-        B: Backend + ProduceExecutable + From<BackendOptions>,
+        B: Backend + NativeBackend + From<BackendOptions>,
     {
         let output = path::Path::new(".").join(output);
         let mut source_location_table = SourceLocationTable::new();
@@ -154,15 +154,9 @@ impl Pipeline {
         }
 
         let backend = lowerizer.complete(&mut report);
-        match backend.produce_executable(output.to_owned(), self.clang_options) {
-            Ok(out) => {
-                if self.verbose {
-                    eprintln!("### produce executable output");
-                    eprintln!("{}", out);
-                }
-            }
-            Err(err) => Err(Error::ProduceExecutable(err))?,
-        }
+        backend
+            .produce_executable(output.to_owned(), self.clang_options)
+            .map_err(Error::ProduceExecutable)?;
 
         backend.complete(&mut report);
 

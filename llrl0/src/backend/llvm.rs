@@ -1,5 +1,5 @@
-use super::native::execution;
-use super::Options;
+use super::native::{execution, NativeBackend};
+use super::options::Options;
 use crate::lowering;
 use crate::lowering::ir::*;
 use crate::report::{Phase, Report};
@@ -60,7 +60,15 @@ impl lowering::Backend for Backend {
     }
 }
 
-impl super::ExecuteMain for Backend {
+impl NativeBackend for Backend {
+    fn produce_executable(&self, dest: PathBuf, clang_options: Vec<String>) -> Result<(), String> {
+        let (sender, receiver) = bounded(0);
+        self.sender
+            .send(Request::ProduceExecutable(dest, clang_options, sender))
+            .unwrap();
+        receiver.recv().unwrap()
+    }
+
     fn execute_main(&mut self) -> std::result::Result<bool, String> {
         let (sender, receiver) = bounded(0);
         self.sender.send(Request::ExecuteMain(sender)).unwrap();
@@ -68,22 +76,8 @@ impl super::ExecuteMain for Backend {
     }
 }
 
-impl super::ProduceExecutable for Backend {
-    fn produce_executable(
-        &self,
-        dest: PathBuf,
-        clang_options: Vec<String>,
-    ) -> Result<String, String> {
-        let (sender, receiver) = bounded(0);
-        self.sender
-            .send(Request::ProduceExecutable(dest, clang_options, sender))
-            .unwrap();
-        receiver.recv().unwrap()
-    }
-}
-
 impl From<Options> for Backend {
-    fn from(options: super::Options) -> Self {
+    fn from(options: Options) -> Self {
         Self::new(options)
     }
 }
@@ -94,7 +88,7 @@ enum Request {
     PutMain(Init),
     ExecuteMacro(CtId, Syntax<Sexp>, Sender<Result<Syntax<Sexp>, String>>),
     ExecuteMain(Sender<Result<bool, String>>),
-    ProduceExecutable(PathBuf, Vec<String>, Sender<Result<String, String>>),
+    ProduceExecutable(PathBuf, Vec<String>, Sender<Result<(), String>>),
 }
 
 fn process_requests(options: Options, receiver: Receiver<Request>) -> Report {
@@ -252,7 +246,7 @@ impl<'ctx> Builder<'ctx> {
         &mut self,
         dest: PathBuf,
         clang_options: Vec<String>,
-    ) -> Result<String, String> {
+    ) -> Result<(), String> {
         self.codegen(true);
         let mut modules = self.executor.remove_modules();
 
@@ -313,7 +307,11 @@ impl<'ctx> Builder<'ctx> {
         self.report.leave_phase(Phase::Finalize);
 
         if output.status.success() {
-            Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+            if self.verbose {
+                eprintln!("### clang output");
+                eprintln!("{}", String::from_utf8_lossy(&output.stdout));
+            }
+            Ok(())
         } else {
             Err(String::from_utf8_lossy(&output.stderr).into_owned())
         }

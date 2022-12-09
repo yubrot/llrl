@@ -1,0 +1,25 @@
+; A set of definitions common to the backend of the native target.
+
+(import "~/backend/options" Options)
+(export NativeBackend backend/_)
+
+; Native target backend.
+(class (NativeBackend B)
+  ; Produce an executbale binary.
+  (function (backend/produce-executable! dest clang-options backend)
+    {(-> String (Array String) B (Result unit String))})
+
+  ; Execute the main function.
+  ; If the last expression is typed to bool, the result of its evaluation is returned.
+  ; Otherwise, false is returned.
+  (function (backend/execute-main! backend) {(-> B (Result Bool String))})
+
+  (function (backend/new options) {(-> Options B)})
+
+  (function (backend/dispose! b) {(-> B unit)})
+
+  (function (backend/with options f) {(forall A) (-> Options (-> B A) A)}
+    (let* ([backend (backend/new options)]
+           [ret (f backend)])
+      (backend/dispose! backend)
+      ret)))

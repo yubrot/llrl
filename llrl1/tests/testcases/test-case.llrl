@@ -1,3 +1,4 @@
+(import "std/phantom" _)
 (import "std/hash-set" _)
 (import "std/hash-map" _)
 (import "std/ord-map" _)
@@ -5,7 +6,6 @@
 (import "~/util" _)
 (import "~/sexp" s*_)
 (import "~/syntax" [syntax-error: error:] syntax/list-of)
-(import "~/module/builder" [ModuleBackend.unit Backend.unit])
 (import "~/tests/testcases/module-validation" _)
 (import "~/tests/testcases/error-expectation" _)
 (export TestCase _.TestCase test-case/_ syntax/test-case)
@@ -94,18 +94,24 @@
     [test-target:module
       (test-condition/run! slt (module/build! sources default unit report) condition)]
     [_
-      (default-backend/with #t #f (lambda (backend)
-        (let ([lowerizer (lowerizer/new backend)]
-              [entry-points (hash-set path/current)])
-          (test-condition/run! slt (module/build! sources entry-points lowerizer report) condition)!
-          (lowerizer/complete! report lowerizer)
-          (when-match1 (test-condition:pass _) condition
-            (match (default-backend/execute-main! backend)
-              [(ok #t)]
-              [(ok #f) (err "Expected #t but got #f")!]
-              [(err (let error)) (err (string "Execution error:\n" error))!])))
-        (backend/complete! report backend)
-        (ok unit)))]))
+      (test-target/run-backend! slt report (phantom DefaultBackend) sources condition target)]))
+
+(function (test-target/run-backend! slt report b sources condition target)
+  {(forall B)
+   (-> SourceLocationTable Report (Phantom B) (Array (Source ast/Construct)) TestCondition TestTarget (Result unit String))
+   (where (Backend B) (NativeBackend B))}
+  (backend/with default (lambda (backend)
+    (let ([lowerizer (lowerizer/new backend {B})]
+          [entry-points (hash-set path/current)])
+      (test-condition/run! slt (module/build! sources entry-points lowerizer report) condition)!
+      (lowerizer/complete! report lowerizer)
+      (when-match1 (test-condition:pass _) condition
+        (match (backend/execute-main! backend)
+          [(ok #t)]
+          [(ok #f) (err "Expected #t but got #f")!]
+          [(err (let error)) (err (string "Execution error:\n" error))!])))
+    (backend/complete! report backend)
+    (ok unit))))
 
 (derive (DebugDisplay) value-data TestCondition
   (test-condition:pass (Array ModuleValidation))

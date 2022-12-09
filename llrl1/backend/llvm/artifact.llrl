@@ -3,7 +3,7 @@
 (import "llvm" [llvm/_ _])
 (import "~/util" _)
 (import "~/lowering/ir" [ir/_ _])
-(import "~/backend/common/mem-layout" layout/_ LayoutResolver _.LayoutResolver layout-resolver/_)
+(import "~/backend/native/mem-layout" layout/_ LayoutResolver _.LayoutResolver layout-resolver/_)
 (import "~/backend/llvm/runtime" RuntimeBuildEnv)
 (import "~/backend/llvm/codegen" _)
 (export ContextArtifact _.ContextArtifact context-artifact/_)
