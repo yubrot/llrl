@@ -1,4 +1,4 @@
-use super::native::{execution, NativeBackend};
+use super::native::{execution, linking, NativeBackend};
 use super::options::Options;
 use crate::lowering;
 use crate::lowering::ir::*;
@@ -6,13 +6,10 @@ use crate::report::{Phase, Report};
 use crossbeam_channel::{bounded, unbounded, Receiver, Sender};
 use itertools::Itertools;
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::{BufWriter, Write};
 use std::path::PathBuf;
-use std::process::Command;
 use std::sync::Arc;
 use xten::asm::Object;
-use xten::elf::into_relocatable_object;
+use xten::elf::write_relocatable_object;
 
 mod codegen;
 mod context;
@@ -150,10 +147,11 @@ impl Builder {
     fn codegen(&mut self, codegen_llrl_main: bool) {
         let defs = std::mem::take(&mut self.queued_defs);
         let main = codegen_llrl_main.then(|| Function::main(std::mem::take(&mut self.queued_main)));
+        if defs.is_empty() && main.is_none() {
+            return;
+        }
 
-        if !defs.is_empty() || main.is_some() {
-            self.report.enter_phase(Phase::Codegen);
-
+        self.report.on(Phase::Codegen, || {
             self.context.add_types(&defs);
 
             if self.verbose {
@@ -175,21 +173,16 @@ impl Builder {
 
             self.executor.add_object(&obj);
             self.objects.push(obj);
-
-            self.report.leave_phase(Phase::Codegen);
-        }
+        });
     }
 
     fn execute_macro(&mut self, id: CtId, sexp: Syntax<Sexp>) -> Result<Syntax<Sexp>, String> {
         self.codegen(false);
 
         match self.context.function_symbol(id) {
-            Some(f) => {
-                self.report.enter_phase(Phase::JIT);
-                let ret = self.executor.call_macro(f, sexp);
-                self.report.leave_phase(Phase::JIT);
-                ret
-            }
+            Some(f) => self
+                .report
+                .on(Phase::JIT, || self.executor.call_macro(f, sexp)),
             None => Err(format!("macro not found: {}", id)),
         }
     }
@@ -198,12 +191,7 @@ impl Builder {
         self.codegen(true);
 
         match self.context.main_function_symbol() {
-            Some(f) => {
-                self.report.enter_phase(Phase::JIT);
-                let result = self.executor.call_main(f);
-                self.report.leave_phase(Phase::JIT);
-                Ok(result)
-            }
+            Some(f) => Ok(self.report.on(Phase::JIT, || self.executor.call_main(f))),
             None => Err("main not found".to_string()),
         }
     }
@@ -218,57 +206,19 @@ impl Builder {
 
         objects.push(codegen::c_main_adapter_object(&mut self.context).unwrap());
 
-        self.report.enter_phase(Phase::Finalize);
-        let tmp_dir = tempfile::TempDir::new().unwrap();
-        // TODO: Not every function in every module is needed for the main.
-        // Rather, most of them exist for macros. This can be stripped.
-        let objects = objects
-            .into_iter()
-            .enumerate()
-            .map(|(i, obj)| {
-                let name = format!("{}.o", i);
-                let path = tmp_dir.path().join(&name);
-                let mut file = BufWriter::new(File::create(&path).unwrap());
-                let obj = into_relocatable_object(&name, obj);
-                obj.write(&mut file).unwrap();
-                path
-            })
-            .collect::<Vec<_>>();
-
-        File::create(&tmp_dir.path().join("libllrt.a"))
-            .unwrap()
-            .write_all(llrt::ARCHIVE)
-            .unwrap();
-
-        let mut clang_command = Command::new("clang");
-        clang_command
-            .arg("-o")
-            .arg(&dest)
-            .args(&objects)
-            .args([
-                "-lgc",
-                "-lm",
-                &format!("-L{}", tmp_dir.path().display()),
-                "-lllrt",
-            ])
-            .args(&clang_options);
+        let result = self.report.on(Phase::Link, || {
+            linking::link(
+                &dest,
+                objects,
+                |path, obj| write_relocatable_object(path, obj).unwrap(),
+                clang_options.iter().map(|o| o.as_str()),
+            )
+        })?;
 
         if self.verbose {
-            eprintln!("### link");
-            eprintln!("{:?}", clang_command);
+            eprintln!("### produce executable");
+            eprintln!("{:?}", result);
         }
-
-        let output = clang_command.output().expect("Failed to execute clang");
-        self.report.leave_phase(Phase::Finalize);
-
-        if output.status.success() {
-            if self.verbose {
-                eprintln!("### clang output");
-                eprintln!("{:?}", String::from_utf8_lossy(&output.stdout));
-            }
-            Ok(())
-        } else {
-            Err(String::from_utf8_lossy(&output.stderr).into_owned())
-        }
+        Ok(())
     }
 }

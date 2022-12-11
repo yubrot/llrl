@@ -1,7 +1,5 @@
 ; Incomplete ELF implementation.
 
 (no-implicit-std)
-
-(import "~/elf/format" Elf _.Elf elf/write!)
-(import "~/elf/adapter" elf/relocatable-object-from)
+(import "~/elf/adapter" write-relocatable-object!)
 (export _)

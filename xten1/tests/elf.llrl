@@ -1,4 +1,4 @@
-(import "std/io" with-file! path)
+(import "std/io" path)
 (import "~/tests/binutils" readelf! with-tempdir!)
 (import "~/elf" _)
 (import "~/asm" _)
@@ -24,12 +24,6 @@
 
     (writer/produce w)))
 
-(function (create-test-elf-object! path)
-  (with-file! path "w" (lambda (f)
-    (let* ([obj (result/force (test-object))]
-           [obj (elf/relocatable-object-from "elf.o" obj)])
-      (elf/write! f obj)))))
-
 (function (output-lines input) {(-> String (Array String))}
   (|> input
       (string/remove-start " ") (string/remove-end " ")
@@ -40,8 +34,8 @@
 
 (with-tempdir! (lambda (dir)
   (result/unwrap*
-    [^1 (assert #f (string "create-test-elf-object!: " %1))]
-    (create-test-elf-object! (path dir "elf.o")))
+    [^1 (assert #f (string %1))]
+    (write-relocatable-object! (path dir "elf.o") (result/force (test-object))))
 
   (assert-eq? (output-lines (readelf! (array "-h" (path dir "elf.o")))) (output-lines HEADER))
   (assert-eq? (output-lines (readelf! (array "-S" (path dir "elf.o")))) (output-lines SECTIONS))

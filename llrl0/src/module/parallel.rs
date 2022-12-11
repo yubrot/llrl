@@ -84,10 +84,10 @@ pub fn build(
         modules.push(module);
     }
 
-    report.enter_phase(Phase::BuildModule);
-    let context = BuildingContext::new(&modules, &path_to_module, &entry_points, backend);
-    rayon::scope(|scope| context.run(scope));
-    report.leave_phase(Phase::BuildModule);
+    report.on(Phase::BuildModule, || {
+        let context = BuildingContext::new(&modules, &path_to_module, &entry_points, backend);
+        rayon::scope(|scope| context.run(scope));
+    });
 
     modules
         .into_iter()

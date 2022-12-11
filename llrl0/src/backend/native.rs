@@ -5,6 +5,7 @@ use std::path;
 pub mod calling;
 pub mod data;
 pub mod execution;
+pub mod linking;
 pub mod mem_layout;
 
 /// Native target backend.

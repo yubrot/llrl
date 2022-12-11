@@ -17,7 +17,7 @@
   phase:lowerize
   phase:codegen
   phase:jit
-  phase:finalize)
+  phase:link)
 
 (instance Display.Phase (Display Phase)
   (function (display! w a)

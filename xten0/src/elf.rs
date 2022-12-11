@@ -1,19 +1,16 @@
 //! Incomplete ELF implementation.
 
-mod adapter;
+pub mod adapter;
 pub mod format;
 
-pub use adapter::into_relocatable_object;
-pub use format::Elf;
+pub use adapter::write_relocatable_object;
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::asm::*;
     use crate::binutils::readelf;
-    use std::fs::File;
     use std::io::{self, Write};
-    use std::path::Path;
     use tempfile::tempdir;
 
     fn create_test_object() -> io::Result<Object> {
@@ -36,14 +33,6 @@ mod tests {
         w.produce()
     }
 
-    fn create_test_elf_object(path: impl AsRef<Path>) -> io::Result<()> {
-        let mut f = File::create(path)?;
-        let obj = create_test_object()?;
-        let obj = into_relocatable_object("elf.o", obj);
-        obj.write(&mut f)?;
-        Ok(())
-    }
-
     fn output_lines(input: &str) -> Vec<String> {
         input.trim().lines().map(|s| s.trim().to_owned()).collect()
     }
@@ -51,7 +40,8 @@ mod tests {
     #[test]
     fn elf_format() {
         let dir = tempdir().unwrap();
-        assert!(create_test_elf_object(dir.path().join("elf.o")).is_ok());
+        let obj = create_test_object().unwrap();
+        assert!(write_relocatable_object(&dir.path().join("elf.o"), obj).is_ok());
 
         assert_eq!(
             output_lines(&readelf(dir.path(), &["-h", "elf.o"])),

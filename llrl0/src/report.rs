@@ -17,7 +17,7 @@ pub enum Phase {
     Lowerize,
     Codegen,
     JIT,
-    Finalize,
+    Link,
 }
 
 impl fmt::Display for Phase {
@@ -35,7 +35,7 @@ impl fmt::Display for Phase {
             Self::Lowerize => write!(f, "lowerize"),
             Self::Codegen => write!(f, "codegen"),
             Self::JIT => write!(f, "jit"),
-            Self::Finalize => write!(f, "finalize"),
+            Self::Link => write!(f, "link"),
         }
     }
 }
@@ -55,6 +55,13 @@ impl Report {
             .iter()
             .sorted()
             .map(|(phase, (_, duration))| (*phase, *duration))
+    }
+
+    pub fn on<T>(&mut self, phase: Phase, f: impl FnOnce() -> T) -> T {
+        self.enter_phase(phase);
+        let ret = f();
+        self.leave_phase(phase);
+        ret
     }
 
     pub fn enter_phase(&mut self, phase: Phase) {

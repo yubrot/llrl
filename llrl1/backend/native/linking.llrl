@@ -1,0 +1,31 @@
+(import "std/io" [io/_ _])
+(import "std/system" process/_ with-process!)
+(import "~/util" _)
+(import "~/resources" resources/llrt-archive)
+(export link!)
+
+(function (link! dest objects emit-object-to-file! clang-options)
+  {(forall O T S) (-> String (T O) (-> String O unit) (S String) (Result String String)) (where (Iterate T) (Iterate S))}
+  (with-tempdir! (lambda (tempdir)
+    (let* ([objects
+             ; TODO: Not every function in every module is needed for the main.
+             ; Rather, most of them exist for macros. This can be stripped.
+             (it/map
+               (case1 (: (let index) (let object))
+                 (let1 path (io/path tempdir (string index ".o"))
+                   (emit-object-to-file! path object)
+                   path))
+               (it/with-index objects))]
+           [args {(Array String)}
+             (collect (it/concat (array "-o" dest) objects (array "-lgc" "-lm" (string "-L" tempdir) "-lllrt") clang-options))])
+      (enforce-io-success! (expand-libllrt! tempdir))
+      (enforce-io-success! (with-process! "clang" args (lambda (proc)
+        (ok (if-match1 (some 0) (process/wait! proc)
+          (ok (|> proc process/out read-string-to-end!)!)
+          (err (|> proc process/err read-string-to-end!)!))))))))))
+
+(function (expand-libllrt! dir) {(-> String (Result unit io/IoError))}
+  (io/with-file! (io/path dir "libllrt.a") "w" [^1 (write-bytes! (resources/llrt-archive) %1)]))
+
+(function (enforce-io-success! result) {(forall A) (-> (Result A io/IoError) A)}
+  (result/unwrap* [^1 (assert #f (string %1))] result))

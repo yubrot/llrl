@@ -12,23 +12,24 @@ pub fn collect<'a>(
     source_location_table: &mut SourceLocationTable,
     report: &mut Report,
 ) -> SourceSet {
-    report.enter_phase(Phase::CollectSource);
+    report
+        .on(Phase::CollectSource, || {
+            let collector = Collector {
+                ongoing: Mutex::new(HashSet::new()),
+                result: Mutex::new(SourceSet::new()),
+                source_location_table: Mutex::new(source_location_table),
+                loader,
+            };
 
-    let collector = Collector {
-        ongoing: Mutex::new(HashSet::new()),
-        result: Mutex::new(SourceSet::new()),
-        source_location_table: Mutex::new(source_location_table),
-        loader,
-    };
+            rayon::scope(|scope| {
+                for input in inputs {
+                    collector.collect(scope, input);
+                }
+            });
 
-    rayon::scope(|scope| {
-        for input in inputs {
-            collector.collect(scope, input);
-        }
-    });
-
-    report.leave_phase(Phase::CollectSource);
-    collector.result.into_inner().unwrap()
+            collector.result.into_inner()
+        })
+        .unwrap()
 }
 
 struct Collector<'l> {

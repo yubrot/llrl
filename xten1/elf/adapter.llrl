@@ -1,10 +1,15 @@
 (import "std/hash-map" _)
+(import "std/io" with-file! path/base-name IoError)
 (import "~/elf/format" _)
 (import "~/asm/obj" Object object/_ binding:_ location: location-section:_ [sym: symbol:] reloc: reloc-target:_)
-(export elf/relocatable-object-from)
+(export write-relocatable-object! into-relocatable-object)
+
+(function (write-relocatable-object! path o) {(-> String Object (Result unit IoError))}
+  (let1 o (into-relocatable-object (path/base-name path) o)
+    (with-file! path "w" [^1 (elf/write! %1 o)])))
 
 ; Convert `asm::Object` into a relocatable ELF object.
-(function (elf/relocatable-object-from file obj) {(-> String Object Elf)}
+(function (into-relocatable-object file obj) {(-> String Object Elf)}
   (let* (
     [elf (elf/new object-type:rel none none)]
 

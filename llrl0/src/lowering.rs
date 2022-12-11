@@ -102,10 +102,7 @@ fn process_requests<B: Backend>(mut backend: B, receiver: Receiver<Request>) -> 
         T::Dest: ir::traverser::Traverse + ir::rewriter::Rewrite,
         B: Backend,
     {
-        report.enter_phase(Phase::Lowerize);
-        let (result, defs) = ctx.populate(&src, &modules);
-        report.leave_phase(Phase::Lowerize);
-
+        let (result, defs) = report.on(Phase::Lowerize, || ctx.populate(&src, &modules));
         for (id, def) in defs {
             backend.put_def(id, Arc::clone(def));
         }

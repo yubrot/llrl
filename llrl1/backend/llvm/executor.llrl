@@ -45,7 +45,7 @@
 (function (executor/remove-modules! executor) {(-> Executor (Array llvm/Module))}
   (llvm/execution-engine/remove-modules! (engine executor)))
 
-(function (executor/get-function-address name executor) {(-> String Executor (Ptr U8))}
+(function (get-function-address name executor) {(-> String Executor (Ptr U8))}
   (let1 addr (llvm/execution-engine/get-function-address name (engine executor))
     (assert (ne? 0 addr) (string "Function not found: " name))
     (ptr/from-address addr)))
@@ -53,11 +53,11 @@
 (function (executor/unsafe-call-macro symbol s executor)
   {(-> FunctionSymbol (ir/S ir/CapturedUse) Executor (Result (ir/S ir/CapturedUse) String))}
   (assert-eq? (function-symbol/kind symbol) ir/function-kind:macro)
-  (unsafe-call-macro (executor/get-function-address (function-symbol/name symbol) executor) s))
+  (unsafe-call-macro (get-function-address (function-symbol/name symbol) executor) s))
 
 (function (executor/unsafe-call-main symbol executor) {(-> FunctionSymbol Executor Bool)}
   (assert-eq? (function-symbol/kind symbol) ir/function-kind:main)
-  (unsafe-call-main (executor/get-function-address (function-symbol/name symbol) executor)))
+  (unsafe-call-main (get-function-address (function-symbol/name symbol) executor)))
 
 (function (assert-data-layout-matches-native-environment dl)
   ; NOTE: llrl assumes that the native environment (i.e., at the time of executing

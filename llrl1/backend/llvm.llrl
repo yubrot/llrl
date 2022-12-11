@@ -1,15 +1,12 @@
-(import "std/phantom" _)
-(import "std/io" [io/_ _])
-(import "std/system" process/_ with-process!)
 (import "std/ord-map" _)
 (import "llvm" [llvm/_ _])
 (import "~/util" _)
-(import "~/resources" resources/llrt-archive)
 (import "~/report" Report _.Report report/_ phase:_)
 (import "~/lowering" [LoweringBackend Backend])
 (import "~/lowering/ir" [ir/_ _])
 (import "~/backend/options" Options options/_)
 (import "~/backend/native" NativeBackend)
+(import "~/backend/native/linking" link!)
 (import "~/backend/llvm/artifact" _)
 (import "~/backend/llvm/executor" _)
 (export Backend _.Backend)
@@ -47,10 +44,10 @@
 
   (function (backend/execute-macro! id s b)
     (codegen! #f b)
-
-    (if-match1 (some (let symbol)) (context-artifact/function-symbol? id (context-artifact b))
-      (executor/unsafe-call-macro symbol s (executor b))
-      (err (string "macro not found: " (debug id)))))
+    (report/on (report b) phase:jit
+      (if-match1 (some (let symbol)) (context-artifact/function-symbol? id (context-artifact b))
+        (executor/unsafe-call-macro symbol s (executor b))
+        (err (string "macro not found: " (debug id))))))
 
   (function (backend/complete! r b)
     (report/merge! (report b) r)))
@@ -61,7 +58,17 @@
     (let1 artifact (module-artifact/new "c-main-adapter" (context-artifact b))
       (module-artifact/add-c-main-adapter! artifact)
       (executor/add-module! (module-artifact/complete! artifact) (executor b)))
-    (finalize! dest clang-options b))
+    (let* ([(emit! path m)
+            (|> (executor b)
+                executor/target-machine
+                (llvm/target-machine/emit-to-file! m path llvm/code-gen-file-type/object-file)
+                (result/unwrap* [^1 (assert #f %1)]))]
+           [modules (executor/remove-modules! (executor b))]
+           [result (report/on (report b) phase:link (link! dest modules emit! clang-options))!])
+      (when (verbose? b)
+        (eprintln! "### produce executable")
+        (eprintln! result))
+      (ok unit)))
 
   (function (backend/execute-main! b)
     (codegen! #t b)
@@ -130,37 +137,3 @@
         (eprintln! (module-artifact/llvm-module artifact)))
 
         (executor/add-module! (module-artifact/complete! artifact) (executor b)))))
-
-(function (finalize! dest clang-options b) {(-> String (Array String) Backend (Result unit String))}
-  (report/on (report b) phase:finalize
-    (with-tempdir! (lambda (tempdir)
-      (let* ([modules (executor/remove-modules! (executor b))]
-             [objects
-               (it/map
-                 (case1 (: (let index) (let module))
-                   (let1 path (io/path tempdir (string index ".o"))
-                     (|> (executor b)
-                         executor/target-machine
-                         (llvm/target-machine/emit-to-file! module path llvm/code-gen-file-type/object-file)
-                         (result/unwrap* [^1 (assert #f %1)]))
-                     path))
-                 (it/with-index modules))])
-        (enforce-io-success! (expand-libllrt! tempdir))
-        (let1 args {(Array String)} (collect (it/concat (array "-o" dest) objects (array "-lgc" "-lm" (string "-L" tempdir) "-lllrt") clang-options))
-          (when (verbose? b)
-            (eprintln! "### link")
-            (eprintln! "clang " (it/format " " args)))
-          (enforce-io-success! (with-process! "clang" args (lambda (proc)
-            (let1 status (process/wait! proc)
-              (when (verbose? b)
-                (eprintln! "### clang output")
-                (eprintln! (|> proc process/out read-string-to-end!)!))
-              (ok (if-match1 (some 0) status
-                (ok unit)
-                (err (|> proc process/err read-string-to-end!)!)))))))))))))
-
-(function (expand-libllrt! dir) {(-> String (Result unit io/IoError))}
-  (io/with-file! (io/path dir "libllrt.a") "w" [^1 (write-bytes! (resources/llrt-archive) %1)]))
-
-(function (enforce-io-success! result) {(forall A) (-> (Result A io/IoError) A)}
-  (result/unwrap* [^1 (assert #f (string %1))] result))

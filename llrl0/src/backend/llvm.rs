@@ -1,4 +1,4 @@
-use super::native::{execution, NativeBackend};
+use super::native::{execution, linking, NativeBackend};
 use super::options::Options;
 use crate::lowering;
 use crate::lowering::ir::*;
@@ -7,10 +7,7 @@ use crossbeam_channel::{bounded, unbounded, Receiver, Sender};
 use itertools::Itertools;
 use llvm::prelude::*;
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::Write;
 use std::path::PathBuf;
-use std::process::Command;
 use std::sync::Arc;
 
 mod artifact;
@@ -161,10 +158,11 @@ impl<'ctx> Builder<'ctx> {
     fn codegen(&mut self, codegen_llrl_main: bool) {
         let defs = std::mem::take(&mut self.queued_defs);
         let main = codegen_llrl_main.then(|| Function::main(std::mem::take(&mut self.queued_main)));
+        if defs.is_empty() && main.is_none() {
+            return;
+        }
 
-        if !defs.is_empty() || main.is_some() {
-            self.report.enter_phase(Phase::Codegen);
-
+        self.report.on(Phase::Codegen, || {
             self.generation += 1;
             let name = format!("gen{}", self.generation);
 
@@ -209,21 +207,16 @@ impl<'ctx> Builder<'ctx> {
             }
 
             self.executor.add_module(module);
-
-            self.report.leave_phase(Phase::Codegen);
-        }
+        });
     }
 
     fn execute_macro(&mut self, id: CtId, sexp: Syntax<Sexp>) -> Result<Syntax<Sexp>, String> {
         self.codegen(false);
 
         match self.artifact.function_symbol(id) {
-            Some(f) => {
-                self.report.enter_phase(Phase::JIT);
-                let ret = self.executor.call_macro(f, sexp);
-                self.report.leave_phase(Phase::JIT);
-                ret
-            }
+            Some(f) => self
+                .report
+                .on(Phase::JIT, || self.executor.call_macro(f, sexp)),
             None => Err(format!("macro not found: {}", id)),
         }
     }
@@ -232,12 +225,7 @@ impl<'ctx> Builder<'ctx> {
         self.codegen(true);
 
         match self.artifact.main_function_symbol() {
-            Some(f) => {
-                self.report.enter_phase(Phase::JIT);
-                let result = self.executor.call_main(f);
-                self.report.leave_phase(Phase::JIT);
-                Ok(result)
-            }
+            Some(f) => Ok(self.report.on(Phase::JIT, || self.executor.call_main(f))),
             None => Err("main not found".to_string()),
         }
     }
@@ -259,61 +247,24 @@ impl<'ctx> Builder<'ctx> {
             module
         });
 
-        self.report.enter_phase(Phase::Finalize);
-        let tmp_dir = tempfile::TempDir::new().unwrap();
-        // TODO: Not every function in every module is needed for the main.
-        // Rather, most of them exist for macros. This can be stripped.
-        let objects = modules
-            .iter()
-            .enumerate()
-            .map(|(index, module)| {
-                let path = tmp_dir
-                    .path()
-                    .join(format!("{}.o", index))
-                    .to_string_lossy()
-                    .into_owned();
-                self.executor
-                    .target_machine()
-                    .emit_to_file(module, &path, llvm::FileType::ObjectFile)
-                    .unwrap_or_else(|e| panic!("{}", e));
-                path
-            })
-            .collect::<Vec<_>>();
-
-        File::create(&tmp_dir.path().join("libllrt.a"))
-            .unwrap()
-            .write_all(llrt::ARCHIVE)
-            .unwrap();
-
-        let mut clang_command = Command::new("clang");
-        clang_command
-            .arg("-o")
-            .arg(&dest)
-            .args(&objects)
-            .args([
-                "-lgc",
-                "-lm",
-                &format!("-L{}", tmp_dir.path().display()),
-                "-lllrt",
-            ])
-            .args(&clang_options);
+        let result = self.report.on(Phase::Link, || {
+            linking::link(
+                &dest,
+                modules,
+                |path, m| {
+                    self.executor
+                        .target_machine()
+                        .emit_to_file(&m, path.to_str().unwrap(), llvm::FileType::ObjectFile)
+                        .unwrap()
+                },
+                clang_options.iter().map(|o| o.as_str()),
+            )
+        })?;
 
         if self.verbose {
-            eprintln!("### link");
-            eprintln!("{:?}", clang_command);
+            eprintln!("### produce executable");
+            eprintln!("{:?}", result);
         }
-
-        let output = clang_command.output().expect("Failed to execute clang");
-        self.report.leave_phase(Phase::Finalize);
-
-        if output.status.success() {
-            if self.verbose {
-                eprintln!("### clang output");
-                eprintln!("{}", String::from_utf8_lossy(&output.stdout));
-            }
-            Ok(())
-        } else {
-            Err(String::from_utf8_lossy(&output.stderr).into_owned())
-        }
+        Ok(())
     }
 }

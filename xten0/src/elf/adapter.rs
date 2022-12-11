@@ -1,6 +1,16 @@
 use super::format::*;
 use crate::asm::{Binding, LocationSection, Object, RelocTarget};
 use std::collections::HashMap;
+use std::fs;
+use std::io;
+use std::path::Path;
+
+pub fn write_relocatable_object(path: &Path, o: Object) -> io::Result<()> {
+    let name = path.file_name().unwrap().to_str().unwrap();
+    let o = into_relocatable_object(name, o);
+    let mut file = io::BufWriter::new(fs::File::create(path)?);
+    o.write(&mut file)
+}
 
 /// Convert `asm::Object` into a relocatable ELF object.
 pub fn into_relocatable_object(file: &str, o: Object) -> Elf {
