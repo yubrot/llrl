@@ -11,7 +11,7 @@
 (import "std/vector" vector/_ _.Vector)
 (import "std/string" string/_)
 (import "std/io" IoError io-error/_ File file/_)
-(export args exit! random! Process process/_ with-process! time)
+(export args exit! random! getenv Process process/_ with-process! time)
 
 (function (args) {(-> (Array String))}
   (with1 (<args>: (let argc) (let argv)) <args>
@@ -23,6 +23,13 @@
 
 (function (random! buf) {(-> (Array U8) unit)}
   (ignore (<getrandom> (array/ptr buf) (array/length buf) 0)))
+
+(function (getenv name) {(-> String (Option String))}
+  (match (<getenv> (string/c-compatible-ptr name))
+    [ptr:null none]
+    [(let ptr (ptr:non-null _)) (some (string/unsafe-from-c-ptr ptr))]))
+
+(c-function <getenv> {(-> (Ptr U8) (Ptr U8))} "getenv")
 
 (value-data Process
   (process: I32 File File File)) ; pid in out err
