@@ -68,7 +68,7 @@
   (vector/push! option (clang-options p)))
 
 (function (pipeline/run! output run-args b p)
-  {(forall B) (-> String (Option (Array String)) (Phantom B) Pipeline (Result (Option I32) Error)) (where (Backend B) (NativeBackend B))}
+  {(forall B T) (-> String (Option (T String)) (Phantom B) Pipeline (Result (Option I32) Error)) (where (Backend B) (NativeBackend B) (Iterate T))}
   (let* ([output (io/path "." output)]
          [slt (source-location-table/new)]
          [report (report/new)]

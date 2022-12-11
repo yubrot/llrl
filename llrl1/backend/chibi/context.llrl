@@ -1,0 +1,37 @@
+(import "std/ord-map" _)
+(import "~/backend/native/mem-layout" _)
+(import "~/lowering/ir" [ir/_ _])
+(import "~/util" _)
+(export Context _.Context context/_)
+(export FunctionSymbol _.FunctionSymbol function-symbol: function-symbol/_)
+
+(derive (DebugDisplay) data Context
+  (context: LayoutResolver (OrdMap ir/CtId FunctionSymbol) (Ref (Option FunctionSymbol))))
+
+(getter context: layout-resolver function-symbols main-function-symbol)
+
+(function (context/new) {(-> Context)}
+  (context: (layout-resolver/new) ord-map/empty (ref none)))
+
+(function (context/function-symbol? name ctx) {(-> ir/CtId Context (Option FunctionSymbol))}
+  (ord-map/get? name (function-symbols ctx)))
+
+(function (context/define-function-symbol! name symbol ctx) {(-> ir/CtId FunctionSymbol Context unit)}
+  (ignore (ord-map/insert! name symbol (function-symbols ctx))))
+
+(function (context/main-function-symbol? ctx) {(-> Context (Option FunctionSymbol))}
+  ~(main-function-symbol ctx))
+
+(function (context/define-main-function-symbol! symbol ctx) {(-> FunctionSymbol Context unit)}
+  (set! (main-function-symbol ctx) (some symbol)))
+
+(function (context/add-types! defs ctx) {(-> (OrdMap ir/CtId ir/Def) Context unit)}
+  (layout-resolver/register! defs (layout-resolver ctx)))
+
+(function (context/layout ty ctx) {(-> ir/Ct Context Layout)}
+  (layout-resolver/get ty (layout-resolver ctx)))
+
+(derive (Eq DebugDisplay) data FunctionSymbol
+  (function-symbol: String ir/FunctionKind ir/Ct))
+
+(getter function-symbol: function-symbol/name function-symbol/kind function-symbol/ty)

@@ -1,0 +1,104 @@
+(import "std/ord-map" _)
+(import "xten/asm" Object _.Object)
+(import "xten/elf" write-relocatable-object!)
+(import "~/util" _)
+(import "~/report" Report _.Report report/_ phase:_)
+(import "~/lowering" [LoweringBackend Backend])
+(import "~/lowering/ir" [ir/_ _])
+(import "~/backend/options" Options options/_)
+(import "~/backend/native" NativeBackend)
+(import "~/backend/native/linking" link!)
+(import "~/backend/chibi/context" Context _.Context context/_)
+(import "~/backend/chibi/executor" Executor _.Executor executor/_)
+(import "~/backend/chibi/codegen" [codegen/_ _])
+(export Backend _.Backend)
+
+(data Backend
+  (backend:
+    Bool
+    Report
+    Executor
+    Context
+    (OrdMap ir/CtId ir/Def)
+    (Vector ir/Init)
+    (Vector Object)))
+
+(getter backend:
+  verbose?
+  report
+  executor
+  context
+  queued-defs
+  queued-main
+  objects)
+
+(instance LoweringBackend.Backend (LoweringBackend Backend)
+  (function (backend/put-def! id def b)
+    (ignore (ord-map/insert! id def (queued-defs b))))
+
+  (function (backend/put-main! init b)
+    (vector/push! init (queued-main b)))
+
+  (function (backend/execute-macro! id s b)
+    (codegen! #f b)
+    (if-match1 (some (let symbol)) (|> b context (context/function-symbol? id))
+      (report/on (report b) phase:jit (executor/unsafe-call-macro symbol s (executor b)))
+      (err (string "macro not found: " (debug id)))))
+
+  (function (backend/complete! r b)
+    (report/merge! (report b) r)))
+
+(instance NativeBackend.Backend (NativeBackend Backend)
+  (function (backend/produce-executable! dest clang-options b)
+    (codegen! #t b)
+    (vector/push! (codegen/c-main-adapter-object! (context b)) (objects b))
+    (let* ([objects (vector/consume-all! (objects b))]
+           [(emit! path o) (result/unwrap* [^1 (assert #f (string %1))] (write-relocatable-object! path o))]
+           [result (report/on (report b) phase:link (link! dest objects emit! clang-options))!])
+      (when (verbose? b)
+        (eprintln! "### produce executable")
+        (eprintln! result)))
+      (ok unit))
+
+  (function (backend/execute-main! b)
+    (codegen! #t b)
+    (if-match1 (some (let symbol)) (|> b context context/main-function-symbol?)
+      (ok (report/on (report b) phase:jit (executor/unsafe-call-main symbol (executor b))))
+      (err "main not found")))
+
+  (function (backend/new options)
+    (backend:
+      (options/verbose? options)
+      (report/new)
+      (executor/new)
+      (context/new)
+      ord-map/empty
+      vector/empty
+      vector/empty))
+
+  (function (backend/dispose! b)
+    (executor/dispose! (executor b))))
+
+(function (codegen! build-main? b) {(-> Bool Backend unit)}
+  (let* ([defs (queued-defs b)]
+         [main (when? build-main? (|> b queued-main vector/consume-all! ir/function/main))])
+    (when (and (ord-map/empty? defs) (is? none main)) (return))
+
+    (report/on (report b) phase:codegen
+      (context/add-types! defs (context b))
+
+      (when (verbose? b)
+        (eprintln! "### codegen")
+        (for (: (let id) (let def)) (ord-map/elems defs)
+          (eprintln! (debug id) " = " (debug def)))
+        (when-match1 (some (let main)) main
+          (eprintln! (debug main))))
+
+      (let1 obj (codegen/object! defs main (context b))
+        (ord-map/clear! (queued-defs b))
+        (when (verbose? b)
+          (eprintln! "### codegen result")
+          (eprintln! (debug obj)))
+
+        (executor/add-object! obj (executor b))
+        (vector/push! obj (objects b))))))

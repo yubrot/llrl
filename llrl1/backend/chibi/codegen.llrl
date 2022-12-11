@@ -1,0 +1,16 @@
+; llrl1 chibi backend ABI is compatible with llrl0 chibi backend.
+; See llrl0/src/backend/chibi/codegen.rs
+
+(import "std/ord-map" _)
+(import "xten/asm" _)
+(import "~/util" _)
+(import "~/lowering/ir" [ir/_ _])
+(import "~/backend/chibi/context" _)
+(import "~/backend/native/mem-layout" _)
+(export c-main-adapter-object! object!)
+
+(function (c-main-adapter-object! ctx) {(-> Context Object)}
+  (assert #f "TODO"))
+
+(function (object! defs main ctx) {(-> (OrdMap ir/CtId ir/Def) (Option ir/Function) Context Object)}
+  (assert #f "TODO"))
