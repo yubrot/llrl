@@ -394,10 +394,12 @@
                   pattern-rep:wildcard])])
       (ok (pattern: (next-id! loc "" ctx) rep)))))
 
-(instance Build.MatchClause (Build (SyntaxMatchClause Construct) (: Pattern Expr))
-  (function (build! a ctx)
-    (with1 (syntax:match-clause (let loc) (let pat) (let body)) a
-      (ok (: (build! pat ctx)! (build! (: loc body) ctx)!)))))
+(instance Build.MatchClause (Build (S Construct) (: Pattern Expr))
+  (function (build! s ctx)
+    (let* ([s (expand-macro! s ctx)!]
+           [s (expand-syntax syntax/match-clause s)!])
+      (with1 (syntax:match-clause (let loc) (let pat) (let body)) s
+        (ok (: (build! pat ctx)! (build! (: loc body) ctx)!))))))
 
 (instance Build.Type (Build (S Construct) Type)
   (function (build! s ctx)

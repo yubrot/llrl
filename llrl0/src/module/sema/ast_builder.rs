@@ -657,7 +657,8 @@ impl Build<syntax::Pattern<'_>> for PatternRep {
 
 impl Build<&'_ Sexp> for (Pattern, Expr) {
     fn build(ctx: &mut impl Context, src: &'_ Sexp) -> Result<Self> {
-        let src = ctx.matches::<syntax::MatchClause>(src)?;
+        let src = ctx.expand_macro(src)?;
+        let src = ctx.matches::<syntax::MatchClause>(&src)?;
         let pat = ctx.build(src.pat)?;
         let body = ctx.build((src.loc, src.body))?;
         Ok((pat, body))

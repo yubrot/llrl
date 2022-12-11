@@ -201,8 +201,8 @@
     (syntax/expr (parse "(match target [A 0] [B 1])"))
     (and (is? (s*symbol "target") target)
          (eq? 2 (array/length clauses))
-         (is? (syntax:match-clause _ (s*symbol "A") _) (get clauses[0]))
-         (is? (syntax:match-clause _ (s*symbol "B") _) (get clauses[1])))
+         (is? (ok (syntax:match-clause _ (s*symbol "A") _)) (syntax/match-clause (get clauses[0])))
+         (is? (ok (syntax:match-clause _ (s*symbol "B") _)) (syntax/match-clause (get clauses[1]))))
     #f))
 
 (assert

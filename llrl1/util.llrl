@@ -7,6 +7,15 @@
 (import "std/system" random!)
 (import "std/ord-map" _)
 
+; TODO: Add feature flag support ($feature must precede import/export declarations)
+(export $feature)
+(macro ($feature s)
+  (s/match s
+    [(_ ,(s:string _) ,expr)
+      (ok expr)]
+    [_
+      (err "Expected ($feature \"feature-name\" body)")]))
+
 ;    (getter con: con/a con/b)
 ; => (function (con/a x) (with1 (con: (let con/a) (let con/b)) x con/a))
 ;    (function (con/b x) (with1 (con: (let con/a) (let con/b)) x con/b))

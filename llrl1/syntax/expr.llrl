@@ -10,7 +10,7 @@
   (syntax:expr:let (Array (SyntaxLocalDef A)) (Array (S A)))
   (syntax:expr:if (S A) (S A) (S A))
   (syntax:expr:while (S A) (Array (S A)))
-  (syntax:expr:match (S A) (Array (SyntaxMatchClause A)))
+  (syntax:expr:match (S A) (Array (S A)))
   (syntax:expr:return (Option (S A)))
   (syntax:expr:tuple (Array (S A)))
   syntax:expr:unit
@@ -32,7 +32,7 @@
     [(s*list-like (s*symbol "while") (let cond) (let body))
       (ok (syntax:expr:while cond (syntax/list-of ok body)!))]
     [(s*list-like (s*symbol "match") (let target) (let clauses))
-      (ok (syntax:expr:match target (syntax/list-of syntax/match-clause clauses)!))]
+      (ok (syntax:expr:match target (syntax/list-of ok clauses)!))]
     [(s*list (s*symbol "return"))
       (ok (syntax:expr:return none))]
     [(s*list (s*symbol "return") (let expr))
