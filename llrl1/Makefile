@@ -1,4 +1,4 @@
-FLAGS=-pllvm:../llvm1 -c../llvm1/compat.c -c-I../rt `llvm-config --cppflags --ldflags --libs --system-libs | sed -e 's/-\([^ ]*\)/-c-\1/g'` -c-lstdc++
+FLAGS=-pxten:../xten1 -pllvm:../llvm1 -c../llvm1/compat.c -c-I../rt `llvm-config --cppflags --ldflags --libs --system-libs | sed -e 's/-\([^ ]*\)/-c-\1/g'` -c-lstdc++
 
 all: llrl1l
 
@@ -11,10 +11,11 @@ install: llrl1l
 # For example, `llrl1cl` is built by the LLVM backend of `llrl1c`, where
 # `llrl1c` is built by the chibi backend of `llrl0`.
 
-.PHONY: test clean
+.PHONY: test self-hosting clean
 
-# TODO: Implement chibi backend in llrl1
-test: test0l test0c test1ll test1cl
+test: test0l test0c test1ll test1cl test1lc test1cc self-hosting
+
+self-hosting: self-hosting1lll self-hosting1lcc self-hosting1cll self-hosting1ccc
 
 clean:
 	rm -f llrl1*
@@ -93,7 +94,7 @@ test1ccl: llrl1cc
 test1ccc: llrl1cc
 	./llrl1cc -b chibi $(FLAGS) tests/all
 
-# self-hosting test (llrl1 2nd and 3rd gen match the executable binary)
+# 3rd gen self-hosting test (llrl1 2nd and 3rd gen match the executable binary)
 .PHONY: self-hosting1lll self-hosting1lcc self-hosting1cll self-hosting1ccc
 self-hosting1lll: llrl1ll llrl1lll
 	diff llrl1ll llrl1lll

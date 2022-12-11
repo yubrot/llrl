@@ -2,8 +2,7 @@ FLAGS=-ccompat.c `llvm-config --cppflags --ldflags --libs --system-libs | sed -e
 
 .PHONY: test test0l test0c test1ll test1lc test1cl test1cc
 
-# TODO: Implement chibi backend in llrl1
-test: test0l test0c test1ll test1cl
+test: test0l test0c test1ll test1cl test1lc test1cc
 
 test0l:
 	llrl0           -b llvm  $(FLAGS) tests/all
