@@ -1,0 +1,59 @@
+(import "xten/asm" _)
+(import "~/util" _)
+(import "~/backend/native/mem-layout" _)
+(export RegAssign _.RegAssign reg-assign: reg-assign/_)
+(export AssignedReg _.AssignedReg assigned-reg:_)
+
+; Correspondence information between a part of data and a register.
+(derive (Eq DebugDisplay) value-data RegAssign
+  (reg-assign: U64 U64 AssignedReg))
+
+(getter reg-assign: reg-assign/offset reg-assign/size reg-assign/reg)
+
+(function (reg-assign/new offset size reg) {(forall R) (-> U64 U64 R RegAssign) (where (Conv R AssignedReg))}
+  (reg-assign: offset size (conv reg)))
+
+(function (reg-assign/build layout gps fps)
+  {(-> Layout (Ref (Array Gpr64)) (Ref (Array Xmm)) (Result (Array RegAssign) unit))}
+  (when
+    (and
+      (ne? (layout/class layout) class:integer)
+      (ne? (layout/class layout) class:floating-point))
+    (return (err unit)))
+
+  @let1 gps-index (ref 0)
+  @let1 fps-index (ref 0)
+  @let1 result
+    (it/traverse-result
+      (case1 (eightbyte: (let offset) (let size) (let cls))
+        (ok (reg-assign/new offset size (match cls
+          [class:void
+            assigned-reg:void]
+          [class:integer
+            (when (>= ~gps-index (array/length ~gps)) (return (err unit)))
+            (set! gps-index (+ ~gps-index 1))
+            (assigned-reg:gpr (get ~gps[(- ~gps-index 1)]))]
+          [class:floating-point
+            (when (>= ~fps-index (array/length ~fps)) (return (err unit)))
+            (set! fps-index (+ ~fps-index 1))
+            (assigned-reg:xmm (get ~fps[(- ~fps-index 1)]))]
+          [_
+            (return (err unit))]))))
+      (layout/eightbytes layout))!
+  (set! gps (array/skip ~gps-index ~gps))
+  (set! fps (array/skip ~fps-index ~fps))
+  (ok (vector/buffer result)))
+
+(derive (Eq DebugDisplay) value-data AssignedReg
+  (assigned-reg:gpr Gpr64)
+  (assigned-reg:xmm Xmm)
+  assigned-reg:void)
+
+(instance Conv.From.Gpr64.To.AssignedReg (Conv Gpr64 AssignedReg)
+  (function (conv reg) (assigned-reg:gpr reg)))
+
+(instance Conv.From.Xmm.To.AssignedReg (Conv Xmm AssignedReg)
+  (function (conv reg) (assigned-reg:xmm reg)))
+
+(instance Conv.From.Unit.To.AssignedReg (Conv unit AssignedReg)
+  (function (conv reg) assigned-reg:void))

@@ -1,0 +1,20 @@
+(import "xten/asm" _)
+(import "~/lowering/ir" [ir/_ _])
+(import "~/backend/native/mem-layout" _)
+(import "~/backend/chibi/codegen/reg-assign" _)
+(println! "llrl1/tests/backend/chibi")
+
+(let ([gps (ref (array rax rdx))]
+      [fps (ref (array xmm0 xmm1))]
+      [layout-a (layout/product (array (layout/integer 4) (layout/floating-point 4) (layout/floating-point 4)))]
+      [layout-b (layout/new 16 8 class:integer)]
+      [layout-c (layout/floating-point 8)])
+  (assert-eq? (reg-assign/build layout-a gps fps) (ok (array (reg-assign/new 0 8 rax) (reg-assign/new 8 4 xmm0))))
+  (assert-eq? ~gps (array rdx))
+  (assert-eq? ~fps (array xmm1))
+  (assert-eq? (reg-assign/build layout-b gps fps) (err unit))
+  (assert-eq? ~gps (array rdx))
+  (assert-eq? ~fps (array xmm1))
+  (assert-eq? (reg-assign/build layout-c gps fps) (ok (array (reg-assign/new 0 8 xmm1))))
+  (assert-eq? ~gps (array rdx))
+  (assert-eq? ~fps array/empty))
