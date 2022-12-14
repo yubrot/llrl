@@ -1,0 +1,96 @@
+(import "xten/asm" _)
+(import "~/util" _)
+(import "~/backend/native/mem-layout" _)
+(import "~/backend/chibi/codegen/reg-assign" _)
+(import "~/backend/chibi/codegen/stack-frame" _)
+(export CallFrame _.CallFrame call-frame: call-frame/_)
+(export CallArg _.CallArg call-arg:_ call-arg/_)
+(export CallRet _.CallRet call-ret:_ call-ret/_)
+
+; A llrl call frame consists of the following on the stack:
+; * The arguments passed through the stack:
+;   Which arguments are passed on the stack depends on the calling convention.
+;   This module has no responsibility for this.
+; * 16-byte alignment padding (if necessary)
+; * Destination to write the return value to (if ret.class == Class::Memory)
+(derive (DebugDisplay) value-data CallFrame
+  (call-frame: U64 U64 U64))
+
+(getter call-frame:
+  call-frame/stack-args-eightbytes
+  call-frame/call-alignment-padding
+  call-frame/ret-eightbytes)
+
+(function (call-frame/new args ret sf)
+  {(forall T) (-> (T CallArg) CallRet StackFrame CallFrame) (where (Iterate T))}
+  (let* ([stack-args-eightbytes
+            (|> args
+                (it/map (case
+                  [(call-arg:stack (let n)) n]
+                  [(call-arg:stack-rev (let n)) n]
+                  [_ 0]))
+                (it/fold [^2 (+ %1 %2)] 0))]
+         [ret-eightbytes
+            (match ret
+              [(call-ret:reg _ _) 0]
+              [(call-ret:stack (let n)) n])]
+         ; 16-byte alignment is required
+         [call-alignment-padding (% (+ ~(stack-frame/depth sf) ret-eightbytes stack-args-eightbytes) 2)])
+    (call-frame: stack-args-eightbytes call-alignment-padding ret-eightbytes)))
+
+(function (call-frame/padding-before-stack-args cf) {(-> CallFrame Layout)}
+  (let1 num-eightbytes (+ (call-frame/ret-eightbytes cf) (call-frame/call-alignment-padding cf))
+    (layout/memory (* num-eightbytes 8) 8)))
+
+(function (call-frame/offset-to-ret-destination? cf) {(-> CallFrame (Option U64))}
+  (when? (ne? (call-frame/ret-eightbytes cf) 0)
+    (* (+ (call-frame/stack-args-eightbytes cf) (call-frame/call-alignment-padding cf)) 8)))
+
+(function (call-frame/remnants-after-call cf) {(-> CallFrame Layout)}
+  (let1 num-eightbytes (+ (call-frame/stack-args-eightbytes cf) (call-frame/call-alignment-padding cf))
+    (layout/memory (* num-eightbytes 8) 8)))
+
+(derive (Eq DebugDisplay) value-data CallArg
+  (call-arg:reg RegAssign (Option RegAssign))
+  (call-arg:stack U64)      ; num eightbytes
+  (call-arg:stack-rev U64)) ; num eightbytes
+
+(function (call-arg/default-args args)
+  {(forall T) (-> (T Layout) (Array CallArg)) (where (Iterate T))}
+  ; Every arguments are passed through the stack
+  (collect (it/map [^1 (call-arg:stack (layout/num-eightbytes %1))] args)))
+
+(function (call-arg/c-args args ret)
+  {(forall T) (-> (T Layout) Layout (Array CallArg)) (where (Iterate T))}
+  (let ([gps (ref (array rdi rsi rdx rcx r8 r9))]
+        [fps (ref (array xmm0 xmm1 xmm2 xmm3 xmm4 xmm5 xmm6 xmm7))])
+    (when (eq? (layout/class ret) class:memory)
+      ; The memory address to be written to is given by the rdi register
+      (set! gps (array/skip 1 ~gps)))
+
+    (collect (it/map
+      (lambda (arg)
+        (match (reg-assign/build arg gps fps)
+          [(ok (let assigns))
+            (call-arg:reg (get assigns[0]) (get? assigns[1]))]
+          [(err unit)
+            (call-arg:stack-rev (layout/num-eightbytes arg))]))
+      args))))
+
+(derive (Eq DebugDisplay) value-data CallRet
+  (call-ret:reg RegAssign (Option RegAssign))
+  (call-ret:stack U64)) ; num eightbytes
+
+(function (call-ret/default layout) {(-> Layout CallRet)}
+  ; same as C
+  (call-ret/c layout))
+
+(function (call-ret/c layout) {(-> Layout CallRet)}
+  ; This is compatible with the "last value" of stack-op.
+  (let ([gps (ref (array rax rdx))]
+        [fps (ref (array xmm0 xmm1))])
+  (match (reg-assign/build layout gps fps)
+    [(ok (let assigns))
+      (call-ret:reg (get assigns[0]) (get? assigns[1]))]
+    [(err unit)
+      (call-ret:stack (layout/num-eightbytes layout))])))

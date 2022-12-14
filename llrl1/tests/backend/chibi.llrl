@@ -6,6 +6,7 @@
 (import "~/backend/chibi/context" _)
 (import "~/backend/chibi/codegen/reg-assign" _)
 (import "~/backend/chibi/codegen/stack-frame" _)
+(import "~/backend/chibi/codegen/call-frame" _)
 (println! "llrl1/tests/backend/chibi")
 
 (let ([gps (ref (array rax rdx))]
@@ -168,3 +169,31 @@
     (assert-eq? (stack-frame/consume-alloc-area! (context/layout (ir/ct:id triple-id) ctx) sf) -24)
     (assert-eq? ~(stack-frame/vars sf) 3)
     (assert-eq? ~(stack-frame/allocs sf) 0)))
+
+(assert-eq? (call-arg/default-args array/empty) array/empty)
+(assert-eq?
+  (call-arg/default-args (array (layout/integer 4) (layout/integer 4)))
+  (array (call-arg:stack 1) (call-arg:stack 1)))
+(assert-eq?
+  (call-arg/c-args (array (layout/integer 4) (layout/integer 4) (layout/floating-point 4)) (layout/integer 4))
+  (array
+    (call-arg:reg (reg-assign/new 0 4 rdi) none)
+    (call-arg:reg (reg-assign/new 0 4 rsi) none)
+    (call-arg:reg (reg-assign/new 0 4 xmm0) none)))
+(assert-eq?
+  (call-arg/c-args
+    (array
+      (layout/product (array (layout/integer 8) (layout/integer 8) (layout/integer 8)))
+      (layout/product (array (layout/integer 8) (layout/integer 8))))
+    (layout/memory 24 8))
+  (array
+    (call-arg:stack-rev 3)
+    (call-arg:reg (reg-assign/new 0 8 rsi) (some (reg-assign/new 8 8 rdx)))))
+
+(assert-eq? (call-ret/c (layout/memory 24 8)) (call-ret:stack 3))
+(assert-eq?
+  (call-ret/c (layout/new 16 8 class:integer))
+  (call-ret:reg (reg-assign/new 0 8 rax) (some (reg-assign/new 8 8 rdx))))
+(assert-eq?
+  (call-ret/c (layout/product (array (layout/integer 8) (layout/floating-point 4))))
+  (call-ret:reg (reg-assign/new 0 8 rax) (some (reg-assign/new 8 8 xmm0))))
