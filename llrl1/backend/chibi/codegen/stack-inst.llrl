@@ -1,0 +1,274 @@
+(import "xten/asm" _)
+(import "~/util" _)
+(import "~/backend/native/mem-layout" _)
+(import "~/backend/chibi/codegen/reg-assign" _)
+(export StackAwareInstWriter stack-aware-inst-writer/_ .._ EightbyteReg._)
+
+; In this implementation, we reserve R10 and R11 as temporary registers. This means that there is
+; no guarantee that these registers will be preserved throughout the operation of this module.
+; These registers are chosen because they are caller-save (volatile) and are not used for function
+; arguments.
+(function TMP_GP1 r10) ; used for sized load/store
+(function TMP_GP2 r11) ; used for XMM-to-GP-to-mem and mem-to-mem
+
+(function LAST_VALUE_GPS (array rax rdx))
+(function LAST_VALUE_FPS (array xmm0 xmm1))
+
+(class (StackAwareInstWriter W)
+  ; The depth of the current stack frame in eightbytes.
+  ; This value is computed during stack-related operations to satisfy 16-byte alignment
+  ; requirement in call-frame.
+  (function (stack-aware-inst-writer/depth w) {(-> W (Ref U64))}))
+
+; Shorthand for this module
+(transparent-function (depth s) (stack-aware-inst-writer/depth s))
+
+; Stack aware instructions are named with `..` prefix.
+
+(function (..extend-stack! w layout)
+  (when (ne? (layout/size layout) 0)
+    (let1 depth (stack-aware-inst-writer/depth w)
+      (subq! w rsp (* (conv-to I32 (layout/num-eightbytes layout)) 8))!
+      (set! depth (+ ~depth (layout/num-eightbytes layout)))))
+  (ok unit))
+
+(function (..shrink-stack! w layout)
+  (when (ne? (layout/size layout) 0)
+    (let1 depth (stack-aware-inst-writer/depth w)
+      (addq! w rsp (* (conv-to I32 (layout/num-eightbytes layout)) 8))!
+      (set! depth (- ~depth (layout/num-eightbytes layout)))))
+  (ok unit))
+
+(function (..slide-in-stack! cg src dst layout)
+  {(forall W Error) (-> W U64 U64 Layout (Result unit Error)) (where (Write W Error) (StackAwareInstWriter W))}
+  (match (compare src dst)
+    [ordering:equal]
+    [ordering:less
+      ; right to left
+      (for (let i) (iterator/range (- (layout/num-eightbytes layout) 1) -1 -1)
+        @let1 src (conv-to I32 (+ src (* i 8)))
+        @let1 dst (conv-to I32 (+ dst (* i 8)))
+        @let1 size (min (- (layout/size layout) (* i 8)) 8)
+        (..load-eightbyte! cg TMP_GP2 (+. rsp src) size)!
+        (..store-eightbyte! cg (+. rsp dst) TMP_GP2 size)!)]
+    [ordering:greater
+      ; left to right
+      (for (let i) (iterator/range 0 (layout/num-eightbytes layout) 1)
+        @let1 src (conv-to I32 (+ src (* i 8)))
+        @let1 dst (conv-to I32 (+ dst (* i 8)))
+        @let1 size (min (- (layout/size layout) (* i 8)) 8)
+        (..load-eightbyte! cg TMP_GP2 (+. rsp src) size)!
+        (..store-eightbyte! cg (+. rsp dst) TMP_GP2 size)!)
+      ])
+  (ok unit))
+
+(function (..push-eightbyte! w reg)
+  (let ([depth (stack-aware-inst-writer/depth w)]
+        [num (eightbyte-reg/push! w reg)!])
+    (set! depth (+ ~depth num)))
+  (ok unit))
+
+(function (..pop-eightbyte! w reg)
+  (let ([depth (stack-aware-inst-writer/depth w)]
+        [num (eightbyte-reg/pop! w reg)!])
+    (set! depth (- ~depth num)))
+  (ok unit))
+
+(function (..load-eightbyte! w dst src-addr size)
+  (eightbyte-reg/load! w dst src-addr size))
+
+(function (..store-eightbyte! w dst-addr src size)
+  (eightbyte-reg/store! w dst-addr src size))
+
+; Discard the last value.
+(function (..discard! w layout)
+  (if (eq? (layout/class layout) class:memory)
+    ; The stack area is used for values classified as Class::Memory
+    (..shrink-stack! w layout)!
+    ; The last value is in the specified registers
+    unit)
+  (ok unit))
+
+; Push the last value onto the stack.
+(function (..push! w layout)
+  (if-match1 (ok (let assigns)) (reg-assign/build layout (ref LAST_VALUE_GPS) (ref LAST_VALUE_FPS))
+    (for (reg-assign: _ _ (let reg)) (rev-iterate assigns)
+      (..push-eightbyte! w reg)!)
+    ; There is nothing to push, or the stack area has already been used for the last value
+    unit)
+  (ok unit))
+
+
+; Pop the top of the stack value into the specified registers.
+(function (..pop! w layout)
+  (if-match1 (ok (let assigns)) (reg-assign/build layout (ref LAST_VALUE_GPS) (ref LAST_VALUE_FPS))
+    (for (reg-assign: _ _ (let reg)) assigns
+      (..pop-eightbyte! w reg)!)
+    ; There is nothing to pop, or the stack area has already been used for the last value
+    unit)
+  (ok unit))
+
+; Load a value from the specified memory area.
+(function (..load! w addr layout)
+  (cond
+    [when-match1 (ok (let assigns)) (reg-assign/build layout (ref LAST_VALUE_GPS) (ref LAST_VALUE_FPS))
+      (for (reg-assign: (let offset) (let size) (let reg)) assigns
+        (..load-eightbyte! w reg (+. addr (conv-to I32 offset)) size)!)]
+    [when (eq? (layout/class layout) class:memory)
+      (for (eightbyte: (let offset) (let size) _) (layout/rev-eightbytes layout)
+        (..load-eightbyte! w TMP_GP2 (+. addr (conv-to I32 offset)) size)!
+        (..push-eightbyte! w TMP_GP2)!)]
+    [else])
+  (ok unit))
+
+; Store the last value in the specified memory area.
+(function (..store! w addr layout)
+  (cond
+    [when-match1 (ok (let assigns)) (reg-assign/build layout (ref LAST_VALUE_GPS) (ref LAST_VALUE_FPS))
+      (for (reg-assign: (let offset) (let size) (let reg)) assigns
+        (..store-eightbyte! w (+. addr (conv-to I32 offset)) reg size)!)]
+    [when (eq? (layout/class layout) class:memory)
+      (for (eightbyte: (let offset) (let size) _) (layout/eightbytes layout)
+        (..pop-eightbyte! w TMP_GP2)!
+        (..store-eightbyte! w (+. addr (conv-to I32 offset)) TMP_GP2 size)!)]
+    [else])
+  (ok unit))
+
+(class (EightbyteReg W Error R)
+  ; Push a value of this register onto the stack.
+  (function (eightbyte-reg/push! w reg) {(-> W R (Result U64 Error))})
+
+  ; Pop a value from the stack into this register.
+  (function (eightbyte-reg/pop! w reg) {(-> W R (Result U64 Error))})
+
+  ; Load a value from `src-addr` into this register.
+  (function (eightbyte-reg/load! w reg src-addr size)
+    {(forall A) (-> W R A U64 (Result unit Error)) (where (Conv A Address))})
+
+  ; Store a value of this register to `dst-addr`.
+  (function (eightbyte-reg/store! w dst-addr reg size)
+    {(forall A) (-> W A R U64 (Result unit Error)) (where (Conv A Address))}))
+
+(instance EightbyteReg.Gpr64 (forall W Error) (EightbyteReg W Error Gpr64) (where (Write W Error))
+  (function (eightbyte-reg/push! w reg)
+    (pushq! w reg)!
+    (ok 1))
+
+  (function (eightbyte-reg/pop! w reg)
+    (popq! w reg)!
+    (ok 1))
+
+  (function (eightbyte-reg/load! w reg src-addr size)
+    (match size
+      [0]
+      [1
+        (movb! w (gpr64/b reg) (memory src-addr))!]
+      [2
+        (movw! w (gpr64/w reg) (memory src-addr))!]
+      [3
+        (movzwq! w reg (memory src-addr))!
+        (movzbq! w TMP_GP1 (memory (+. src-addr 2)))!
+        (shlq! w TMP_GP1 16 {I8})!
+        (orq! w reg TMP_GP1)!]
+      [4
+        (movl! w (gpr64/l reg) (memory src-addr))!]
+      [5
+        (movl! w (gpr64/l reg) (memory src-addr))!
+        (movzbq! w TMP_GP1 (memory (+. src-addr 4)))!
+        (shlq! w TMP_GP1 32 {I8})!
+        (orq! w reg TMP_GP1)!]
+      [6
+        (movl! w (gpr64/l reg) (memory src-addr))!
+        (movzwq! w TMP_GP1 (memory (+. src-addr 4)))!
+        (shlq! w TMP_GP1 32 {I8})!
+        (orq! w reg TMP_GP1)!]
+      [7
+        (movl! w (gpr64/l reg) (memory src-addr))!
+        (movzwq! w TMP_GP1 (memory (+. src-addr 4)))!
+        (shlq! w TMP_GP1 32 {I8})!
+        (orq! w reg TMP_GP1)!
+        (movzbq! w TMP_GP1 (memory (+. src-addr 6)))!
+        (shlq! w TMP_GP1 48 {I8})!
+        (orq! w reg TMP_GP1)!]
+      [8
+        (movq! w reg (memory src-addr))!]
+      [_
+        (assert #f)])
+    (ok unit))
+
+  (function (eightbyte-reg/store! w dst-addr reg size)
+    (match size
+      [0]
+      [1
+        (movb! w (memory dst-addr) (gpr64/b reg))!]
+      [2
+        (movw! w (memory dst-addr) (gpr64/w reg))!]
+      [3
+        (movw! w (memory dst-addr) (gpr64/w reg))!
+        (shrl! w (gpr64/l reg) 16 {I8})!
+        (movb! w (memory (+. dst-addr 2)) (gpr64/b reg))!]
+      [4
+        (movl! w (memory dst-addr) (gpr64/l reg))!]
+      [5
+        (movl! w (memory dst-addr) (gpr64/l reg))!
+        (shrq! w reg 32 {I8})!
+        (movb! w (memory (+. dst-addr 4)) (gpr64/b reg))!]
+      [6
+        (movl! w (memory dst-addr) (gpr64/l reg))!
+        (shrq! w reg 32 {I8})!
+        (movw! w (memory (+. dst-addr 4)) (gpr64/w reg))!]
+      [7
+        (movl! w (memory dst-addr) (gpr64/l reg))!
+        (shrq! w reg 32 {I8})!
+        (movw! w (memory (+. dst-addr 4)) (gpr64/w reg))!
+        (shrq! w reg 16 {I8})!
+        (movb! w (memory (+. dst-addr 6)) (gpr64/b reg))!]
+      [8
+        (movq! w (memory dst-addr) reg)!]
+      [_
+        (assert #f)])
+    (ok unit)))
+
+(instance EightbyteReg.Xmm (forall W Error) (EightbyteReg W Error Xmm) (where (Write W Error))
+  (function (eightbyte-reg/push! w reg)
+    (movq! w TMP_GP2 reg)!
+    (pushq! w TMP_GP2)!
+    (ok 1))
+
+  (function (eightbyte-reg/pop! w reg)
+    (popq! w TMP_GP2)!
+    (movq! w reg TMP_GP2)!
+    (ok 1))
+
+  (function (eightbyte-reg/load! w reg src-addr size)
+    (eightbyte-reg/load! w TMP_GP2 src-addr size)!
+    (movq! w reg TMP_GP2))
+
+  (function (eightbyte-reg/store! w dst-addr reg size)
+    (movq! w TMP_GP2 reg)!
+    (eightbyte-reg/store! w dst-addr TMP_GP2 size)))
+
+(instance EightbyteReg.AssignedReg (forall W Error) (EightbyteReg W Error AssignedReg) (where (Write W Error))
+  (function (eightbyte-reg/push! w reg)
+    (match reg
+      [(assigned-reg:gpr (let reg)) (eightbyte-reg/push! w reg)]
+      [(assigned-reg:xmm (let reg)) (eightbyte-reg/push! w reg)]
+      [assigned-reg:void (ok 0)]))
+
+  (function (eightbyte-reg/pop! w reg)
+    (match reg
+      [(assigned-reg:gpr (let reg)) (eightbyte-reg/pop! w reg)]
+      [(assigned-reg:xmm (let reg)) (eightbyte-reg/pop! w reg)]
+      [assigned-reg:void (ok 0)]))
+
+  (function (eightbyte-reg/load! w reg src-addr size)
+    (match reg
+      [(assigned-reg:gpr (let reg)) (eightbyte-reg/load! w reg src-addr size)]
+      [(assigned-reg:xmm (let reg)) (eightbyte-reg/load! w reg src-addr size)]
+      [assigned-reg:void (ok unit)]))
+
+  (function (eightbyte-reg/store! w dst-addr reg size)
+    (match reg
+      [(assigned-reg:gpr (let reg)) (eightbyte-reg/store! w dst-addr reg size)]
+      [(assigned-reg:xmm (let reg)) (eightbyte-reg/store! w dst-addr reg size)]
+      [assigned-reg:void (ok unit)])))
