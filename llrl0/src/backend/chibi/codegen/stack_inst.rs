@@ -13,8 +13,8 @@ static TMP_GP2: Gpr64 = Gpr64::R11; // used for XMM-to-GP-to-mem and mem-to-mem
 static LAST_VALUE_GPS: [Gpr64; 2] = [Rax, Rdx];
 static LAST_VALUE_FPS: [Xmm; 2] = [Xmm0, Xmm1];
 
-/// Implementation of operations with call stack modifications.
-pub trait StackOpWriter {
+/// Writer for stack aware instructions.
+pub trait StackAwareInstWriter {
     fn w(&mut self) -> &mut Writer;
 
     /// The depth of the current stack frame in eightbytes.
@@ -92,7 +92,7 @@ pub trait StackOpWriter {
                 self.push_eightbyte(assign.reg)?;
             }
         } else {
-            // There is nothing to push, or the stack area has already used for the last value
+            // There is nothing to push, or the stack area has already been used for the last value
         }
         Ok(())
     }
@@ -108,7 +108,7 @@ pub trait StackOpWriter {
                 self.pop_eightbyte(assign.reg)?;
             }
         } else {
-            // There is nothing to pop, or the stack area has already used for the last value
+            // There is nothing to pop, or the stack area has already been used for the last value
         }
         Ok(())
     }

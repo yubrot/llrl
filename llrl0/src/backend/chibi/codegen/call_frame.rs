@@ -106,8 +106,7 @@ impl CallRet {
     }
 
     pub fn c(layout: &Layout) -> Self {
-        // Since these are equivalent to stack_op::{LAST_VALUE_GPS, LAST_VALUE_FPS},
-        // the return value after a function call can be regarded as the last value as it is.
+        // This is compatible with the "last value" of stack_op.
         static GPS: [Gpr64; 2] = [Rax, Rdx];
         static FPS: [Xmm; 2] = [Xmm0, Xmm1];
 
@@ -139,9 +138,9 @@ mod tests {
                 &Layout::integer(4)
             ),
             vec![
-                CallArg::Reg(RegAssign::gpr(0, 4, Rdi), None),
-                CallArg::Reg(RegAssign::gpr(0, 4, Rsi), None),
-                CallArg::Reg(RegAssign::xmm(0, 4, Xmm0), None)
+                CallArg::Reg(RegAssign::new(0, 4, Rdi), None),
+                CallArg::Reg(RegAssign::new(0, 4, Rsi), None),
+                CallArg::Reg(RegAssign::new(0, 4, Xmm0), None)
             ]
         );
         assert_eq!(
@@ -154,7 +153,7 @@ mod tests {
             ),
             vec![
                 CallArg::StackRev(3),
-                CallArg::Reg(RegAssign::gpr(0, 8, Rsi), Some(RegAssign::gpr(8, 8, Rdx))),
+                CallArg::Reg(RegAssign::new(0, 8, Rsi), Some(RegAssign::new(8, 8, Rdx))),
             ]
         );
     }
@@ -164,14 +163,14 @@ mod tests {
         assert_eq!(CallRet::c(&Layout::memory(24, 8)), CallRet::Stack(3));
         assert_eq!(
             CallRet::c(&Layout::new(16, 8, Class::Integer)),
-            CallRet::Reg(RegAssign::gpr(0, 8, Rax), Some(RegAssign::gpr(8, 8, Rdx)))
+            CallRet::Reg(RegAssign::new(0, 8, Rax), Some(RegAssign::new(8, 8, Rdx)))
         );
         assert_eq!(
             CallRet::c(&Layout::product(&[
                 Layout::integer(8),
                 Layout::floating_point(4)
             ])),
-            CallRet::Reg(RegAssign::gpr(0, 8, Rax), Some(RegAssign::xmm(8, 8, Xmm0)))
+            CallRet::Reg(RegAssign::new(0, 8, Rax), Some(RegAssign::new(8, 8, Xmm0)))
         );
     }
 }

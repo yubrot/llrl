@@ -168,3 +168,223 @@ impl<'a> traverser::Traverser for StackFrameBuilder<'a> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn stack_frame() {
+        use std::sync::Arc;
+
+        let mut ct_id_gen = CtIdGen::new();
+        let mut rt_id_gen = RtIdGen::new();
+
+        // (value-data Pair (pair: I64 I64))
+        let pair_id = ct_id_gen.next();
+        let pair = Struct::new(StructRepr::Standard, vec![Ct::S(64), Ct::S(64)]);
+
+        // (value-data Triple (pair: I64 I64 I64))
+        let triple_id = ct_id_gen.next();
+        let triple = Struct::new(StructRepr::Standard, vec![Ct::S(64), Ct::S(64), Ct::S(64)]);
+
+        let mut ctx = Context::new();
+        ctx.add_types(
+            &[
+                (pair_id, Arc::new(Def::Struct(pair))),
+                (triple_id, Arc::new(Def::Struct(triple))),
+            ]
+            .into_iter()
+            .collect(),
+        );
+
+        // some RtIds for tests
+        let ids = (0..10).map(|_| rt_id_gen.next()).collect::<Vec<_>>();
+
+        // standard function with arguments
+        {
+            let sf = StackFrame::new(
+                &Function::new(
+                    Some(FunctionEnv::new(
+                        ids[0],
+                        vec![
+                            RtParam::new(ids[1], Ct::S(32)),
+                            RtParam::new(ids[2], Ct::F64),
+                        ],
+                    )),
+                    vec![
+                        RtParam::new(ids[3], Ct::S(64)),
+                        RtParam::new(ids[4], Ct::Id(pair_id)),
+                    ],
+                    Ct::Id(pair_id),
+                    Rt::Never,
+                    FunctionKind::Standard,
+                    false,
+                ),
+                &ctx,
+            );
+            assert_eq!(sf.ret_ptr, None);
+            assert_eq!(
+                sf.var_offsets,
+                [
+                    (ids[0], -8),
+                    (ids[1], -16),
+                    (ids[2], -24),
+                    (ids[3], 32),
+                    (ids[4], 16)
+                ]
+                .into_iter()
+                .collect()
+            );
+            assert_eq!(sf.vars, 3);
+            assert_eq!(sf.allocs, 0);
+            assert_eq!(sf.depth, 0);
+            assert_eq!(sf.reserved_area(), Layout::memory(24, 8));
+        }
+
+        // return by pointer store
+        {
+            let sf = StackFrame::new(
+                &Function::new(
+                    None,
+                    vec![],
+                    Ct::Id(triple_id),
+                    Rt::Never,
+                    FunctionKind::Standard,
+                    false,
+                ),
+                &ctx,
+            );
+            assert_eq!(sf.ret_ptr, Some(-8));
+            assert_eq!(sf.var_offsets, HashMap::new());
+            assert_eq!(sf.vars, 1);
+        }
+
+        // macro
+        {
+            let sf = StackFrame::new(
+                &Function::new(
+                    None,
+                    vec![RtParam::new(ids[0], Ct::Id(pair_id))],
+                    Ct::Id(triple_id),
+                    Rt::Never,
+                    FunctionKind::Macro,
+                    false,
+                ),
+                &ctx,
+            );
+            assert_eq!(sf.ret_ptr, Some(-8));
+            assert_eq!(sf.var_offsets, [(ids[0], -24)].into_iter().collect());
+            assert_eq!(sf.vars, 3);
+        }
+
+        // LetVar
+        {
+            let body = Rt::let_var(
+                vec![
+                    RtVar::new(
+                        ids[0],
+                        Ct::S(64),
+                        Rt::let_var(vec![RtVar::new(ids[1], Ct::S(64), Rt::Never)], Rt::Never),
+                    ),
+                    RtVar::new(
+                        ids[2],
+                        Ct::S(64),
+                        Rt::let_var(vec![RtVar::new(ids[3], Ct::S(64), Rt::Never)], Rt::Never),
+                    ),
+                ],
+                Rt::let_var(vec![RtVar::new(ids[4], Ct::S(64), Rt::Never)], Rt::Never),
+            );
+            let sf = StackFrame::new(
+                &Function::new(None, vec![], Ct::Unit, body, FunctionKind::Standard, false),
+                &ctx,
+            );
+            assert_eq!(
+                sf.var_offsets,
+                [
+                    (ids[0], -8),
+                    (ids[1], -16),
+                    (ids[2], -16),
+                    (ids[3], -24),
+                    (ids[4], -24)
+                ]
+                .into_iter()
+                .collect()
+            );
+            assert_eq!(sf.vars, 3);
+            assert_eq!(sf.allocs, 0);
+        }
+
+        // LetCont
+        {
+            let body = Rt::seq(
+                vec![Rt::let_var(
+                    vec![RtVar::new(ids[0], Ct::S(64), Rt::Never)],
+                    Rt::Never,
+                )],
+                Rt::let_cont(
+                    vec![
+                        RtCont::new(ids[1], vec![RtParam::new(ids[2], Ct::S(64))], Rt::Never),
+                        RtCont::new(
+                            ids[3],
+                            vec![
+                                RtParam::new(ids[4], Ct::S(64)),
+                                RtParam::new(ids[5], Ct::S(64)),
+                            ],
+                            Rt::let_var(vec![RtVar::new(ids[6], Ct::S(64), Rt::Never)], Rt::Never),
+                        ),
+                    ],
+                    Rt::let_var(
+                        vec![
+                            RtVar::new(ids[7], Ct::S(64), Rt::Never),
+                            RtVar::new(ids[8], Ct::S(64), Rt::Never),
+                        ],
+                        Rt::Never,
+                    ),
+                ),
+            );
+            let sf = StackFrame::new(
+                &Function::new(None, vec![], Ct::Unit, body, FunctionKind::Standard, false),
+                &ctx,
+            );
+            assert_eq!(
+                sf.var_offsets,
+                [
+                    (ids[0], -8),
+                    (ids[2], -24),
+                    (ids[4], -24),
+                    (ids[5], -32),
+                    (ids[6], -40),
+                    (ids[7], -8),
+                    (ids[8], -16)
+                ]
+                .into_iter()
+                .collect()
+            );
+            assert_eq!(sf.vars, 5);
+            assert_eq!(sf.allocs, 0);
+        }
+
+        // Alloc
+        {
+            let body = Rt::seq(
+                vec![Rt::alloc(
+                    Location::StackStatic,
+                    Rt::nullary(Nullary::Uninitialized(Ct::Id(triple_id))),
+                )],
+                Rt::Never,
+            );
+            let mut sf = StackFrame::new(
+                &Function::new(None, vec![], Ct::Unit, body, FunctionKind::Standard, false),
+                &ctx,
+            );
+            assert_eq!(sf.var_offsets, HashMap::new());
+            assert_eq!(sf.vars, 0);
+            assert_eq!(sf.allocs, 3);
+
+            assert_eq!(sf.consume_alloc_area(&ctx.layout(&Ct::Id(triple_id))), -24);
+            assert_eq!(sf.vars, 3);
+            assert_eq!(sf.allocs, 0);
+        }
+    }
+}

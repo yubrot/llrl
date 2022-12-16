@@ -44,12 +44,15 @@ use xten::asm::*;
 mod call_frame;
 mod reg_assign;
 mod stack_frame;
-mod stack_op;
+mod stack_inst;
+
+#[macro_use]
+mod macros;
 
 use call_frame::{CallArg, CallFrame, CallRet};
 use reg_assign::{AssignedReg, RegAssign};
 use stack_frame::StackFrame;
-use stack_op::StackOpWriter;
+use stack_inst::StackAwareInstWriter;
 
 pub fn c_main_adapter_object(ctx: &mut Context) -> io::Result<Object> {
     let mut w = Writer::new();
@@ -75,63 +78,41 @@ pub fn object(
     ctx: &mut Context,
 ) -> io::Result<Object> {
     let mut w = Writer::new();
-    let mut function_labels = HashMap::new();
 
     for (id, def) in defs {
         if let Def::Function(ref f) = **def {
-            let name = id.index().to_string();
-            function_labels.insert(*id, w.get_label(&name));
-            let symbol = FunctionSymbol::new(name, f.kind, f.ty());
+            let symbol = FunctionSymbol::new(id.index().to_string(), f.kind, f.ty());
             ctx.define_function_symbol(*id, symbol);
         }
     }
 
     for (id, def) in defs {
         if let Def::Function(ref f) = **def {
-            let label = *function_labels.get(id).unwrap();
+            let label = w.get_label(&ctx.function_symbol(*id).unwrap().name);
             w.define(label, true);
-            FunctionCodegen::run(&mut w, &mut function_labels, ctx, f)?;
+            FunctionCodegen::run(&mut w, ctx, f)?;
         }
     }
 
     if let Some(main) = main {
-        let name = "llrl_main".to_string();
-        let label = w.get_label(&name);
-        let symbol = FunctionSymbol::new(name, FunctionKind::Main, Function::main_ty());
+        let symbol = FunctionSymbol::new(
+            "llrl_main".to_string(),
+            FunctionKind::Main,
+            Function::main_ty(),
+        );
+        let label = w.get_label(&symbol.name);
         ctx.define_main_function_symbol(symbol);
 
         w.define(label, true);
-        FunctionCodegen::run(&mut w, &mut function_labels, ctx, main)?;
+        FunctionCodegen::run(&mut w, ctx, main)?;
     }
 
     w.produce()
 }
 
-macro_rules! eval_continues {
-    ($e:expr) => {
-        match $e {
-            Some(a) => a,
-            None => return Ok(None),
-        }
-    };
-}
-
-macro_rules! unsupported_op {
-    ($op:expr) => {
-        panic!("Unsupported operation {}", $op)
-    };
-    ($op:expr, size: $size:expr) => {
-        panic!("Unsupported operation {} (size={})", $op, $size)
-    };
-    ($op:expr, from: $from:expr, to: $to:expr) => {
-        panic!("Unsupported operation {} (from={}, to={})", $op, $from, $to)
-    };
-}
-
 #[derive(Debug)]
 struct FunctionCodegen<'a> {
     w: &'a mut Writer,
-    function_labels: &'a mut HashMap<CtId, Label>,
     ctx: &'a mut Context,
     stack_frame: StackFrame,
     epilogue_label: Label,
@@ -139,17 +120,11 @@ struct FunctionCodegen<'a> {
 }
 
 impl<'a> FunctionCodegen<'a> {
-    fn run(
-        w: &mut Writer,
-        function_labels: &mut HashMap<CtId, Label>,
-        ctx: &mut Context,
-        f: &Function,
-    ) -> io::Result<()> {
+    fn run(w: &mut Writer, ctx: &mut Context, f: &Function) -> io::Result<()> {
         let stack_frame = StackFrame::new(f, ctx);
         let epilogue_label = w.issue_label();
         let mut cg = FunctionCodegen {
             w,
-            function_labels,
             ctx,
             stack_frame,
             epilogue_label,
@@ -159,14 +134,6 @@ impl<'a> FunctionCodegen<'a> {
         cg.eval(&f.body)?;
         cg.epilogue(f)?;
         cg.w.retq()
-    }
-
-    /// Obtain the label corresponding to a certain function symbol.
-    fn capture_function(&mut self, id: CtId) -> Label {
-        *self.function_labels.entry(id).or_insert_with(|| {
-            let symbol = self.ctx.function_symbol(id).unwrap();
-            self.w.get_label(&symbol.name)
-        })
     }
 
     fn prologue(&mut self, f: &Function) -> io::Result<()> {
@@ -241,7 +208,9 @@ impl<'a> FunctionCodegen<'a> {
                     } else {
                         self.w.xorl(Edx, Edx)?;
                     }
-                    let function_label = self.capture_function(*id);
+                    let function_label = self
+                        .w
+                        .get_label(&self.ctx.function_symbol(*id).unwrap().name);
                     self.w.movq(Rax, AddressTable(function_label))?;
                     Some(Layout::clos())
                 }
@@ -1273,7 +1242,7 @@ impl<'a> FunctionCodegen<'a> {
     }
 }
 
-impl<'a> StackOpWriter for FunctionCodegen<'a> {
+impl<'a> StackAwareInstWriter for FunctionCodegen<'a> {
     fn w(&mut self) -> &mut Writer {
         self.w
     }

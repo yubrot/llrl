@@ -1,9 +1,8 @@
 use crate::backend::native::mem_layout::{Class, Layout};
-use derive_new::new;
 use xten::asm::*;
 
 /// Correspondence information between a part of data and a register.
-#[derive(PartialEq, Eq, Debug, Clone, Copy, new)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
 pub struct RegAssign {
     pub offset: usize,
     pub size: usize,
@@ -11,19 +10,12 @@ pub struct RegAssign {
 }
 
 impl RegAssign {
-    #[allow(dead_code)]
-    pub fn gpr(offset: usize, size: usize, reg: Gpr64) -> Self {
-        Self::new(offset, size, AssignedReg::Gpr(reg))
-    }
-
-    #[allow(dead_code)]
-    pub fn xmm(offset: usize, size: usize, reg: Xmm) -> Self {
-        Self::new(offset, size, AssignedReg::Xmm(reg))
-    }
-
-    #[allow(dead_code)]
-    pub fn void(offset: usize, size: usize) -> Self {
-        Self::new(offset, size, AssignedReg::Void)
+    pub fn new(offset: usize, size: usize, reg: impl Into<AssignedReg>) -> Self {
+        Self {
+            offset,
+            size,
+            reg: reg.into(),
+        }
     }
 
     pub fn build(layout: &Layout, gps: &mut &[Gpr64], fps: &mut &[Xmm]) -> Result<Vec<Self>, ()> {
@@ -66,6 +58,24 @@ pub enum AssignedReg {
     Void,
 }
 
+impl From<Gpr64> for AssignedReg {
+    fn from(reg: Gpr64) -> Self {
+        Self::Gpr(reg)
+    }
+}
+
+impl From<Xmm> for AssignedReg {
+    fn from(reg: Xmm) -> Self {
+        Self::Xmm(reg)
+    }
+}
+
+impl From<()> for AssignedReg {
+    fn from(_: ()) -> Self {
+        Self::Void
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -84,7 +94,7 @@ mod tests {
         ]);
         assert_eq!(
             RegAssign::build(&layout_a, &mut gps, &mut fps),
-            Ok(vec![RegAssign::gpr(0, 8, Rax), RegAssign::xmm(8, 4, Xmm0)])
+            Ok(vec![RegAssign::new(0, 8, Rax), RegAssign::new(8, 4, Xmm0)])
         );
         assert_eq!(gps, &[Rdx]);
         assert_eq!(fps, &[Xmm1]);
@@ -97,7 +107,7 @@ mod tests {
         let layout_c = Layout::floating_point(8);
         assert_eq!(
             RegAssign::build(&layout_c, &mut gps, &mut fps),
-            Ok(vec![RegAssign::xmm(0, 8, Xmm1)])
+            Ok(vec![RegAssign::new(0, 8, Xmm1)])
         );
         assert_eq!(gps, &[Rdx]);
         assert_eq!(fps, &[]);
