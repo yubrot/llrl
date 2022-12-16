@@ -36,9 +36,9 @@ impl Nonterminal for Sexp {
                     Ok(s)
                 } else if let Some(s) = p.try_parse::<SexpChar>()? {
                     Ok(s)
-                } else if let Some(s) = p.try_parse::<SexpList<prim::LParen, prim::RParen>>()? {
+                } else if let Some(s) = p.try_parse::<SexpListLike<prim::LParen, prim::RParen>>()? {
                     Ok(s)
-                } else if let Some(s) = p.try_parse::<SexpList<prim::LBrack, prim::RBrack>>()? {
+                } else if let Some(s) = p.try_parse::<SexpListLike<prim::LBrack, prim::RBrack>>()? {
                     Ok(s)
                 } else if let Some(s) = p.try_parse::<SexpQuoted<SexpQuote>>()? {
                     Ok(s)
@@ -90,6 +90,7 @@ impl NonterminalTry for Sexp {
         !matches!(
             token_rep,
             TokenRep::Dot
+                | TokenRep::At
                 | TokenRep::Question
                 | TokenRep::Exclamation
                 | TokenRep::RParen
@@ -200,36 +201,49 @@ impl NonterminalTry for SexpChar {
     }
 }
 
-pub struct SexpList<L, R> {
+pub struct SexpListLike<L, R> {
     _l: PhantomData<L>,
     _r: PhantomData<R>,
 }
 
-impl<L: Nonterminal, R: Nonterminal> Nonterminal for SexpList<L, R> {
+impl<L: Nonterminal, R: Nonterminal> Nonterminal for SexpListLike<L, R> {
     type Result = SexpRep;
 
     fn parse_nonterminal<I: Iterator<Item = Token>>(p: &mut Parser<I>) -> Result<Self::Result> {
         p.parse::<L>()?;
-        let result = if let Some(head) = p.try_parse::<Sexp>()? {
-            let mut items = p.parse::<prim::RecoverableSeq<Sexp>>()?;
-            if p.try_parse::<prim::Dot>()?.is_some() {
-                let last = p.parse::<Sexp>()?;
-                SexpRep::list_like(head, items, last)
-            } else {
-                items.insert(0, head);
-                SexpRep::List(items)
-            }
-        } else {
-            SexpRep::nil()
-        };
+        let result = p.parse::<SexpListLikeBody>()?;
         p.parse::<R>()?;
         Ok(result)
     }
 }
 
-impl<L: NonterminalTry, R: Nonterminal> NonterminalTry for SexpList<L, R> {
+impl<L: NonterminalTry, R: Nonterminal> NonterminalTry for SexpListLike<L, R> {
     fn is_leading_token(token_rep: &TokenRep) -> bool {
         L::is_leading_token(token_rep)
+    }
+}
+
+pub struct SexpListLikeBody;
+
+impl Nonterminal for SexpListLikeBody {
+    type Result = SexpRep;
+
+    fn parse_nonterminal<I: Iterator<Item = Token>>(p: &mut Parser<I>) -> Result<Self::Result> {
+        let mut items = p.parse::<prim::RecoverableSeq<Sexp>>()?;
+        Ok(if p.try_parse::<prim::At>()?.is_some() {
+            items.push(p.capture_source_location(|p| p.parse::<SexpListLikeBody>(), Sexp::new)?);
+            SexpRep::List(items)
+        } else if p.try_parse::<prim::Dot>()?.is_some() {
+            let last = p.parse::<Sexp>()?;
+            if items.is_empty() {
+                last.rep
+            } else {
+                let head = items.remove(0);
+                SexpRep::list_like(head, items, last)
+            }
+        } else {
+            SexpRep::List(items)
+        })
     }
 }
 

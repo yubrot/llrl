@@ -38,7 +38,7 @@
   (: 25 26 :whitespaces)
   (: 26 27 :.)))
 
-(assert-eq? (lex "[)=,@,`'(]{}\\~") (array
+(assert-eq? (lex "[)=,@,`'(]{}\\~@") (array
   (: 0 1 :l-brack)
   (: 1 2 :r-paren)
   (: 2 3 (:symbol "="))
@@ -51,7 +51,8 @@
   (: 10 11 :l-brace)
   (: 11 12 :r-brace)
   (: 12 13 :backslash)
-  (: 13 14 :tilde)))
+  (: 13 14 :tilde)
+  (: 14 15 :at)))
 
 (assert-eq? (lex "#t\"Hello, World!\\n\"#f") (array
   (: 0 2 :true)
@@ -66,7 +67,7 @@
 
 (assert-eq? (lex "\"hello") (array (: 0 6 :unterminated-string)))
 (assert-eq? (lex "\"hello\\") (array (: 0 7 :unterminated-string)))
-(assert-eq? (lex "@") (array (: 0 1 :unknown-character)))
+(assert-eq? (|> (array 0) string/from-bytes lex) (array (: 0 1 :unknown-character)))
 (assert-eq? (lex "日本語") (array
   (: 0 3 :unknown-character)
   (: 3 6 :unknown-character)

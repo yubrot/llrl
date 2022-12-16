@@ -83,6 +83,8 @@
       (produce! :comma-at eat)]
     [when (eat-exact! "," eat)
       (produce! :comma eat)]
+    [when (eat-exact! "@" eat)
+      (produce! :at eat)]
     [when (eat-exact! "#t" eat)
       (produce! :true eat)]
     [when (eat-exact! "#f" eat)

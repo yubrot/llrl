@@ -65,10 +65,19 @@ fn test_parse() {
     assert_eq!(parse::<Sexp>("(foo . bar)"), Ok("(foo . bar)".to_string()));
     assert_eq!(parse::<Sexp>("(1 2 . 3)"), Ok("(1 2 . 3)".to_string()));
     assert_eq!(parse::<Sexp>("(a b c d)"), Ok("(a b c d)".to_string()));
+    assert_eq!(parse::<Sexp>("(@)"), Ok("(())".to_string()));
+    assert_eq!(parse::<Sexp>("(@ a)"), Ok("((a))".to_string()));
+    assert_eq!(parse::<Sexp>("(a @ b)"), Ok("(a (b))".to_string()));
+    assert_eq!(parse::<Sexp>("(a @ b @ c)"), Ok("(a (b (c)))".to_string()));
+    assert_eq!(
+        parse::<Sexp>("(@ a b @ c d e)"),
+        Ok("((a b (c d e)))".to_string())
+    );
     assert_eq!(
         parse::<Sexp>("(e .)"),
         Err((TokenRep::RParen, "S-expression".to_string()))
     );
+    assert_eq!(parse::<Sexp>("(. e)"), Ok("e".to_string()));
     assert_eq!(parse::<Sexp>("["), Err((TokenRep::Eof, "]".to_string())));
     assert_eq!(
         parse::<Sexp>("[)"),
