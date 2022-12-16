@@ -1,6 +1,6 @@
 use super::inst::{WriteInst, WriteInstExt};
 use super::obj::*;
-use super::operand::{memory, Memory, Rip};
+use super::operand::{memory, Gpr64, Rip, Xmm};
 use derive_new::new;
 use std::collections::BTreeMap;
 use std::io::{self, Cursor, Write};
@@ -307,8 +307,11 @@ pub struct AddressTable<T>(pub T);
 pub struct Short<T>(pub T);
 
 /// callq Label
-impl WriteInst<Writer> for super::inst::Callq<Label> {
-    fn write_inst(&self, w: &mut Writer) -> io::Result<()> {
+impl<W> WriteInst<W> for super::inst::Callq<Label>
+where
+    W: Write + SectionWrite,
+{
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         w.callq(0i32)?;
         w.use_relative(-4, self.0, -4, RelocType::PcRel32);
         Ok(())
@@ -316,8 +319,11 @@ impl WriteInst<Writer> for super::inst::Callq<Label> {
 }
 
 /// callq AddressTable<Label>
-impl WriteInst<Writer> for super::inst::Callq<AddressTable<Label>> {
-    fn write_inst(&self, w: &mut Writer) -> io::Result<()> {
+impl<W> WriteInst<W> for super::inst::Callq<AddressTable<Label>>
+where
+    W: Write + SectionWrite,
+{
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         w.callq(memory(Rip + 0i32))?;
         w.use_relative(-4, self.0 .0, -4, RelocType::PcRelToAddressTable32);
         Ok(())
@@ -325,8 +331,11 @@ impl WriteInst<Writer> for super::inst::Callq<AddressTable<Label>> {
 }
 
 /// jmpq Label
-impl WriteInst<Writer> for super::inst::Jmpq<Label> {
-    fn write_inst(&self, w: &mut Writer) -> io::Result<()> {
+impl<W> WriteInst<W> for super::inst::Jmpq<Label>
+where
+    W: Write + SectionWrite,
+{
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         w.jmpq(0i32)?;
         w.use_relative(-4, self.0, -4, RelocType::PcRel32);
         Ok(())
@@ -334,8 +343,11 @@ impl WriteInst<Writer> for super::inst::Jmpq<Label> {
 }
 
 /// jmpq AddressTable<Label>
-impl WriteInst<Writer> for super::inst::Jmpq<AddressTable<Label>> {
-    fn write_inst(&self, w: &mut Writer) -> io::Result<()> {
+impl<W> WriteInst<W> for super::inst::Jmpq<AddressTable<Label>>
+where
+    W: Write + SectionWrite,
+{
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         w.jmpq(memory(Rip + 0i32))?;
         w.use_relative(-4, self.0 .0, -4, RelocType::PcRelToAddressTable32);
         Ok(())
@@ -343,8 +355,11 @@ impl WriteInst<Writer> for super::inst::Jmpq<AddressTable<Label>> {
 }
 
 /// jmpq Short<Label>
-impl WriteInst<Writer> for super::inst::Jmpq<Short<Label>> {
-    fn write_inst(&self, w: &mut Writer) -> io::Result<()> {
+impl<W> WriteInst<W> for super::inst::Jmpq<Short<Label>>
+where
+    W: Write + SectionWrite,
+{
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         w.jmpq(0i8)?;
         w.use_relative(-1, self.0 .0, -1, RelocType::PcRel8);
         Ok(())
@@ -354,8 +369,11 @@ impl WriteInst<Writer> for super::inst::Jmpq<Short<Label>> {
 macro_rules! impl_conditional_jmp {
     ($op:tt::$method:tt) => {
         // jCC Label
-        impl WriteInst<Writer> for super::inst::$op<Label> {
-            fn write_inst(&self, w: &mut Writer) -> io::Result<()> {
+        impl<W> WriteInst<W> for super::inst::$op<Label>
+        where
+            W: Write + SectionWrite,
+        {
+            fn write_inst(&self, w: &mut W) -> io::Result<()> {
                 w.$method(0i32)?;
                 w.use_relative(-4, self.0, -4, RelocType::PcRel32);
                 Ok(())
@@ -363,8 +381,11 @@ macro_rules! impl_conditional_jmp {
         }
 
         // jCC Short<Label>
-        impl WriteInst<Writer> for super::inst::$op<Short<Label>> {
-            fn write_inst(&self, w: &mut Writer) -> io::Result<()> {
+        impl<W> WriteInst<W> for super::inst::$op<Short<Label>>
+        where
+            W: Write + SectionWrite,
+        {
+            fn write_inst(&self, w: &mut W) -> io::Result<()> {
                 w.$method(0i8)?;
                 w.use_relative(-1, self.0 .0, -1, RelocType::PcRel8);
                 Ok(())
@@ -404,50 +425,65 @@ impl_conditional_jmp!(Jpo::jpo);
 impl_conditional_jmp!(Js::js);
 impl_conditional_jmp!(Jz::jz);
 
-/// movq O Label
-impl<O: Copy> WriteInst<Writer> for super::inst::Movq<O, Label>
-where
-    super::inst::Movq<O, Memory>: WriteInst<Writer>,
-{
-    fn write_inst(&self, w: &mut Writer) -> io::Result<()> {
-        w.movq(self.0, memory(Rip + 0i32))?;
-        w.use_relative(-4, self.1, -4, RelocType::PcRel32);
-        Ok(())
-    }
+macro_rules! impl_movq_label_o {
+    ($o:tt) => {
+        /// movq Label O
+        impl<W> WriteInst<W> for super::inst::Movq<Label, $o>
+        where
+            W: Write + SectionWrite,
+        {
+            fn write_inst(&self, w: &mut W) -> io::Result<()> {
+                w.movq(memory(Rip + 0i32), self.1)?;
+                w.use_relative(-4, self.0, -4, RelocType::PcRel32);
+                Ok(())
+            }
+        }
+    };
 }
 
-/// movq Label O
-impl<O: Copy> WriteInst<Writer> for super::inst::Movq<Label, O>
-where
-    super::inst::Movq<Memory, O>: WriteInst<Writer>,
-{
-    fn write_inst(&self, w: &mut Writer) -> io::Result<()> {
-        w.movq(memory(Rip + 0i32), self.1)?;
-        w.use_relative(-4, self.0, -4, RelocType::PcRel32);
-        Ok(())
-    }
+impl_movq_label_o!(Gpr64);
+impl_movq_label_o!(Xmm);
+impl_movq_label_o!(i32);
+
+macro_rules! impl_movq_o_label {
+    ($o:tt) => {
+        /// movq O Label
+        impl<W> WriteInst<W> for super::inst::Movq<$o, Label>
+        where
+            W: Write + SectionWrite,
+        {
+            fn write_inst(&self, w: &mut W) -> io::Result<()> {
+                w.movq(self.0, memory(Rip + 0i32))?;
+                w.use_relative(-4, self.1, -4, RelocType::PcRel32);
+                Ok(())
+            }
+        }
+
+        /// movq O AddressTable<Label>
+        impl<W> WriteInst<W> for super::inst::Movq<$o, AddressTable<Label>>
+        where
+            W: Write + SectionWrite,
+        {
+            fn write_inst(&self, w: &mut W) -> io::Result<()> {
+                w.movq(self.0, memory(Rip + 0i32))?;
+                w.use_relative(-4, self.1 .0, -4, RelocType::PcRelToAddressTable32);
+                Ok(())
+            }
+        }
+    };
 }
 
-/// movq O AddressTable<Label>
-impl<O: Copy> WriteInst<Writer> for super::inst::Movq<O, AddressTable<Label>>
-where
-    super::inst::Movq<O, Memory>: WriteInst<Writer>,
-{
-    fn write_inst(&self, w: &mut Writer) -> io::Result<()> {
-        w.movq(self.0, memory(Rip + 0i32))?;
-        w.use_relative(-4, self.1 .0, -4, RelocType::PcRelToAddressTable32);
-        Ok(())
-    }
-}
+impl_movq_o_label!(Gpr64);
+impl_movq_o_label!(Xmm);
 
 // movq AddressTable<Label> O are not provided since address tables are readonly in most cases
 
-/// leaq O Label
-impl<O: Copy> WriteInst<Writer> for super::inst::Leaq<O, Label>
+/// leaq Gpr64 Label
+impl<W> WriteInst<W> for super::inst::Leaq<Gpr64, Label>
 where
-    super::inst::Leaq<O, Memory>: WriteInst<Writer>,
+    W: Write + SectionWrite,
 {
-    fn write_inst(&self, w: &mut Writer) -> io::Result<()> {
+    fn write_inst(&self, w: &mut W) -> io::Result<()> {
         w.leaq(self.0, memory(Rip + 0i32))?;
         w.use_relative(-4, self.1, -4, RelocType::PcRel32);
         Ok(())

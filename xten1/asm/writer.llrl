@@ -9,7 +9,7 @@
 (export TextWriter _.TextWriter DataWriter _.DataWriter RodataWriter _.RodataWriter BssWriter _.BssWriter)
 (export AddressTable _.AddressTable address-table:)
 (export Short _.Short short:)
-(export WriteInst.Writer._)
+(export WriteInst.Section._)
 
 ; Writer for building an object.
 (derive (DebugDisplay) data Writer
@@ -224,7 +224,7 @@
     (ok unit)))
 
 ; * In this implementation, we use `reloc-type:pc-rel32` for label uses by default.
-; * We use `reloc-type:pc-rel32` for jmp instructions if the operand is wrapped by `Short`.
+; * We use `reloc-type:pc-rel8` for jmp instructions if the operand is wrapped by `Short`.
 ; * We use `reloc-type:pc-rel-to-address-table32` for call or mov instruction if the operand is
 ;   wrapped by `AddressTable`. This may be necessary for linking shared objects.
 
@@ -238,7 +238,8 @@
   (short: A))
 
 ; callq Label
-(instance WriteInst.Writer.Callq.Label (forall Error) (WriteInst Writer Error (Callq Label))
+(instance WriteInst.Section.Callq.Label
+  (forall W Error) (WriteInst W Error (Callq Label)) (where (Write W Error) (Section W))
   (function (write-inst! w inst)
     (with1 (callq: (let label)) inst
       (write-inst! w (callq: 0 {I32}))!
@@ -246,7 +247,8 @@
       (ok unit))))
 
 ; callq (AddressTable Label)
-(instance WriteInst.Writer.Callq.AddressTableLabel (forall Error) (WriteInst Writer Error (Callq (AddressTable Label)))
+(instance WriteInst.Section.Callq.AddressTableLabel
+  (forall W Error) (WriteInst W Error (Callq (AddressTable Label))) (where (Write W Error) (Section W))
   (function (write-inst! w inst)
     (with1 (callq: (address-table: (let label))) inst
       (write-inst! w (callq: (memory (+. rip 0 {I32}))))!
@@ -254,7 +256,8 @@
       (ok unit))))
 
 ; jmpq Label
-(instance WriteInst.Writer.Jmpq.Label (forall Error) (WriteInst Writer Error (Jmpq Label))
+(instance WriteInst.Section.Jmpq.Label
+  (forall W Error) (WriteInst W Error (Jmpq Label)) (where (Write W Error) (Section W))
   (function (write-inst! w inst)
     (with1 (jmpq: (let label)) inst
       (write-inst! w (jmpq: 0 {I32}))!
@@ -262,7 +265,8 @@
       (ok unit))))
 
 ; jmpq (AddressTable Label)
-(instance WriteInst.Writer.Jmpq.AddressTableLabel (forall Error) (WriteInst Writer Error (Jmpq (AddressTable Label)))
+(instance WriteInst.Section.Jmpq.AddressTableLabel
+  (forall W Error) (WriteInst W Error (Jmpq (AddressTable Label))) (where (Write W Error) (Section W))
   (function (write-inst! w inst)
     (with1 (jmpq: (address-table: (let label))) inst
       (write-inst! w (jmpq: (memory (+. rip 0 {I32}))))!
@@ -270,7 +274,8 @@
       (ok unit))))
 
 ; jmpq (Short Label)
-(instance WriteInst.Writer.Jmpq.ShortLabel (forall Error) (WriteInst Writer Error (Jmpq (Short Label)))
+(instance WriteInst.Section.Jmpq.ShortLabel
+  (forall W Error) (WriteInst W Error (Jmpq (Short Label))) (where (Write W Error) (Section W))
   (function (write-inst! w inst)
     (with1 (jmpq: (short: (let label))) inst
       (write-inst! w (jmpq: 0 {I8}))!
@@ -285,7 +290,8 @@
      [Jno jno:] [Jnp jnp:] [Jns jns:] [Jnz jnz:] [Jo jo:] [Jp jp:] [Jpe jpe:] [Jpo jpo:] [Js js:] [Jz jz:])
 
     ; jCC Label
-    (instance ($symbol-concat WriteInst.Writer. $tycon .Label) (forall Error) (WriteInst Writer Error ($tycon Label))
+    (instance ($symbol-concat WriteInst.Section. $tycon .Label)
+      (forall W Error) (WriteInst W Error ($tycon Label)) (where (Write W Error) (Section W))
       (function (write-inst! w inst)
         (with1 ($vcon (let label)) inst
           (write-inst! w ($vcon 0 {I32}))!
@@ -293,7 +299,8 @@
           (ok unit))))
 
     ; jCC (Short Label)
-    (instance ($symbol-concat WriteInst.Writer. $tycon .ShortLabel) (forall Error) (WriteInst Writer Error ($tycon (Short Label)))
+    (instance ($symbol-concat WriteInst.Section. $tycon .ShortLabel)
+      (forall W Error) (WriteInst W Error ($tycon (Short Label))) (where (Write W Error) (Section W))
       (function (write-inst! w inst)
         (with1 ($vcon (short: (let label))) inst
           (write-inst! w ($vcon 0 {I8}))!
@@ -303,7 +310,8 @@
 ($$ begin
   ($for-each $O (Gpr64 Xmm I32)
     ; movq Label $O
-    (instance ($symbol-concat WriteInst.Writer.Movq.Label. $O) (forall Error) (WriteInst Writer Error (Movq Label $O))
+    (instance ($symbol-concat WriteInst.Section.Movq.Label. $O)
+      (forall W Error) (WriteInst W Error (Movq Label $O)) (where (Write W Error) (Section W))
       (function (write-inst! w inst)
         (with1 (movq: (let label) (let o)) inst
           (write-inst! w (movq: (memory (+. rip 0 {I32})) o))!
@@ -313,7 +321,8 @@
 ($$ begin
   ($for-each $O (Gpr64 Xmm)
     ; movq $O Label
-    (instance ($symbol-concat WriteInst.Writer.Movq. $O .Label) (forall Error) (WriteInst Writer Error (Movq $O Label))
+    (instance ($symbol-concat WriteInst.Section.Movq. $O .Label)
+      (forall W Error) (WriteInst W Error (Movq $O Label)) (where (Write W Error) (Section W))
       (function (write-inst! w inst)
         (with1 (movq: (let o) (let label)) inst
           (write-inst! w (movq: o (memory (+. rip 0 {I32}))))!
@@ -321,7 +330,8 @@
           (ok unit))))
 
     ; movq $O (AddressTable Label)
-    (instance ($symbol-concat WriteInst.Writer.Movq. $O .AddressTableLabel) (forall Error) (WriteInst Writer Error (Movq $O (AddressTable Label)))
+    (instance ($symbol-concat WriteInst.Section.Movq. $O .AddressTableLabel)
+      (forall W Error) (WriteInst W Error (Movq $O (AddressTable Label))) (where (Write W Error) (Section W))
       (function (write-inst! w inst)
         (with1 (movq: (let o) (address-table: (let label))) inst
           (write-inst! w (movq: o (memory (+. rip 0 {I32}))))!
@@ -331,7 +341,8 @@
 ; movq (AddressTable Label) O are not provided since address tables are readonly in most cases
 
 ; leaq Gpr64 Label
-(instance WriteInst.Writer.Leaq.Gpr64.Label (forall Error) (WriteInst Writer Error (Leaq Gpr64 Label))
+(instance WriteInst.Section.Leaq.Gpr64.Label
+  (forall W Error) (WriteInst W Error (Leaq Gpr64 Label)) (where (Write W Error) (Section W))
   (function (write-inst! w inst)
     (with1 (leaq: (let o) (let label)) inst
       (write-inst! w (leaq: o (memory (+. rip 0 {I32}))))!
