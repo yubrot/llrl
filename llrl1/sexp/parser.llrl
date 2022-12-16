@@ -149,32 +149,41 @@
           (s-rep:bool #f)]
         [(some :l-paren)
           (next! p)
-          (let1 body (grammar/s-list-body #t p)!
+          (let1 body (grammar/s-list-body-rep #t p)!
             (grammar/terminal :r-paren p)!
-            (s/rep body))]
+            body)]
         [(some :l-brack)
           (next! p)
-          (let1 body (grammar/s-list-body #t p)!
+          (let1 body (grammar/s-list-body-rep #t p)!
             (grammar/terminal :r-brack p)!
-            (s/rep body))])
+            body)])
       (ok (some (s: (loc) s-rep)))
       (ok none))))
 
 (function (grammar/s-list-body allow-improper? p)
-  (let1 loc (location-start! p)
-    (if-match1 (some (let l)) (grammar/s? p)!
-      (let1 r (grammar/s-list-body allow-improper? p)!
-        (ok (s: (loc) (s-rep:cons l r))))
-      (if (and allow-improper? (grammar/terminal? :. p)!)
-        (grammar/s p)
-        (ok (s: (loc) s-rep:nil))))))
+  (let* ([loc (location-start! p)]
+         [s (grammar/s-list-body-rep allow-improper? p)!])
+    (ok (s: (loc) s))))
+
+(function (grammar/s-list-body-rep allow-improper? p)
+  (ok (cond
+    [when-match1 (some (let l)) (grammar/s? p)!
+      (s-rep:cons l (grammar/s-list-body allow-improper? p)!)]
+    [when (grammar/terminal? :at p)!
+      (let1 s (grammar/s-list-body allow-improper? p)!
+        (s-rep:cons s (s: ((location-start! p)) s-rep:nil)))]
+    [when (and allow-improper? (grammar/terminal? :. p)!)
+      (s/rep (grammar/s p)!)]
+    [else
+      s-rep:nil])))
 
 (function (grammar/annotation-suffix? p)
-  (if (grammar/terminal? :l-brace p)!
-    (let1 ann (grammar/s-list-body #f p)!
-      (grammar/terminal :r-brace p)!
-      (ok (some ann)))
-    (ok none)))
+  (let1 loc (location-start! p)
+    (if (grammar/terminal? :l-brace p)!
+      (let1 ann (grammar/s-list-body-rep #f p)!
+        (grammar/terminal :r-brace p)!
+        (ok (some (s: (loc) ann))))
+      (ok none))))
 
 (function (grammar/terminal token-rep p)
   (if (grammar/terminal? token-rep p)!

@@ -94,6 +94,8 @@ impl<'a> Iterator for Lexer<'a> {
             Some(e.produce(TokenRep::CommaAt))
         } else if e.eat_comma() {
             Some(e.produce(TokenRep::Comma))
+        } else if e.eat_at() {
+            Some(e.produce(TokenRep::At))
         } else if e.eat_true() {
             Some(e.produce(TokenRep::True))
         } else if e.eat_false() {
@@ -275,6 +277,10 @@ impl<'l, 'a> Eat<'l, 'a> {
         self.eat_exact(",@")
     }
 
+    fn eat_at(&mut self) -> bool {
+        self.eat_exact("@")
+    }
+
     fn eat_true(&mut self) -> bool {
         self.eat_exact("#t")
     }
@@ -324,7 +330,7 @@ mod tests {
             ]
         );
         assert_eq!(
-            lex("[)=,@,`'(]{}\\~"),
+            lex("[)=,@,`'(]{}\\~@"),
             vec![
                 (0, 1, LBrack),
                 (1, 2, RParen),
@@ -339,6 +345,7 @@ mod tests {
                 (11, 12, RBrace),
                 (12, 13, Backslash),
                 (13, 14, Tilde),
+                (14, 15, At),
             ]
         );
         assert_eq!(
@@ -358,8 +365,8 @@ mod tests {
                 (10, 15, Char('話'))
             ]
         );
-        assert_eq!(lex("\"hello"), vec![(0, 6, UnterminatedString),]);
-        assert_eq!(lex("\"hello\\"), vec![(0, 7, UnterminatedString),]);
+        assert_eq!(lex("\"hello"), vec![(0, 6, UnterminatedString)]);
+        assert_eq!(lex("\"hello\\"), vec![(0, 7, UnterminatedString)]);
         assert_eq!(lex("\0"), vec![(0, 1, UnknownCharacter)]);
         assert_eq!(
             lex("日本語"),

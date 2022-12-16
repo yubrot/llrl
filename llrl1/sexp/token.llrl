@@ -44,6 +44,7 @@
   token-rep:tilde
   token-rep:comma
   token-rep:comma-at
+  token-rep:at
   token-rep:true
   token-rep:false
 
@@ -84,6 +85,7 @@
       [token-rep:tilde (display! w "~")]
       [token-rep:comma (display! w ",")]
       [token-rep:comma-at (display! w ",@")]
+      [token-rep:at (display! w "@")]
       [token-rep:true (display! w "#t")]
       [token-rep:false (display! w "#f")]
       [token-rep:whitespaces (display! w "<spaces>")]

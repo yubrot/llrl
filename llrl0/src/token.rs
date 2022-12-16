@@ -40,6 +40,7 @@ pub enum TokenRep {
     Tilde,
     Comma,
     CommaAt,
+    At,
     True,
     False,
 
@@ -94,6 +95,7 @@ impl fmt::Display for TokenRep {
             Self::Tilde => write!(f, "~"),
             Self::Comma => write!(f, ","),
             Self::CommaAt => write!(f, ",@"),
+            Self::At => write!(f, "@"),
             Self::True => write!(f, "#t"),
             Self::False => write!(f, "#f"),
             Self::Whitespaces => write!(f, "<spaces>"),

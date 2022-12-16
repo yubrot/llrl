@@ -174,5 +174,6 @@ impl_token_nonterminal!(Backslash, TokenRep::Backslash, "\\");
 impl_token_nonterminal!(Tilde, TokenRep::Tilde, "~");
 impl_token_nonterminal!(Comma, TokenRep::Comma, ",");
 impl_token_nonterminal!(CommaAt, TokenRep::CommaAt, ",@");
+impl_token_nonterminal!(At, TokenRep::At, "@");
 impl_token_nonterminal!(True, TokenRep::True, "#t");
 impl_token_nonterminal!(False, TokenRep::False, "#f");
