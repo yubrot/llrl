@@ -149,6 +149,21 @@ VSCode language support is available at [yubrot/llrl-vscode](https://github.com/
 
 ## Language Overview
 
+### Syntax
+
+The syntax of llrl is basically a subset of the Scheme syntax. There are several syntax sugar that are unique to this language.
+
+| Syntax sugar  | Desugared             | Meaning                                                                      |
+| ------------- | --------------------- | ---------------------------------------------------------------------------- |
+| `~expr`       | `(load expr)`         | Call of the [load](./std/access.llrl) function                               |
+| `\expr`       | `(capture expr)`      | Capture of the use (See [Macros](#macros) section)                           |
+| `(...)?`      | `(try? (...))`        | Call of the [try?](./std/boot/1-try.llrl) macro (Early returns for `Option`) |
+| `(...)!`      | `(try! (...))`        | Call of the [try!](./std/boot/1-try.llrl) macro (Early returns for `Result`) |
+| `expr {...}`  | `(annotate expr ...)` | Type signatures (See [Functions](#functions) section)                        |
+| `a... @ b...` | `a... (b...)`         | Used to reduce nesting of S-expressions                                      |
+
+The last syntax sugar allows nested S-expressions like `(let1 foo 123 (let1 bar 456 (+ foo bar)))` to be written as `@let1 foo 123 @let1 bar 456 (+ foo bar)`.
+
 ### Packages and Modules
 
 Modules are identified by a string in the form of a path separated by a slash `/`.
