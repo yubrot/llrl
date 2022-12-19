@@ -203,7 +203,7 @@ impl<'a> FunctionCodegen<'a> {
                 Ct::Id(id) => {
                     // {rax, rdx} <- {function-pointer, env-pointer}
                     if let Some(ref env) = capture.env {
-                        eval_continues!(self.eval(env)?);
+                        continues!(self.eval(env)?);
                         self.w.movq(Rdx, Rax)?;
                     } else {
                         self.w.xorl(Edx, Edx)?;
@@ -226,7 +226,7 @@ impl<'a> FunctionCodegen<'a> {
                 )?,
                 RtCallee::CIndirect(ref addr, ref ret) => self.eval_c_call(
                     |self_| {
-                        eval_continues!(self_.eval(addr)?);
+                        continues!(self_.eval(addr)?);
                         Ok(Some(Rax))
                     },
                     ret,
@@ -236,7 +236,7 @@ impl<'a> FunctionCodegen<'a> {
                 RtCallee::MainIndirect(ref addr) => self.eval_c_call(
                     |self_| {
                         assert!(call.args.is_empty());
-                        eval_continues!(self_.eval(addr)?);
+                        continues!(self_.eval(addr)?);
                         Ok(Some(Rax))
                     },
                     &Ct::BOOL,
@@ -245,7 +245,7 @@ impl<'a> FunctionCodegen<'a> {
                 RtCallee::MacroIndirect(ref addr, ref ret) => self.eval_c_call(
                     |self_| {
                         assert_eq!(call.args.len(), 1);
-                        eval_continues!(self_.eval(addr)?);
+                        continues!(self_.eval(addr)?);
                         Ok(Some(Rax))
                     },
                     ret,
@@ -257,50 +257,43 @@ impl<'a> FunctionCodegen<'a> {
             Rt::Unary(unary) => self.eval_unary(&unary.0, &unary.1)?,
             Rt::Binary(binary) => self.eval_binary(&binary.0, &binary.1, &binary.2)?,
             Rt::Ternary(t) => self.eval_ternary(&t.0, &t.1, &t.2, &t.3)?,
-            Rt::Alloc(alloc) if alloc.0 == ir::Location::StackStatic => {
-                let Some(ty) = alloc.1.ty() else {
-                    eval_continues!(self.eval(&alloc.1)?);
-                    panic!("Evaluation must not return")
-                };
-
-                let offset = self.stack_frame.consume_alloc_area(&self.ctx.layout(&ty));
-
-                // initial value
-                let layout = eval_continues!(self.eval(&alloc.1)?);
-                self.store(Rbp + offset, &layout)?;
-
-                self.w.leaq(Rax, memory(Rbp + offset))?;
-                Some(Layout::pointer())
-            }
             Rt::Alloc(alloc) => {
-                // TODO: ir::Location::StackDynamic support
-                let Some(ty) = alloc.1.ty() else {
-                    eval_continues!(self.eval(&alloc.1)?);
-                    panic!("Evaluation must not return")
+                let layout = match alloc.1.ty() {
+                    Some(ty) => self.ctx.layout(&ty),
+                    None => diverges!(self.eval(&alloc.1)?),
                 };
 
-                let size = self.ctx.layout(&ty).size;
-                self.w.movq(Rdi, size as i32)?;
-                self.eval_builtin_call("GC_malloc", &Layout::pointer())?;
+                if alloc.0 == ir::Location::StackStatic {
+                    let offset = self.stack_frame.consume_alloc_area(&layout);
 
-                self.push(&Layout::pointer())?;
+                    // initial value
+                    let layout = continues!(self.eval(&alloc.1)?);
+                    self.store(Rbp + offset, &layout)?;
 
-                // initial value
-                let init_layout = eval_continues!(self.eval(&alloc.1)?);
-                self.w
-                    .movq(Rdi, memory(Rsp + init_layout.size_in_stack(true) as i32))?;
-                self.store(Rdi, &init_layout)?;
+                    self.w.leaq(Rax, memory(Rbp + offset))?;
+                } else {
+                    // TODO: ir::Location::StackDynamic support
+                    self.w.movq(Rdi, layout.size as i32)?;
+                    self.eval_builtin_call("GC_malloc", &Layout::pointer())?;
 
-                self.pop(&Layout::pointer())?;
+                    self.push(&Layout::pointer())?;
+
+                    // initial value
+                    let init_layout = continues!(self.eval(&alloc.1)?);
+                    self.w
+                        .movq(Rdi, memory(Rsp + init_layout.size_in_stack(true) as i32))?;
+                    self.store(Rdi, &init_layout)?;
+
+                    self.pop(&Layout::pointer())?;
+                }
                 Some(Layout::pointer())
-            }
-            Rt::AllocArray(alloc) if alloc.0 == ir::Location::StackStatic => {
-                panic!("Not implemented")
             }
             Rt::AllocArray(alloc) => {
+                assert_ne!(alloc.0, ir::Location::StackStatic, "Not implemented");
+
                 // TODO: ir::Location::StackDynamic support
                 let elem_size = self.ctx.layout(&alloc.1).size;
-                eval_continues!(self.eval(&alloc.2)?);
+                continues!(self.eval(&alloc.2)?);
                 self.push_eightbyte(Rax)?; // save length
                 self.w.imulq(Rdi, Rax, elem_size as i32)?;
                 self.eval_builtin_call("GC_malloc", &Layout::pointer())?;
@@ -309,19 +302,15 @@ impl<'a> FunctionCodegen<'a> {
             }
             Rt::ConstructEnv(con) => {
                 assert_ne!(con.0, ir::Location::StackStatic, "Not implemented");
+
                 // TODO: ir::Location::StackDynamic support
-                let Some(size) = con
-                    .1
-                    .iter()
-                    .map(|rt| Some(self.ctx.layout(rt.ty()?.as_ref()).size_in_stack(false)))
-                    .sum::<Option<usize>>()
-                else {
-                    for elem in con.1.iter() {
-                        let layout = eval_continues!(self.eval(elem)?);
-                        self.discard(&layout)?;
+                let mut size = 0;
+                for elem in con.1.iter() {
+                    match elem.ty() {
+                        Some(ty) => size += self.ctx.layout(&ty).size_in_stack(false),
+                        None => diverges!(self.eval_seq(&con.1)?),
                     }
-                    panic!("Evaluation must not return")
-                };
+                }
 
                 self.w.movq(Rdi, size as i32)?;
                 self.eval_builtin_call("GC_malloc", &Layout::pointer())?;
@@ -329,7 +318,7 @@ impl<'a> FunctionCodegen<'a> {
 
                 let mut env_offset = 0;
                 for elem in con.1.iter() {
-                    let layout = eval_continues!(self.eval(elem)?).in_stack();
+                    let layout = continues!(self.eval(elem)?).in_stack();
                     self.w
                         .movq(Rdi, memory(Rsp + layout.size_in_stack(true) as i32))?;
                     self.store(Rdi + env_offset, &layout)?;
@@ -350,7 +339,7 @@ impl<'a> FunctionCodegen<'a> {
 
                 // Put components into the temporary area
                 for ((o, _), e) in layout.composite.as_ref().unwrap().elems.iter().zip(&con.1) {
-                    let layout = eval_continues!(self.eval(e)?);
+                    let layout = continues!(self.eval(e)?);
                     let offset = *o + layout.size_in_stack(true);
                     self.w.leaq(Rdi, memory(Rsp + offset as i32))?;
                     self.store(Rdi, &layout)?;
@@ -361,12 +350,10 @@ impl<'a> FunctionCodegen<'a> {
                 Some(layout)
             }
             Rt::ConstructSyntax(con) => {
-                let Some(ty) = con.1.ty() else {
-                    eval_continues!(self.eval(&con.1)?);
-                    panic!("Evaluation must not return")
+                let body_layout = match con.1.ty() {
+                    Some(ty) => self.ctx.layout(&ty),
+                    None => diverges!(self.eval(&con.1)?),
                 };
-
-                let body_layout = self.ctx.layout(&ty);
                 let buf_align = body_layout.align.max(4);
                 let buf_size = 8 + ((body_layout.size + buf_align - 1) / buf_align) * buf_align;
                 self.w.movq(Rdi, buf_size as i32)?;
@@ -379,7 +366,7 @@ impl<'a> FunctionCodegen<'a> {
 
                 self.push(&Layout::pointer())?;
 
-                let body_layout = eval_continues!(self.eval(&con.1)?);
+                let body_layout = continues!(self.eval(&con.1)?);
                 self.w
                     .movq(Rdi, memory(Rsp + body_layout.size_in_stack(true) as i32))?;
                 self.store(Rdi + 8i32, &body_layout)?;
@@ -388,10 +375,7 @@ impl<'a> FunctionCodegen<'a> {
                 Some(Layout::pointer())
             }
             Rt::Seq(seq) => {
-                for e in seq.0.iter() {
-                    let layout = eval_continues!(self.eval(e)?);
-                    self.discard(&layout)?;
-                }
+                continues!(self.eval_seq(&seq.0)?);
                 self.eval(&seq.1)?
             }
             Rt::If(if_) => self.eval_if(&if_.0, &if_.1, &if_.2)?,
@@ -406,7 +390,7 @@ impl<'a> FunctionCodegen<'a> {
                 panic!("Found Rt::Match: this must be erased by lowerizer")
             }
             Rt::Return(e) => {
-                eval_continues!(self.eval(e)?);
+                continues!(self.eval(e)?);
                 self.w.jmpq(self.epilogue_label)?;
                 None
             }
@@ -420,7 +404,7 @@ impl<'a> FunctionCodegen<'a> {
     }
 
     fn eval_call(&mut self, callee: &Rt, args: &[Rt]) -> io::Result<Option<Layout>> {
-        let callee_ty = eval_continues!(callee.ty());
+        let callee_ty = continues!(callee.ty());
         let Ct::Clos(callee_ty) = callee_ty.as_ref() else {
             panic!("Type error: Callee is not a closure")
         };
@@ -432,12 +416,12 @@ impl<'a> FunctionCodegen<'a> {
         self.extend_stack(&call_frame.padding_before_stack_args())?;
 
         for arg in args.iter() {
-            let layout = eval_continues!(self.eval(arg)?);
+            let layout = continues!(self.eval(arg)?);
             self.push(&layout)?;
         }
 
         // {rax, rdx} <- {function-pointer, env-pointer}
-        eval_continues!(self.eval(callee)?);
+        continues!(self.eval(callee)?);
 
         // The environment is passed by the rsi register
         self.w.movq(Rsi, Rdx)?;
@@ -463,18 +447,16 @@ impl<'a> FunctionCodegen<'a> {
     where
         inst::Callq<F>: WriteInst<Writer>,
     {
-        let ret = self.ctx.layout(ret);
-        let Some(call_args) = args
-            .iter()
-            .map(|a| Some(self.ctx.layout(a.ty()?.as_ref())))
-            .collect::<Option<Vec<_>>>()
-            .map(|args| CallArg::c_args(args, &ret))
-        else {
-            for a in args {
-                eval_continues!(self.eval(a)?);
+        let mut arg_layouts = Vec::new();
+        for arg in args {
+            match arg.ty() {
+                Some(ty) => arg_layouts.push(self.ctx.layout(&ty)),
+                None => diverges!(self.eval_seq(args)?),
             }
-            panic!("Evaluation must not return")
-        };
+        }
+
+        let ret = self.ctx.layout(ret);
+        let call_args = CallArg::c_args(arg_layouts, &ret);
 
         let (stack_args, reg_args) = args
             .iter()
@@ -486,11 +468,11 @@ impl<'a> FunctionCodegen<'a> {
 
         // stack args -> register args
         for (arg, _) in stack_args.iter().rev().chain(reg_args.iter().rev()) {
-            let layout = eval_continues!(self.eval(arg)?);
+            let layout = continues!(self.eval(arg)?);
             self.push(&layout)?;
         }
 
-        let c_fun = eval_continues!(c_fun(self)?);
+        let c_fun = continues!(c_fun(self)?);
 
         // Pop register args to specific registers
         for (_, c) in reg_args {
@@ -543,7 +525,7 @@ impl<'a> FunctionCodegen<'a> {
             .clone();
 
         for (arg, param) in args.iter().zip(local_cont.params) {
-            let layout = eval_continues!(self.eval(arg)?).in_stack();
+            let layout = continues!(self.eval(arg)?).in_stack();
             let offset = *self.stack_frame.var_offsets.get(&param).unwrap();
             self.store(Rbp + offset, &layout)?;
         }
@@ -553,14 +535,22 @@ impl<'a> FunctionCodegen<'a> {
         Ok(None)
     }
 
+    fn eval_seq<'e>(&mut self, es: impl IntoIterator<Item = &'e Rt>) -> io::Result<Option<()>> {
+        for e in es {
+            let layout = continues!(self.eval(e)?);
+            self.discard(&layout)?;
+        }
+        Ok(Some(()))
+    }
+
     fn eval_if(&mut self, cond: &Rt, then: &Rt, else_: &Rt) -> io::Result<Option<Layout>> {
-        eval_continues!(self.eval(cond)?);
+        continues!(self.eval(cond)?);
         let else_label = self.w.issue_label();
         let cont_label = self.w.issue_label();
         self.w.cmpb(Al, 0i8)?;
         self.w.je(else_label)?;
 
-        let depth = self.stack_frame.depth;
+        let init_depth = self.stack_frame.depth;
         let mut cont_l = None;
 
         if let Some(l) = self.eval(then)? {
@@ -569,7 +559,7 @@ impl<'a> FunctionCodegen<'a> {
         }
 
         self.w.define(else_label, false);
-        self.stack_frame.depth = depth;
+        self.stack_frame.depth = init_depth;
         if let Some(l) = self.eval(else_)? {
             if cont_l.is_some() {
                 assert_eq!(cont_l, Some((l, self.stack_frame.depth)));
@@ -590,7 +580,7 @@ impl<'a> FunctionCodegen<'a> {
         let cont_label = self.w.issue_label();
 
         self.w.define(init_label, false);
-        eval_continues!(self.eval(cond)?);
+        continues!(self.eval(cond)?);
         self.w.cmpb(Al, 0i8)?;
         self.w.je(cont_label)?;
 
@@ -635,7 +625,7 @@ impl<'a> FunctionCodegen<'a> {
     fn eval_unary(&mut self, op: &Unary, a: &Rt) -> io::Result<Option<Layout>> {
         use Unary::*;
 
-        let a_layout = eval_continues!(self.eval(a)?);
+        let a_layout = continues!(self.eval(a)?);
 
         Ok(match op {
             Not => {
@@ -854,9 +844,9 @@ impl<'a> FunctionCodegen<'a> {
     fn eval_binary(&mut self, op: &Binary, a: &Rt, b: &Rt) -> io::Result<Option<Layout>> {
         use Binary::*;
 
-        let a_layout = eval_continues!(self.eval(a)?);
+        let a_layout = continues!(self.eval(a)?);
         self.push(&a_layout)?;
-        let b_layout = eval_continues!(self.eval(b)?);
+        let b_layout = continues!(self.eval(b)?);
 
         Ok(match op {
             Store => {
@@ -1059,11 +1049,11 @@ impl<'a> FunctionCodegen<'a> {
     fn eval_ternary(&mut self, op: &Ternary, a: &Rt, b: &Rt, c: &Rt) -> io::Result<Option<Layout>> {
         use Ternary::*;
 
-        let a_layout = eval_continues!(self.eval(a)?);
+        let a_layout = continues!(self.eval(a)?);
         self.push(&a_layout)?;
-        let b_layout = eval_continues!(self.eval(b)?);
+        let b_layout = continues!(self.eval(b)?);
         self.push(&b_layout)?;
-        let _c_layout = eval_continues!(self.eval(c)?);
+        let _c_layout = continues!(self.eval(c)?);
 
         Ok(match op {
             PtrCopy | PtrMove => {
@@ -1095,7 +1085,7 @@ impl<'a> FunctionCodegen<'a> {
 
     fn eval_let_var(&mut self, vars: &[RtVar], body: &Rt) -> io::Result<Option<Layout>> {
         for v in vars {
-            let layout = eval_continues!(self.eval(&v.init)?).in_stack();
+            let layout = continues!(self.eval(&v.init)?).in_stack();
             let offset = *self.stack_frame.var_offsets.get(&v.id).unwrap();
             self.store(Rbp + offset, &layout)?;
         }

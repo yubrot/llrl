@@ -1,4 +1,13 @@
-macro_rules! eval_continues {
+macro_rules! diverges {
+    ($e:expr) => {
+        match $e {
+            Some(_) => panic!("Evaluation must not return"),
+            None => return Ok(None),
+        }
+    };
+}
+
+macro_rules! continues {
     ($e:expr) => {
         match $e {
             Some(a) => a,
