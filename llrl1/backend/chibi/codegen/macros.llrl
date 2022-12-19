@@ -1,0 +1,36 @@
+(export diverges continues unsupported-op)
+
+(macro (diverges s)
+  (s/match s
+    [(_ ,expr)
+      (ok
+        `(match ,expr
+          [(,\some _)
+            (,\assert #f "Evaluation must not return")]
+          [none
+            (return (,\ok ,\none))]))]
+    [_
+      (err "Expected (eval-continues expr)")]))
+
+(macro (continues s)
+  (s/match s
+    [(_ ,expr)
+      (ok
+        `(match ,expr
+          [(,\some (let a))
+            a]
+          [none
+            (return (,\ok ,\none))]))]
+    [_
+      (err "Expected (eval-continues expr)")]))
+
+(macro (unsupported-op s)
+  (s/match s
+    [(_ ,op)
+      (ok `(,\assert #f (,\string "Unsupported operation " (,\debug ,op))))]
+    [(_ ,op size: ,size)
+      (ok `(,\assert #f (,\string "Unsupported operation " (,\debug ,op) "(size=" ,size ")")))]
+    [(_ ,op from: ,from to: ,to)
+      (ok `(,\assert #f (,\string "Unsupported operation " (,\debug ,op) "(from=" ,from ", to=" ,to ")")))]
+    [_
+      (err "Expected (unsupported-op op) or (unsupported-op op size: size) or (unsupported-op op from: from to: to)")]))
