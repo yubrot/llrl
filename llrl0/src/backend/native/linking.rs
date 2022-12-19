@@ -18,13 +18,13 @@ pub fn link<'a, O>(
         .enumerate()
         .map(|(i, obj)| {
             let name = format!("{}.o", i);
-            let path = tmp_dir.path().join(&name);
+            let path = tmp_dir.path().join(name);
             emit_object_to_file(&path, obj);
             path
         })
         .collect::<Vec<_>>();
 
-    File::create(&tmp_dir.path().join("libllrt.a"))
+    File::create(tmp_dir.path().join("libllrt.a"))
         .unwrap()
         .write_all(llrt::ARCHIVE)
         .unwrap();

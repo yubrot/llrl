@@ -64,7 +64,7 @@ impl<'ctx> ContextArtifact<'ctx> {
                     let layout = self.layout_resolver.get(&Ct::Id(*id));
                     let ty = if layout.align != 0 {
                         let bw = layout.align * 8;
-                        let len = (layout.size / layout.align) as usize;
+                        let len = layout.size / layout.align;
                         llvm_type!(*self, [(i bw); len])
                     } else {
                         llvm_type!(*self, [i1; 0])

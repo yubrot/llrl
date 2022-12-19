@@ -45,8 +45,8 @@ impl SourceSet {
         let sorted_sources =
             topological_sort::run(self.map.into_iter().flat_map(|(_, sources)| {
                 sources
-                    .into_iter()
-                    .map(|(_, source)| (source.path.clone(), source))
+                    .into_values()
+                    .map(|source| (source.path.clone(), source))
             }));
 
         sorted_sources

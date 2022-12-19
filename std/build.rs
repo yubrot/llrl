@@ -5,7 +5,7 @@ use std::path::Path;
 
 fn main() {
     let dest = Path::new(&env::var("OUT_DIR").unwrap()).join("modules.rs");
-    let mut dest = File::create(&dest).unwrap();
+    let mut dest = File::create(dest).unwrap();
 
     write!(
         &mut dest,

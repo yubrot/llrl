@@ -350,7 +350,7 @@ impl<'ctx> ConstantDataArray<'ctx, 'ctx> {
                 context.as_ptr(),
                 s.as_ptr() as *const c_char,
                 s.len() as u32,
-                if null_terminate { 0 } else { 1 },
+                i32::from(!null_terminate),
             ))
         }
     }

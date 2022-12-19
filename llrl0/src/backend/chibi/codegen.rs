@@ -374,7 +374,7 @@ impl<'a> FunctionCodegen<'a> {
 
                 let metadata = NativeSyntaxMetadata::from_host(con.0);
                 let metadata = unsafe { std::mem::transmute::<_, i64>(metadata) };
-                self.w.movq(Rdi, metadata as i64)?;
+                self.w.movq(Rdi, metadata)?;
                 self.w.movq(memory(Rax), Rdi)?;
 
                 self.push(&Layout::pointer())?;
