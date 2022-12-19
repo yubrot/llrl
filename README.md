@@ -102,13 +102,15 @@ Since llrl has Lisp-like macros as a language feature, I made my own assembler [
   - [x] Code generation
   - [x] Driver
   - [x] Self-hosting
+  - [x] chibi backend
 - [x] xten0: JIT/AOT compilation tools for llrl0
   - [x] Assembler
   - [x] ELF executable producer
   - [x] JIT linker
-- [x] llrl0 chibi backend (x86_64 targeting backend with xten0)
 - [x] xten1: re-implementation of xten0 for llrl
-- [ ] llrl1 chibi backend
+- [x] chibi backend (x86_64 targeting backend with xten)
+  - [x] for llrl0
+  - [x] for llrl1
 
 ## Usage
 
