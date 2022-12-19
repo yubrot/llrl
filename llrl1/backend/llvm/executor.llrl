@@ -3,6 +3,7 @@
 (import "~/util" _)
 (import "~/lowering/ir" [ir/_ _])
 (import "~/backend/native/calling" unsafe-call-main unsafe-call-macro)
+(import "~/backend/native/runtime" [llrt/symbols symbols])
 (import "~/backend/llvm/artifact" FunctionSymbol function-symbol/_)
 (export Executor _.Executor executor/_)
 
@@ -10,6 +11,9 @@
 ; assert_data_layout_matches_native_environment
 (assert-eq? (ok unit) (llvm/initialize-native-target!))
 (assert-eq? (ok unit) (llvm/initialize-native-asm-printer!))
+
+(for (: (let name) (let addr)) (llrt/symbols)
+  (llvm/add-symbol! name addr))
 
 (derive (DebugDisplay) value-data Executor
   (executor: llvm/ExecutionEngine))

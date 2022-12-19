@@ -4,11 +4,7 @@
 (import "~/sexp" [sexp/_ _])
 (import "~/lowering/ir" [ir/_ _])
 (import "~/backend/native/data" [data/_ _])
-(import "~/backend/native/runtime" [llrt/symbols symbols])
 (export RuntimeBuildEnv runtime-build-env/_ runtime/_ RuntimeConst RuntimeConst._)
-
-(for (: (let name) (let addr)) (llrt/symbols)
-  (llvm/add-symbol! name addr))
 
 (instance Conv.From.llvm/Module.To.llvm/Context (Conv llvm/Module llvm/Context)
   (function (conv a) (llvm/module/context a)))

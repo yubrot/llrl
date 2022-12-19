@@ -44,10 +44,9 @@
 
   (function (backend/execute-macro! id s b)
     (codegen! #f b)
-    (report/on (report b) phase:jit
-      (if-match1 (some (let symbol)) (context-artifact/function-symbol? id (context-artifact b))
-        (executor/unsafe-call-macro symbol s (executor b))
-        (err (string "macro not found: " (debug id))))))
+    (if-match1 (some (let symbol)) (context-artifact/function-symbol? id (context-artifact b))
+      (report/on (report b) phase:jit (executor/unsafe-call-macro symbol s (executor b)))
+      (err (string "macro not found: " (debug id)))))
 
   (function (backend/complete! r b)
     (report/merge! (report b) r)))
@@ -59,10 +58,10 @@
       (module-artifact/add-c-main-adapter! artifact)
       (executor/add-module! (module-artifact/complete! artifact) (executor b)))
     (let* ([(emit! path m)
-            (|> (executor b)
-                executor/target-machine
-                (llvm/target-machine/emit-to-file! m path llvm/code-gen-file-type/object-file)
-                (result/unwrap* [^1 (assert #f %1)]))]
+              (|> (executor b)
+                  executor/target-machine
+                  (llvm/target-machine/emit-to-file! m path llvm/code-gen-file-type/object-file)
+                  (result/unwrap* [^1 (assert #f %1)]))]
            [modules (executor/remove-modules! (executor b))]
            [result (report/on (report b) phase:link (link! dest modules emit! clang-options))!])
       (when (verbose? b)
@@ -72,10 +71,9 @@
 
   (function (backend/execute-main! b)
     (codegen! #t b)
-    (report/on (report b) phase:jit
-      (if-match1 (some (let symbol)) (|> b context-artifact context-artifact/main-function-symbol?)
-        (ok (executor/unsafe-call-main symbol (executor b)))
-        (err "main not found"))))
+    (if-match1 (some (let symbol)) (|> b context-artifact context-artifact/main-function-symbol?)
+      (ok (report/on (report b) phase:jit (executor/unsafe-call-main symbol (executor b))))
+      (err "main not found")))
 
   (function (backend/new options)
     (let* ([ctx (llvm/context/new)]

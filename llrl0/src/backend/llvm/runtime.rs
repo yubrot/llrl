@@ -3,7 +3,6 @@ use crate::lowering::ir::{CapturedUse, Syntax, SyntaxBody, SyntaxMetadata};
 use llvm::prelude::*;
 use once_cell::unsync::OnceCell;
 use std::mem::size_of;
-use std::sync::Once;
 
 #[derive(Debug)]
 pub struct Library<'ctx: 'm, 'm> {
@@ -18,14 +17,6 @@ pub struct Library<'ctx: 'm, 'm> {
 
 impl<'ctx: 'm, 'm> Library<'ctx, 'm> {
     pub fn new(module: &'m LLVMModule<'ctx>) -> Self {
-        static INIT_LIBRARY: Once = Once::new();
-
-        INIT_LIBRARY.call_once(|| {
-            for (name, addr) in llrt::symbols() {
-                unsafe { llvm::add_symbol(name, addr as *mut u8) };
-            }
-        });
-
         Self {
             module,
             gc_malloc: OnceCell::new(),

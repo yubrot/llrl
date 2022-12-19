@@ -23,6 +23,10 @@ impl<'ctx> Executor<'ctx> {
             llvm::initialize_native_target().expect("Failed to initialize native target");
             llvm::initialize_native_asm_printer().expect("Failed to initialize native ASM printer");
             LLVMExecutionEngine::link_in_mcjit();
+
+            for (name, addr) in llrt::symbols() {
+                llvm::add_symbol(name, addr as *mut u8);
+            }
         });
 
         let engine = LLVMExecutionEngine::new_mcjit(context, opt_level, code_model, None, None)
