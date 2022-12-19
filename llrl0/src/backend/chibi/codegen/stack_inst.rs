@@ -38,6 +38,33 @@ pub trait StackAwareInstWriter {
         Ok(())
     }
 
+    fn slide_in_stack(&mut self, src: usize, dst: usize, layout: &Layout) -> io::Result<()> {
+        match src.cmp(&dst) {
+            std::cmp::Ordering::Equal => {}
+            std::cmp::Ordering::Less => {
+                // right to left
+                for i in (0..layout.num_eightbytes()).rev() {
+                    let src = src + i * 8;
+                    let dst = dst + i * 8;
+                    let size = (layout.size - i * 8).min(8);
+                    self.load_eightbyte(TMP_GP2, Rsp + src as i32, size)?;
+                    self.store_eightbyte(Rsp + dst as i32, TMP_GP2, size)?;
+                }
+            }
+            std::cmp::Ordering::Greater => {
+                // left to right
+                for i in 0..layout.num_eightbytes() {
+                    let src = src + i * 8;
+                    let dst = dst + i * 8;
+                    let size = (layout.size - i * 8).min(8);
+                    self.load_eightbyte(TMP_GP2, Rsp + src as i32, size)?;
+                    self.store_eightbyte(Rsp + dst as i32, TMP_GP2, size)?;
+                }
+            }
+        }
+        Ok(())
+    }
+
     fn push_eightbyte(&mut self, reg: impl EightbyteReg) -> io::Result<()> {
         let num = reg.push(self.w())?;
         *self.depth() += num;

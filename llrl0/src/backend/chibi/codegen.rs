@@ -703,7 +703,7 @@ impl<'a> FunctionCodegen<'a> {
                     (IPopCount, 2) => self.w.popcntw(Ax, Ax)?,
                     (IPopCount, 4) => self.w.popcntl(Eax, Eax)?,
                     (IPopCount, 8) => self.w.popcntq(Rax, Rax)?,
-                    _ => unsupported_op!(op, size: a_layout.size),
+                    (_, s) => unsupported_op!(op, size: s),
                 }
                 Some(a_layout)
             }
@@ -814,7 +814,7 @@ impl<'a> FunctionCodegen<'a> {
                     }
                     (FTrunc(_), 8, 4) => self.w.cvtsd2ss(Xmm0, Xmm0)?,
                     (FExt(_), 4, 8) => self.w.cvtss2sd(Xmm0, Xmm0)?,
-                    _ => unsupported_op!(op, from: a_layout.size, to: layout.size),
+                    (_, from, to) => unsupported_op!(op, from: from, to: to),
                 }
                 Some(layout)
             }
@@ -839,7 +839,7 @@ impl<'a> FunctionCodegen<'a> {
                     (MathExp, 8) => self.eval_builtin_call("exp", &a_layout)?,
                     (MathLog, 4) => self.eval_builtin_call("logf", &a_layout)?,
                     (MathLog, 8) => self.eval_builtin_call("log", &a_layout)?,
-                    _ => unsupported_op!(op, size: a_layout.size),
+                    (_, s) => unsupported_op!(op, size: s),
                 };
                 Some(a_layout)
             }
@@ -880,7 +880,7 @@ impl<'a> FunctionCodegen<'a> {
                     2 => self.w.cmpw(Cx, Ax)?,
                     4 => self.w.cmpl(Ecx, Eax)?,
                     8 => self.w.cmpq(Rcx, Rax)?,
-                    _ => unsupported_op!(op, size: a_layout.size),
+                    s => unsupported_op!(op, size: s),
                 }
                 match op {
                     IEq | PtrEq => self.w.sete(Al)?,
@@ -967,9 +967,9 @@ impl<'a> FunctionCodegen<'a> {
                     }
                     (UDiv | URem, 8) => {
                         self.w.xorl(Edx, Edx)?;
-                        self.w.divl(Ecx)?;
+                        self.w.divq(Rcx)?;
                     }
-                    _ => unsupported_op!(op, size: a_layout.size),
+                    (_, s) => unsupported_op!(op, size: s),
                 }
                 match (op, b_layout.size) {
                     (SRem | URem, 1) => self.w.movb(Al, Ah)?,
@@ -985,7 +985,7 @@ impl<'a> FunctionCodegen<'a> {
                 match b_layout.size {
                     4 => self.w.comiss(Xmm1, Xmm0)?,
                     8 => self.w.comisd(Xmm1, Xmm0)?,
-                    _ => unsupported_op!(op, size: a_layout.size),
+                    s => unsupported_op!(op, size: s),
                 }
                 match op {
                     FEq => self.w.sete(Al)?,
@@ -1013,7 +1013,7 @@ impl<'a> FunctionCodegen<'a> {
                     (MathPow, 4) => self.eval_builtin_call("powf", &a_layout)?,
                     (FRem, 8) => self.eval_builtin_call("fmod", &a_layout)?,
                     (MathPow, 8) => self.eval_builtin_call("pow", &a_layout)?,
-                    _ => unsupported_op!(op, size: a_layout.size),
+                    (_, s) => unsupported_op!(op, size: s),
                 }
                 Some(a_layout)
             }
@@ -1198,33 +1198,6 @@ impl<'a> FunctionCodegen<'a> {
             }
             Const::Unit => Layout::unit(),
         })
-    }
-
-    fn slide_in_stack(&mut self, src: usize, dst: usize, layout: &Layout) -> io::Result<()> {
-        match src.cmp(&dst) {
-            std::cmp::Ordering::Equal => {}
-            std::cmp::Ordering::Less => {
-                // right to left
-                for i in (0..layout.num_eightbytes()).rev() {
-                    let src = src + i * 8;
-                    let dst = dst + i * 8;
-                    let size = (layout.size - i * 8).min(8);
-                    self.load_eightbyte(Rax, Rsp + src as i32, size)?;
-                    self.store_eightbyte(Rsp + dst as i32, Rax, size)?;
-                }
-            }
-            std::cmp::Ordering::Greater => {
-                // left to right
-                for i in 0..layout.num_eightbytes() {
-                    let src = src + i * 8;
-                    let dst = dst + i * 8;
-                    let size = (layout.size - i * 8).min(8);
-                    self.load_eightbyte(Rax, Rsp + src as i32, size)?;
-                    self.store_eightbyte(Rsp + dst as i32, Rax, size)?;
-                }
-            }
-        }
-        Ok(())
     }
 
     fn embed_rodata(&mut self, rep: &Rep) -> io::Result<Label> {

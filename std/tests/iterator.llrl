@@ -32,6 +32,13 @@
   (assert-eq? (some 9) (iterator/next! it))
   (assert-eq? none (iterator/next! it)))
 
+(let1 it (iterator/range 3 -1 -1)
+  (assert-eq? (some 3) (iterator/next! it))
+  (assert-eq? (some 2) (iterator/next! it))
+  (assert-eq? (some 1) (iterator/next! it))
+  (assert-eq? (some 0) (iterator/next! it))
+  (assert-eq? none (iterator/next! it)))
+
 (let1 sum (ref 0)
   (for (let n) (iterator/unfold array/split-last? (array 1 2 3 4 5))
     (set! sum (+ ~sum n)))
