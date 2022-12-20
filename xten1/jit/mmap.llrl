@@ -1,5 +1,5 @@
 (import "std/bits" _)
-(import "std/memory" ptr/_)
+(import "std/memory" ptr/_ ptr:_)
 (import "std/integer" Integer._ integer/max)
 (export Mmap _.Mmap mmap/_)
 (export Error _.Error error:_)
@@ -11,15 +11,15 @@
 
 (function mmap/page-size 4096)
 
-; Create a new memory map near the specified address.
-(function (mmap/new-near! hint-addr pages protect) {(-> (Ptr U8) U64 Protect (Result Mmap Error))}
+; Create a new memory map.
+(function (mmap/new! pages protect map-32bit?) {(-> U64 Protect Bool (Result Mmap Error))}
   (let1
     ptr
     (<mmap>
-      hint-addr
+      ptr:null
       (* pages mmap/page-size)
       (protect-flag protect)
-      (bw| MAP_PRIVATE MAP_ANONYMOUS)
+      (bw| (bw| MAP_PRIVATE MAP_ANONYMOUS) (if map-32bit? MAP_32BIT 0))
       -1
       0)
 
@@ -105,3 +105,4 @@
 
 (function MAP_PRIVATE 2)
 (function MAP_ANONYMOUS 32)
+(function MAP_32BIT 64)

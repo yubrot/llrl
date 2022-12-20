@@ -5,25 +5,25 @@
 
 ; A collection of non-contiguous `Mmap`s with the same `Protect`.
 (derive (DebugDisplay) data Segment
-  (segment: (Ptr U8) Protect (Vector Mmap) (Ref U64))) ; hint-addr protect chunks offset
+  (segment: Protect Bool (Vector Mmap) (Ref U64))) ; protect map-32bit? chunks offset
 
-(function (segment/new hint-addr protect) {(-> (Ptr U8) Protect Segment)}
-  (segment: hint-addr protect vector/empty (ref 0)))
+(function (segment/new protect map-32bit?) {(-> Protect Bool Segment)}
+  (segment: protect map-32bit? vector/empty (ref 0)))
 
 (function (segment/protect segment) {(-> Segment Protect)}
-  (with1 (segment: _ (let protect) _ _) segment protect))
+  (with1 (segment: (let protect) _ _ _) segment protect))
 
 ; Allocates free space for the specified size.
 ; If there is not enough space, a new mmap is created.
 (function (segment/allocate! size segment) {(-> U64 Segment (Result SegmentPart Error))}
-  (with1 (segment: (let hint-addr) (let protect) (let chunks) (let offset)) segment
+  (with1 (segment: (let protect) (let map-32bit?) (let chunks) (let offset)) segment
     (when (eq? size 0) (return (ok (segment-part: none 0 0))))
     (let1
       mmap
       (if-match ([(some (: (let mmap) _)) (|> chunks vector/buffer array/split-last?)]
                  [#t (<= (+ ~offset size) (mmap/size mmap))])
         mmap
-        (let1 mmap (mmap/new-near! hint-addr (/ (- (+ size mmap/page-size) 1) mmap/page-size) protect)!
+        (let1 mmap (mmap/new! (/ (- (+ size mmap/page-size) 1) mmap/page-size) protect map-32bit?)!
           (vector/push! mmap chunks)
           (set! offset 0)
           mmap))

@@ -6,7 +6,9 @@ mod symbol_table;
 mod table;
 
 pub use error::Error;
-pub use symbol_table::{resolver as symbol_resolver, Resolver as SymbolResolver};
+pub use symbol_table::{
+    resolver as symbol_resolver, Resolver as SymbolResolver, ResolverFn as SymbolResolverFn,
+};
 
 use crate::asm::{Binding, Location, LocationSection, Object, Reloc, RelocTarget, RelocType};
 use address_table::AddressTable;
@@ -18,7 +20,7 @@ use symbol_table::SymbolTable;
 
 /// A JIT execution engine.
 #[derive(Debug)]
-pub struct Engine<R: SymbolResolver = fn(&str) -> *const u8> {
+pub struct Engine<R: SymbolResolver = SymbolResolverFn> {
     symbol_table: SymbolTable<R>,
     address_table: AddressTable,
     ro: Segment,
@@ -29,14 +31,12 @@ pub struct Engine<R: SymbolResolver = fn(&str) -> *const u8> {
 impl<R: SymbolResolver> Engine<R> {
     /// Initializes the JIT engine.
     pub fn new(symbol_resolver: R) -> Self {
-        let hint_box = Box::new(0u8);
-        let hint_addr: *const u8 = &*hint_box;
         Self {
             symbol_table: SymbolTable::new(symbol_resolver),
-            address_table: AddressTable::new(hint_addr),
-            ro: Segment::new(hint_addr, Protect::ReadOnly),
-            rw: Segment::new(hint_addr, Protect::ReadWrite),
-            rx: Segment::new(hint_addr, Protect::ReadExec),
+            address_table: AddressTable::new(true),
+            ro: Segment::new(Protect::ReadOnly, true),
+            rw: Segment::new(Protect::ReadWrite, true),
+            rx: Segment::new(Protect::ReadExec, true),
         }
     }
 

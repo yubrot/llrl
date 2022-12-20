@@ -43,7 +43,7 @@ llrl1llc: llrl1ll ../rt/libllrt.a
 	./llrl1ll -b chibi -o llrl1llc $(FLAGS) -O main
 llrl1lcl: llrl1lc ../rt/libllrt.a
 	./llrl1lc -b llvm  -o llrl1lcl $(FLAGS) -O main
-llrl1lcc: llrl1lj ../rt/libllrt.a
+llrl1lcc: llrl1lc ../rt/libllrt.a
 	./llrl1lc -b chibi -o llrl1lcc $(FLAGS) -O main
 llrl1cll: llrl1cl ../rt/libllrt.a
 	./llrl1cl -b llvm  -o llrl1cll $(FLAGS) -O main

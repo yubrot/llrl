@@ -12,9 +12,9 @@ pub struct Table<T: Copy> {
 }
 
 impl<T: Copy> Table<T> {
-    pub fn new(hint_addr: *const u8) -> Self {
+    pub fn new(map_32bit: bool) -> Self {
         Self {
-            segment: Segment::new(hint_addr, Protect::ReadOnly),
+            segment: Segment::new(Protect::ReadOnly, map_32bit),
             _entries: PhantomData,
         }
     }
@@ -36,9 +36,7 @@ mod tests {
 
     #[test]
     fn table() {
-        let some_heap_space = Box::new(0u8);
-        let some_heap_ptr = &*some_heap_space as *const u8;
-        let mut table = Table::new(some_heap_ptr);
+        let mut table = Table::new(false);
 
         for i in 0u64..522 {
             let entry = table.put(i).unwrap();

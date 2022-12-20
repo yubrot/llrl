@@ -9,15 +9,7 @@
 
 ; Internals
 
-(let* ([some-heap-space (box 0)]
-       [some-heap-ptr (box/unsafe-ptr some-heap-space)]
-       [mmap
-         (result/unwrap* [^1 (assert #f (string "mmap: " %1))]
-                         (mmap/new-near! some-heap-ptr 2 protect:read-write))])
-  (assert
-    (< (abs (- (|> mmap mmap/ptr ptr/address conv) {I64}
-               (|> some-heap-ptr ptr/address conv)))
-       (* 2 1024 1024 1024)))
+(let1 mmap (result/unwrap* [^1 (assert #f (string "mmap: " %1))] (mmap/new! 2 protect:read-write #f))
   (assert-eq? (mmap/pages mmap) 2)
   (assert-eq? (mmap/size mmap) (* 2 mmap/page-size))
   (assert-eq? (mmap/protect mmap) protect:read-write)
@@ -27,9 +19,7 @@
   (assert-eq? (mmap/unmap! mmap) (ok unit)))
 
 (let* (
-  [some-heap-space (box 0)]
-  [some-heap-ptr (box/unsafe-ptr some-heap-space)]
-  [segment (segment/new some-heap-ptr protect:read-only)]
+  [segment (segment/new protect:read-only #f)]
   [(allocate! size)
     (result/unwrap*
       [^1 (assert #f (string "segment/allocate!: " %1))]
@@ -67,10 +57,7 @@
 
   (assert-eq? (segment/dispose! segment) (ok unit)))
 
-(let* ([some-heap-space (box 0)]
-       [some-heap-ptr (box/unsafe-ptr some-heap-space)]
-       [table (table/new some-heap-ptr)])
-
+(let1 table (table/new #f)
   (for (let i) (iterator/range 0 {U64} 522 1)
     (let1 ptr (result/unwrap* [^1 (assert #f (string "table/put!: " %1))] (table/put! i table))
       (assert-eq? (ptr/load ptr) i)))

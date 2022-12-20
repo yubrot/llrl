@@ -5,17 +5,17 @@ use std::ptr;
 /// A collection of non-contiguous `Mmap`s with the same `Protect`.
 #[derive(Debug)]
 pub struct Segment {
-    hint_addr: *const u8,
     protect: Protect,
+    map_32bit: bool,
     chunks: Vec<Mmap>,
     offset: usize,
 }
 
 impl Segment {
-    pub fn new(hint_addr: *const u8, protect: Protect) -> Self {
+    pub fn new(protect: Protect, map_32bit: bool) -> Self {
         Self {
-            hint_addr,
             protect,
+            map_32bit,
             chunks: Vec::new(),
             offset: 0,
         }
@@ -38,7 +38,7 @@ impl Segment {
     pub fn allocate(&mut self, size: usize) -> Result<SegmentPart, Error> {
         if self.last_mmap_capacity() < size {
             let pages = (size + Mmap::PAGE_SIZE - 1) / Mmap::PAGE_SIZE;
-            let mmap = Mmap::new_near(self.hint_addr, pages, self.protect)?;
+            let mmap = Mmap::new(pages, self.protect, self.map_32bit)?;
             self.chunks.push(mmap);
             self.offset = 0;
         }
@@ -102,9 +102,7 @@ mod tests {
 
     #[test]
     fn segment() {
-        let some_heap_space = Box::new(0u8);
-        let some_heap_ptr = &*some_heap_space as *const u8;
-        let mut segment = Segment::new(some_heap_ptr, Protect::ReadOnly);
+        let mut segment = Segment::new(Protect::ReadOnly, false);
 
         let mut part = segment.allocate(1024 * 5).unwrap();
         assert_eq!(part.size(), 1024 * 5);

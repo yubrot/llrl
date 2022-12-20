@@ -6,8 +6,8 @@
 (derive (DebugDisplay) data AddressTable
   (address-table: (HashMap String (Ptr (Ptr U8))) (Table (Ptr U8))))
 
-(function (address-table/new hint-addr) {(-> (Ptr U8) AddressTable)}
-  (address-table: hash-map/empty (table/new hint-addr)))
+(function (address-table/new map-32bit?) {(-> Bool AddressTable)}
+  (address-table: hash-map/empty (table/new map-32bit?)))
 
 ; Dispose the AddressTable. Internal `Table` will be disposed.
 (function (address-table/dispose! at) {(-> AddressTable (Result unit Error))}
