@@ -1,7 +1,8 @@
 use libc::{
-    __errno_location, c_void, mmap, mprotect, munmap, EINVAL, ENOMEM, MAP_ANONYMOUS, MAP_PRIVATE,
-    PROT_EXEC, PROT_NONE, PROT_READ, PROT_WRITE,
+    __errno_location, c_void, mmap, mprotect, munmap, EINVAL, ENOMEM, MAP_32BIT, MAP_ANONYMOUS,
+    MAP_PRIVATE, PROT_EXEC, PROT_NONE, PROT_READ, PROT_WRITE,
 };
+use std::ptr;
 
 /// Memory area mapped by `mmap(2)`.
 #[derive(Debug)]
@@ -12,14 +13,14 @@ pub struct Mmap {
 }
 
 impl Mmap {
-    /// Create a new memory map near the specified address.
-    pub fn new_near(hint_addr: *const u8, pages: usize, protect: Protect) -> Result<Self, Error> {
+    /// Create a new memory map.
+    pub fn new(pages: usize, protect: Protect, map_32bit: bool) -> Result<Self, Error> {
         let ptr = unsafe {
             mmap(
-                hint_addr as *mut c_void,
+                ptr::null_mut(),
                 pages * Self::PAGE_SIZE,
                 protect.value(),
-                MAP_PRIVATE | MAP_ANONYMOUS,
+                MAP_PRIVATE | MAP_ANONYMOUS | map_32bit.then_some(MAP_32BIT).unwrap_or_default(),
                 -1,
                 0,
             )
@@ -127,12 +128,9 @@ mod tests {
 
     #[test]
     fn mmap_munmap() {
-        let some_heap_space = Box::new(0u8);
-        let some_heap_ptr = &*some_heap_space as *const u8;
-        let mmap = Mmap::new_near(some_heap_ptr, 2, Protect::ReadWrite);
+        let mmap = Mmap::new(2, Protect::ReadWrite, false);
         assert!(mmap.is_ok());
         let mut mmap = mmap.unwrap();
-        assert!(unsafe { mmap.as_ptr().offset_from(some_heap_ptr) }.abs() < 2 * 1024 * 1024 * 1024);
         assert_eq!(mmap.pages(), 2);
         assert_eq!(mmap.size(), 2 * Mmap::PAGE_SIZE);
         assert_eq!(mmap.protect(), Protect::ReadWrite);

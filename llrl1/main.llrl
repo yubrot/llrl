@@ -1,8 +1,10 @@
 (import "std/phantom" _)
 (import "std/io" [io/_ _])
 (import "std/system" args exit!)
-(import "~/util" with-tempdir!)
+(import "~/util" with-tempdir! $feature)
 (import "~" _)
+(import "~/backend/llvm" [LLVMBackend Backend] [_.LLVMBackend _.Backend])
+(import "~/backend/chibi" [ChibiBackend Backend] [_.ChibiBackend _.Backend])
 
 (derive (DebugDisplay Eq) value-data Arg
   (arg: String)
@@ -96,6 +98,7 @@
 
   (let ([pipeline (pipeline/new ".")]
         [output (ref none)]
+        [backend (ref none)]
         [run? (ref #f)]
         [run-args (ref none)])
     (for (let arg) args
@@ -113,11 +116,8 @@
           (set! run? #t)]
         [arg:verbose
           (pipeline/set-verbose! #t pipeline)]
-        [(arg:backend (let backend))
-          (match backend
-            ["default"]
-            ["llvm"]
-            [_ (error! (string "Unsupported backend: " backend))])]
+        [(arg:backend (let b))
+          (set! backend (some b))]
         [(arg:clang-option (let opt))
           (pipeline/add-clang-option! opt pipeline)]
         [(arg:output (let out))
@@ -131,14 +131,22 @@
             (vector/push! "--" run-args)
             (set! run-args (some vector/empty)))]))
 
-    (when (and ~run? (is? none ~run-args)) (set! run-args (some vector/empty)))
+    (when (and (is? none ~run-args) (or ~run? (is? none ~output)))
+      (set! run-args (some vector/empty)))
 
-    (let1 run-args (option/map vector/buffer ~run-args)
+    (let1
+      (run! backend)
+      (if-match1 (some (let output)) ~output
+        (pipeline/run! output ~run-args backend pipeline)
+        (with-tempdir! [^1 (pipeline/run! (io/path %1 "bin") ~run-args backend pipeline)]))
       (match
-        (if-match1 (some (let output)) ~output
-          (pipeline/run! output run-args (phantom DefaultBackend) pipeline)
-          (with-tempdir! (lambda (tempdir)
-            (pipeline/run! (io/path tempdir "bin") (some (option/unwrap array/empty run-args)) (phantom DefaultBackend) pipeline))))
+        (match (option/unwrap "default" ~backend)
+          ($feature "llvm-backend"
+            ["llvm" (run! (phantom LLVMBackend))])
+          ($feature "chibi-backend"
+            ["chibi" (run! (phantom ChibiBackend))])
+          ["default" (run! (phantom DefaultBackend))]
+          [(let backend) (error! (string "Unsupported backend: " backend))])
         [(ok (some (let status))) (exit! status)]
         [(ok none)]
         [(err (let e)) (error! (string e))]))))

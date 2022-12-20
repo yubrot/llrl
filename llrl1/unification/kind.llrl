@@ -5,7 +5,7 @@
 (export Kind _.Kind kind:_)
 (export Context _.Context context/_ Resolve Resolve._)
 
-(derive (Eq Ord DebugDisplay Hash) value-data Kind
+(derive (Eq Ord DebugDisplay Hash) data Kind
   (kind:var (Var Kind))
   kind:type
   kind:constraint

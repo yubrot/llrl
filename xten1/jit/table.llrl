@@ -7,8 +7,8 @@
 (derive (DebugDisplay) value-data (Table A)
   (table: Segment))
 
-(function (table/new hint-addr) {(forall A) (-> (Ptr U8) (Table A))}
-  (table: (segment/new hint-addr protect:read-only)))
+(function (table/new map-32bit?) {(forall A) (-> Bool (Table A))}
+  (table: (segment/new protect:read-only map-32bit?)))
 
 ; Add an entry. Returns the address corresponding to the entry.
 (function (table/put! entry table) {(forall A) (-> A (Table A) (Result (Ptr A) Error))}

@@ -23,6 +23,10 @@
 (assert-eq? "3.14" (string 3.14))
 (assert-eq? "1.875" (string 1.875 {F32}))
 
+; From large (> 2^63) u64 numbers to f32, f64
+(assert (< 18000000000000000000.0 {F32} (conv 18000100000000000000 {U64})))
+(assert (< 18000000000000000000.0 {F64} (conv 18000100000000000000 {U64})))
+
 (assert-eq? none {(Option F32)} (float/from-string? ""))
 (assert-eq? (some 0.0) {(Option F32)} (float/from-string? "0"))
 (assert-eq? (some 0.0) {(Option F32)} (float/from-string? "0.0"))

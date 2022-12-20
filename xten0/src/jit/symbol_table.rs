@@ -42,6 +42,8 @@ impl<R: Resolver> SymbolTable<R> {
     }
 }
 
+pub type ResolverFn = fn(&str) -> *const u8;
+
 /// Alias of `FnMut(&str) -> Option<*const u8>`. This is used for resolving undefined symbols.
 pub trait Resolver: FnMut(&str) -> *const u8 {}
 

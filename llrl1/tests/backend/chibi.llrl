@@ -1,0 +1,199 @@
+(import "std/hash-map" _)
+(import "std/ord-map" _)
+(import "xten/asm" _)
+(import "~/lowering/ir" [ir/_ _])
+(import "~/backend/native/mem-layout" _)
+(import "~/backend/chibi/context" _)
+(import "~/backend/chibi/codegen/reg-assign" _)
+(import "~/backend/chibi/codegen/stack-frame" _)
+(import "~/backend/chibi/codegen/call-frame" _)
+(println! "llrl1/tests/backend/chibi")
+
+(let ([gps (ref (array rax rdx))]
+      [fps (ref (array xmm0 xmm1))]
+      [layout-a (layout/product (array (layout/integer 4) (layout/floating-point 4) (layout/floating-point 4)))]
+      [layout-b (layout/new 16 8 class:integer)]
+      [layout-c (layout/floating-point 8)])
+  (assert-eq? (reg-assign/build layout-a gps fps) (ok (array (reg-assign/new 0 8 rax) (reg-assign/new 8 4 xmm0))))
+  (assert-eq? ~gps (array rdx))
+  (assert-eq? ~fps (array xmm1))
+  (assert-eq? (reg-assign/build layout-b gps fps) (err unit))
+  (assert-eq? ~gps (array rdx))
+  (assert-eq? ~fps (array xmm1))
+  (assert-eq? (reg-assign/build layout-c gps fps) (ok (array (reg-assign/new 0 8 xmm1))))
+  (assert-eq? ~gps (array rdx))
+  (assert-eq? ~fps array/empty))
+
+(let* ([ct-id-gen (ir/ct-id-gen/new)]
+       [rt-id-gen (ir/rt-id-gen/new)]
+       [pair-id (ir/ct-id-gen/next! ct-id-gen)]
+       [pair (ir/struct: ir/struct-repr:standard (array (ir/ct:s 64) (ir/ct:s 64)))]
+       [triple-id (ir/ct-id-gen/next! ct-id-gen)]
+       [triple (ir/struct: ir/struct-repr:standard (array (ir/ct:s 64) (ir/ct:s 64) (ir/ct:s 64)))]
+       ; some RtIds for tests
+       [ids (array/new* [^0 (ir/rt-id-gen/next! rt-id-gen)] 10)]
+       [(id n) (get ids[n])]
+       [ctx (context/new)])
+  (context/add-types!
+    (ord-map (: pair-id (ir/def:struct pair)) (: triple-id (ir/def:struct triple)))
+    ctx)
+
+  ; standard function with arguments
+  (let1
+    sf
+    (stack-frame/new
+      (ir/function:
+        ir/function-kind:standard
+        (some (ir/function-env: (id 0) (array (ir/rt-param: (id 1) (ir/ct:s 32)) (ir/rt-param: (id 2) ir/ct:f64))))
+        (array (ir/rt-param: (id 3) (ir/ct:s 64)) (ir/rt-param: (id 4) (ir/ct:id pair-id)))
+        (ir/ct:id pair-id)
+        ir/rt:never
+        #f)
+      ctx)
+    (assert-eq? (stack-frame/ret-ptr sf) none)
+    (assert-eq? (stack-frame/var-offsets sf) (hash-map (: (id 0) -8) (: (id 1) -16) (: (id 2) -24) (: (id 3) 32) (: (id 4) 16)))
+    (assert-eq? ~(stack-frame/vars sf) 3)
+    (assert-eq? ~(stack-frame/allocs sf) 0)
+    (assert-eq? ~(stack-frame/depth sf) 0)
+    (assert-eq? (stack-frame/reserved-area sf) (layout/memory 24 8)))
+
+  ; return by pointer store
+  (let1
+    sf
+    (stack-frame/new
+      (ir/function: ir/function-kind:standard none array/empty (ir/ct:id triple-id) ir/rt:never #f)
+      ctx)
+    (assert-eq? (stack-frame/ret-ptr sf) (some -8))
+    (assert-eq? (stack-frame/var-offsets sf) hash-map/empty)
+    (assert-eq? ~(stack-frame/vars sf) 1))
+
+  ; macro
+  (let1
+    sf
+    (stack-frame/new
+      (ir/function:
+        ir/function-kind:macro
+        none
+        (array (ir/rt-param: (id 0) (ir/ct:id pair-id)))
+        (ir/ct:id triple-id)
+        ir/rt:never
+        #f)
+      ctx)
+    (assert-eq? (stack-frame/ret-ptr sf) (some -8))
+    (assert-eq? (stack-frame/var-offsets sf) (hash-map (: (id 0) -24)))
+    (assert-eq? ~(stack-frame/vars sf) 3))
+
+  ; let-var
+  (let1
+    sf
+    (stack-frame/new
+      (ir/function:
+        ir/function-kind:standard
+        none
+        array/empty
+        ir/ct:unit
+        (ir/rt:let-var
+          (array
+            (ir/rt-var: (id 0) (ir/ct:s 64)
+              (ir/rt:let-var
+                (array (ir/rt-var: (id 1) (ir/ct:s 64) ir/rt:never))
+                ir/rt:never))
+            (ir/rt-var: (id 2) (ir/ct:s 64)
+              (ir/rt:let-var
+                (array (ir/rt-var: (id 3) (ir/ct:s 64) ir/rt:never))
+                ir/rt:never)))
+          (ir/rt:let-var
+            (array (ir/rt-var: (id 4) (ir/ct:s 64) ir/rt:never))
+            ir/rt:never))
+        #f)
+      ctx)
+    (assert-eq?
+      (stack-frame/var-offsets sf)
+      (hash-map (: (id 0) -8) (: (id 1) -16) (: (id 2) -16) (: (id 3) -24) (: (id 4) -24)))
+    (assert-eq? ~(stack-frame/vars sf) 3)
+    (assert-eq? ~(stack-frame/allocs sf) 0))
+
+  ; let-cont
+  (let1
+    sf
+    (stack-frame/new
+      (ir/function:
+        ir/function-kind:standard
+        none
+        array/empty
+        ir/ct:unit
+        (ir/rt:seq
+          (array
+            (ir/rt:let-var
+              (array (ir/rt-var: (id 0) (ir/ct:s 64) ir/rt:never))
+              ir/rt:never))
+          (ir/rt:let-cont
+            (array
+              (ir/rt-cont: (id 1) (array (ir/rt-param: (id 2) (ir/ct:s 64)))
+                ir/rt:never)
+              (ir/rt-cont: (id 3) (array (ir/rt-param: (id 4) (ir/ct:s 64)) (ir/rt-param: (id 5) (ir/ct:s 64)))
+                (ir/rt:let-var
+                  (array (ir/rt-var: (id 6) (ir/ct:s 64) ir/rt:never))
+                  ir/rt:never)))
+            (ir/rt:let-var
+              (array
+                (ir/rt-var: (id 7) (ir/ct:s 64) ir/rt:never)
+                (ir/rt-var: (id 8) (ir/ct:s 64) ir/rt:never))
+              ir/rt:never)))
+        #f)
+      ctx)
+    (assert-eq?
+      (stack-frame/var-offsets sf)
+      (hash-map (: (id 0) -8) (: (id 2) -24) (: (id 4) -24) (: (id 5) -32) (: (id 6) -40) (: (id 7) -8) (: (id 8) -16)))
+    (assert-eq? ~(stack-frame/vars sf) 5)
+    (assert-eq? ~(stack-frame/allocs sf) 0))
+
+  ; alloc
+  (let1
+    sf
+    (stack-frame/new
+      (ir/function:
+        ir/function-kind:standard
+        none
+        array/empty
+        ir/ct:unit
+        (ir/rt:seq
+          (array (ir/rt:alloc ir/location:stack-static (ir/rt:nullary (ir/nullary:uninitialized (ir/ct:id triple-id)))))
+          ir/rt:never)
+        #f)
+      ctx)
+    (assert-eq?  (stack-frame/var-offsets sf) hash-map/empty)
+    (assert-eq? ~(stack-frame/vars sf) 0)
+    (assert-eq? ~(stack-frame/allocs sf) 3)
+
+    (assert-eq? (stack-frame/consume-alloc-area! (context/layout (ir/ct:id triple-id) ctx) sf) -24)
+    (assert-eq? ~(stack-frame/vars sf) 3)
+    (assert-eq? ~(stack-frame/allocs sf) 0)))
+
+(assert-eq? (call-arg/default-args array/empty) array/empty)
+(assert-eq?
+  (call-arg/default-args (array (layout/integer 4) (layout/integer 4)))
+  (array (call-arg:stack 1) (call-arg:stack 1)))
+(assert-eq?
+  (call-arg/c-args (array (layout/integer 4) (layout/integer 4) (layout/floating-point 4)) (layout/integer 4))
+  (array
+    (call-arg:reg (reg-assign/new 0 4 rdi) none)
+    (call-arg:reg (reg-assign/new 0 4 rsi) none)
+    (call-arg:reg (reg-assign/new 0 4 xmm0) none)))
+(assert-eq?
+  (call-arg/c-args
+    (array
+      (layout/product (array (layout/integer 8) (layout/integer 8) (layout/integer 8)))
+      (layout/product (array (layout/integer 8) (layout/integer 8))))
+    (layout/memory 24 8))
+  (array
+    (call-arg:stack-rev 3)
+    (call-arg:reg (reg-assign/new 0 8 rsi) (some (reg-assign/new 8 8 rdx)))))
+
+(assert-eq? (call-ret/c (layout/memory 24 8)) (call-ret:stack 3))
+(assert-eq?
+  (call-ret/c (layout/new 16 8 class:integer))
+  (call-ret:reg (reg-assign/new 0 8 rax) (some (reg-assign/new 8 8 rdx))))
+(assert-eq?
+  (call-ret/c (layout/product (array (layout/integer 8) (layout/floating-point 4))))
+  (call-ret:reg (reg-assign/new 0 8 rax) (some (reg-assign/new 8 8 xmm0))))

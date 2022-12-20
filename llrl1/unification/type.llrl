@@ -8,7 +8,7 @@
 (export KindEnvironment kind-env/_)
 (export Context _.Context context/_ Resolve Resolve._)
 
-(derive (Eq Ord DebugDisplay Hash) value-data Type
+(derive (Eq Ord DebugDisplay Hash) data Type
   (type:var (Var Type) Kind Level)
   (type:con TypeCon)
   (type:app (Var Type) (Vars Type))

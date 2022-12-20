@@ -1,0 +1,55 @@
+(import "std/memory" ptr/_)
+(import "std/hash-map" _)
+(import "xten/asm" Object)
+(import "xten/jit" [jit/_ _])
+(import "llvm" [llvm/symbols symbols]) ; ($feature "llvm-backend" ..)
+(import "~/util" _)
+(import "~/lowering/ir" [ir/_ _])
+(import "~/backend/native/calling" unsafe-call-main unsafe-call-macro)
+(import "~/backend/native/runtime" [llrt/symbols symbols])
+(import "~/backend/chibi/context" FunctionSymbol function-symbol/_)
+(export Executor _.Executor executor/_)
+
+(value-data Executor
+  (executor: jit/Engine))
+
+(getter executor: engine)
+
+(function (executor/new) {(-> Executor)}
+  (executor: (jit/engine/new symbol-resolver)))
+
+(function (executor/dispose! executor) {(-> Executor unit)}
+  (result/unwrap* [^1 (assert #f (string %1))] (jit/engine/dispose! (engine executor))))
+
+(function (executor/add-object! obj executor) {(-> Object Executor unit)}
+  (result/unwrap* [^1 (assert #f (string %1))] (jit/engine/add-object! obj (engine executor))))
+
+(function (get-function-address name executor) {(-> String Executor (Ptr U8))}
+  (if-match1 (some (let ptr)) (jit/engine/get? name (engine executor))
+    ptr
+    (assert #f (string "Function not found: " name))))
+
+(function (executor/unsafe-call-macro symbol s executor)
+  {(-> FunctionSymbol (ir/S ir/CapturedUse) Executor (Result (ir/S ir/CapturedUse) String))}
+  (assert-eq? (function-symbol/kind symbol) ir/function-kind:macro)
+  (unsafe-call-macro (get-function-address (function-symbol/name symbol) executor) s))
+
+(function (executor/unsafe-call-main symbol executor) {(-> FunctionSymbol Executor Bool)}
+  (assert-eq? (function-symbol/kind symbol) ir/function-kind:main)
+  (unsafe-call-main (get-function-address (function-symbol/name symbol) executor)))
+
+(function symbol-resolver {(-> String (Ptr U8))}
+  @let1 map hash-map/empty
+
+  (for (: (let name) (let addr)) (llrt/symbols)
+    (hash-map/insert! name (ptr/from-address addr) map))
+
+  ; LLVM functions are also available when `llvm-backend` feature is enabled
+  ($feature "llvm-backend"
+    (for (: (let name) (let addr)) (llvm/symbols)
+      (hash-map/insert! name (ptr/from-address addr) map)))
+
+  (lambda (sym)
+    (if-match1 (some (let ptr)) (hash-map/get? sym map)
+      ptr
+      (jit/symbol-resolver/dl sym))))

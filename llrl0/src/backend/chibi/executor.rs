@@ -12,7 +12,7 @@ pub struct Executor {
 
 impl Executor {
     pub fn new() -> Self {
-        let engine: jit::Engine = jit::Engine::new(Self::symbol_resolver);
+        let engine = jit::Engine::<jit::SymbolResolverFn>::new(symbol_resolver);
         Self { engine }
     }
 
@@ -49,31 +49,31 @@ impl Executor {
             None => panic!("Function not found: {}", f.name),
         }
     }
+}
 
-    fn symbol_resolver(sym: &str) -> *const u8 {
-        static LLRT_SYMBOLS: Lazy<HashMap<String, LlrtSymbol>> = Lazy::new(|| {
-            let mut map = HashMap::new();
+fn symbol_resolver(sym: &str) -> *const u8 {
+    static LLRT_SYMBOLS: Lazy<HashMap<String, LlrtSymbol>> = Lazy::new(|| {
+        let mut map = HashMap::new();
 
-            for (name, addr) in llrt::symbols() {
-                map.insert(name.to_string(), LlrtSymbol(addr as *mut u8));
-            }
-
-            // LLVM functions are also available when `llvm-backend` feature is enabled
-            #[cfg(feature = "llvm-backend")]
-            for (name, addr) in llvm::symbols::get() {
-                map.insert(
-                    name.to_str().unwrap().to_owned(),
-                    LlrtSymbol(addr as *mut u8),
-                );
-            }
-
-            map
-        });
-
-        match LLRT_SYMBOLS.get(sym) {
-            Some(sym) => sym.0,
-            None => jit::symbol_resolver::dl::default(sym),
+        for (name, addr) in llrt::symbols() {
+            map.insert(name.to_string(), LlrtSymbol(addr as *mut u8));
         }
+
+        // LLVM functions are also available when `llvm-backend` feature is enabled
+        #[cfg(feature = "llvm-backend")]
+        for (name, addr) in llvm::symbols::get() {
+            map.insert(
+                name.to_str().unwrap().to_owned(),
+                LlrtSymbol(addr as *mut u8),
+            );
+        }
+
+        map
+    });
+
+    match LLRT_SYMBOLS.get(sym) {
+        Some(sym) => sym.0,
+        None => jit::symbol_resolver::dl::default(sym),
     }
 }
 

@@ -1,0 +1,149 @@
+(import "std/hash-map" _)
+(import "~/util" _)
+(import "~/lowering/ir" _)
+(import "~/lowering/ir/transformer" Transform._ transform Transformer rewrite/_ cut:_)
+(import "~/backend/native/mem-layout" _)
+(import "~/backend/chibi/context" _)
+(export StackFrame _.StackFrame stack-frame/_)
+
+; A llrl stack frame is configured to satisfy the following:
+; * rbp is 16-byte aligned
+; * [rbp - 8n] has the the local variables eightbytes
+; * [rbp] has the previous rbp value
+; * [rbp + 8] has the return address (pushed by callq)
+; ^--- current stack frame ---^
+; * [rbp + 16 + 8n] has the argument values eightbytes (pushed by callee)
+; These are satisfied by `FunctionCodegen::prologue`.
+
+(derive (DebugDisplay) data StackFrame
+  (stack-frame:
+    (Option I32)
+    (HashMap RtId I32)
+    (Ref U64)
+    (Ref U64)
+    (Ref U64)))
+
+(getter stack-frame:
+  stack-frame/ret-ptr
+  stack-frame/var-offsets
+  stack-frame/vars        ; number of eightbytes required to store local variables
+  stack-frame/allocs      ; number of eightbytes required for Location::StackStatic
+  stack-frame/depth)      ; number of eightbytes used after rbp
+
+(function (stack-frame/new f ctx) {(-> Function Context StackFrame)}
+  (let ([ret-ptr (ref none)]
+        [var-offsets hash-map/empty]
+        [vars (ref 0)]
+        [allocs (ref 0)])
+    (collect! f (builder: ret-ptr var-offsets vars (ref 0) allocs ctx))
+    (stack-frame: ~ret-ptr var-offsets vars allocs (ref 0))))
+
+(function (stack-frame/reserved-area sf) {(-> StackFrame Layout)}
+  (layout/memory (* (+ ~(stack-frame/vars sf) ~(stack-frame/allocs sf)) 8) 8))
+
+(function (stack-frame/consume-alloc-area! layout sf) {(-> Layout StackFrame I32)}
+  (assert (<= (layout/num-eightbytes layout) ~(stack-frame/allocs sf)))
+  (set! (stack-frame/vars sf) (+ ~(stack-frame/vars sf) (layout/num-eightbytes layout)))
+  (set! (stack-frame/allocs sf) (- ~(stack-frame/allocs sf) (layout/num-eightbytes layout)))
+  (* (conv ~(stack-frame/vars sf)) -8))
+
+(data Builder
+  (builder:
+    (Ref (Option I32))
+    (HashMap RtId I32)
+    (Ref U64)
+    (Ref U64)
+    (Ref U64)
+    Context))
+
+(getter builder:
+  ret-ptr
+  var-offsets
+  vars
+  scope-vars  ; number of eightbytes required to store variables at the scope
+  allocs
+  context)
+
+(function (collect! f b) {(-> Function Builder unit)}
+  (when-match1 (some (let env)) (function/env f)
+    (assert-eq? (function/kind f) function-kind:standard)
+    ; save the env pointer in StackFrame
+    (add-var! (function-env/id env) ct:env b)
+    (for (rt-param: (let id) (let ty)) (function-env/elems env)
+      (add-var! id ty b)))
+
+  (when (eq? (|> b context (context/layout (function/ret f)) layout/class) class:memory)
+    (assert-ne? (function/kind f) function-kind:main)
+    ; save the ret pointer in StackFrame
+    (set! (ret-ptr b) (some (allocate! layout/pointer b))))
+
+  (if (eq? (function/kind f) function-kind:macro)
+    ; Save the macro input (Syntax Sexp)
+    (begin
+      (assert-eq? (|> f function/params array/length) 1)
+      (with1 (rt-param: (let id) (let ty)) (get (function/params f)[0])
+        (add-var! id ty b)))
+    ; Arguments are passed through the stack
+    (let* ([params {(Array (: RtId I32))}
+              (|> (function/params f)
+                  (it/map (case1 (rt-param: (let id) (let ty))
+                    (: id (|> b context (context/layout ty) layout/num-eightbytes conv))))
+                  collect)]
+           ; [rbp + 16 + 8n] has the argument values eightbyte (see `function-prologue!`)
+           [offset
+              (ref (+ 16 (|> params (it/map (case1 (: _ (let n)) n)) it/sum (* 8))))])
+      (for (: (let id) (let eightbyte)) params
+        ; Arguments are pushed onto the stack in left-to-right order
+        (set! offset (- ~offset (* eightbyte 8)))
+        (add-parameter! id ~offset b))))
+
+  (ignore (result/unwrap* never (transform b (function/body f)))))
+
+(function (allocate! layout b) {(-> Layout Builder I32)}
+  (set! (scope-vars b) (+ ~(scope-vars b) (layout/num-eightbytes layout)))
+  (set! (vars b) (max ~(vars b) ~(scope-vars b)))
+  (* (conv ~(scope-vars b)) -8))
+
+(function (add-var! id ty b) {(-> RtId Ct Builder unit)}
+  (let* ([layout (context/layout ty (context b))]
+         [offset (allocate! layout b)])
+    (ignore (hash-map/insert! id offset (var-offsets b)))))
+
+(function (add-parameter! id offset b) {(-> RtId I32 Builder unit)}
+  (ignore (hash-map/insert! id offset (var-offsets b))))
+
+(instance Transformer.Builder (forall Never) (Transformer Builder Never)
+  (function (transformer/before-rt rt b)
+    (match rt
+      [(rt:let-var (let vars) (let body))
+        (let1 outscope-vars ~(scope-vars b)
+          (for (rt-var: (let id) (let ty) (let init)) vars
+            (add-var! id ty b)
+            (transform b init)!)
+          (transform b body)!
+          (set! (scope-vars b) outscope-vars)) ; variables are only available in this scope
+        (return (ok (: cut:yes (rewrite/unchanged rt))))]
+      [(rt:let-cont (let conts) (let body))
+        (let1 stashed-vars ~(vars b)
+          (set! (vars b) ~(scope-vars b))
+          (transform b body)!
+          ; After traversing body, (vars b) indicates the size of the stack frame required to evaluate body
+          (set! (scope-vars b) ~(vars b))
+          ; Restore the stashed_vars
+          (set! (vars b) (max ~(vars b) stashed-vars)))
+        (for (rt-cont: _ (let params) (let body)) conts
+          (let1 outscope-vars ~(scope-vars b)
+            (for (rt-param: (let id) (let ty)) params
+              (add-var! id ty b))
+            (transform b body)!
+            (set! (scope-vars b) outscope-vars))) ; cont parameters are only available in this scope
+        (return (ok (: cut:yes (rewrite/unchanged rt))))]
+      [(rt:alloc (let loc) (let init))
+        (when-match1 (some (let ty)) (rt/ty init)
+          (set! (allocs b) (+ ~(allocs b) (|> b context (context/layout ty) layout/num-eightbytes))))]
+      [(rt:alloc-array (let loc) _ _)
+        (assert (ne? loc location:stack-static) "Not implemented: (rt:alloc-array location:stack-static _ _)")]
+      [(rt:construct-env (let loc) _)
+        (assert (ne? loc location:stack-static) "Not implemented: (rt:construct-env location:stack-static _)")]
+      [_])
+    (ok (: cut:no (rewrite/unchanged rt)))))

@@ -3,6 +3,8 @@
 (import "std/hash-map" _)
 (import "std/ord-map" _)
 (import "~" _)
+(import "~/backend/llvm" [LLVMBackend Backend] [_.LLVMBackend _.Backend])
+(import "~/backend/chibi" [ChibiBackend Backend] [_.ChibiBackend _.Backend])
 (import "~/util" _)
 (import "~/sexp" s*_)
 (import "~/syntax" [syntax-error: error:] syntax/list-of)
@@ -94,7 +96,10 @@
     [test-target:module
       (test-condition/run! slt (module/build! sources default unit report) condition)]
     [_
-      (test-target/run-backend! slt report (phantom DefaultBackend) sources condition target)]))
+      ($feature "llvm-backend"
+        (test-target/run-backend! slt report (phantom LLVMBackend) sources condition target))
+      ($feature "chibi-backend"
+        (test-target/run-backend! slt report (phantom ChibiBackend) sources condition target))]))
 
 (function (test-target/run-backend! slt report b sources condition target)
   {(forall B)

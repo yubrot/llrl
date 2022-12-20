@@ -1,0 +1,1078 @@
+; llrl1 chibi backend ABI is compatible with llrl0 chibi backend.
+; See llrl0/src/backend/chibi/codegen.rs
+
+(import "std/ord-map" _)
+(import "std/hash-map" _)
+(import "std/memory" reinterpret)
+(import "xten/asm" _)
+(import "~/util" _)
+(import "~/lowering/ir" [ir/_ _])
+(import "~/backend/native/data" _)
+(import "~/backend/native/mem-layout" _)
+(import "~/backend/chibi/context" _)
+(import "~/backend/chibi/codegen/reg-assign" _)
+(import "~/backend/chibi/codegen/stack-frame" _)
+(import "~/backend/chibi/codegen/call-frame" _)
+(import "~/backend/chibi/codegen/stack-inst" _)
+(import "~/backend/chibi/codegen/macros" _)
+(export c-main-adapter-object! object!)
+
+(function (c-main-adapter-object! ctx) {(-> Context Object)}
+  (cg-object! @lambda (w)
+    @let1 c-main (writer/get-label! "main" w)
+    @let1 llrt-init (writer/get-label! "llrt_init" w)
+    @let1 llrl-main
+      (writer/get-label!
+        (|> ctx
+            context/main-function-symbol?
+            (option/unwrap* @^0 (assert #f "main not found"))
+            function-symbol/name)
+        w)
+    (.define! w c-main #t)
+    (subq! w rsp 8 {I8})! ; 16-byte alignment
+    (callq! w llrt-init)!
+    (callq! w llrl-main)!
+    (xorl! w eax eax)! ; returns 0
+    (addq! w rsp 8 {I8})!
+    (retq! w)!
+    (ok unit)))
+
+(function (object! defs main ctx) {(-> (OrdMap ir/CtId ir/Def) (Option ir/Function) Context Object)}
+  (cg-object! @lambda (w)
+    (for (: (let id) (let def)) (ord-map/elems defs)
+      (when-match1 (ir/def:function (let f)) def
+        (context/define-function-symbol!
+          id
+          (function-symbol:
+            (|> id ir/ct-id/index string)
+            (ir/function/kind f)
+            (ir/function/ty f))
+          ctx)))
+
+    (for (: (let id) (let def)) (ord-map/elems defs)
+      (when-match1 (ir/def:function (let f)) def
+        @let1 name (|> ctx (context/function-symbol? id) option/force function-symbol/name)
+        (.define! w (writer/get-label! name w) #t)
+        (cg-function! w ctx f)!))
+
+    (when-match1 (some (let main)) main
+      (context/define-main-function-symbol!
+        (function-symbol: "llrl_main" ir/function-kind:main ir/function/main-ty)
+        ctx)
+      (.define! w (writer/get-label! "llrl_main" w) #t)
+      (cg-function! w ctx main)!)
+
+    (ok unit)))
+
+(function (cg-object! f) {(-> (-> Writer (Result unit Never)) Object)}
+  @let1 w (writer/new)
+  (result/unwrap* never (f w))
+  (result/unwrap* [^1 (assert #f %1)] (writer/produce w)))
+
+(data FunctionCodegen
+  (function-codegen:
+    Writer
+    Context
+    StackFrame
+    Label
+    (HashMap ir/RtId LocalCont)))
+
+(getter function-codegen:
+  writer
+  context
+  stack-frame
+  epilogue-label
+  local-conts)
+
+(instance Write.FunctionCodegen (forall Error) (Write FunctionCodegen Error)
+  (function (write-bytes! bytes w) (write-bytes! bytes (writer w)))
+  (function (flush! w) (flush! (writer w))))
+
+(instance Section.FunctionCodegen (Section FunctionCodegen)
+  (function (section/writer cg) (writer cg))
+  (function (.location cg) (.location (writer cg))))
+
+(instance StackAwareInstWriter.FunctionCodegen (StackAwareInstWriter FunctionCodegen)
+  (function (stack-aware-inst-writer/depth cg) (|> cg stack-frame stack-frame/depth)))
+
+(function (cg-function! w ctx f) {(-> Writer Context ir/Function (Result unit Never))}
+  @let1 stack-frame (stack-frame/new f ctx)
+  @let1 epilogue-label (writer/issue-label! w)
+  @let1 cg (function-codegen: w ctx stack-frame epilogue-label hash-map/empty)
+  (cg-prologue! cg f)!
+  (cg-eval! cg (ir/function/body f))!
+  (cg-epilogue! cg f)!
+  (retq! cg))
+
+(function (cg-prologue! cg f) {(-> FunctionCodegen ir/Function (Result unit Never))}
+  (pushq! cg rbp)!
+  (movq! cg rbp rsp)!
+
+  (..extend-stack! cg (|> cg stack-frame stack-frame/reserved-area))!
+
+  ; Initialize the local variables to correspond to the StackFrame
+
+  (when-match1 (some (let offset)) (|> cg stack-frame stack-frame/ret-ptr)
+    (movq! cg (memory (+. rbp offset)) rdi)!)
+
+  (when-match1 (some (ir/function-env: (let id) (let elems))) (ir/function/env f)
+    @let1 env-offset (|> cg stack-frame stack-frame/var-offsets (hash-map/get? id) option/force)
+    (movq! cg (memory (+. rbp env-offset)) rsi)!
+
+    @let1 env-offset (ref 0)
+    (for (ir/rt-param: (let id) (let ty)) elems
+      @let1 layout (|> cg context (context/layout ty) layout/in-stack)
+      @let1 offset (|> cg stack-frame stack-frame/var-offsets (hash-map/get? id) option/force)
+      (..load! cg (+. rsi ~env-offset) layout)!
+      (..store! cg (+. rbp offset) layout)!
+      (set! env-offset (+ ~env-offset (|> layout layout/size conv)))))
+
+  (when (eq? (ir/function/kind f) ir/function-kind:macro)
+    (assert-is? none (ir/function/env f))
+
+    @let1 id (ir/rt-param/id (get (ir/function/params f)[0]))
+    @let1 offset (|> cg stack-frame stack-frame/var-offsets (hash-map/get? id) option/force)
+    (movq! cg (memory (+. rbp offset)) rsi)!)
+
+  (ok unit))
+
+(function (cg-epilogue! cg f) {(-> FunctionCodegen ir/Function (Result unit Never))}
+  (.define! cg (epilogue-label cg) #f)
+
+  (when-match1 (some (let offset)) (|> cg stack-frame stack-frame/ret-ptr)
+    @let1 layout (|> cg context (context/layout (ir/function/ret f)))
+    (movq! cg rax (memory (+. rbp offset)))!
+    (..store! cg rax layout)!)
+
+  (movq! cg rsp rbp)!
+  (popq! cg rbp)!
+
+  (ok unit))
+
+(function (cg-eval! cg e) {(-> FunctionCodegen ir/Rt (Result (Option Layout) Never))}
+  (ok @match e
+    [(ir/rt:var (let id) (let ty))
+      @let1 layout (|> cg context (context/layout ty))
+      @let1 offset (|> cg stack-frame stack-frame/var-offsets (hash-map/get? id) option/force)
+      (..load! cg (+. rbp offset) (layout/in-stack layout))!
+      (some layout)]
+    [(ir/rt:local-fun _ _ _)
+      (assert #f "Found rt:local-fun: this must be erased by lowerizer")]
+    [(ir/rt:static-fun (ir/ct:id (let id)) (let ty) (let env))
+      (if-match1 (some (let env)) env
+        (begin
+          (continues (cg-eval! cg env)!)
+          (movq! cg rdx rax)!)
+        (xorl! cg edx edx)!)
+      @let1 function-label
+        (writer/get-label!
+          (|> cg context (context/function-symbol? id) option/force function-symbol/name)
+          (writer cg))
+      (movq! cg rax (address-table: function-label))!
+      (some layout/clos)]
+    [(ir/rt:static-fun (let ct) _ _)
+      (assert #f (string "Unresolved Ct: " (debug ct) ", this must be resolved by lowerizer"))]
+    [(ir/rt:const (let c))
+      (some (cg-eval-const! cg c)!)]
+    [(ir/rt:call (ir/rt-callee:standard (let callee)) (let args))
+      (cg-eval-call! cg callee args)!]
+    [(ir/rt:call (ir/rt-callee:c-direct (let sym) (let ret)) (let args))
+      @let1 (callee)
+        (ok (some (address-table: (writer/get-label! sym (writer cg)))))
+      (cg-eval-c-call! cg callee ret args)!]
+    [(ir/rt:call (ir/rt-callee:c-indirect (let addr) (let ret)) (let args))
+      @let1 (callee) (begin
+        (continues (cg-eval! cg addr)!)
+        (ok (some rax)))
+      (cg-eval-c-call! cg callee ret args)!]
+    ; At this time, both mains and macros are called with the C calling conventions.
+    [(ir/rt:call (ir/rt-callee:main-indirect (let addr)) (let args))
+      (assert (array/empty? args))
+      @let1 (callee) (begin
+        (continues (cg-eval! cg addr)!)
+        (ok (some rax)))
+      (cg-eval-c-call! cg callee (ir/ct:u 1) args)!]
+    [(ir/rt:call (ir/rt-callee:macro-indirect (let addr) (let ret)) (let args))
+      (assert-eq? (array/length args) 1)
+      @let1 (callee) (begin
+        (continues (cg-eval! cg addr)!)
+        (ok (some rax)))
+      (cg-eval-c-call! cg callee ret args)!]
+    [(ir/rt:cont-call (let cont) (let args) _)
+      (cg-eval-cont-call! cg cont args)!]
+    [(ir/rt:nullary (let op))
+      (cg-eval-nullary! cg op)!]
+    [(ir/rt:unary (let op) (let a))
+      (cg-eval-unary! cg op a)!]
+    [(ir/rt:binary (let op) (let a) (let b))
+      (cg-eval-binary! cg op a b)!]
+    [(ir/rt:ternary (let op) (let a) (let b) (let c))
+      (cg-eval-ternary! cg op a b c)!]
+    [(ir/rt:alloc (let loc) (let init))
+      @let1 layout
+        (if-match1 (some (let ty)) (ir/rt/ty init)
+          (|> cg context (context/layout ty))
+          (diverges (cg-eval! cg init)!))
+
+      (if (eq? loc ir/location:stack-static)
+        (begin
+          @let1 offset (stack-frame/consume-alloc-area! layout (stack-frame cg))
+
+          ; initial value
+          @let1 layout (continues (cg-eval! cg init)!)
+          (..store! cg (+. rbp offset) layout)!
+
+          (leaq! cg rax (memory (+. rbp offset)))!)
+        (begin
+          ; TODO: ir/location:stack-dynamic support
+          (movq! cg rdi (conv-to I32 (layout/size layout)))!
+          (cg-eval-builtin-call! cg "GC_malloc" layout/pointer)!
+
+          (..push! cg layout/pointer)!
+
+          ; initial value
+          @let1 layout (continues (cg-eval! cg init)!)
+          (movq! cg rdi (memory (+. rsp (conv-to I32 (layout/size-in-stack #t layout)))))
+          (..store! cg rdi layout)!
+
+          (..pop! cg layout/pointer)!))
+
+        (some layout/pointer)]
+    [(ir/rt:alloc-array (let loc) (let ty) (let len))
+      (assert
+        (ne? loc ir/location:stack-static)
+        (string "Not implemented: rt:alloc-array " (debug loc)))
+
+      ; TODO: ir/location:stack-dynamic support
+      @let1 elem-size (|> cg context (context/layout ty) layout/size)
+      (continues (cg-eval! cg len)!)
+      (..push-eightbyte! cg rax)! ; save length
+      (imulq! cg rdi rax (conv-to I32 elem-size))!
+      (cg-eval-builtin-call! cg "GC_malloc" layout/pointer)!
+      (..pop-eightbyte! cg rdx)! ; restore length
+      (some layout/array)]
+    [(ir/rt:construct-env (let loc) (let elems))
+      (assert
+        (ne? loc ir/location:stack-static)
+        (string "Not implemented: rt:construct-env " (debug loc)))
+
+      ; TODO: ir/location:stack-dynamic support
+      @let1 size (ref 0)
+      (for (let elem) elems
+        (if-match1 (some (let ty)) (ir/rt/ty elem)
+          (set! size (+ ~size (|> cg context (context/layout ty) (layout/size-in-stack #f))))
+          (diverges (cg-eval-seq! cg elems)!)))
+
+      (movq! cg rdi (conv-to I32 ~size))!
+      (cg-eval-builtin-call! cg "GC_malloc" layout/pointer)!
+      (..push! cg layout/pointer)!
+
+      @let1 env-offset (ref 0)
+      (for (let elem) elems
+        @let1 layout (layout/in-stack (continues (cg-eval! cg elem)!))
+        (movq! cg rdi (memory (+. rsp (conv-to I32 (layout/size-in-stack #t layout)))))!
+        (..store! cg (+. rdi ~env-offset) layout)!
+        (set! env-offset (+ ~env-offset (conv-to I32 (layout/size layout)))))
+
+      (..pop! cg layout/pointer)!
+      (some layout/pointer)]
+    [(ir/rt:construct-data _ _ _)
+      (assert #f "Found rt:construct-data: this must be erased by lowerizer")]
+    [(ir/rt:construct-struct (let ty) (let elems))
+      @let1 layout (|> cg context (context/layout ty))
+
+      ; Allocate a temporary area in the stack
+      (..extend-stack! cg layout)!
+
+      ; Put components into the temporary area
+      @let1 components (|> layout layout/composite option/force composite-layout/elems)
+      (for (: (: (let o) _) (let e)) (it/zip components elems)
+        @let1 layout (continues (cg-eval! cg e)!)
+        @let1 offset (conv-to I32 (+ o (layout/size-in-stack #t layout)))
+        (leaq! cg rdi (memory (+. rsp offset)))!
+        (..store! cg rdi layout)!)
+
+      ; Obtain a value from the temporary area
+      (..pop! cg layout)!
+      (some layout)]
+    [(ir/rt:construct-syntax (let metadata) (let body))
+      @let1 body-layout
+        (match (ir/rt/ty body)
+          [(some (let ty)) (|> cg context (context/layout ty))]
+          [none (diverges (cg-eval! cg body)!)])
+      @let1 buf-align (max (layout/align body-layout) 4)
+      @let1 buf-size (+ (* (/ (+ (layout/size body-layout) (- buf-align 1)) buf-align) buf-align) 8)
+      (movq! cg rdi (conv-to I32 buf-size))!
+      (cg-eval-builtin-call! cg "GC_malloc" layout/pointer)!
+
+      @let1 metadata {I64} (reinterpret metadata)
+      (movq! cg rdi metadata)!
+      (movq! cg (memory rax) rdi)!
+
+      (..push! cg layout/pointer)!
+
+      @let1 body-layout (continues (cg-eval! cg body)!)
+      (movq! cg rdi (memory (+. rsp (conv-to I32 (layout/size-in-stack #t body-layout)))))!
+      (..store! cg (+. rdi 8 {I32}) body-layout)!
+
+      (..pop! cg layout/pointer)!
+      (some layout/pointer)]
+    [(ir/rt:seq (let es) (let e))
+      (continues (cg-eval-seq! cg es)!)
+      (cg-eval! cg e)!]
+    [(ir/rt:if (let c) (let t) (let e))
+      (cg-eval-if! cg c t e)!]
+    [(ir/rt:while (let c) (let b))
+      (cg-eval-while! cg c b)!]
+    [(ir/rt:and _ _)
+      (assert #f "Found rt:and: this must be erased by lowerizer")]
+    [(ir/rt:or _ _)
+      (assert #f "Found rt:or: this must be erased by lowerizer")]
+    [(ir/rt:match _ _)
+      (assert #f "Found rt:match: this must be erased by lowerizer")]
+    [(ir/rt:return (let e))
+      (continues (cg-eval! cg e)!)
+      (jmpq! cg (epilogue-label cg))!
+      none]
+    [ir/rt:never
+      none]
+    [(ir/rt:let-local-fun _ _)
+      (assert #f "Found rt:let-local-fun: this must be erased by lowerizer")]
+    [(ir/rt:let-var (let vars) (let body))
+      (cg-eval-let-var! cg vars body)!]
+    [(ir/rt:let-cont (let conts) (let body))
+      (cg-eval-let-cont! cg conts body)!]))
+
+(function (cg-eval-call! cg callee args) {(-> FunctionCodegen ir/Rt (Array ir/Rt) (Result (Option Layout) Never))}
+  @let1 callee-ty (continues (ir/rt/ty callee))
+  @with1 (: (let arg-tys) (let ret-ty))
+    (match callee-ty
+      [(ir/ct:clos (let args) (let ret)) (: args ret)]
+      [_ (assert #f "Type error: Callee is not a closure")])
+
+  @let1 ret (|> cg context (context/layout ret-ty))
+  @let1 call-args (call-arg/default-args (it/map [^1 (|> cg context (context/layout %1))] arg-tys))
+  @let1 call-frame (call-frame/new call-args (call-ret/default ret) (stack-frame cg))
+
+  (..extend-stack! cg (call-frame/padding-before-stack-args call-frame))!
+
+  (for (let arg) args
+    @let1 layout (continues (cg-eval! cg arg)!)
+    (..push! cg layout)!)
+
+  ; {rax, rdx} <- {function-pointer, env-pointer}
+  (continues (cg-eval! cg callee)!)
+
+  ; The environment is passed by the rsi register
+  (movq! cg rsi rdx)!
+
+  (when-match1 (some (let offset)) (call-frame/offset-to-ret-destination? call-frame)
+    ; The memory address to be written to is given by the rdi register
+    (leaq! cg rdi (memory (+. rsp (conv-to I32 offset))))!)
+
+  (callq! cg rax)!
+
+  (..shrink-stack! cg (call-frame/remnants-after-call call-frame))!
+
+  (ok (some ret)))
+
+(function (cg-eval-c-call! cg c-fun ret args)
+  {(forall F)
+   (-> FunctionCodegen (-> (Result (Option F) Never)) ir/Ct (Array ir/Rt) (Result (Option Layout) Never))
+   (where (WriteInst FunctionCodegen Never (Callq F)))}
+  @let1 arg-layouts vector/empty
+  (for (let arg) args
+    (if-match1 (some (let ty)) (ir/rt/ty arg)
+      (vector/push! (|> cg context (context/layout ty)) arg-layouts)
+      (diverges (cg-eval-seq! cg args)!)))
+
+  @let1 ret (|> cg context (context/layout ret))
+  @let1 call-args (call-arg/c-args arg-layouts ret)
+  @let1 call-frame (call-frame/new call-args (call-ret/c ret) (stack-frame cg))
+
+  @let1 args {(Array (: ir/Rt CallArg))} (collect (it/zip args call-args))
+  @let1 reg-arg? (case1 (: _ (let call-arg)) (is? (call-arg:reg _ _) call-arg))
+
+  (..extend-stack! cg (call-frame/padding-before-stack-args call-frame))!
+
+  ; stack args -> register args
+  (for (let target?) (array [^1 (not (reg-arg? %1))] reg-arg?)
+    (for (: (let arg) _) (|> args rev-iterate (it/filter target?))
+      @let1 layout (continues (cg-eval! cg arg)!)
+      (..push! cg layout)!))
+
+  @let1 c-fun (continues (c-fun)!)
+
+  ; Pop register args to specific registers
+  (for (: _ (let call-arg)) (it/filter reg-arg? args)
+    (match call-arg
+      [(call-arg:reg (let a) none)
+        (..pop-eightbyte! cg (reg-assign/reg a))!]
+      [(call-arg:reg (let a) (some (let b)))
+        (..pop-eightbyte! cg (reg-assign/reg a))!
+        (..pop-eightbyte! cg (reg-assign/reg b))!]
+      [_
+        (assert #f)]))
+
+  (when-match1 (some (let offset)) (call-frame/offset-to-ret-destination? call-frame)
+    ; The memory address to be written to is given by the rdi register
+    (leaq! cg rdi (memory (+. rsp (conv-to I32 offset))))!)
+
+  (callq! cg c-fun)!
+
+  (..shrink-stack! cg (call-frame/remnants-after-call call-frame))!
+
+  (ok (some ret)))
+
+(function (cg-eval-builtin-call! cg sym ret)
+  {(-> FunctionCodegen String Layout (Result unit Never))}
+  ; Here, we assume that the every argument is assigned to registers
+  @let1 call-frame (call-frame/new array/empty (call-ret/c ret) (stack-frame cg))
+
+  (..extend-stack! cg (call-frame/padding-before-stack-args call-frame))!
+
+  ; Due to the above assumptions, there is no operation to put arguments on the stack here
+  (when-match1 (some (let offset)) (call-frame/offset-to-ret-destination? call-frame)
+    ; The memory address to be written to is given by the rdi register
+    (leaq! cg rdi (memory (+. rsp (conv-to I32 offset))))!)
+
+  @let1 builtin (writer/get-label! sym (writer cg))
+  (callq! cg (address-table: builtin))!
+
+  (..shrink-stack! cg (call-frame/remnants-after-call call-frame)))
+
+(function (cg-eval-cont-call! cg id args)
+  {(-> FunctionCodegen ir/RtId (Array ir/Rt) (Result (Option Layout) Never))}
+  @with1 (local-cont: (let label) (let params) (let depth))
+    (|> (local-conts cg)
+        (hash-map/get? id)
+        (option/unwrap* @^0 (assert #f (string "Unknown local continuation: " (debug id)))))
+  (for (: (let arg) (let param)) (it/zip args params)
+    @let1 layout (layout/in-stack (continues (cg-eval! cg arg)!))
+    @let1 offset (|> cg stack-frame stack-frame/var-offsets (hash-map/get? param) option/force)
+    (..store! cg (+. rbp offset) layout)!)
+
+  (assert-eq? depth ~(|> cg stack-frame stack-frame/depth))
+  (jmpq! cg label)!
+  (ok none))
+
+(function (cg-eval-seq! cg es) {(forall T) (-> FunctionCodegen (T ir/Rt) (Result (Option unit) Never)) (where (Iterate T))}
+  (for (let e) es
+    @let1 layout (continues (cg-eval! cg e)!)
+    (..discard! cg layout)!)
+  (ok (some unit)))
+
+(function (cg-eval-if! cg cond then else) {(-> FunctionCodegen ir/Rt ir/Rt ir/Rt (Result (Option Layout) Never))}
+  (continues (cg-eval! cg cond)!)
+  @let1 else-label (writer/issue-label! (writer cg))
+  @let1 cont-label (writer/issue-label! (writer cg))
+  (cmpb! cg al 0 {I8})!
+  (je! cg else-label)!
+
+  @let1 depth (|> cg stack-frame stack-frame/depth)
+  @let1 init-depth ~depth
+  @let1 cont-l (ref none)
+
+  (when-match1 (some (let l)) (cg-eval! cg then)!
+    (jmpq! cg cont-label)!
+    (set! cont-l (some (: l ~depth))))
+
+  (.define! cg else-label #f)
+  (set! depth init-depth)
+  (when-match1 (some (let l)) (cg-eval! cg else)!
+    (if-match1 (some (let cont-l)) ~cont-l
+      (assert-eq? cont-l (: l ~depth))
+      (set! cont-l (some (: l ~depth)))))
+
+  (.define! cg cont-label #f)
+  (ok (with1? (some (: (let l) (let cont-depth))) ~cont-l
+    (set! depth cont-depth)
+    l)))
+
+(function (cg-eval-while! cg cond body) {(-> FunctionCodegen ir/Rt ir/Rt (Result (Option Layout) Never))}
+  @let1 init-label (writer/issue-label! (writer cg))
+  @let1 cont-label (writer/issue-label! (writer cg))
+
+  (.define! cg init-label #f)
+  (continues (cg-eval! cg cond)!)
+  (cmpb! cg al 0 {I8})!
+  (je! cg cont-label)!
+
+  (when-match1 (some (let l)) (cg-eval! cg body)!
+    (..discard! cg l)!
+    (jmpq! cg init-label)!)
+
+  (.define! cg cont-label #f)
+  (ok (some layout/unit)))
+
+(function (cg-eval-nullary! cg op) {(-> FunctionCodegen ir/Nullary (Result (Option Layout) Never))}
+  (ok @match op
+    [(ir/nullary:uninitialized (let ty))
+      @let1 layout (|> cg context (context/layout ty))
+      (when (eq? (layout/class layout) class:memory)
+        (..extend-stack! cg layout)!)
+      (some layout)]
+    [(ir/nullary:null _)
+      (xorl! cg eax eax)!
+      (some layout/pointer)]
+    [ir/nullary:gen-id
+      (cg-eval-builtin-call! cg "llrt_string_genid" layout/string)!
+      (some layout/string)]
+    [(ir/nullary:size-of (let ty))
+      @let1 size (|> cg context (context/layout ty) layout/size)
+      (some (cg-eval-const! cg (ir/const:integer (ir/ct:u 64) #f size))!)]
+    [(ir/nullary:align-of (let ty))
+      @let1 align (|> cg context (context/layout ty) layout/align)
+      (some (cg-eval-const! cg (ir/const:integer (ir/ct:u 64) #f align))!)]))
+
+(function (cg-eval-unary! cg op a) {(-> FunctionCodegen ir/Unary ir/Rt (Result (Option Layout) Never))}
+  @let1 a-layout (continues (cg-eval! cg a)!)
+
+  @let1 match-op
+    ($$ match op
+      ($for-each $op [i-pop-count]
+        [($symbol-concat ir/unary: $op) ir/unary:i-complement])
+      ($for-each $op [s-ext u-ext s-to-f u-to-f f-to-s f-to-u f-trunc f-ext]
+        [(($symbol-concat ir/unary: $op) (let ty)) (ir/unary:i-trunc ty)])
+      [$for-each $op [real-floor real-trunc real-round math-sqrt math-sin math-cos math-exp math-log]
+        [($symbol-concat ir/unary: $op) ir/unary:real-ceil]]
+      [_ op])
+
+  (ok @match match-op
+    [ir/unary:not
+      (xorb! cg al 1 {I8})!
+      (some a-layout)]
+    [ir/unary:load
+      @let1 elem-ty (|> a ir/rt/ty option/force ir/ct/force-ptr-elem)
+      @let1 elem-layout (|> cg context (context/layout elem-ty))
+      (movq! cg rdi rax)!
+      (..load! cg rdi elem-layout)!
+      (some elem-layout)]
+    [(ir/unary:struct-elem _ (let i))
+      @with1 (: (let offset) (let layout)) (get (|> a-layout layout/composite option/force composite-layout/elems)[i])
+      (when (or (ne? offset 0) (> (layout/num-eightbytes a-layout) (layout/num-eightbytes layout)))
+        @let1 diff (* (- (layout/num-eightbytes a-layout) (layout/num-eightbytes layout)) 8)
+        (..push! cg a-layout)!
+        (..slide-in-stack! cg offset diff layout)!
+        (..shrink-stack! cg (layout/memory diff 8))!
+        (..pop! cg layout)!)
+      (some layout)]
+    [(ir/unary:reinterpret (let to))
+      @let1 from-layout a-layout
+      @let1 to-layout (|> cg context (context/layout to))
+      (..push! cg from-layout)!
+      @let1 from (layout/num-eightbytes from-layout)
+      @let1 to (layout/num-eightbytes to-layout)
+      (if (< from to)
+        (let1 diff (* (- to from) 8)
+          (..extend-stack! cg (layout/memory diff 8))!
+          (..slide-in-stack! cg diff 0 from-layout)!)
+        (let1 diff (* (- from to) 8)
+          (..slide-in-stack! cg 0 diff to-layout)!
+          (..shrink-stack! cg (layout/memory diff 8))!))
+      (..pop! cg to-layout)!
+      (some to-layout)]
+    [ir/unary:syntax-body
+      @let1 body-ty (|> a ir/rt/ty option/force ir/ct/force-syntax-body)
+      @let1 body-layout (|> cg context (context/layout body-ty))
+      (movq! cg rdi rax)!
+      (..load! cg (+. rdi 8 {I32}) body-layout)!
+      (some body-layout)]
+    [ir/unary:panic
+      (movq! cg rdi rax)!
+      (movq! cg rsi rdx)!
+      (cg-eval-builtin-call! cg "llrt_panic" layout/unit)!
+      none]
+    [(ir/unary:bit-cast _)
+      (some a-layout)]
+    [ir/unary:ptr-to-i
+      (some a-layout)]
+    [(ir/unary:i-to-ptr _)
+      (some a-layout)]
+    [ir/unary:i-complement
+      (match (: op (layout/size a-layout))
+        [(: ir/unary:i-complement 1) (xorb! cg al -1 {I8})!]
+        [(: ir/unary:i-complement 2) (xorw! cg ax -1 {I8})!]
+        [(: ir/unary:i-complement 4) (xorl! cg eax -1 {I8})!]
+        [(: ir/unary:i-complement 8) (xorq! cg rax -1 {I8})!]
+        [(: ir/unary:i-pop-count 1) (movzbw! cg ax al)! (popcntw! cg ax ax)!]
+        [(: ir/unary:i-pop-count 2) (popcntw! cg ax ax)!]
+        [(: ir/unary:i-pop-count 4) (popcntl! cg eax eax)!]
+        [(: ir/unary:i-pop-count 8) (popcntq! cg rax rax)!]
+        [(: _ (let s)) (unsupported-op op size: s)])
+      (some a-layout)]
+    [(ir/unary:i-trunc (let ty))
+      @let1 layout (|> cg context (context/layout ty))
+      (match (: op (layout/size a-layout) (layout/size layout))
+        [(: (ir/unary:i-trunc _) _ _)]
+        [(: (ir/unary:s-ext _) 1 2) (cbtw! cg)!]
+        [(: (ir/unary:s-ext _) 1 4) (movsbl! cg eax al)!]
+        [(: (ir/unary:s-ext _) 1 8) (movsbq! cg rax al)!]
+        [(: (ir/unary:s-ext _) 2 4) (cwtl! cg)!]
+        [(: (ir/unary:s-ext _) 2 8) (movswq! cg rax ax)!]
+        [(: (ir/unary:s-ext _) 4 8) (cltq! cg)!]
+        [(: (ir/unary:u-ext _) 1 2) (movzbw! cg ax al)!]
+        [(: (ir/unary:u-ext _) 1 4) (movzbl! cg eax al)!]
+        [(: (ir/unary:u-ext _) 1 8) (movzbq! cg rax al)!]
+        [(: (ir/unary:u-ext _) 2 4) (movzwl! cg eax ax)!]
+        [(: (ir/unary:u-ext _) 2 8) (movzwq! cg rax ax)!]
+        [(: (ir/unary:u-ext _) 4 8) (movl! cg eax eax)!]
+        [(: (ir/unary:s-to-f _) 1 4) (movsbl! cg eax al)! (cvtsi2ssl! cg xmm0 eax)!]
+        [(: (ir/unary:s-to-f _) 1 8) (movsbl! cg eax al)! (cvtsi2sdl! cg xmm0 eax)!]
+        [(: (ir/unary:s-to-f _) 2 4) (cwtl! cg)! (cvtsi2ssl! cg xmm0 eax)!]
+        [(: (ir/unary:s-to-f _) 2 8) (cwtl! cg)! (cvtsi2sdl! cg xmm0 eax)!]
+        [(: (ir/unary:s-to-f _) 4 4) (cvtsi2ssl! cg xmm0 eax)!]
+        [(: (ir/unary:s-to-f _) 4 8) (cvtsi2sdl! cg xmm0 eax)!]
+        [(: (ir/unary:s-to-f _) 8 4) (cvtsi2ssq! cg xmm0 rax)!]
+        [(: (ir/unary:s-to-f _) 8 8) (cvtsi2sdq! cg xmm0 rax)!]
+        [(: (ir/unary:u-to-f _) 1 4) (movzbl! cg eax al)! (cvtsi2ssl! cg xmm0 eax)!]
+        [(: (ir/unary:u-to-f _) 1 8) (movzbl! cg eax al)! (cvtsi2sdl! cg xmm0 eax)!]
+        [(: (ir/unary:u-to-f _) 2 4) (movzwl! cg eax ax)! (cvtsi2ssl! cg xmm0 eax)!]
+        [(: (ir/unary:u-to-f _) 2 8) (movzwl! cg eax ax)! (cvtsi2sdl! cg xmm0 eax)!]
+        [(: (ir/unary:u-to-f _) 4 4) (movl! cg eax eax)! (cvtsi2ssq! cg xmm0 rax)!]
+        [(: (ir/unary:u-to-f _) 4 8) (movl! cg eax eax)! (cvtsi2sdq! cg xmm0 rax)!]
+        [(: (ir/unary:u-to-f _) 8 4)
+          @let1 large-label (writer/issue-label! (writer cg))
+          @let1 cont-label (writer/issue-label! (writer cg))
+          (testq! cg rax rax)!
+          (js! cg (short: large-label))!
+          (pxor! cg xmm0 xmm0)!
+          (cvtsi2ssq! cg xmm0 rax)!
+          (jmpq! cg (short: cont-label))!
+          (.define! cg large-label #f)
+          (movq! cg rdx rax)!
+          (andl! cg eax 1 {I8})!
+          (pxor! cg xmm0 xmm0)!
+          (shrq! cg rdx 1 {I8})!
+          (orq! cg rdx rax)!
+          (cvtsi2ssq! cg xmm0 rdx)!
+          (addss! cg xmm0 xmm0)!
+          (.define! cg cont-label #f)
+          unit]
+        [(: (ir/unary:u-to-f _) 8 8)
+          @let1 large-label (writer/issue-label! (writer cg))
+          @let1 cont-label (writer/issue-label! (writer cg))
+          (testq! cg rax rax)!
+          (js! cg (short: large-label))!
+          (pxor! cg xmm0 xmm0)!
+          (cvtsi2sdq! cg xmm0 rax)!
+          (jmpq! cg (short: cont-label))!
+          (.define! cg large-label #f)
+          (movq! cg rdx rax)!
+          (andl! cg eax 1 {I8})!
+          (pxor! cg xmm0 xmm0)!
+          (shrq! cg rdx 1 {I8})!
+          (orq! cg rdx rax)!
+          (cvtsi2sdq! cg xmm0 rdx)!
+          (addsd! cg xmm0 xmm0)!
+          (.define! cg cont-label #f)
+          unit]
+        [(: (ir/unary:f-to-s _) 4 1) (cvttss2si! cg eax xmm0)!]
+        [(: (ir/unary:f-to-s _) 4 2) (cvttss2si! cg eax xmm0)!]
+        [(: (ir/unary:f-to-s _) 4 4) (cvttss2si! cg eax xmm0)!]
+        [(: (ir/unary:f-to-s _) 4 8) (cvttss2si! cg rax xmm0)!]
+        [(: (ir/unary:f-to-s _) 8 1) (cvttsd2si! cg eax xmm0)!]
+        [(: (ir/unary:f-to-s _) 8 2) (cvttsd2si! cg eax xmm0)!]
+        [(: (ir/unary:f-to-s _) 8 4) (cvttsd2si! cg eax xmm0)!]
+        [(: (ir/unary:f-to-s _) 8 8) (cvttsd2si! cg rax xmm0)!] ; FIXME: more precise convertion
+        [(: (ir/unary:f-to-u _) 4 1) (cvttss2si! cg eax xmm0)!]
+        [(: (ir/unary:f-to-u _) 4 2) (cvttss2si! cg eax xmm0)!]
+        [(: (ir/unary:f-to-u _) 4 4) (cvttss2si! cg rax xmm0)!]
+        [(: (ir/unary:f-to-u _) 4 8) (cvttss2si! cg rax xmm0)!]
+        [(: (ir/unary:f-to-u _) 8 1) (cvttsd2si! cg eax xmm0)!]
+        [(: (ir/unary:f-to-u _) 8 2) (cvttsd2si! cg eax xmm0)!]
+        [(: (ir/unary:f-to-u _) 8 4) (cvttsd2si! cg rax xmm0)!]
+        [(: (ir/unary:f-to-u _) 8 8) (cvttsd2si! cg rax xmm0)!] ; FIXME: more precise convertion
+        [(: (ir/unary:f-trunc _) 8 4) (cvtsd2ss! cg xmm0 xmm0)!]
+        [(: (ir/unary:f-ext _) 4 8) (cvtss2sd! cg xmm0 xmm0)!]
+        [(: _ (let a) (let b)) (unsupported-op op from: a to: b)])
+      (some layout)]
+    [ir/unary:real-ceil
+      (match (: op (layout/size a-layout))
+        [(: ir/unary:real-ceil 4) (cg-eval-builtin-call! cg "ceilf" a-layout)!]
+        [(: ir/unary:real-ceil 8) (cg-eval-builtin-call! cg "ceil" a-layout)!]
+        [(: ir/unary:real-floor 4) (cg-eval-builtin-call! cg "floorf" a-layout)!]
+        [(: ir/unary:real-floor 8) (cg-eval-builtin-call! cg "floor" a-layout)!]
+        [(: ir/unary:real-trunc 4) (cg-eval-builtin-call! cg "truncf" a-layout)!]
+        [(: ir/unary:real-trunc 8) (cg-eval-builtin-call! cg "trunc" a-layout)!]
+        [(: ir/unary:real-round 4) (cg-eval-builtin-call! cg "roundf" a-layout)!]
+        [(: ir/unary:real-round 8) (cg-eval-builtin-call! cg "round" a-layout)!]
+        [(: ir/unary:math-sqrt 4) (cg-eval-builtin-call! cg "sqrtf" a-layout)!]
+        [(: ir/unary:math-sqrt 8) (cg-eval-builtin-call! cg "sqrt" a-layout)!]
+        [(: ir/unary:math-sin 4) (cg-eval-builtin-call! cg "sinf" a-layout)!]
+        [(: ir/unary:math-sin 8) (cg-eval-builtin-call! cg "sin" a-layout)!]
+        [(: ir/unary:math-cos 4) (cg-eval-builtin-call! cg "cosf" a-layout)!]
+        [(: ir/unary:math-cos 8) (cg-eval-builtin-call! cg "cos" a-layout)!]
+        [(: ir/unary:math-exp 4) (cg-eval-builtin-call! cg "expf" a-layout)!]
+        [(: ir/unary:math-exp 8) (cg-eval-builtin-call! cg "exp" a-layout)!]
+        [(: ir/unary:math-log 4) (cg-eval-builtin-call! cg "logf" a-layout)!]
+        [(: ir/unary:math-log 8) (cg-eval-builtin-call! cg "log" a-layout)!]
+        [(: _ (let s)) (unsupported-op op size: s)])
+      (some a-layout)]
+    [ir/unary:string-ptr
+      (some layout/pointer)]
+    [ir/unary:string-length
+      (movq! cg rax rdx)!
+      (some (layout/integer 8))]
+    [ir/unary:array-ptr
+      (some layout/pointer)]
+    [ir/unary:array-length
+      (movq! cg rax rdx)!
+      (some (layout/integer 8))]
+    [_
+      (assert #f (string "Not implemented: unary " (debug op)))]))
+
+(function (cg-eval-binary! cg op a b) {(-> FunctionCodegen ir/Binary ir/Rt ir/Rt (Result (Option Layout) Never))}
+  @let1 a-layout (continues (cg-eval! cg a)!)
+  (..push! cg a-layout)!
+  @let1 b-layout (continues (cg-eval! cg b)!)
+
+  @let1 match-op
+    ($$ match op
+      ($for-each
+        [$base-op $ops] (
+          [i-eq [s-lt s-le s-gt s-ge u-lt u-le u-gt u-ge ptr-eq ptr-lt ptr-le ptr-gt ptr-ge]]
+          [i-shl [i-ashr i-lshr i-and i-or i-xor s-add s-sub s-mul s-div s-rem u-add u-sub u-mul u-div u-rem]]
+          [f-eq [f-lt f-le f-gt f-ge]]
+          [f-add [f-sub f-mul f-div f-rem math-pow]]
+          [string-eq [string-concat string-cmp]])
+        ($for-each $op $ops
+          [($symbol-concat ir/binary: $op) ($symbol-concat ir/binary: $base-op)]))
+      [_ op])
+
+  (ok @match match-op
+    [ir/binary:store
+      (movq! cg rdi rax)! ; right operand: pointer
+      (..pop! cg a-layout)! ; left operand: value
+      (..store! cg rdi a-layout)!
+      (some layout/unit)]
+    [ir/binary:offset
+      @let1 elem-ty (|> b ir/rt/ty option/force ir/ct/force-ptr-elem)
+      @let1 elem-layout (|> cg context (context/layout elem-ty))
+      (..pop-eightbyte! cg rdi)! ; left operand: index
+      (imulq! cg rdi rdi (conv-to I32 (layout/size elem-layout)))!
+      (addq! cg rax rdi)!
+      (some b-layout)]
+    [ir/binary:i-eq
+      (..pop-eightbyte! cg rcx)! ; left operand
+      (match (layout/size b-layout)
+        [1 (cmpb! cg cl al)!]
+        [2 (cmpw! cg cx ax)!]
+        [4 (cmpl! cg ecx eax)!]
+        [8 (cmpq! cg rcx rax)!]
+        [(let s) (unsupported-op op size: s)])
+      (match op
+        [ir/binary:i-eq (sete! cg al)!]
+        [ir/binary:s-lt (setl! cg al)!]
+        [ir/binary:s-le (setle! cg al)!]
+        [ir/binary:s-gt (setg! cg al)!]
+        [ir/binary:s-ge (setge! cg al)!]
+        [ir/binary:u-lt (setb! cg al)!]
+        [ir/binary:u-le (setbe! cg al)!]
+        [ir/binary:u-gt (seta! cg al)!]
+        [ir/binary:u-ge (setae! cg al)!]
+        [ir/binary:ptr-eq (sete! cg al)!]
+        [ir/binary:ptr-lt (setb! cg al)!]
+        [ir/binary:ptr-le (setbe! cg al)!]
+        [ir/binary:ptr-gt (seta! cg al)!]
+        [ir/binary:ptr-ge (setae! cg al)!]
+        [_ (unsupported-op op)])
+      (some (layout/integer 1))]
+    [ir/binary:i-shl
+      (movq! cg rcx rax)! ; right operand
+      (..pop-eightbyte! cg rax)! ; left operand
+
+      @let1 match-op
+        (match op
+          [ir/binary:u-add ir/binary:s-add] ; same as s-add
+          [ir/binary:u-sub ir/binary:s-sub] ; same as s-sub
+          [ir/binary:u-mul ir/binary:s-mul] ; same as s-mul
+          [ir/binary:s-rem ir/binary:s-div] ; starts with same instruction
+          [ir/binary:u-rem ir/binary:u-div] ; starts with same instruction
+          [_ op])
+
+      (match (: match-op (layout/size b-layout))
+        [(: ir/binary:i-shl 1) (shlb! cg al |:cl)!]
+        [(: ir/binary:i-shl 2) (shlw! cg ax |:cl)!]
+        [(: ir/binary:i-shl 4) (shll! cg eax |:cl)!]
+        [(: ir/binary:i-shl 8) (shlq! cg rax |:cl)!]
+        [(: ir/binary:i-ashr 1) (sarb! cg al |:cl)!]
+        [(: ir/binary:i-ashr 2) (sarw! cg ax |:cl)!]
+        [(: ir/binary:i-ashr 4) (sarl! cg eax |:cl)!]
+        [(: ir/binary:i-ashr 8) (sarq! cg rax |:cl)!]
+        [(: ir/binary:i-lshr 1) (shrb! cg al |:cl)!]
+        [(: ir/binary:i-lshr 2) (shrw! cg ax |:cl)!]
+        [(: ir/binary:i-lshr 4) (shrl! cg eax |:cl)!]
+        [(: ir/binary:i-lshr 8) (shrq! cg rax |:cl)!]
+        [(: ir/binary:i-and 1) (andb! cg al cl)!]
+        [(: ir/binary:i-and 2) (andw! cg ax cx)!]
+        [(: ir/binary:i-and 4) (andl! cg eax ecx)!]
+        [(: ir/binary:i-and 8) (andq! cg rax rcx)!]
+        [(: ir/binary:i-or 1) (orb! cg al cl)!]
+        [(: ir/binary:i-or 2) (orw! cg ax cx)!]
+        [(: ir/binary:i-or 4) (orl! cg eax ecx)!]
+        [(: ir/binary:i-or 8) (orq! cg rax rcx)!]
+        [(: ir/binary:i-xor 1) (xorb! cg al cl)!]
+        [(: ir/binary:i-xor 2) (xorw! cg ax cx)!]
+        [(: ir/binary:i-xor 4) (xorl! cg eax ecx)!]
+        [(: ir/binary:i-xor 8) (xorq! cg rax rcx)!]
+        [(: ir/binary:s-add 1) (addb! cg al cl)!]
+        [(: ir/binary:s-add 2) (addw! cg ax cx)!]
+        [(: ir/binary:s-add 4) (addl! cg eax ecx)!]
+        [(: ir/binary:s-add 8) (addq! cg rax rcx)!]
+        [(: ir/binary:s-sub 1) (subb! cg al cl)!]
+        [(: ir/binary:s-sub 2) (subw! cg ax cx)!]
+        [(: ir/binary:s-sub 4) (subl! cg eax ecx)!]
+        [(: ir/binary:s-sub 8) (subq! cg rax rcx)!]
+        [(: ir/binary:s-mul 1) (imulb! cg cl)!]
+        [(: ir/binary:s-mul 2) (imulw1! cg cx)!]
+        [(: ir/binary:s-mul 4) (imull1! cg ecx)!]
+        [(: ir/binary:s-mul 8) (imulq1! cg rcx)!]
+        [(: ir/binary:s-div 1) (cbtw! cg)! (idivb! cg cl)!]
+        [(: ir/binary:s-div 2) (cwtd! cg)! (idivw! cg cx)!]
+        [(: ir/binary:s-div 4) (cltd! cg)! (idivl! cg ecx)!]
+        [(: ir/binary:s-div 8) (cqto! cg)! (idivq! cg rcx)!]
+        [(: ir/binary:u-div 1) (movzbw! cg ax al)! (divb! cg cl)!]
+        [(: ir/binary:u-div 2) (xorl! cg edx edx)! (divw! cg cx)!]
+        [(: ir/binary:u-div 4) (xorl! cg edx edx)! (divl! cg ecx)!]
+        [(: ir/binary:u-div 8) (xorl! cg edx edx)! (divq! cg rcx)!]
+        [(: _ (let s)) (unsupported-op op size: s)])
+
+      (when (or (eq? op ir/binary:s-rem) (eq? op ir/binary:u-rem))
+        (match (layout/size b-layout)
+          [1 (movb! cg al ah)!]
+          [2 (movw! cg ax dx)!]
+          [4 (movl! cg eax edx)!]
+          [8 (movq! cg rax rdx)!]
+          [(let s) (unsupported-op op size: s)]))
+
+      (some b-layout)]
+    [ir/binary:f-eq
+      (..pop-eightbyte! cg xmm1)! ; left operand
+      (match (layout/size b-layout)
+        [4 (comiss! cg xmm1 xmm0)!]
+        [8 (comisd! cg xmm1 xmm0)!]
+        [(let s) (unsupported-op op size: s)])
+      (match op
+        [ir/binary:f-eq (sete! cg al)!]
+        [ir/binary:f-lt (setb! cg al)!]
+        [ir/binary:f-le (setbe! cg al)!]
+        [ir/binary:f-gt (seta! cg al)!]
+        [ir/binary:f-ge (setae! cg al)!]
+        [_ (unsupported-op op)])
+      (some (layout/integer 1))]
+    [ir/binary:f-add
+      (movq! cg xmm1 xmm0)! ; right operand
+      (..pop-eightbyte! cg xmm0)! ; left operand
+
+      (match (: op (layout/size b-layout))
+        [(: ir/binary:f-add 4) (addss! cg xmm0 xmm1)!]
+        [(: ir/binary:f-add 8) (addsd! cg xmm0 xmm1)!]
+        [(: ir/binary:f-sub 4) (subss! cg xmm0 xmm1)!]
+        [(: ir/binary:f-sub 8) (subsd! cg xmm0 xmm1)!]
+        [(: ir/binary:f-mul 4) (mulss! cg xmm0 xmm1)!]
+        [(: ir/binary:f-mul 8) (mulsd! cg xmm0 xmm1)!]
+        [(: ir/binary:f-div 4) (divss! cg xmm0 xmm1)!]
+        [(: ir/binary:f-div 8) (divsd! cg xmm0 xmm1)!]
+        [(: ir/binary:f-rem 4) (cg-eval-builtin-call! cg "fmodf" a-layout)!]
+        [(: ir/binary:f-rem 8) (cg-eval-builtin-call! cg "fmod" a-layout)!]
+        [(: ir/binary:math-pow 4) (cg-eval-builtin-call! cg "powf" a-layout)!]
+        [(: ir/binary:math-pow 8) (cg-eval-builtin-call! cg "pow" a-layout)!]
+        [(: _ (let s)) (unsupported-op op size: s)])
+      (some a-layout)]
+    [ir/binary:string-construct
+      (movq! cg rdx rax)! ; right operand (len)
+      (..pop-eightbyte! cg rax)! ; left operand (ptr)
+      (some layout/string)]
+    [ir/binary:string-eq
+      ; {rdx, rcx} <- right operand
+      (movq! cg rcx rdx)!
+      (movq! cg rdx rax)!
+      ; {rdi, rsi} <- left operand
+      (..pop-eightbyte! cg rdi)!
+      (..pop-eightbyte! cg rsi)!
+
+      @with1 (: (let sym) (let ret))
+        (match op
+          [ir/binary:string-eq (: "llrt_string_eq" (layout/integer 1))]
+          [ir/binary:string-cmp (: "llrt_string_cmp" (layout/integer 4))]
+          [ir/binary:string-concat (: "llrt_string_concat" layout/string)]
+          [_ (unsupported-op op)])
+
+      (cg-eval-builtin-call! cg sym ret)!
+      (some ret)]
+    [ir/binary:array-construct
+      (movq! cg rdx rax)! ; right operand (len)
+      (..pop-eightbyte! cg rax)! ; left operand (ptr)
+      (some layout/array)]
+    [ir/binary:array-load
+      @let1 elem-ty (|> b ir/rt/ty option/force ir/ct/force-array-elem)
+      @let1 elem-layout (|> cg context (context/layout elem-ty))
+      (movq! cg rsi rax)!
+      (..pop-eightbyte! cg rdi)! ; left operand (index)
+      (imulq! cg rdi rdi (conv-to I32 (layout/size elem-layout)))!
+      (..load! cg (+. rsi rdi) elem-layout)!
+      (some elem-layout)]
+    [_
+      (assert #f (string "Not implemented: binary " (debug op)))]))
+
+(function (cg-eval-ternary! cg op a b c) {(-> FunctionCodegen ir/Ternary ir/Rt ir/Rt ir/Rt (Result (Option Layout) Never))}
+  @let1 a-layout (continues (cg-eval! cg a)!)
+  (..push! cg a-layout)!
+  @let1 b-layout (continues (cg-eval! cg b)!)
+  (..push! cg b-layout)!
+  (continues (cg-eval! cg c)!)
+
+  @let1 match-op
+    (match op
+      [ir/ternary:ptr-move ir/ternary:ptr-copy]
+      [_ op])
+
+  (ok @match match-op
+    [ir/ternary:ptr-copy
+      @let1 sym
+        (match op
+          [ir/ternary:ptr-copy "memcpy"]
+          [ir/ternary:ptr-move "memmove"]
+          [_ (unsupported-op op)])
+      @let1 elem-ty (|> c ir/rt/ty option/force ir/ct/force-ptr-elem)
+      @let1 elem-layout (|> cg context (context/layout elem-ty))
+      (movq! cg rdi rax)! ; third operand (dest) -> buf1
+      (..pop-eightbyte! cg rdx)! ; second operand (len) -> n
+      (imulq! cg rdx rdx (conv-to I32 (layout/size elem-layout)))!
+      (..pop-eightbyte! cg rsi)! ; first operand (src) -> buf2
+      (cg-eval-builtin-call! cg sym layout/pointer)!
+      (some layout/unit)]
+    [ir/ternary:array-store
+      @let1 elem-layout b-layout
+      (movq! cg rsi rax)! ; third operand (array)
+      (..pop! cg elem-layout)! ; second operand (value)
+      (imulq!
+        cg
+        rdi
+        (memory (+. rsp (conv-to I32 (layout/size-in-stack #t elem-layout)))) ; first operand (index)
+        (conv-to I32 (layout/size elem-layout)))!
+      (..store! cg (+. rsi rdi) elem-layout)1
+      (..shrink-stack! cg (layout/integer 8))!
+      (some layout/unit)]
+    [_
+      (assert #f (string "Not implemented: ternary " (debug op)))]))
+
+(function (cg-eval-let-var! cg vars body)
+  {(-> FunctionCodegen (Array ir/RtVar) ir/Rt (Result (Option Layout) Never))}
+  (for (ir/rt-var: (let id) _ (let init)) vars
+    @let1 layout (layout/in-stack (continues (cg-eval! cg init)!))
+    @let1 offset (|> cg stack-frame stack-frame/var-offsets (hash-map/get? id) option/force)
+    (..store! cg (+. rbp offset) layout)!)
+  (cg-eval! cg body))
+
+(function (cg-eval-let-cont! cg conts body)
+  {(-> FunctionCodegen (Array ir/RtCont) ir/Rt (Result (Option Layout) Never))}
+  @let1 depth (|> cg stack-frame stack-frame/depth)
+  (for (ir/rt-cont: (let id) (let params) _) conts
+    @let1 local-cont (local-cont:
+      (writer/issue-label! (writer cg))
+      (|> params (it/map ir/rt-param/id) collect)
+      ~depth)
+    (hash-map/insert! id local-cont (local-conts cg)))
+
+  @let1 merge-label (writer/issue-label! (writer cg))
+  @let1 merge-l (ref none)
+
+  (when-match1 (some (let l)) (cg-eval! cg body)!
+    (jmpq! cg merge-label)!
+    (set! merge-l (some (: l ~depth))))
+
+  (for (ir/rt-cont: (let id) _ (let body)) conts
+    @with1 (local-cont: (let label) _ (let cont-depth)) (option/force (hash-map/remove! id (local-conts cg)))
+    (.define! cg label #f)
+    (set! depth cont-depth)
+
+    (when-match1 (some (let l)) (cg-eval! cg body)!
+      (jmpq! cg merge-label)!
+      (if-match1 (some (let merge-l)) ~merge-l
+        (assert-eq? merge-l (: l ~depth))
+        (set! merge-l (some (: l ~depth))))))
+
+  (.define! cg merge-label #f)
+  (ok (with1? (some (: (let l) (let cont-depth))) ~merge-l
+    (set! depth cont-depth)
+    l)))
+
+(function (cg-eval-const! cg c) {(-> FunctionCodegen ir/Const (Result Layout Never))}
+  (ok @match c
+    [(ir/const:integer (let ty) (let signed?) (let value))
+      (match ty
+        [(ir/ct:u _)
+          (cg-eval-const-integer! cg ty (conv value))!]
+        [(ir/ct:s _)
+          (cg-eval-const-integer! cg ty (conv value))!]
+        [ir/ct:f32
+          (cg-eval-const-fp-number! cg ty (if signed? (conv (conv-to I64 value)) (conv value)))!]
+        [ir/ct:f64
+          (cg-eval-const-fp-number! cg ty (if signed? (conv (conv-to I64 value)) (conv value)))!]
+        [_
+          (assert #f (string "cg-eval-const!: Unsupported integer " (debug ty)))])]
+    [(ir/const:fp-number (let ty) (let value))
+      (cg-eval-const-fp-number! cg ty value)!]
+    [(ir/const:string (let s))
+      (if (string/empty? s)
+        (begin
+          ; {rax, rdx} <- {null, 0}
+          (xorl! cg eax eax)!
+          (xorl! cg edx edx)!)
+        (let1 label (embed-rodata! cg (|> s string/unsafe-array rep/bytes))!
+          ; {rax, rdx} <- {data-ptr, len}
+          (leaq! cg rax label)!
+          (movq! cg rdx (conv-to I64 (string/length s)))!))
+      layout/string]
+    [(ir/const:char (let c))
+      (movl! cg eax (conv-to I32 (char/unicode-scalar c)))!
+      layout/char]
+    [(ir/const:sexp _ (let sexp))
+      @let1 label (embed-rodata! cg (rep/of sexp))!
+      (movq! cg rax label)!
+      layout/syntax]
+    [ir/const:unit
+      layout/unit]))
+
+(function (cg-eval-const-integer! cg ty value) {(-> FunctionCodegen ir/Ct I64 (Result Layout Never))}
+  (movq! cg rax value)!
+  (ok (|> cg context (context/layout ty))))
+
+(function (cg-eval-const-fp-number! cg ty value) {(-> FunctionCodegen ir/Ct F64 (Result Layout Never))}
+  (ok @match ty
+    [ir/ct:f32
+      @let1 value {I32} (reinterpret (conv-to F32 value))
+      (movl! cg eax value)!
+      (movq! cg xmm0 rax)!
+      (layout/floating-point 4)]
+    [ir/ct:f64
+      @let1 value {I64} (reinterpret value)
+      (movq! cg rax value)!
+      (movq! cg xmm0 rax)!
+      (layout/floating-point 8)]
+    [_
+      (assert #f (string "Unsupported fp-number: " (debug ty)))]))
+
+(function (embed-rodata! cg rep) {(-> FunctionCodegen Rep (Result Label Never))}
+  @let1 label (writer/issue-label! (writer cg))
+  @let1 ro (|> cg writer writer/rodata)
+
+  (.align! ro (rep/align rep))!
+  @let1 location (.location ro)
+  (.define! ro label #f)
+  (write-bytes! (rep/direct rep) ro)!
+
+  (for (: (let offset) (let rep)) (rep/indirect rep)
+    (writer/use!
+      (location/offset (conv-to I64 offset) location)
+      (embed-rodata! cg rep)!
+      0
+      reloc-type:abs64
+      (writer cg)))
+
+  (ok label))
+
+(value-data LocalCont
+  (local-cont: Label (Array ir/RtId) U64)) ; label params depth

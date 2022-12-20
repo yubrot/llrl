@@ -18,13 +18,12 @@
 
 ; Initializes the JIT engine.
 (function (engine/new symbol-resolver) {(-> (-> String (Ptr U8)) Engine)}
-  (let1 hint-addr (box/unsafe-ptr (box 0))
-    (engine:
-      (symbol-table/new symbol-resolver)
-      (address-table/new hint-addr)
-      (segment/new hint-addr protect:read-only)
-      (segment/new hint-addr protect:read-write)
-      (segment/new hint-addr protect:read-exec))))
+  (engine:
+    (symbol-table/new symbol-resolver)
+    (address-table/new #t)
+    (segment/new protect:read-only #t)
+    (segment/new protect:read-write #t)
+    (segment/new protect:read-exec #t)))
 
 ; Register the pointer corresponding to the symbol.
 (function (engine/register! symbol ptr engine) {(-> String (Ptr U8) Engine (Result unit Error))}

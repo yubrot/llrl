@@ -9,10 +9,10 @@ pub struct AddressTable {
 }
 
 impl AddressTable {
-    pub fn new(hint_addr: *const u8) -> Self {
+    pub fn new(map_32bit: bool) -> Self {
         Self {
             entries: HashMap::new(),
-            payload: Table::new(hint_addr),
+            payload: Table::new(map_32bit),
         }
     }
 

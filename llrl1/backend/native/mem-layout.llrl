@@ -116,21 +116,25 @@
   (/ (+ (layout/size l) 7) 8))
 
 (function (layout/eightbytes l) {(-> Layout (Iterator Eightbyte))}
-  (it/map
-    (lambda (index)
-      (let* ([offset (* index 8)]
-             [size (min (- (layout/size l) offset) 8)]
-             [cls
-               (if-match1 (some (let c)) (layout/composite l)
-                 (|> (composite-layout/components c)
-                     (it/filter (case1 (: (let o) (let l))
-                       (and (< offset (+ o (layout/size l)))
-                            (< o (+ offset 8)))))
-                     (it/map (case1 (: _ (let l)) (layout/class l)))
-                     (it/fold class/merge class:void))
-                 (layout/class l))])
-        (eightbyte: offset size cls)))
-    (iterator/range 0 (layout/num-eightbytes l) 1)))
+  (it/map [^1 (<eightbyte> l %1)] (iterator/range 0 (layout/num-eightbytes l) 1)))
+
+(function (layout/rev-eightbytes l) {(-> Layout (Iterator Eightbyte))}
+  (let1 num (layout/num-eightbytes l)
+    (it/map [^1 (<eightbyte> l (- num %1 1))] (iterator/range 0 num 1))))
+
+(function (<eightbyte> l index) {(-> Layout U64 Eightbyte)}
+  (let* ([offset (* index 8)]
+         [size (min (- (layout/size l) offset) 8)]
+         [cls
+           (if-match1 (some (let c)) (layout/composite l)
+             (|> (composite-layout/components c)
+                 (it/filter (case1 (: (let o) (let l))
+                   (and (< offset (+ o (layout/size l)))
+                        (< o (+ offset 8)))))
+                 (it/map (case1 (: _ (let l)) (layout/class l)))
+                 (it/fold class/merge class:void))
+             (layout/class l))])
+    (eightbyte: offset size cls)))
 
 (function (layout/size-in-stack last-value? l) {(-> Bool Layout U64)}
   (if (and last-value? (ne? (layout/class l) class:memory))
