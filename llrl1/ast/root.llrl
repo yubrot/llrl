@@ -150,24 +150,24 @@
 (function (root/instance? id r) {(-> (NodeId InstanceCon) Root (Option Instance))}
   (with1? (some (let con)) (root/instance-con? id r)
     (relation instance: con (root/instance-methods r) instance-con/methods)))
-($$ begin
-  ($for-each
-    [$name $type]
-    ([function Function]
-     [c-function CFunction]
-     [builtin-op BuiltinOp]
-     [macro Macro]
-     [data-type-con DataTypeCon]
-     [data-value-con DataValueCon]
-     [builtin-type-con BuiltinTypeCon]
-     [builtin-value-con BuiltinValueCon]
-     [class-con ClassCon]
-     [class-method ClassMethod]
-     [instance-con InstanceCon]
-     [instance-method InstanceMethod])
-    (begin
-      (function (($symbol-concat root/ $name ($symbol "?")) id r) {(-> (NodeId $type) Root (Option $type))}
-        (map/get? id (($symbol-concat root/ $name s) r)))
 
-      (function (($symbol-concat root/add- $name ($symbol "!")) x r) {(-> $type Root (Option $type))}
-        (map/insert! (($symbol-concat $name /id) x) x (($symbol-concat root/ $name s) r))))))
+($for
+  [$name $type] (
+    [function Function]
+    [c-function CFunction]
+    [builtin-op BuiltinOp]
+    [macro Macro]
+    [data-type-con DataTypeCon]
+    [data-value-con DataValueCon]
+    [builtin-type-con BuiltinTypeCon]
+    [builtin-value-con BuiltinValueCon]
+    [class-con ClassCon]
+    [class-method ClassMethod]
+    [instance-con InstanceCon]
+    [instance-method InstanceMethod])
+  (begin
+    (function (($symbol root/ $name ($symbol "?")) id r) {(-> (NodeId $type) Root (Option $type))}
+      (map/get? id (($symbol root/ $name s) r)))
+
+    (function (($symbol root/add- $name ($symbol "!")) x r) {(-> $type Root (Option $type))}
+      (map/insert! (($symbol $name /id) x) x (($symbol root/ $name s) r)))))

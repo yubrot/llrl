@@ -6,7 +6,6 @@
 (import "std/syntax" Syntax)
 (import "std/s" Sexp s:_ s/match quasiquote gensym)
 (import "std/never" Never never)
-(import "std/preprocess" $$)
 (import "std/control" _)
 (import "std/derive" derive)
 (import "std/copy" ShallowCopy shallow-copy ShallowCopy._ DeepCopy deep-copy DeepCopy._ derive/DeepCopy)

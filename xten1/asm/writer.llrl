@@ -183,30 +183,29 @@
 
 ; Writer for text/data/rodata
 
-($$ begin
-  ($for-each
-    [$ty $con $section $getter $zero]
-    ([TextWriter text-writer: location-section:text <text> 144] ; nop
-     [DataWriter data-writer: location-section:data <data> 0]
-     [RodataWriter rodata-writer: location-section:rodata <rodata> 0])
+($for
+  [$ty $con $section $getter $zero] (
+    [TextWriter text-writer: location-section:text <text> 144] ; nop
+    [DataWriter data-writer: location-section:data <data> 0]
+    [RodataWriter rodata-writer: location-section:rodata <rodata> 0])
 
-    (derive (DebugDisplay) value-data $ty
-      ($con Writer))
+  (derive (DebugDisplay) value-data $ty
+    ($con Writer))
 
-    (instance ($symbol-concat Write. $ty) (forall Error) (Write $ty Error)
-      (function (write-bytes! bytes w) (write-bytes! bytes (|> w section/writer $getter)))
-      (function (flush! w) (flush! (|> w section/writer $getter))))
+  (instance ($symbol Write. $ty) (forall Error) (Write $ty Error)
+    (function (write-bytes! bytes w) (write-bytes! bytes (|> w section/writer $getter)))
+    (function (flush! w) (flush! (|> w section/writer $getter))))
 
-    (instance ($symbol-concat Section. $ty) (Section $ty)
-      (function (section/writer s) (with1 ($con (let w)) s w))
-      (function (.location s) (location: $section (|> s section/writer $getter vector/length))))
+  (instance ($symbol Section. $ty) (Section $ty)
+    (function (section/writer s) (with1 ($con (let w)) s w))
+    (function (.location s) (location: $section (|> s section/writer $getter vector/length))))
 
-    (instance ($symbol-concat SectionWrite. $ty) (forall Error) (SectionWrite $ty Error)
-      (function (.allocate! sw size)
-        (let1 buf (|> sw section/writer $getter)
-          (vector/reserve-free! size #f buf)
-          (for (let b) (iterator/repeat size $zero) (vector/push! b buf)))
-        (ok unit)))))
+  (instance ($symbol SectionWrite. $ty) (forall Error) (SectionWrite $ty Error)
+    (function (.allocate! sw size)
+      (let1 buf (|> sw section/writer $getter)
+        (vector/reserve-free! size #f buf)
+        (for (let b) (iterator/repeat size $zero) (vector/push! b buf)))
+      (ok unit))))
 
 ; Writer for bss
 
@@ -282,61 +281,58 @@
       (.use-relative! w -1 label -1 reloc-type:pc-rel8)
       (ok unit))))
 
-($$ begin
-  ($for-each
-    [$tycon $vcon]
-    ([Ja ja:] [Jae jae:] [Jb jb:] [Jbe jbe:] [Jc jc:] [Je je:] [Jg jg:] [Jge jge:] [Jl jl:] [Jle jle:]
-     [Jna jna:] [Jnae jnae:] [Jnb jnb:] [Jnbe jnbe:] [Jnc jnc:] [Jne jne:] [Jng jng:] [Jnge jnge:] [Jnl jnl:] [Jnle jnle:]
-     [Jno jno:] [Jnp jnp:] [Jns jns:] [Jnz jnz:] [Jo jo:] [Jp jp:] [Jpe jpe:] [Jpo jpo:] [Js js:] [Jz jz:])
+($for
+  [$tycon $vcon] (
+    [Ja ja:] [Jae jae:] [Jb jb:] [Jbe jbe:] [Jc jc:] [Je je:] [Jg jg:] [Jge jge:] [Jl jl:] [Jle jle:]
+    [Jna jna:] [Jnae jnae:] [Jnb jnb:] [Jnbe jnbe:] [Jnc jnc:] [Jne jne:] [Jng jng:] [Jnge jnge:] [Jnl jnl:] [Jnle jnle:]
+    [Jno jno:] [Jnp jnp:] [Jns jns:] [Jnz jnz:] [Jo jo:] [Jp jp:] [Jpe jpe:] [Jpo jpo:] [Js js:] [Jz jz:])
 
-    ; jCC Label
-    (instance ($symbol-concat WriteInst.Section. $tycon .Label)
-      (forall W Error) (WriteInst W Error ($tycon Label)) (where (Write W Error) (Section W))
-      (function (write-inst! w inst)
-        (with1 ($vcon (let label)) inst
-          (write-inst! w ($vcon 0 {I32}))!
-          (.use-relative! w -4 label -4 reloc-type:pc-rel32)
-          (ok unit))))
+  ; jCC Label
+  (instance ($symbol WriteInst.Section. $tycon .Label)
+    (forall W Error) (WriteInst W Error ($tycon Label)) (where (Write W Error) (Section W))
+    (function (write-inst! w inst)
+      (with1 ($vcon (let label)) inst
+        (write-inst! w ($vcon 0 {I32}))!
+        (.use-relative! w -4 label -4 reloc-type:pc-rel32)
+        (ok unit))))
 
-    ; jCC (Short Label)
-    (instance ($symbol-concat WriteInst.Section. $tycon .ShortLabel)
-      (forall W Error) (WriteInst W Error ($tycon (Short Label))) (where (Write W Error) (Section W))
-      (function (write-inst! w inst)
-        (with1 ($vcon (short: (let label))) inst
-          (write-inst! w ($vcon 0 {I8}))!
-          (.use-relative! w -1 label -1 reloc-type:pc-rel8)
-          (ok unit))))))
+  ; jCC (Short Label)
+  (instance ($symbol WriteInst.Section. $tycon .ShortLabel)
+    (forall W Error) (WriteInst W Error ($tycon (Short Label))) (where (Write W Error) (Section W))
+    (function (write-inst! w inst)
+      (with1 ($vcon (short: (let label))) inst
+        (write-inst! w ($vcon 0 {I8}))!
+        (.use-relative! w -1 label -1 reloc-type:pc-rel8)
+        (ok unit)))))
 
-($$ begin
-  ($for-each $O (Gpr64 Xmm I32)
-    ; movq Label $O
-    (instance ($symbol-concat WriteInst.Section.Movq.Label. $O)
-      (forall W Error) (WriteInst W Error (Movq Label $O)) (where (Write W Error) (Section W))
-      (function (write-inst! w inst)
-        (with1 (movq: (let label) (let o)) inst
-          (write-inst! w (movq: (memory (+. rip 0 {I32})) o))!
-          (.use-relative! w -4 label -4 reloc-type:pc-rel32)
-          (ok unit))))))
+($for1 $O (Gpr64 Xmm I32)
+  ; movq Label $O
+  (instance ($symbol WriteInst.Section.Movq.Label. $O)
+    (forall W Error) (WriteInst W Error (Movq Label $O)) (where (Write W Error) (Section W))
+    (function (write-inst! w inst)
+      (with1 (movq: (let label) (let o)) inst
+        (write-inst! w (movq: (memory (+. rip 0 {I32})) o))!
+        (.use-relative! w -4 label -4 reloc-type:pc-rel32)
+        (ok unit)))))
 
-($$ begin
-  ($for-each $O (Gpr64 Xmm)
-    ; movq $O Label
-    (instance ($symbol-concat WriteInst.Section.Movq. $O .Label)
-      (forall W Error) (WriteInst W Error (Movq $O Label)) (where (Write W Error) (Section W))
-      (function (write-inst! w inst)
-        (with1 (movq: (let o) (let label)) inst
-          (write-inst! w (movq: o (memory (+. rip 0 {I32}))))!
-          (.use-relative! w -4 label -4 reloc-type:pc-rel32)
-          (ok unit))))
+($for1 $O (Gpr64 Xmm)
+  ; movq $O Label
+  (instance ($symbol WriteInst.Section.Movq. $O .Label)
+    (forall W Error) (WriteInst W Error (Movq $O Label)) (where (Write W Error) (Section W))
+    (function (write-inst! w inst)
+      (with1 (movq: (let o) (let label)) inst
+        (write-inst! w (movq: o (memory (+. rip 0 {I32}))))!
+        (.use-relative! w -4 label -4 reloc-type:pc-rel32)
+        (ok unit))))
 
-    ; movq $O (AddressTable Label)
-    (instance ($symbol-concat WriteInst.Section.Movq. $O .AddressTableLabel)
-      (forall W Error) (WriteInst W Error (Movq $O (AddressTable Label))) (where (Write W Error) (Section W))
-      (function (write-inst! w inst)
-        (with1 (movq: (let o) (address-table: (let label))) inst
-          (write-inst! w (movq: o (memory (+. rip 0 {I32}))))!
-          (.use-relative! w -4 label -4 reloc-type:pc-rel-to-address-table32)
-          (ok unit))))))
+  ; movq $O (AddressTable Label)
+  (instance ($symbol WriteInst.Section.Movq. $O .AddressTableLabel)
+    (forall W Error) (WriteInst W Error (Movq $O (AddressTable Label))) (where (Write W Error) (Section W))
+    (function (write-inst! w inst)
+      (with1 (movq: (let o) (address-table: (let label))) inst
+        (write-inst! w (movq: o (memory (+. rip 0 {I32}))))!
+        (.use-relative! w -4 label -4 reloc-type:pc-rel-to-address-table32)
+        (ok unit)))))
 
 ; movq (AddressTable Label) O are not provided since address tables are readonly in most cases
 

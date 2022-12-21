@@ -1,10 +1,12 @@
 (import "std/phantom" _)
 (import "std/io" [io/_ _])
 (import "std/system" args exit!)
-(import "~/util" with-tempdir! $feature)
+(import "~/util" with-tempdir!)
 (import "~" _)
-(import "~/backend/llvm" [LLVMBackend Backend] [_.LLVMBackend _.Backend])
-(import "~/backend/chibi" [ChibiBackend Backend] [_.ChibiBackend _.Backend])
+($when ($feature "llvm-backend")
+  (import "~/backend/llvm" [LLVMBackend Backend] [_.LLVMBackend _.Backend]))
+($when ($feature "chibi-backend")
+  (import "~/backend/chibi" [ChibiBackend Backend] [_.ChibiBackend _.Backend]))
 
 (derive (DebugDisplay Eq) value-data Arg
   (arg: String)
@@ -26,8 +28,8 @@
     iterator/empty))
 
 (function (parse-arg! arg it) {(-> String (Iterator String) Arg)}
-  ($$ cond
-    ($for-each
+  (cond
+    ($for
       [$id $short $long]
       ([arg:help "-h" "--help"]
        [arg:optimize "-O" "--optimize"]
@@ -36,7 +38,7 @@
       [(or (eq? $short arg) (eq? $long arg))
         $id])
 
-    ($for-each
+    ($for
       [$id $short $long]
       ([arg:backend "-b" "--backend"]
        [arg:clang-option "-c" "--clang-option"]
@@ -141,9 +143,9 @@
         (with-tempdir! [^1 (pipeline/run! (io/path %1 "bin") ~run-args backend pipeline)]))
       (match
         (match (option/unwrap "default" ~backend)
-          ($feature "llvm-backend"
+          ($when ($feature "llvm-backend")
             ["llvm" (run! (phantom LLVMBackend))])
-          ($feature "chibi-backend"
+          ($when ($feature "chibi-backend")
             ["chibi" (run! (phantom ChibiBackend))])
           ["default" (run! (phantom DefaultBackend))]
           [(let backend) (error! (string "Unsupported backend: " backend))])

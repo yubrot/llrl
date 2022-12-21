@@ -2,7 +2,6 @@
 
 (import "std/prelude/stage-0" _)
 (import "std/num-literals" _)
-(import "std/preprocess" $$)
 (import "std/float" Float Float._)
 (export Math pi sqrt sin cos pow exp log Math._)
 
@@ -15,16 +14,15 @@
   (function (exp a) {(-> A A)})
   (function (log a) {(-> A A)}))
 
-($$ begin
-  ($for-each $ty (F32 F64)
-    (instance ($symbol-concat Math. $ty) (Math $ty)
-      (transparent-function pi 3.14159265358979323846)
-      (transparent-function (sqrt a) (<math/sqrt> a))
-      (transparent-function (sin a) (<math/sin> a))
-      (transparent-function (cos a) (<math/cos> a))
-      (transparent-function (pow a b) (<math/pow> a b))
-      (transparent-function (exp a) (<math/exp> a))
-      (transparent-function (log a) (<math/log> a)))))
+($for1 $ty (F32 F64)
+  (instance ($symbol Math. $ty) (Math $ty)
+    (transparent-function pi 3.14159265358979323846)
+    (transparent-function (sqrt a) (<math/sqrt> a))
+    (transparent-function (sin a) (<math/sin> a))
+    (transparent-function (cos a) (<math/cos> a))
+    (transparent-function (pow a b) (<math/pow> a b))
+    (transparent-function (exp a) (<math/exp> a))
+    (transparent-function (log a) (<math/log> a))))
 
 (builtin-op <math/sqrt> {(forall A) (-> A A) (where (Float A))} "math.sqrt")
 (builtin-op <math/sin> {(forall A) (-> A A) (where (Float A))} "math.sin")

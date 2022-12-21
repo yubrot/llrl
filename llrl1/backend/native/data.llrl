@@ -29,9 +29,8 @@
   (vector/push! (: offset r) (rep/indirect rep)))
 
 ; primitives
-($$ begin
-  ($for-each $ty [Bool U8 U16 U32 U64 F32 F64 Char]
-    (instance ($symbol-concat Embed. $ty) (Embed $ty))))
+($for1 $ty [Bool U8 U16 U32 U64 F32 F64 Char]
+  (instance ($symbol Embed. $ty) (Embed $ty)))
 
 ; string = [ ptr:8 | len:8 ]
 ;   where

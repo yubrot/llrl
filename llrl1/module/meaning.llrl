@@ -156,13 +156,13 @@
   kind-group:unkinded)
 
 (function (kind-group construct) {(-> Construct KindGroup)}
-  ($$ cond
-    ($for-each $ty [Function CFunction BuiltinOp DataTypeCon BuiltinTypeCon ClassCon ClassMethod InstanceCon InstanceMethod TypeParameter LocalFun]
+  (cond
+    ($for1 $ty [Function CFunction BuiltinOp DataTypeCon BuiltinTypeCon ClassCon ClassMethod InstanceCon InstanceMethod TypeParameter LocalFun]
       [when-match1 (some _) (conv-to? (NodeId $ty) construct)
         kind-group:inferred])
     [when-match1 (some _) (conv-to? (NodeId Macro) construct)
       (kind-group:fixed kind:macro)]
-    ($for-each $ty [DataValueCon BuiltinValueCon Parameter LocalVar PatternVar]
+    ($for1 $ty [DataValueCon BuiltinValueCon Parameter LocalVar PatternVar]
       [when-match1 (some _) (conv-to? (NodeId $ty) construct)
         (kind-group:fixed kind:value)])
     [else
@@ -219,16 +219,16 @@
       (assert #f (string construct " cannot have instantiation")))))
 
 (function (has-scheme? construct) {(-> Construct Bool)}
-  ($$ or
-    ($for-each $ty [Function BuiltinOp DataValueCon BuiltinValueCon ClassMethod InstanceMethod LocalFun]
+  (or
+    ($for1 $ty [Function BuiltinOp DataValueCon BuiltinValueCon ClassMethod InstanceMethod LocalFun]
       (is? (some _) (conv-to? (NodeId $ty) construct)))))
 
 (function (has-type? construct) {(-> Construct Bool)}
-  ($$ or
-    ($for-each $ty [CFunction LocalVar PatternVar Parameter Expr Pattern]
+  (or
+    ($for1 $ty [CFunction LocalVar PatternVar Parameter Expr Pattern]
       (is? (some _) (conv-to? (NodeId $ty) construct)))))
 
 (function (has-instantiation? construct) {(-> Construct Bool)}
-  ($$ or
-    ($for-each $ty [InstanceCon Expr Pattern]
+  (or
+    ($for1 $ty [InstanceCon Expr Pattern]
       (is? (some _) (conv-to? (NodeId $ty) construct)))))

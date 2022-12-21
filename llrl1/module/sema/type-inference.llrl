@@ -761,43 +761,42 @@
 (class (TypeOf A T)
   (function (type-of! src ctx) {(forall E) (-> A (Context E) T) (where (External E))}))
 
-($$ begin
-  ($for-each
-    [$type $u-type $u-cache $u-obtain]
-    ([Function u/Scheme unifying-schemes type-env/function-scheme]
-     [CFunction u/Type unifying-types type-env/c-function-type]
-     [BuiltinOp u/Scheme unifying-schemes type-env/builtin-op-scheme]
-     [DataValueCon u/Scheme unifying-schemes type-env/data-value-con-scheme]
-     [BuiltinValueCon u/Scheme unifying-schemes type-env/builtin-value-con-scheme]
-     [ClassCon u/ClassCon unifying-class-cons type-env/class-con]
-     [ClassMethod u/Scheme unifying-schemes type-env/class-method-external-scheme]
-     [InstanceCon u/InstanceCon unifying-instance-cons type-env/instance-con])
+($for
+  [$type $u-type $u-cache $u-obtain] (
+    [Function u/Scheme unifying-schemes type-env/function-scheme]
+    [CFunction u/Type unifying-types type-env/c-function-type]
+    [BuiltinOp u/Scheme unifying-schemes type-env/builtin-op-scheme]
+    [DataValueCon u/Scheme unifying-schemes type-env/data-value-con-scheme]
+    [BuiltinValueCon u/Scheme unifying-schemes type-env/builtin-value-con-scheme]
+    [ClassCon u/ClassCon unifying-class-cons type-env/class-con]
+    [ClassMethod u/Scheme unifying-schemes type-env/class-method-external-scheme]
+    [InstanceCon u/InstanceCon unifying-instance-cons type-env/instance-con])
 
-    (instance ($symbol-concat TypeOf. $type) (TypeOf (NodeId $type) $u-type)
-      (function (type-of! id ctx)
-        (let1 cache ($u-cache (u-types ctx))
-          (match (ord-map/get? (conv id) cache)
-            [(some (let ty))
-              ty]
-            [none
-              (let1 value (u/imports! ($u-obtain id (type-env ctx)) (u-ctx ctx))
-                (ord-map/insert! (conv id) value cache)
-                value)])))))
+  (instance ($symbol TypeOf. $type) (TypeOf (NodeId $type) $u-type)
+    (function (type-of! id ctx)
+      (let1 cache ($u-cache (u-types ctx))
+        (match (ord-map/get? (conv id) cache)
+          [(some (let ty))
+            ty]
+          [none
+            (let1 value (u/imports! ($u-obtain id (type-env ctx)) (u-ctx ctx))
+              (ord-map/insert! (conv id) value cache)
+              value)])))))
 
-  ($for-each
+  ($for
     [$type $name $u-type $u-cache]
     ([LocalFun "LocalFun" u/Scheme unifying-schemes]
      [Parameter "Parameter" u/Type unifying-types]
      [PatternVar "PatternVar" u/Type unifying-types]
      [LocalVar "LocalVar" u/Type unifying-types])
 
-    (instance ($symbol-concat TypeOf. $type) (TypeOf (NodeId $type) $u-type)
+    (instance ($symbol TypeOf. $type) (TypeOf (NodeId $type) $u-type)
       (function (type-of! id ctx)
         (match (ord-map/get? (conv id) ($u-cache (u-types ctx)))
           [(some (let ty))
             ty]
           [none
-            (assert #f (string "The type of " $name " must be pre-inserted: " id))])))))
+            (assert #f (string "The type of " $name " must be pre-inserted: " id))]))))
 
 (instance TypeOf.Value (TypeOf Value (Either u/Scheme u/Type))
   (function (type-of! value ctx)

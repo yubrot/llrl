@@ -529,13 +529,13 @@
   @let1 a-layout (continues (cg-eval! cg a)!)
 
   @let1 match-op
-    ($$ match op
-      ($for-each $op [i-pop-count]
-        [($symbol-concat ir/unary: $op) ir/unary:i-complement])
-      ($for-each $op [s-ext u-ext s-to-f u-to-f f-to-s f-to-u f-trunc f-ext]
-        [(($symbol-concat ir/unary: $op) (let ty)) (ir/unary:i-trunc ty)])
-      [$for-each $op [real-floor real-trunc real-round math-sqrt math-sin math-cos math-exp math-log]
-        [($symbol-concat ir/unary: $op) ir/unary:real-ceil]]
+    (match op
+      ($for1 $op [i-pop-count]
+        [($symbol ir/unary: $op) ir/unary:i-complement])
+      ($for1 $op [s-ext u-ext s-to-f u-to-f f-to-s f-to-u f-trunc f-ext]
+        [(($symbol ir/unary: $op) (let ty)) (ir/unary:i-trunc ty)])
+      [$for1 $op [real-floor real-trunc real-round math-sqrt math-sin math-cos math-exp math-log]
+        [($symbol ir/unary: $op) ir/unary:real-ceil]]
       [_ op])
 
   (ok @match match-op
@@ -728,16 +728,16 @@
   @let1 b-layout (continues (cg-eval! cg b)!)
 
   @let1 match-op
-    ($$ match op
-      ($for-each
+    (match op
+      ($for
         [$base-op $ops] (
           [i-eq [s-lt s-le s-gt s-ge u-lt u-le u-gt u-ge ptr-eq ptr-lt ptr-le ptr-gt ptr-ge]]
           [i-shl [i-ashr i-lshr i-and i-or i-xor s-add s-sub s-mul s-div s-rem u-add u-sub u-mul u-div u-rem]]
           [f-eq [f-lt f-le f-gt f-ge]]
           [f-add [f-sub f-mul f-div f-rem math-pow]]
           [string-eq [string-concat string-cmp]])
-        ($for-each $op $ops
-          [($symbol-concat ir/binary: $op) ($symbol-concat ir/binary: $base-op)]))
+        ($for1 $op $ops
+          [($symbol ir/binary: $op) ($symbol ir/binary: $base-op)]))
       [_ op])
 
   (ok @match match-op

@@ -82,39 +82,38 @@
         (c-function-signature: (llvm/type (conv env) (-> ,@params void)) #t))
       (c-function-signature: (llvm/type (conv env) (-> ,@params ,ret)) #f))))
 
-($$ begin
-  ($for-each
-    [$name $symbol $ty]
-    ([ceil-f32 "llvm.ceil.f32" (-> float float)]
-     [ceil-f64 "llvm.ceil.f64" (-> double double)]
-     [floor-f32 "llvm.floor.f32" (-> float float)]
-     [floor-f64 "llvm.floor.f64" (-> double double)]
-     [trunc-f32 "llvm.trunc.f32" (-> float float)]
-     [trunc-f64 "llvm.trunc.f64" (-> double double)]
-     [round-f32 "llvm.round.f32" (-> float float)]
-     [round-f64 "llvm.round.f64" (-> double double)]
-     [sqrt-f32 "llvm.sqrt.f32" (-> float float)]
-     [sqrt-f64 "llvm.sqrt.f64" (-> double double)]
-     [sin-f32 "llvm.sin.f32" (-> float float)]
-     [sin-f64 "llvm.sin.f64" (-> double double)]
-     [cos-f32 "llvm.cos.f32" (-> float float)]
-     [cos-f64 "llvm.cos.f64" (-> double double)]
-     [pow-f32 "llvm.pow.f32" (-> float float float)]
-     [pow-f64 "llvm.pow.f64" (-> double double double)]
-     [exp-f32 "llvm.exp.f32" (-> float float)]
-     [exp-f64 "llvm.exp.f64" (-> double double)]
-     [log-f32 "llvm.log.f32" (-> float float)]
-     [log-f64 "llvm.log.f64" (-> double double)]
-     [ctpop-i8 "llvm.ctpop.i8" (-> i8 i8)]
-     [ctpop-i16 "llvm.ctpop.i16" (-> i16 i16)]
-     [ctpop-i32 "llvm.ctpop.i32" (-> i32 i32)]
-     [ctpop-i64 "llvm.ctpop.i64" (-> i64 i64)]
-     [memcpy-i64 "llvm.memcpy.p0i8.p0i8.i64" (-> (pointer i8) (pointer i8) i64 i1 void)]
-     [memmove-i64 "llvm.memmove.p0i8.p0i8.i64" (-> (pointer i8) (pointer i8) i64 i1 void)])
+($for
+  [$name $symbol $ty] (
+    [ceil-f32 "llvm.ceil.f32" (-> float float)]
+    [ceil-f64 "llvm.ceil.f64" (-> double double)]
+    [floor-f32 "llvm.floor.f32" (-> float float)]
+    [floor-f64 "llvm.floor.f64" (-> double double)]
+    [trunc-f32 "llvm.trunc.f32" (-> float float)]
+    [trunc-f64 "llvm.trunc.f64" (-> double double)]
+    [round-f32 "llvm.round.f32" (-> float float)]
+    [round-f64 "llvm.round.f64" (-> double double)]
+    [sqrt-f32 "llvm.sqrt.f32" (-> float float)]
+    [sqrt-f64 "llvm.sqrt.f64" (-> double double)]
+    [sin-f32 "llvm.sin.f32" (-> float float)]
+    [sin-f64 "llvm.sin.f64" (-> double double)]
+    [cos-f32 "llvm.cos.f32" (-> float float)]
+    [cos-f64 "llvm.cos.f64" (-> double double)]
+    [pow-f32 "llvm.pow.f32" (-> float float float)]
+    [pow-f64 "llvm.pow.f64" (-> double double double)]
+    [exp-f32 "llvm.exp.f32" (-> float float)]
+    [exp-f64 "llvm.exp.f64" (-> double double)]
+    [log-f32 "llvm.log.f32" (-> float float)]
+    [log-f64 "llvm.log.f64" (-> double double)]
+    [ctpop-i8 "llvm.ctpop.i8" (-> i8 i8)]
+    [ctpop-i16 "llvm.ctpop.i16" (-> i16 i16)]
+    [ctpop-i32 "llvm.ctpop.i32" (-> i32 i32)]
+    [ctpop-i64 "llvm.ctpop.i64" (-> i64 i64)]
+    [memcpy-i64 "llvm.memcpy.p0i8.p0i8.i64" (-> (pointer i8) (pointer i8) i64 i1 void)]
+    [memmove-i64 "llvm.memmove.p0i8.p0i8.i64" (-> (pointer i8) (pointer i8) i64 i1 void)])
 
-    (function (($symbol-concat capture- $name ($symbol "!")) env)
-      {(forall E) (-> E llvm/Value) (where (BuildEnv E))}
-      (build-env/capture-intrinsic-function! $symbol [^0 (llvm/type (conv-to llvm/Context env) $ty)] env))))
+  (function (($symbol capture- $name ($symbol "!")) env)
+    {(forall E) (-> E llvm/Value) (where (BuildEnv E))}
+    (build-env/capture-intrinsic-function! $symbol [^0 (llvm/type (conv-to llvm/Context env) $ty)] env)))
 
 (function (codegen/c-main-adapter! llrl-main env)
   {(forall E) (-> llvm/Value E unit) (where (BuildEnv E))}

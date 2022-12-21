@@ -19,22 +19,21 @@
 (function (rewrite/unchanged a) (rewrite: a #f))
 (function (rewrite/as-changed a) (rewrite/changed (rewrite/value a)))
 
-($$ begin
-  ($for-each
-    [$name $args]
-    ([rewrite/1 ([a A])]
-     [rewrite/2 ([a A] [b B])]
-     [rewrite/3 ([a A] [b B] [c C])]
-     [rewrite/4 ([a A] [b B] [c C] [d D])]
-     [rewrite/5 ([a A] [b B] [c C] [d D] [e E])]
-     [rewrite/6 ([a A] [b B] [c C] [d D] [e E] [f F])])
-    (function ($name alt handler ($for-each [$x _] $args $x))
-      {(forall ($for-each [_ $X] $args $X) R)
-       (-> R (-> ($for-each [_ $X] $args $X) R) ($for-each [_ $X] $args (Rewrite $X)) (Rewrite R))}
-      (with (($for-each [$x _] $args [(rewrite: (let $x) (let ($symbol-concat $x -changed?))) $x]))
-        (if (or ($for-each [$x _] $args ($symbol-concat $x -changed?)))
-          (rewrite/changed (handler ($for-each [$x _] $args $x)))
-          (rewrite/unchanged alt))))))
+($for
+  [$name $args] (
+    [rewrite/1 ([a A])]
+    [rewrite/2 ([a A] [b B])]
+    [rewrite/3 ([a A] [b B] [c C])]
+    [rewrite/4 ([a A] [b B] [c C] [d D])]
+    [rewrite/5 ([a A] [b B] [c C] [d D] [e E])]
+    [rewrite/6 ([a A] [b B] [c C] [d D] [e E] [f F])])
+  (function ($name alt handler ($for [$x _] $args $x))
+    {(forall ($for [_ $X] $args $X) R)
+    (-> R (-> ($for [_ $X] $args $X) R) ($for [_ $X] $args (Rewrite $X)) (Rewrite R))}
+    @with (($for [$x _] $args [(rewrite: (let $x) (let ($symbol $x -changed?))) $x]))
+    (if (or ($for [$x _] $args ($symbol $x -changed?)))
+      (rewrite/changed (handler ($for [$x _] $args $x)))
+      (rewrite/unchanged alt))))
 
 (transparent-function (rewrite/make-mutable! rewrite-ref) {(forall A) (-> (Ref (Rewrite A)) unit) (where (ShallowCopy A))}
   (if (rewrite/changed? ~rewrite-ref)

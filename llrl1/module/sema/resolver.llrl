@@ -412,17 +412,16 @@
   (function (bind/traverse-defs f a)
     (bind/traverse-defs f (annotation/body a))))
 
-($$ begin
-  ($for-each
-    [$name $type]
-    ([parameter Parameter]
-     [type-parameter TypeParameter]
-     [local-var LocalVar]
-     [local-fun LocalFun]
-     [pattern-var PatternVar])
-    (instance ($symbol-concat Bind. $type) (Bind $type)
-      (function (bind/traverse-defs f a)
-        (f (conv (($symbol-concat $name /id) a)))))))
+($for
+  [$name $type] (
+    [parameter Parameter]
+    [type-parameter TypeParameter]
+    [local-var LocalVar]
+    [local-fun LocalFun]
+    [pattern-var PatternVar])
+  (instance ($symbol Bind. $type) (Bind $type)
+    (function (bind/traverse-defs f a)
+      (f (conv (($symbol $name /id) a))))))
 
 (instance Bind.Scheme (Bind Scheme)
   (function (bind/traverse-defs f a)

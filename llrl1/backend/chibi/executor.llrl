@@ -2,7 +2,8 @@
 (import "std/hash-map" _)
 (import "xten/asm" Object)
 (import "xten/jit" [jit/_ _])
-(import "llvm" [llvm/symbols symbols]) ; ($feature "llvm-backend" ..)
+($when ($feature "llvm-backend")
+  (import "llvm" [llvm/symbols symbols]))
 (import "~/util" _)
 (import "~/lowering/ir" [ir/_ _])
 (import "~/backend/native/calling" unsafe-call-main unsafe-call-macro)
@@ -45,7 +46,7 @@
     (hash-map/insert! name (ptr/from-address addr) map))
 
   ; LLVM functions are also available when `llvm-backend` feature is enabled
-  ($feature "llvm-backend"
+  ($when ($feature "llvm-backend")
     (for (: (let name) (let addr)) (llvm/symbols)
       (hash-map/insert! name (ptr/from-address addr) map)))
 

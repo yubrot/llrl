@@ -186,8 +186,8 @@
 (function rela-entry/size 24)
 
 ; https://wiki.osdev.org/System_V_ABI
-($$ $let
-  ([$types (
+($let1
+  $types (
     [none 0]
     [($symbol "64") 1] ; S+A (absolute)
     [($symbol "32") 10]
@@ -209,17 +209,18 @@
     [jump-slot 7]
     [relative 8]
     [size32 32] ; Z+A
-    [size64 33])])
+    [size64 33])
+
   (begin
     (derive (Eq Ord DebugDisplay Hash) value-data RelocationType
-      ($for-each [$name $index] $types
-        ($symbol-concat relocation-type: $name)))
+      ($for [$name $index] $types
+        ($symbol relocation-type: $name)))
 
     (instance Conv.From.RelocationType.To.U32 (Conv RelocationType U32)
       (function (conv r)
         (match r
-          ($for-each [$name $index] $types
-            [($symbol-concat relocation-type: $name) $index]))))))
+          ($for [$name $index] $types
+            [($symbol relocation-type: $name) $index]))))))
 
 (instance Conv.From.RelocType.To.RelocationType (Conv RelocType RelocationType)
   (function (conv r)

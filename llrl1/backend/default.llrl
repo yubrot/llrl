@@ -1,3 +1,6 @@
 (no-implicit-std)
-(import "~/backend/llvm" _)
+($when ($feature "llvm-backend")
+  (import "~/backend/llvm" _))
+($when ($not ($feature "llvm-backend")) @$when ($feature "chibi-backend")
+  (import "~/backend/chibi" _))
 (export _)

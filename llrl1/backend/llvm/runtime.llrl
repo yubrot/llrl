@@ -51,19 +51,18 @@
   (function (runtime-build-env/capture-runtime-function! name ty env)
     {(-> String (-> llvm/Type) E llvm/Value)}))
 
-($$ begin
-  ($for-each
-    [$name $symbol $ty]
-    ([gc-malloc "GC_malloc" (-> i64 (pointer i8))]
-     [llrt-panic "llrt_panic" (-> (: (pointer i8) i64) void)]
-     [llrt-string-genid "llrt_string_genid" (-> (: (pointer i8) i64))]
-     [llrt-string-eq "llrt_string_eq" (-> (: (pointer i8) i64) (: (pointer i8) i64) i32)]
-     [llrt-string-cmp "llrt_string_cmp" (-> (: (pointer i8) i64) (: (pointer i8) i64) i32)]
-     [llrt-string-concat "llrt_string_concat" (-> (: (pointer i8) i64) (: (pointer i8) i64) (: (pointer i8) i64))])
+($for
+  [$name $symbol $ty] (
+    [gc-malloc "GC_malloc" (-> i64 (pointer i8))]
+    [llrt-panic "llrt_panic" (-> (: (pointer i8) i64) void)]
+    [llrt-string-genid "llrt_string_genid" (-> (: (pointer i8) i64))]
+    [llrt-string-eq "llrt_string_eq" (-> (: (pointer i8) i64) (: (pointer i8) i64) i32)]
+    [llrt-string-cmp "llrt_string_cmp" (-> (: (pointer i8) i64) (: (pointer i8) i64) i32)]
+    [llrt-string-concat "llrt_string_concat" (-> (: (pointer i8) i64) (: (pointer i8) i64) (: (pointer i8) i64))])
 
-    (function (($symbol-concat capture- $name ($symbol "!")) env)
-      {(forall E) (-> E llvm/Value) (where (RuntimeBuildEnv E))}
-      (runtime-build-env/capture-runtime-function! $symbol [^0 (llvm/type (conv (conv-to llvm/Module env)) $ty)] env))))
+  (function (($symbol capture- $name ($symbol "!")) env)
+    {(forall E) (-> E llvm/Value) (where (RuntimeBuildEnv E))}
+    (runtime-build-env/capture-runtime-function! $symbol [^0 (llvm/type (conv (conv-to llvm/Module env)) $ty)] env)))
 
 (function (runtime/build-panic! builder env msg)
   {(forall E) (-> llvm/Builder E llvm/Value llvm/Value) (where (RuntimeBuildEnv E))}
