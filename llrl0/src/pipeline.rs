@@ -7,7 +7,7 @@ use std::process::{Command, ExitStatus};
 
 #[derive(thiserror::Error, Debug, Clone)]
 pub enum Error {
-    Source(Vec<(Path, SourceError)>),
+    Source(SourceLocationTable, Vec<(Path, SourceError)>),
     CircularDependencies(Vec<Path>),
     Module(SourceLocationTable, Vec<(Source, ModuleError)>),
     ProduceExecutable(String),
@@ -16,9 +16,9 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Source(ref errors) => {
+            Self::Source(ref table, ref errors) => {
                 for (path, error) in errors {
-                    writeln!(f, "{}: {}", path, error)?;
+                    writeln!(f, "{}: {}", path, error.fmt_on(table))?;
                 }
             }
             Self::CircularDependencies(ref paths) => {
@@ -51,6 +51,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug, Clone)]
 pub struct Pipeline {
     source_loader: SourceLoader,
+    preprocessor: Preprocessor,
     entry_source_paths: Vec<Path>,
     clang_options: Vec<String>,
     optimize: bool,
@@ -66,11 +67,16 @@ impl Pipeline {
 
         Self {
             source_loader,
+            preprocessor: Preprocessor::new(),
             entry_source_paths: Vec::new(),
             clang_options: Vec::new(),
             optimize: false,
             verbose: false,
         }
+    }
+
+    pub fn enable_feature(&mut self, feature: impl Into<String>) {
+        self.preprocessor.enable_feature(feature);
     }
 
     pub fn register_package(&mut self, name: PackageName, path: impl Into<path::PathBuf>) -> bool {
@@ -109,6 +115,7 @@ impl Pipeline {
             self.entry_source_paths.iter(),
             &self.source_loader,
             &mut source_location_table,
+            &self.preprocessor,
             &mut report,
         );
         let source_errors = sources
@@ -117,7 +124,7 @@ impl Pipeline {
             .collect::<Vec<_>>();
 
         if !source_errors.is_empty() {
-            return Err(Error::Source(source_errors));
+            return Err(Error::Source(source_location_table, source_errors));
         }
 
         let sources = sources

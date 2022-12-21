@@ -24,19 +24,15 @@ impl ContextualDisplay<SourceLocationTable> for SourceLocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct SourceLocationTable {
     path_table: InternTable<Path>,
     completed_locators: HashMap<Interned<Path>, SourceLocator>,
 }
 
 impl SourceLocationTable {
-    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
-        Self {
-            path_table: InternTable::new(),
-            completed_locators: HashMap::new(),
-        }
+        Self::default()
     }
 
     pub fn begin_locate(&mut self, path: &Path) -> SourceLocator {

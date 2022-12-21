@@ -1,5 +1,6 @@
 use super::{Loader, Source, SourceSet};
 use crate::path::Path;
+use crate::preprocess::Preprocessor;
 use crate::report::{Phase, Report};
 use crate::source_loc::SourceLocationTable;
 use std::collections::HashSet;
@@ -10,6 +11,7 @@ pub fn collect<'a>(
     inputs: impl IntoIterator<Item = &'a Path> + Send,
     loader: &Loader,
     source_location_table: &mut SourceLocationTable,
+    preprocessor: &Preprocessor,
     report: &mut Report,
 ) -> SourceSet {
     report
@@ -18,6 +20,7 @@ pub fn collect<'a>(
                 ongoing: Mutex::new(HashSet::new()),
                 result: Mutex::new(SourceSet::new()),
                 source_location_table: Mutex::new(source_location_table),
+                preprocessor,
                 loader,
             };
 
@@ -36,6 +39,7 @@ struct Collector<'l> {
     ongoing: Mutex<HashSet<Path>>,
     result: Mutex<SourceSet>,
     source_location_table: Mutex<&'l mut SourceLocationTable>,
+    preprocessor: &'l Preprocessor,
     loader: &'l Loader,
 }
 
@@ -58,7 +62,7 @@ impl<'l> Collector<'l> {
                 .unwrap()
                 .begin_locate(&path);
 
-            let source = self
+            let mut source = self
                 .loader
                 .load(path, &mut locator)
                 .unwrap_or_else(|e| Source::from_error(e.path, e.error));
@@ -67,6 +71,9 @@ impl<'l> Collector<'l> {
                 .lock()
                 .unwrap()
                 .complete_locate(locator);
+
+            source.preprocess(self.preprocessor);
+            source.resolve_dependencies();
 
             for dep in source.dependencies.values() {
                 self.collect(scope, dep);

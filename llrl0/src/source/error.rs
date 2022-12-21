@@ -1,24 +1,46 @@
+use crate::formatting::ContextualDisplay;
 use crate::parser;
 use crate::path;
+use crate::preprocess;
+use crate::source_loc::SourceLocationTable;
+use std::fmt;
 
 /// The error that occurred during the construction of the `Source`.
-#[derive(PartialEq, PartialOrd, thiserror::Error, Debug, Clone)]
+#[derive(PartialEq, PartialOrd, Debug, Clone)]
 pub enum Error {
-    #[error("Package not found")]
     PackageNotFound,
-
-    #[error("Module not found")]
     ModuleNotFound,
-
-    #[error("Load failed: {0}")]
     LoadFailed(String),
-
-    #[error("Parse failed: {0}")]
-    ParseFailed(#[from] parser::Error),
-
-    #[error("Invalid import path \"{0}\": {1}")]
+    ParseFailed(parser::Error),
+    PreprocessFailed(preprocess::Error),
     InvalidImportPath(String, path::Error),
-
-    #[error("Cannot import module itself")]
     CannotImportModuleItself,
+}
+
+impl From<parser::Error> for Error {
+    fn from(error: parser::Error) -> Self {
+        Self::ParseFailed(error)
+    }
+}
+
+impl From<preprocess::Error> for Error {
+    fn from(error: preprocess::Error) -> Self {
+        Self::PreprocessFailed(error)
+    }
+}
+
+impl ContextualDisplay<SourceLocationTable> for Error {
+    fn fmt_with(&self, ctx: &SourceLocationTable, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Error::PackageNotFound => write!(f, "Package not found"),
+            Error::ModuleNotFound => write!(f, "Module not found"),
+            Error::LoadFailed(ref e) => write!(f, "Load failed: {}", e),
+            Error::ParseFailed(ref e) => write!(f, "Parse failed: {}", e),
+            Error::PreprocessFailed(ref e) => write!(f, "Preprocess failed: {}", e.fmt_on(ctx)),
+            Error::InvalidImportPath(ref s, ref e) => {
+                write!(f, "Invalid import path \"{}\": {}", s, e)
+            }
+            Error::CannotImportModuleItself => write!(f, "Cannot import module itself"),
+        }
+    }
 }
