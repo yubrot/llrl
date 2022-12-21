@@ -165,7 +165,7 @@ impl<'a> State<'a> {
                     if let SexpRep::List(mut ss) = bind.rep;
                     if ss.len() == 2;
                     if let SexpRep::Symbol(name) = ss.remove(0).rep;
-                    if name.starts_with(META_PREFIX);
+                    if metavar(&name);
                     let expr = self.expand_one(ss.remove(0), "$let bind expression")?;
 
                     then { Some((name.to_string(), expr)) }
@@ -188,7 +188,7 @@ impl<'a> State<'a> {
         let name = if_chain! {
             if 3 <= ss.len();
             if let SexpRep::Symbol(name) = ss.remove(1).rep;
-            if name.starts_with(META_PREFIX);
+            if metavar(&name);
 
             then { Ok(name) }
             else { Err(Error::DirectiveSyntax(loc, "($let1 $var <expr> <body>...)")) }
@@ -212,7 +212,7 @@ impl<'a> State<'a> {
             if let Some(names) = names
                 .into_iter()
                 .map(|name| match name.rep {
-                    SexpRep::Symbol(s) if s.starts_with(META_PREFIX) => Some(s.to_string()),
+                    SexpRep::Symbol(s) if metavar(s.as_ref()) => Some(s.to_string()),
                     _ => None,
                 })
                 .collect::<Option<Vec<_>>>();
@@ -247,7 +247,7 @@ impl<'a> State<'a> {
         let (name, elems) = if_chain! {
             if 3 <= ss.len();
             if let SexpRep::Symbol(name) = ss.remove(1).rep;
-            if name.starts_with(META_PREFIX);
+            if metavar(&name);
             if let SexpRep::List(elems) = self.expand_one(ss.remove(1), "$for1 elements")?.rep;
 
             then { Ok((name, elems)) }
@@ -325,6 +325,7 @@ impl<'a> State<'a> {
     ) -> Result<T, Error> {
         let prev_binds = binds
             .into_iter()
+            .filter(|(name, _)| name != "_")
             .map(|(name, expr)| (name.clone(), self.vars.insert(name, expr)))
             .collect::<Vec<_>>();
 
@@ -370,4 +371,8 @@ impl TryFrom<&'_ str> for Directive {
             _ => Err(()),
         }
     }
+}
+
+fn metavar(sym: &str) -> bool {
+    sym.starts_with(META_PREFIX) || sym == "_"
 }

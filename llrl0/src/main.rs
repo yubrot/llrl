@@ -54,6 +54,10 @@ fn run_pipeline() -> Result<Option<ExitStatus>> {
         pipeline.set_optimize(true);
     }
 
+    for feature in cli_options.features() {
+        pipeline.enable_feature(feature);
+    }
+
     for clang_option in cli_options.clang_options() {
         pipeline.add_clang_option(clang_option);
     }
@@ -100,6 +104,7 @@ impl<'a> CliOptions<'a> {
             .arg(Self::run_option())
             .arg(Self::output_option())
             .arg(Self::backend_option())
+            .arg(Self::feature_option())
             .arg(Self::clang_option_option())
             .arg(Self::entry_argument())
             .arg(Self::run_argument())
@@ -207,6 +212,24 @@ impl<'a> CliOptions<'a> {
 
     fn backend(&self) -> Option<&str> {
         self.matches.value_of("backend")
+    }
+
+    fn feature_option() -> clap::Arg<'static, 'a> {
+        clap::Arg::with_name("feature_option")
+            .long("feature")
+            .short("f")
+            .help("Enables a feature")
+            .value_name("FEATURE")
+            .multiple(true)
+            .number_of_values(1)
+    }
+
+    fn features(&self) -> Vec<&str> {
+        self.matches
+            .values_of("feature_option")
+            .unwrap_or_default()
+            .into_iter()
+            .collect()
     }
 
     fn clang_option_option() -> clap::Arg<'static, 'a> {

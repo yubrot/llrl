@@ -145,6 +145,10 @@ fn r#for() {
         run("($for [$] ($for1 $ [[] 12] $))"), // ambiguous expansion is disallowed
         Err(Error::ExpansionDisallowed(_, _))
     ));
+    assert_eq!(
+        run("($for [$ _] [[1 2] [3 4]] ($ _))"),
+        Ok("(1 _)\n(3 _)".to_string())
+    );
 }
 
 #[test]
