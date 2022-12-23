@@ -243,8 +243,4 @@ fn list_like() {
         Ok("(1 4 2 3)".to_string())
     );
     assert_eq!(run("(($for1 $ [1 2] $) . 3)"), Ok("(1 2 . 3)".to_string()));
-    assert!(matches!(
-        run("(1 . ($for1 $ [1 2] $))"), // => (1 . 2 3), which is invalid
-        Err(Error::ExpansionDisallowed(_, _))
-    ));
 }

@@ -205,8 +205,23 @@ impl SexpRep {
         Self::Native(Native::new(value))
     }
 
-    pub fn list_like(head: Sexp, init: Vec<Sexp>, last: Sexp) -> Self {
-        SexpRep::ListLike(Box::new((head, init, last)))
+    pub fn list_like(head: Sexp, mut init: Vec<Sexp>, last: Sexp) -> Self {
+        match last.rep {
+            Self::List(mut list) => {
+                let mut last = std::mem::replace(&mut list, vec![head]);
+                list.append(&mut init);
+                list.append(&mut last);
+                Self::List(list)
+            }
+            Self::ListLike(mut list_like) => {
+                let prev_head = std::mem::replace(&mut list_like.0, head);
+                let mut prev_init = std::mem::replace(&mut list_like.1, init);
+                list_like.1.push(prev_head);
+                list_like.1.append(&mut prev_init);
+                Self::ListLike(list_like)
+            }
+            _ => Self::ListLike(Box::new((head, init, last))),
+        }
     }
 
     pub fn cons(car: Sexp, cdr: Sexp) -> Self {

@@ -64,6 +64,11 @@ fn test_parse() {
     assert_eq!(parse::<Sexp>("[]"), Ok("()".to_string()));
     assert_eq!(parse::<Sexp>("(foo . bar)"), Ok("(foo . bar)".to_string()));
     assert_eq!(parse::<Sexp>("(1 2 . 3)"), Ok("(1 2 . 3)".to_string()));
+    assert_eq!(
+        parse::<Sexp>("(1 2 . (3 . 4))"),
+        Ok("(1 2 3 . 4)".to_string())
+    );
+    assert_eq!(parse::<Sexp>("(1 2 . (3 4))"), Ok("(1 2 3 4)".to_string()));
     assert_eq!(parse::<Sexp>("(a b c d)"), Ok("(a b c d)".to_string()));
     assert_eq!(parse::<Sexp>("(@)"), Ok("(())".to_string()));
     assert_eq!(parse::<Sexp>("(@ a)"), Ok("((a))".to_string()));

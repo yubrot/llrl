@@ -321,8 +321,8 @@ impl<'a> State<'a> {
     fn with_binds<T>(
         &mut self,
         binds: impl IntoIterator<Item = (String, Sexp)>,
-        f: impl FnOnce(&mut Self) -> Result<T, Error>,
-    ) -> Result<T, Error> {
+        f: impl FnOnce(&mut Self) -> T,
+    ) -> T {
         let prev_binds = binds
             .into_iter()
             .filter(|(name, _)| name != "_")
