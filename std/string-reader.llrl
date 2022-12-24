@@ -9,7 +9,7 @@
 
 (function (read-string-to-end! r)
   {(forall R Error) (-> R (Result String Error)) (where (Read R Error) (InvalidData Error))}
-  (let1 buf (read-bytes-to-end! r)!
-    (if (string/valid-sequence? buf)
-      (ok (string/unsafe-from-array buf))
-      (err invalid-data))))
+  @let1 buf (read-bytes-to-end! r)!
+  (if (string/valid-sequence? buf)
+    (ok (string/unsafe-from-array buf))
+    (err invalid-data)))

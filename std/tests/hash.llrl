@@ -7,9 +7,10 @@
 (export h test-hasher)
 
 (function (test-hasher new)
-  (let ([hasher (new)]
-        [a (collect (iterator/range 0 1000000 375)) {(Array U64)}]
-        [b (collect (iterator/range 0 1001000 375)) {(Array U64)}])
+  (let (
+      [hasher (new)]
+      [a (collect (iterator/range 0 1000000 375)) {(Array U64)}]
+      [b (collect (iterator/range 0 1001000 375)) {(Array U64)}])
     (assert-ne? (hash hasher #t) (hash hasher #f))
     (assert-eq? (hash hasher #t) (hash hasher #t))
     (assert-eq? (hash hasher a) (hash hasher a))
@@ -18,26 +19,28 @@
     (assert-ne? (hash hasher unit) (hash (new) unit))
     (assert-ne? (hash hasher a) (hash (new) a)))
 
-  (let* ([chars (collect (string/chars "abcdefghijklmnopqrstuvwxyz")) {(Array Char)}]
-         [words (|> chars
-                    (it/flat-map (case1 (let a) (it/map [^1 (: a %1)] chars)))
-                    (it/flat-map (case1 (: (let a) (let b)) (it/map [^1 (: a b %1)] chars)))
-                    (it/flat-map (case1 (: (let a) (let b) (let c)) (it/map [^1 (: a b c %1)] chars)))
-                    (it/map (case1 (: (let a) (let b) (let c) (let d))
-                      (string a b c d d c b a a a b b c c d d)))
-                    collect) {(Array String)}]
-         [collisions-count (ref 0)])
-      ; 100 iteration
+  (let* (
+      [chars (collect (string/chars "abcdefghijklmnopqrstuvwxyz")) {(Array Char)}]
+      [words
+        (|> chars
+            (it/flat-map (case1 (let a) (it/map [^1 (: a %1)] chars)))
+            (it/flat-map (case1 (: (let a) (let b)) (it/map [^1 (: a b %1)] chars)))
+            (it/flat-map (case1 (: (let a) (let b) (let c)) (it/map [^1 (: a b c %1)] chars)))
+            (it/map (case1 (: (let a) (let b) (let c) (let d)) (string a b c d d c b a a a b b c c d d)))
+            collect) {(Array String)}]
+      [collisions-count (ref 0)])
+    ; 100 iteration
     (for (let i) (iterator/range 0 100 1)
-      (let* ([map ord-map/empty]
-             [hasher (new)])
-        (for (: (let j) (let word)) (it/with-index words)
-          ; p(118, 10000) is almost equal to 0.5 https://en.wikipedia.org/wiki/Birthday_problem
-          (when (eq? (% (+ i j) (/ (* 27 27 27 27) 118)) 0)
-            (let* ([h (% (hash hasher word) 10000)]
-                   [v (match (ord-map/get? h map) [none 0] [(some (let n)) (+ n 1)])])
-              (ord-map/insert! h v map))))
-        (set! collisions-count (+ ~collisions-count (|> map ord-map/values it/sum)))))
+      @let1 map ord-map/empty
+      @let1 hasher (new)
+      (for (: (let j) (let word)) (it/with-index words)
+        ; p(118, 10000) is almost equal to 0.5 https://en.wikipedia.org/wiki/Birthday_problem
+        (when (eq? (% (+ i j) (/ (* 27 27 27 27) 118)) 0)
+          @let1 h (% (hash hasher word) 10000)
+          @let1 v (match (ord-map/get? h map) [none 0] [(some (let n)) (+ n 1)])
+          (ord-map/insert! h v map)))
+      (set! collisions-count (+ ~collisions-count (|> map ord-map/values it/sum))))
+
     (assert (< ~collisions-count 65))))
 
 (function (h a)

@@ -9,25 +9,25 @@
 (export it/_ ZipEither zip-either:_ _.ZipEither)
 
 (function (it/count it) {(forall T A) (-> (T A) U64) (where (Iterate T))}
-  (let1 c (ref 0)
-    (for _ it (set! c (+ ~c 1)))
-    ~c))
+  @let1 c (ref 0)
+  (for _ it (set! c (+ ~c 1)))
+  ~c)
 
 (function (it/first? it) {(forall T A) (-> (T A) (Option A)) (where (Iterate T))}
   (for (let x) it (return (some x)))
   none)
 
 (function (it/at index it) {(forall T A) (-> U64 (T A) (Option A)) (where (Iterate T))}
-  (let1 i (ref index)
-    (for (let x) it
-      (if (= ~i 0)
-        (return (some x))
-        (set! i (- ~i 1))))
-    none))
+  @let1 i (ref index)
+  (for (let x) it
+    (if (= ~i 0)
+      (return (some x))
+      (set! i (- ~i 1))))
+  none)
 
 (function (it/chain it-a it-b) {(forall T S A) (-> (T A) (S A) (Iterator A)) (where (Iterate T) (Iterate S))}
-  (let1 s (ref (chain:a (iterate it-a) it-b))
-    (iterator/new [^0 (chain/next! s)])))
+  @let1 s (ref (chain:a (iterate it-a) it-b))
+  (iterator/new [^0 (chain/next! s)]))
 
 (value-data (Chain T A)
   (chain:a (Iterator A) (T A))
@@ -55,24 +55,27 @@
       (err "Expected (it/concat iterable ...)")]))
 
 (function (it/zip it-a it-b) {(forall T S A B) (-> (T A) (S B) (Iterator (: A B))) (where (Iterate T) (Iterate S))}
-  (let ([it-a (iterate it-a)]
-        [it-b (iterate it-b)])
-    (iterator/new [^0 (some (: (iterator/next! it-a)? (iterator/next! it-b)?))])))
+  @let (
+    [it-a (iterate it-a)]
+    [it-b (iterate it-b)])
+  (iterator/new [^0 (some (: (iterator/next! it-a)? (iterator/next! it-b)?))]))
 
 (function (it/zip* f it-a it-b) {(forall T S A B C) (-> (-> A B C) (T A) (S B) (Iterator C)) (where (Iterate T) (Iterate S))}
-  (let ([it-a (iterate it-a)]
-        [it-b (iterate it-b)])
-    (iterator/new [^0 (some (f (iterator/next! it-a)? (iterator/next! it-b)?))])))
+  @let (
+    [it-a (iterate it-a)]
+    [it-b (iterate it-b)])
+  (iterator/new [^0 (some (f (iterator/next! it-a)? (iterator/next! it-b)?))]))
 
 (function (it/zip-either it-a it-b) {(forall T S A B) (-> (T A) (S B) (Iterator (ZipEither A B))) (where (Iterate T) (Iterate S))}
-  (let ([it-a (iterate it-a)]
-        [it-b (iterate it-b)])
-    (iterator/new (lambda ()
-      (match (: (iterator/next! it-a) (iterator/next! it-b))
-        [(: (some (let a)) (some (let b))) (some (zip-either:both a b))]
-        [(: (some (let a)) none) (some (zip-either:left a))]
-        [(: none (some (let b))) (some (zip-either:right b))]
-        [_ none])))))
+  @let (
+    [it-a (iterate it-a)]
+    [it-b (iterate it-b)])
+  (iterator/new (lambda ()
+    (match (: (iterator/next! it-a) (iterator/next! it-b))
+      [(: (some (let a)) (some (let b))) (some (zip-either:both a b))]
+      [(: (some (let a)) none) (some (zip-either:left a))]
+      [(: none (some (let b))) (some (zip-either:right b))]
+      [_ none]))))
 
 (derive (Eq DebugDisplay) value-data (ZipEither A B)
   (zip-either:left A)
@@ -80,77 +83,83 @@
   (zip-either:both A B))
 
 (function (it/map f it) {(forall T A B) (-> (-> A B) (T A) (Iterator B)) (where (Iterate T))}
-  (let1 it (iterate it)
-    (iterator/new [^0 (some (f (iterator/next! it)?))])))
+  @let1 it (iterate it)
+  (iterator/new [^0 (some (f (iterator/next! it)?))]))
 
 (function (it/filter f it) {(forall T A) (-> (-> A Bool) (T A) (Iterator A)) (where (Iterate T))}
-  (let1 it (iterate it)
-    (iterator/new (lambda ()
-      (while-match1 (some (let a)) (iterator/next! it)
-        (when (f a) (return (some a))))
-      none))))
+  @let1 it (iterate it)
+  (iterator/new (lambda ()
+    (while-match1 (some (let a)) (iterator/next! it)
+      (when (f a) (return (some a))))
+    none)))
 
 (function (it/filter-map f it) {(forall T A B) (-> (-> A (Option B)) (T A) (Iterator B)) (where (Iterate T))}
-  (let1 it (iterate it)
-    (iterator/new (lambda ()
-      (while-match1 (some (let a)) (iterator/next! it)
-        (when-match1 (let b (some _)) (f a) (return b)))
-      none))))
+  @let1 it (iterate it)
+  (iterator/new (lambda ()
+    (while-match1 (some (let a)) (iterator/next! it)
+      (when-match1 (let b (some _)) (f a) (return b)))
+    none)))
 
 (function (it/with-index it) {(forall T A) (-> (T A) (Iterator (: U64 A))) (where (Iterate T))}
-  (let ([it (iterate it)]
-        [index (ref 0)])
-    (iterator/new (lambda ()
-      (let ([v (iterator/next! it)?]
-            [i ~index])
-        (set! index (+ ~index 1))
-        (some (: i v)))))))
+  @let (
+    [it (iterate it)]
+    [index (ref 0)])
+  (iterator/new (lambda ()
+    @let (
+      [v (iterator/next! it)?]
+      [i ~index])
+    (set! index (+ ~index 1))
+    (some (: i v)))))
 
 (function (it/take n it) {(forall T A) (-> U64 (T A) (Iterator A)) (where (Iterate T))}
-  (let ([it (iterate it)]
-        [index (ref n)])
-    (iterator/new (lambda ()
-      (if (< 0 ~index)
-        (begin
-          (set! index (- ~index 1))
-          (iterator/next! it))
-        none)))))
+  @let (
+    [it (iterate it)]
+    [index (ref n)])
+  (iterator/new (lambda ()
+    (if (< 0 ~index)
+      (begin
+        (set! index (- ~index 1))
+        (iterator/next! it))
+      none))))
 
 (function (it/skip n it) {(forall T A) (-> U64 (T A) (Iterator A)) (where (Iterate T))}
-  (let ([it (iterate it)]
-        [index (ref n)])
-    (iterator/new (lambda ()
-      (while (< 0 ~index)
-        (iterator/next! it)?
-        (set! index (- ~index 1)))
-      (iterator/next! it)))))
+  @let (
+    [it (iterate it)]
+    [index (ref n)])
+  (iterator/new (lambda ()
+    (while (< 0 ~index)
+      (iterator/next! it)?
+      (set! index (- ~index 1)))
+    (iterator/next! it))))
 
 (function (it/take-while f it) {(forall T A) (-> (-> A Bool) (T A) (Iterator A)) (where (Iterate T))}
-  (let ([it (iterate it)]
-        [invalidated? (ref #f)])
-    (iterator/new (lambda ()
-      (when ~invalidated? (return none))
-      (if-match1 (some (let a)) (iterator/next! it)
-        (if (f a)
-          (some a)
-          (begin
-            (set! invalidated? #t)
-            none))
-        none)))))
+  @let (
+    [it (iterate it)]
+    [invalidated? (ref #f)])
+  (iterator/new (lambda ()
+    (when ~invalidated? (return none))
+    (if-match1 (some (let a)) (iterator/next! it)
+      (if (f a)
+        (some a)
+        (begin
+          (set! invalidated? #t)
+          none))
+      none))))
 
 (function (it/skip-while f it) {(forall T A) (-> (-> A Bool) (T A) (Iterator A)) (where (Iterate T))}
-  (let ([it (iterate it)]
-        [activated? (ref #f)])
-    (iterator/new (lambda ()
-      (when (not ~activated?)
-        (set! activated? #t)
-        (while-match1 (some (let a)) (iterator/next! it)
-          (when (not (f a)) (return (some a)))))
-      (iterator/next! it)))))
+  @let (
+    [it (iterate it)]
+    [activated? (ref #f)])
+  (iterator/new (lambda ()
+    (when (not ~activated?)
+      (set! activated? #t)
+      (while-match1 (some (let a)) (iterator/next! it)
+        (when (not (f a)) (return (some a)))))
+    (iterator/next! it))))
 
 (function (it/flat-map f it) {(forall T S A B) (-> (-> A (S B)) (T A) (Iterator B)) (where (Iterate T) (Iterate S))}
-  (let1 s (ref (flat-map: f (iterate it) none))
-    (iterator/new [^0 (flat-map/next! s)])))
+  @let1 s (ref (flat-map: f (iterate it) none))
+  (iterator/new [^0 (flat-map/next! s)]))
 
 (value-data (FlatMap T A B)
   (flat-map: (-> A (T B)) (Iterator A) (Option (Iterator B))))
@@ -173,9 +182,9 @@
           (flat-map/next! s)])]))
 
 (function (it/fold f init it) {(forall T A B) (-> (-> B A B) B (T A) B) (where (Iterate T))}
-  (let1 ret (ref init)
-    (for (let a) it (set! ret (f ~ret a)))
-    ~ret))
+  @let1 ret (ref init)
+  (for (let a) it (set! ret (f ~ret a)))
+  ~ret)
 
 (function (it/all? f it) {(forall T A) (-> (-> A Bool) (T A) Bool) (where (Iterate T))}
   (for (let a) it
@@ -198,11 +207,11 @@
   none)
 
 (function (it/find-index? f it) {(forall T A) (-> (-> A Bool) (T A) (Option U64)) (where (Iterate T))}
-  (let1 i (ref 0)
-    (for (let a) it
-      (when (f a) (return (some ~i)))
-      (set! i (+ ~i 1)))
-  none))
+  @let1 i (ref 0)
+  (for (let a) it
+    (when (f a) (return (some ~i)))
+    (set! i (+ ~i 1)))
+  none)
 
 (function (it/sum it) {(forall T A) (-> (T A) A) (where (Iterate T) (Add A) (Zero A))}
   (it/fold [^2 (+ %1 %2)] zero it))
@@ -211,21 +220,21 @@
   (it/fold [^2 (* %1 %2)] one it))
 
 (function (it/traverse-option f it) {(forall T A B) (-> (-> A (Option B)) (T A) (Option (Vector B))) (where (Iterate T))}
-  (let1 buf vector/empty
-    (for (let a) it
-      (match (f a)
-        [(some (let a))
-          (vector/push! a buf)]
-        [none
-          (return none)]))
-    (some buf)))
+  @let1 buf vector/empty
+  (for (let a) it
+    (match (f a)
+      [(some (let a))
+        (vector/push! a buf)]
+      [none
+        (return none)]))
+  (some buf))
 
 (function (it/traverse-result f it) {(forall T A B E) (-> (-> A (Result B E)) (T A) (Result (Vector B) E)) (where (Iterate T))}
-  (let1 buf vector/empty
-    (for (let a) it
-      (match (f a)
-        [(ok (let a))
-          (vector/push! a buf)]
-        [(err (let e))
-          (return (err e))]))
-    (ok buf)))
+  @let1 buf vector/empty
+  (for (let a) it
+    (match (f a)
+      [(ok (let a))
+        (vector/push! a buf)]
+      [(err (let e))
+        (return (err e))]))
+  (ok buf))

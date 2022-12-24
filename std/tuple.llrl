@@ -50,8 +50,8 @@
             (DeepCopy (: ($for1 $p $params $p)))
             (where ($for1 $p $params (DeepCopy $p)))
     ($function (deep-copy a)
-      (with1 (: ($for1 $p $params (let ($symbol a. $p)))) a
-        (: ($for1 $p $params (deep-copy ($symbol a. $p)))))))
+      @with1 (: ($for1 $p $params (let ($symbol a. $p)))) a
+      (: ($for1 $p $params (deep-copy ($symbol a. $p))))))
 
   (instance ($symbol Default. $ty)
             (forall ($for1 $p $params $p))
@@ -65,31 +65,33 @@
             (DebugDisplay (: ($for1 $p $params $p)))
             (where ($for1 $p $params (DebugDisplay $p)))
     (function (debug-display! w a)
-      (with1 (: ($for1 $p $params (let ($symbol a. $p)))) a
-        (display-all! w "(:" ($for1 $p $params " " (debug ($symbol a. $p))) ")"))))
+      @with1 (: ($for1 $p $params (let ($symbol a. $p)))) a
+      (display-all! w "(:" ($for1 $p $params " " (debug ($symbol a. $p))) ")")))
 
   (instance ($symbol Eq. $ty)
             (forall ($for1 $p $params $p))
             (Eq (: ($for1 $p $params $p)))
             (where ($for1 $p $params (Eq $p)))
     ($function (eq? a b)
-      (with ([(: ($for1 $p $params (let ($symbol a. $p)))) a]
-             [(: ($for1 $p $params (let ($symbol b. $p)))) b])
-        (and ($for1 $p $params (eq? ($symbol a. $p) ($symbol b. $p)))))))
+      @with (
+        [(: ($for1 $p $params (let ($symbol a. $p)))) a]
+        [(: ($for1 $p $params (let ($symbol b. $p)))) b])
+      (and ($for1 $p $params (eq? ($symbol a. $p) ($symbol b. $p))))))
 
   (instance ($symbol Ord. $ty)
             (forall ($for1 $p $params $p))
             (Ord (: ($for1 $p $params $p)))
             (where ($for1 $p $params (Ord $p)))
     ($function (compare a b)
-      (with ([(: ($for1 $p $params (let ($symbol a. $p)))) a]
-             [(: ($for1 $p $params (let ($symbol b. $p)))) b])
-        (ordering/or ($for1 $p $params (compare ($symbol a. $p) ($symbol b. $p)))))))
+      @with (
+        [(: ($for1 $p $params (let ($symbol a. $p)))) a]
+        [(: ($for1 $p $params (let ($symbol b. $p)))) b])
+      (ordering/or ($for1 $p $params (compare ($symbol a. $p) ($symbol b. $p))))))
 
   (instance ($symbol Hash. $ty)
             (forall ($for1 $p $params $p))
             (Hash (: ($for1 $p $params $p)))
             (where ($for1 $p $params (Hash $p)))
     ($function (hash! s a)
-      (with1 (: ($for1 $p $params (let ($symbol a. $p)))) a
-        (hash-all! s ($for1 $p $params ($symbol a. $p)))))))
+      @with1 (: ($for1 $p $params (let ($symbol a. $p)))) a
+      (hash-all! s ($for1 $p $params ($symbol a. $p))))))

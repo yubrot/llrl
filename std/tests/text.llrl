@@ -1,9 +1,9 @@
 (import "std/text" _)
 (println! "std/tests/text")
 
-(let ([a text/empty]
-      [b (text/from-string "hello")]
-      [c (text/from-bytes (array 104 101 108 108 111))])
+(let1 a text/empty
+  @let1 b (text/from-string "hello")
+  @let1 c (text/from-bytes (array 104 101 108 108 111))
   (assert-eq? default a)
   (assert-eq? b c)
   (assert-ne? a b)
@@ -26,29 +26,29 @@
 (let1 a (string "foo" (text "bar") "baz")
   (assert-eq? a "foobarbaz"))
 
-(let* ([a (text "foobar")]
-       [b (text/consume! 3 a)]
-       [c (text/consume-all! a)])
+(let1 a (text "foobar")
+  @let1 b (text/consume! 3 a)
+  @let1 c (text/consume-all! a)
   (text/push! "baz" a)
   (assert-eq? a (text "baz"))
   (assert-eq? b "foo")
   (assert-eq? c "bar"))
 
-(let* ([a (text "foo")]
-       [b (text/move! a)])
+(let1 a (text "foo")
+  @let1 b (text/move! a)
   (text/push! "bar" a)
   (text/push! "baz" b)
   (assert-eq? a (text "bar"))
   (assert-eq? b (text "foobaz")))
 
-(let* ([a (text "foo")]
-       [b (text/copy-to-string a)])
+(let1 a (text "foo")
+  @let1 b (text/copy-to-string a)
   (text/push! "bar" a)
   (assert-eq? a (text "foobar"))
   (assert-eq? b "foo"))
 
-(let* ([a (text "foo")]
-       [b (shallow-copy a)])
+(let1 a (text "foo")
+  @let1 b (shallow-copy a)
   (text/push! "bar" a)
   (text/push! "baz" b)
   (assert-eq? a (text "foobar"))

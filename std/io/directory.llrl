@@ -13,24 +13,24 @@
   (directory: (Ref (Ptr <Dir>))))
 
 (function (directory/open! pathname) {(-> String (Result Directory IoError))}
-  (let1 handle (<opendir> (string/c-compatible-ptr pathname))
-    (if (ne? handle ptr:null)
-      (ok (directory: (ref handle)))
-      (err (io-error/from-current-errno)))))
+  @let1 handle (<opendir> (string/c-compatible-ptr pathname))
+  (if (ne? handle ptr:null)
+    (ok (directory: (ref handle)))
+    (err (io-error/from-current-errno))))
 
 (function directory/closed {Directory}
   (directory: (ref ptr:null)))
 
 (function (directory/next! dir) {(-> Directory (Result (Option String) IoError))}
-  (with1 (directory: (let handle)) dir
-    (if (eq? ~handle ptr:null)
-      (err io-error:closed)
-      (let1 entry (<readdir> ~handle)
-        (match entry
-          ["" (ok none)]
-          ["." (directory/next! dir)]
-          [".." (directory/next! dir)]
-          [(let s) (ok (some s))])))))
+  @with1 (directory: (let handle)) dir
+  (if (eq? ~handle ptr:null)
+    (err io-error:closed)
+    (let1 entry (<readdir> ~handle)
+      (match entry
+        ["" (ok none)]
+        ["." (directory/next! dir)]
+        [".." (directory/next! dir)]
+        [(let s) (ok (some s))]))))
 
 (function (directory/entries! dir) {(-> Directory (Iterator String))}
   (iterator/new (lambda ()
@@ -39,14 +39,14 @@
       [(err _) none]))))
 
 (function (directory/close! dir) {(-> Directory (Result unit IoError))}
-  (with1 (directory: (let handle)) dir
-    (if (eq? ~handle ptr:null)
-      (ok unit) ; Already closed; do nothing
-      (let1 close-result (<closedir> ~handle)
-        (set! handle ptr:null) ; the handle is no longer available even if close failed
-        (if (eq? close-result 0)
-          (ok unit)
-          (err (io-error/from-current-errno)))))))
+  @with1 (directory: (let handle)) dir
+  (if (eq? ~handle ptr:null)
+    (ok unit) ; Already closed; do nothing
+    (let1 close-result (<closedir> ~handle)
+      (set! handle ptr:null) ; the handle is no longer available even if close failed
+      (if (eq? close-result 0)
+        (ok unit)
+        (err (io-error/from-current-errno))))))
 
 ; Checks whether the directory is closed.
 (function (directory/closed? dir) {(-> Directory Bool)}
@@ -64,10 +64,10 @@
     [_ (err (io-error/from-current-errno))]))
 
 (function (with-directory! pathname f) {(forall A) (-> String (-> Directory (Result A IoError)) (Result A IoError))}
-  (let* ([handle (directory/open! pathname)!]
-         [ret (f handle)])
-    (ignore (directory/close! handle))
-    ret))
+  @let1 handle (directory/open! pathname)!
+  @let1 ret (f handle)
+  (ignore (directory/close! handle))
+  ret)
 
 (data <Dir>)
 (c-function <opendir> {(-> (Ptr U8) (Ptr <Dir>))} "opendir")

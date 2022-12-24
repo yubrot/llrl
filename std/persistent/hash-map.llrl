@@ -33,8 +33,8 @@
   (m: (xx-hasher/new) 0 tree/empty))
 
 (function (hash-map/length map) {(forall K V) (-> (HashMap K V) U64)}
-  (with1 (m: _ (let length) _) map
-    length))
+  @with1 (m: _ (let length) _) map
+  length)
 
 (function (hash-map/empty? map) {(forall K V) (-> (HashMap K V) Bool)}
   (eq? 0 (hash-map/length map)))
@@ -43,36 +43,37 @@
   (is? (some _) (hash-map/get? key map)))
 
 (function (hash-map/get? key map) {(forall K V) (-> K (HashMap K V) (Option V)) (where (Eq K) (Hash K))}
-  (with1 (m: (let hasher) _ (let tree)) map
-    (tree/get? (hash hasher key) key tree)))
+  @with1 (m: (let hasher) _ (let tree)) map
+  (tree/get? (hash hasher key) key tree))
 
 (function (hash-map/insert key value map) {(forall K V) (-> K V (HashMap K V) (HashMap K V)) (where (Eq K) (Hash K))}
-  (with ([(m: (let hasher) (let length) (let tree)) map]
-         [(: (let replaced-value) (let tree)) (tree/insert (hash hasher key) key value tree)])
-    (m: hasher (if (is? none replaced-value) (+ length 1) length) tree)))
+  @with (
+    [(m: (let hasher) (let length) (let tree)) map]
+    [(: (let replaced-value) (let tree)) (tree/insert (hash hasher key) key value tree)])
+  (m: hasher (if (is? none replaced-value) (+ length 1) length) tree))
 
 (function (hash-map/insert-elem elem map) {(forall K V) (-> (: K V) (HashMap K V) (HashMap K V)) (where (Eq K) (Hash K))}
-  (with1 (: (let key) (let value)) elem
-    (hash-map/insert key value map)))
+  @with1 (: (let key) (let value)) elem
+  (hash-map/insert key value map))
 
 (function (hash-map/remove key map) {(forall K V) (-> K (HashMap K V) (HashMap K V)) (where (Eq K) (Hash K))}
-  (with1 (m: (let hasher) (let length) (let tree)) map
-    (match (tree/remove (hash hasher key) key tree)
-      [(some (: _ _ (let tree))) (m: hasher (- length 1) tree)]
-      [none map])))
+  @with1 (m: (let hasher) (let length) (let tree)) map
+  (match (tree/remove (hash hasher key) key tree)
+    [(some (: _ _ (let tree))) (m: hasher (- length 1) tree)]
+    [none map]))
 
 ; Currently we are unable to make this implementation an instance of std/iterator/Collect.
 ; In order to do so, we need to extend llrl type system to support associated types or fundeps.
 (function (hash-map/collect t) {(forall T K V) (-> (T (: K V)) (HashMap K V)) (where (Iterate T) (Eq K) (Hash K))}
-  (let1 map (ref hash-map/empty)
-    (for (: (let k) (let v)) t
-      (set! map (hash-map/insert k v ~map)))
-    ~map))
+  @let1 map (ref hash-map/empty)
+  (for (: (let k) (let v)) t
+    (set! map (hash-map/insert k v ~map)))
+  ~map)
 
 (function (hash-map/elems map) {(forall K V) (-> (HashMap K V) (Iterator (: K V)))}
-  (with1 (m: _ _ (let tree)) map
-    (let1 cursor (cursor/new tree)
-      (iterator/new [^0 (cursor/next! cursor)]))))
+  @with1 (m: _ _ (let tree)) map
+  @let1 cursor (cursor/new tree)
+  (iterator/new [^0 (cursor/next! cursor)]))
 
 (function (hash-map/keys map) {(forall K V) (-> (HashMap K V) (Iterator K))}
   (it/map (case1 (: (let key) _) key) (hash-map/elems map)))
@@ -98,148 +99,154 @@
 
 (function (tree/new-child hash key value collision-elems)
   {(forall K V) (-> U64 K V (Option (Array (: K V))) (Tree K V))}
-  (with1 (: (let bit-index) (let hash)) (consume-hash hash)
-    (match collision-elems
-      [none
-        (tree: (add 0 bit-index) 0 (ptr:non-null (: hash key value)) ptr:null)]
-      [(some (let elems))
-        (tree: (add 0 bit-index) (add 0 bit-index) (ptr:non-null (: hash key value)) (ptr:non-null (tree/from-collision-elems elems)))])))
+  @with1 (: (let bit-index) (let hash)) (consume-hash hash)
+  (match collision-elems
+    [none
+      (tree: (add 0 bit-index) 0 (ptr:non-null (: hash key value)) ptr:null)]
+    [(some (let elems))
+      (tree: (add 0 bit-index) (add 0 bit-index) (ptr:non-null (: hash key value)) (ptr:non-null (tree/from-collision-elems elems)))]))
 
 (function (tree/insert hash key value tree) {(forall K V) (-> U64 K V (Tree K V) (: (Option V) (Tree K V))) (where (Eq K))}
-  (with ([(tree: (let emap) (let cmap) (let elems) (let children)) tree]
-         [(: (let bit-index) (let hash)) (consume-hash hash)])
-    (match (tree/search? bit-index tree)
-      [(some (:found-elem (: (let eh) (let ek) (let ev))))
-        (if (eq? eh hash)
-          ; Exist or Collision
-          (if (eq? ek key)
-            ; Exist at elems[bit-index]
-            (: (some ev) (tree: emap cmap (buckets-update emap bit-index (: eh ek value) elems) children))
-            ; Collision
-            (match (tree/collision-elems? bit-index tree)
-              [none
-                ; Need a new collision tree
-                (let1 collision-tree (tree/from-collision-elems (array (: key value)))
-                  (with1 (: (let cmap) (let children)) (buckets-add cmap bit-index collision-tree children)
-                    (: none (tree: emap cmap elems children))))]
-              [(some (let collision-elems))
-                (let1 i (ref 0)
-                  (while (< ~i (array/length collision-elems))
-                    (with1 (: (let ek) (let ev)) (unsafe-get collision-elems[~i])
-                      (when (eq? ek key)
-                        ; Exist at collision-elems[~i]
-                        (let1 collision-tree (tree/from-collision-elems (array/update ~i (: ek value) collision-elems))
-                          (return (: (some ev) (tree: emap cmap elems (buckets-update cmap bit-index collision-tree children)))))))
-                    (set! i (+ ~i 1))))
-                ; There is no value for this key in elems[bit-index] or in collision-elems. Add a new element to collision-elems
-                (let1 collision-tree (tree/from-collision-elems (array/push (: key value) collision-elems))
-                  (: none (tree: emap cmap elems (buckets-update cmap bit-index collision-tree children))))]))
-          ; Need a new child tree
-          (with ([(let collision-elems) (tree/collision-elems? bit-index tree)] ; the new child also need to take over collision-elems
-                 [(let child-tree) (tree/new-child eh ek ev collision-elems)] ; NOTE: It would be possible to reduce one intermediate allocation here, but it isn't easy
-                 [(: _ (let child-tree)) (tree/insert hash key value child-tree)]
-                 [(: (let emap) (let elems)) (buckets-remove emap bit-index elems)] ; remove the element that was taken by child-tree
-                 [(: (let cmap) (let children))
-                  (if (is? none collision-elems)
-                    (buckets-add cmap bit-index child-tree children)                ; add child-tree
-                    (: cmap (buckets-update cmap bit-index child-tree children)))]) ; overwrite collision-elems with child-tree
-            (: none (tree: emap cmap elems children))))]
-      [(some (:found-child (let child-tree)))
-        (with1 (: (let replaced-value) (let child-tree)) (tree/insert hash key value child-tree)
-          (: replaced-value (tree: emap cmap elems (buckets-update cmap bit-index child-tree children))))]
-      [none
-        (with1 (: (let emap) (let elems)) (buckets-add emap bit-index (: hash key value) elems)
-          (: none (tree: emap cmap elems children)))])))
+  @with (
+    [(tree: (let emap) (let cmap) (let elems) (let children)) tree]
+    [(: (let bit-index) (let hash)) (consume-hash hash)])
+  (match (tree/search? bit-index tree)
+    [(some (:found-elem (: (let eh) (let ek) (let ev))))
+      (if (eq? eh hash)
+        ; Exist or Collision
+        (if (eq? ek key)
+          ; Exist at elems[bit-index]
+          (: (some ev) (tree: emap cmap (buckets-update emap bit-index (: eh ek value) elems) children))
+          ; Collision
+          (match (tree/collision-elems? bit-index tree)
+            [none
+              ; Need a new collision tree
+              @let1 collision-tree (tree/from-collision-elems (array (: key value)))
+              @with1 (: (let cmap) (let children)) (buckets-add cmap bit-index collision-tree children)
+              (: none (tree: emap cmap elems children))]
+            [(some (let collision-elems))
+              @let1 i (ref 0)
+              (while (< ~i (array/length collision-elems))
+                @with1 (: (let ek) (let ev)) (unsafe-get collision-elems[~i])
+                (when (eq? ek key)
+                  ; Exist at collision-elems[~i]
+                  @let1 collision-tree (tree/from-collision-elems (array/update ~i (: ek value) collision-elems))
+                  (return (: (some ev) (tree: emap cmap elems (buckets-update cmap bit-index collision-tree children)))))
+              (set! i (+ ~i 1)))
+              ; There is no value for this key in elems[bit-index] or in collision-elems. Add a new element to collision-elems
+              @let1 collision-tree (tree/from-collision-elems (array/push (: key value) collision-elems))
+              (: none (tree: emap cmap elems (buckets-update cmap bit-index collision-tree children)))]))
+        ; Need a new child tree
+        (begin
+          @let1 collision-elems (tree/collision-elems? bit-index tree) ; the new child also need to take over collision-elems
+          @let1 child-tree (tree/new-child eh ek ev collision-elems) ; NOTE: It would be possible to reduce one intermediate allocation here, but it isn't easy
+          @with1 (: _ (let child-tree)) (tree/insert hash key value child-tree)
+          @with1 (: (let emap) (let elems)) (buckets-remove emap bit-index elems) ; remove the element that was taken by child-tree
+          @with1 (: (let cmap) (let children))
+            (if (is? none collision-elems)
+              (buckets-add cmap bit-index child-tree children)              ; add child-tree
+              (: cmap (buckets-update cmap bit-index child-tree children))) ; overwrite collision-elems with child-tree
+          (: none (tree: emap cmap elems children))))]
+    [(some (:found-child (let child-tree)))
+      @with1 (: (let replaced-value) (let child-tree)) (tree/insert hash key value child-tree)
+      (: replaced-value (tree: emap cmap elems (buckets-update cmap bit-index child-tree children)))]
+    [none
+      @with1 (: (let emap) (let elems)) (buckets-add emap bit-index (: hash key value) elems)
+      (: none (tree: emap cmap elems children))]))
 
 (function (tree/remove hash key tree) {(forall K V) (-> U64 K (Tree K V) (Option (: V Bool (Tree K V)))) (where (Eq K))}
-  (with ([(tree: (let emap) (let cmap) (let elems) (let children)) tree]
-         [(: (let bit-index) (let hash)) (consume-hash hash)])
-    (match (tree/search? bit-index tree)?
-      [(:found-elem (: (let eh) (let ek) (let ev)))
-        (when (ne? eh hash) (return none))
-        (if (eq? ek key)
-          ; Removing elems[bit-index]
-          (if-match1 (some (let collision-elems)) (tree/collision-elems? bit-index tree)
-            ; Need to shift an element from collision-elems
-            (with ([(: (: (let next-ek) (let next-ev)) (let collision-elems)) (array/split-first collision-elems)] ; [next, ...collision-elems] <- collision-elems
-                   [(let elems) (buckets-update emap bit-index (: eh next-ek next-ev) elems)]                      ; elems[bit-index] <- next
-                   [(: (let cmap) (let children))
-                    (if (array/empty? collision-elems)
-                      (buckets-remove cmap bit-index children)
-                      (: cmap (buckets-update cmap bit-index (tree/from-collision-elems collision-elems) children)))])
-              (some (: ev #f (tree: emap cmap elems children))))
-            ; Just remove elems[bit-index]
-            (with1 (: (let emap) (let elems)) (buckets-remove emap bit-index elems)
-              (let1 merge? (and (eq? (buckets-length emap) 1) (eq? (bw& cmap (bw! emap)) 0))
-                (some (: ev merge? (tree: emap cmap elems children))))))
-          ; Check collision-elems
-          (let ([collision-elems (tree/collision-elems? bit-index tree)?]
-                [i (ref 0)])
-            (while (< ~i (array/length collision-elems))
-              (with1 (: (let ek) (let ev)) (unsafe-get collision-elems[~i])
-                (when (eq? ek key)
-                  ; Removing collision-elems[~i]
-                  (with1
-                    (: (let cmap) (let children))
-                    (let1 collision-elems (array/remove ~i collision-elems)
-                      (if (array/empty? collision-elems)
-                        (buckets-remove cmap bit-index children)
-                        (: cmap (buckets-update cmap bit-index (tree/from-collision-elems collision-elems) children))))
-                    (return (some (: ev #f (tree: emap cmap elems children)))))))
-              (set! i (+ ~i 1)))
-            none))]
-      [(:found-child (let child-tree))
-        (with1 (: (let removed-value) (let merge?) (let child-tree)) (tree/remove hash key child-tree)?
-          (if merge?
-            (with ([(tree: (let child-emap) (let child-cmap) (let child-elems) (let child-children)) child-tree]
-                   [(: (let ch) (let ck) (let cv)) (ptr/load-at 0 child-elems)]
-                   [(let ch) (restore-hash (bit-index: child-emap) ch)]
-                   [(: (let emap) (let elems)) (buckets-add emap bit-index (: ch ck cv) elems)]
-                   [(: (let cmap) (let children))
-                    (if (eq? 0 child-cmap)
-                      ; remove this child
-                      (buckets-remove cmap bit-index children)
-                      ; overwrite this child with the child's collision-elems
-                      (: cmap (buckets-update cmap bit-index (ptr/load-at 0 child-children) children)))]
-                   [(let merge?) (and (eq? (buckets-length emap) 1) (eq? (bw& cmap (bw! emap)) 0))])
-                (some (: removed-value merge? (tree: emap cmap elems children))))
-            (let1 children (buckets-update cmap bit-index child-tree children)
-              (some (: removed-value #f (tree: emap cmap elems children))))))])))
+  @with (
+    [(tree: (let emap) (let cmap) (let elems) (let children)) tree]
+    [(: (let bit-index) (let hash)) (consume-hash hash)])
+  (match (tree/search? bit-index tree)?
+    [(:found-elem (: (let eh) (let ek) (let ev)))
+      (when (ne? eh hash) (return none))
+      (if (eq? ek key)
+        ; Removing elems[bit-index]
+        (if-match1 (some (let collision-elems)) (tree/collision-elems? bit-index tree)
+          ; Need to shift an element from collision-elems
+          (begin
+            @with1 (: (: (let next-ek) (let next-ev)) (let collision-elems))
+              (array/split-first collision-elems)                                     ; [next, ...collision-elems] <- collision-elems
+            @let1 elems (buckets-update emap bit-index (: eh next-ek next-ev) elems)  ; elems[bit-index] <- next
+            @with1 (: (let cmap) (let children))
+              (if (array/empty? collision-elems)
+              (buckets-remove cmap bit-index children)
+              (: cmap (buckets-update cmap bit-index (tree/from-collision-elems collision-elems) children)))
+            (some (: ev #f (tree: emap cmap elems children))))
+          ; Just remove elems[bit-index]
+          (begin
+            @with1 (: (let emap) (let elems)) (buckets-remove emap bit-index elems)
+            @let1 merge? (and (eq? (buckets-length emap) 1) (eq? (bw& cmap (bw! emap)) 0))
+            (some (: ev merge? (tree: emap cmap elems children)))))
+        ; Check collision-elems
+        (begin
+          @let1 collision-elems (tree/collision-elems? bit-index tree)?
+          @let1 i (ref 0)
+          (while (< ~i (array/length collision-elems))
+            @with1 (: (let ek) (let ev)) (unsafe-get collision-elems[~i])
+            (when (eq? ek key)
+              ; Removing collision-elems[~i]
+              (begin
+                @let1 collision-elems (array/remove ~i collision-elems)
+                @with1 (: (let cmap) (let children))
+                  (if (array/empty? collision-elems)
+                    (buckets-remove cmap bit-index children)
+                    (: cmap (buckets-update cmap bit-index (tree/from-collision-elems collision-elems) children)))
+                (return (some (: ev #f (tree: emap cmap elems children))))))
+            (set! i (+ ~i 1)))
+          none))]
+    [(:found-child (let child-tree))
+      @with1 (: (let removed-value) (let merge?) (let child-tree)) (tree/remove hash key child-tree)?
+      (if merge?
+        (begin
+          @with1 (tree: (let child-emap) (let child-cmap) (let child-elems) (let child-children)) child-tree
+          @with1 (: (let ch) (let ck) (let cv)) (ptr/load-at 0 child-elems)
+          @let1 ch (restore-hash (bit-index: child-emap) ch)
+          @with1 (: (let emap) (let elems)) (buckets-add emap bit-index (: ch ck cv) elems)
+          @with1 (: (let cmap) (let children))
+            (if (eq? 0 child-cmap)
+              (buckets-remove cmap bit-index children)                                          ; remove this child
+              (: cmap (buckets-update cmap bit-index (ptr/load-at 0 child-children) children))) ; overwrite this child with the child's collision-elems
+          @let1 merge? (and (eq? (buckets-length emap) 1) (eq? (bw& cmap (bw! emap)) 0))
+          (some (: removed-value merge? (tree: emap cmap elems children))))
+        (let1 children (buckets-update cmap bit-index child-tree children)
+          (some (: removed-value #f (tree: emap cmap elems children)))))]))
 
 (function (tree/get? hash key tree) {(forall K V) (-> U64 K (Tree K V) (Option V)) (where (Eq K))}
-  (with1 (: (let bit-index) (let hash)) (consume-hash hash)
-    (match (tree/search? bit-index tree)?
-      [(:found-elem (: (let eh) (let ek) (let ev)))
-        (when (ne? eh hash) (return none))
+  @with1 (: (let bit-index) (let hash)) (consume-hash hash)
+  (match (tree/search? bit-index tree)?
+    [(:found-elem (: (let eh) (let ek) (let ev)))
+      (when (ne? eh hash) (return none))
+      (when (eq? ek key) (return (some ev)))
+      @let1 i (ref 0)
+      @let1 collision-elems (tree/collision-elems? bit-index tree)?
+      (while (< ~i (array/length collision-elems))
+        @with1 (: (let ek) (let ev)) (unsafe-get collision-elems[~i])
         (when (eq? ek key) (return (some ev)))
-        (let ([i (ref 0)]
-              [collision-elems (tree/collision-elems? bit-index tree)?])
-          (while (< ~i (array/length collision-elems))
-            (with1 (: (let ek) (let ev)) (unsafe-get collision-elems[~i])
-              (when (eq? ek key) (return (some ev))))
-            (set! i (+ ~i 1))))
-        none]
-      [(:found-child (let tree))
-        (tree/get? hash key tree)])))
+        (set! i (+ ~i 1)))
+      none]
+    [(:found-child (let tree))
+      (tree/get? hash key tree)]))
 
 (function (tree/search? bit-index tree) {(forall K V) (-> BitIndex (Tree K V) (Option (SearchResult K V)))}
-  (with1 (tree: (let emap) (let cmap) (let elems) (let children)) tree
-    (cond?
-      [(exists? emap bit-index) (:found-elem (buckets-get emap bit-index elems))]
-      [(exists? cmap bit-index) (:found-child (buckets-get cmap bit-index children))])))
+  @with1 (tree: (let emap) (let cmap) (let elems) (let children)) tree
+  (cond?
+    [(exists? emap bit-index) (:found-elem (buckets-get emap bit-index elems))]
+    [(exists? cmap bit-index) (:found-child (buckets-get cmap bit-index children))]))
 
 (value-data (SearchResult K V)
   (:found-elem (: U64 K V))
   (:found-child (Tree K V)))
 
 (function (tree/collision-elems? bit-index tree) {(forall K V) (-> BitIndex (Tree K V) (Option (Array (: K V))))}
-  (with1 (tree: (let emap) (let cmap) _ (let children)) tree
-    ; (assert (exists? emap bit-index)) ; This function must be used after tree/search? returned (some (:found-elem _))
-    (when? (exists? cmap bit-index) (tree/as-collision-elems (buckets-get cmap bit-index children)))))
+  @with1 (tree: (let emap) (let cmap) _ (let children)) tree
+  ; (assert (exists? emap bit-index)) ; This function must be used after tree/search? returned (some (:found-elem _))
+  (when? (exists? cmap bit-index) (tree/as-collision-elems (buckets-get cmap bit-index children))))
 
 (function (tree/as-collision-elems tree) {(forall K V) (-> (Tree K V) (Array (: K V)))}
-  (with1 (tree: (let num-collision) _ (let collision-elems) _) tree
-    (array/unsafe-from-ptr (ptr/cast collision-elems) (conv num-collision))))
+  @with1 (tree: (let num-collision) _ (let collision-elems) _) tree
+  (array/unsafe-from-ptr (ptr/cast collision-elems) (conv num-collision)))
 
 (function (tree/from-collision-elems collision-elems) {(forall K V) (-> (Array (: K V)) (Tree K V))}
   ; (assert (not (array/empty? collision-elems)))
@@ -255,37 +262,40 @@
 
 (function (buckets-add bitmap bit-index elem ptr) {(forall A) (-> U32 BitIndex A (Ptr A) (: U32 (Ptr A)))}
   ; (assert (not (exists? bitmap bit-index)))
-  (let* ([i (bucket-index bitmap bit-index)]
-         [length (buckets-length bitmap)]
-         [new-bitmap (add bitmap bit-index)]
-         [new-length (+ length 1)] ; (buckets-length new-bitmap)
-         [new-ptr (array/ptr (array/unsafe-alloc-uninitialized new-length))])
-    (when (ne? i 0) (ptr/copy! ptr i new-ptr))
-    (when (ne? i length) (ptr/copy! (ptr/add i ptr) (- length i) (ptr/add (+ i 1) new-ptr)))
-    (ptr/store-at! i elem new-ptr)
-    (: new-bitmap new-ptr)))
+  @let* (
+    [i (bucket-index bitmap bit-index)]
+    [length (buckets-length bitmap)]
+    [new-bitmap (add bitmap bit-index)]
+    [new-length (+ length 1)] ; (buckets-length new-bitmap)
+    [new-ptr (array/ptr (array/unsafe-alloc-uninitialized new-length))])
+  (when (ne? i 0) (ptr/copy! ptr i new-ptr))
+  (when (ne? i length) (ptr/copy! (ptr/add i ptr) (- length i) (ptr/add (+ i 1) new-ptr)))
+  (ptr/store-at! i elem new-ptr)
+  (: new-bitmap new-ptr))
 
 (function (buckets-update bitmap bit-index elem ptr) {(forall A) (-> U32 BitIndex A (Ptr A) (Ptr A))}
   ; (assert (exists? bitmap bit-index))
-  (let* ([i (bucket-index bitmap bit-index)]
-         [length (buckets-length bitmap)]
-         [new-ptr (array/ptr (array/unsafe-alloc-uninitialized length))])
-    (ptr/copy! ptr length new-ptr)
-    (ptr/store-at! i elem new-ptr)
-    new-ptr))
+  @let* (
+    [i (bucket-index bitmap bit-index)]
+    [length (buckets-length bitmap)]
+    [new-ptr (array/ptr (array/unsafe-alloc-uninitialized length))])
+  (ptr/copy! ptr length new-ptr)
+  (ptr/store-at! i elem new-ptr)
+  new-ptr)
 
 (function (buckets-remove bitmap bit-index ptr) {(forall A) (-> U32 BitIndex (Ptr A) (: U32 (Ptr A)))}
   ; (assert (exists? bitmap bit-index))
-  (let* ([i (bucket-index bitmap bit-index)]
-         [length (buckets-length bitmap)]
-         [new-bitmap (remove bitmap bit-index)]
-         [new-length (- length 1)]) ; (buckets-length new-bitmap)
-    (if (eq? new-length 0)
-      (: 0 ptr:null)
-      (let1 new-ptr (array/ptr (array/unsafe-alloc-uninitialized new-length))
-        (when (ne? i 0) (ptr/copy! ptr i new-ptr))
-        (when (ne? i (- length 1)) (ptr/copy! (ptr/add (+ i 1) ptr) (- length 1 i) (ptr/add i new-ptr)))
-        (: new-bitmap new-ptr)))))
+  @let* (
+    [i (bucket-index bitmap bit-index)]
+    [length (buckets-length bitmap)]
+    [new-bitmap (remove bitmap bit-index)]
+    [new-length (- length 1)]) ; (buckets-length new-bitmap)
+  (if (eq? new-length 0)
+    (: 0 ptr:null)
+    (let1 new-ptr (array/ptr (array/unsafe-alloc-uninitialized new-length))
+      (when (ne? i 0) (ptr/copy! ptr i new-ptr))
+      (when (ne? i (- length 1)) (ptr/copy! (ptr/add (+ i 1) ptr) (- length 1 i) (ptr/add i new-ptr)))
+      (: new-bitmap new-ptr))))
 
 (function (buckets-length bitmap) {(-> U32 U64)}
   (conv (popcount bitmap)))
@@ -295,8 +305,7 @@
   (bit-index: U32))
 
 (function (consume-hash hash) {(-> U64 (: BitIndex U64))}
-  (: (bit-index (conv (bw& hash 31)))
-     (bw>> hash 5)))
+  (: (bit-index (conv (bw& hash 31))) (bw>> hash 5)))
 
 (function (restore-hash bit-index hash) {(-> BitIndex U64 U64)}
   (with1 (bit-index: (let bit)) bit-index
@@ -307,56 +316,57 @@
   (bit-index: (bw<< 1 index)))
 
 (function (exists? bitmap bit-index) {(-> U32 BitIndex Bool)}
-  (with1 (bit-index: (let bit)) bit-index
-    (ne? (bw& bitmap bit) 0)))
+  @with1 (bit-index: (let bit)) bit-index
+  (ne? (bw& bitmap bit) 0))
 
 (function (add bitmap bit-index) {(-> U32 BitIndex U32)}
-  (with1 (bit-index: (let bit)) bit-index
-    (bw| bitmap bit)))
+  @with1 (bit-index: (let bit)) bit-index
+  (bw| bitmap bit))
 
 (function (remove bitmap bit-index) {(-> U32 BitIndex U32)}
-  (with1 (bit-index: (let bit)) bit-index
-    (bw& bitmap (bw! bit))))
+  @with1 (bit-index: (let bit)) bit-index
+  (bw& bitmap (bw! bit)))
 
 (function (bucket-index bitmap bit-index) {(-> U32 BitIndex U64)}
-  (with1 (bit-index: (let bit)) bit-index
-    (conv (popcount (bw& bitmap (- bit 1))))))
+  @with1 (bit-index: (let bit)) bit-index
+  (conv (popcount (bw& bitmap (- bit 1)))))
 
 (value-data (Cursor K V)
   (cursor: (Vector (: (Tree K V) U32 U64))))
 
 (function (cursor/new tree) {(forall K V) (-> (Tree K V) (Cursor K V))}
-  (let1 cursor (cursor: vector/empty)
-    (cursor/push! tree 0 cursor)
-    cursor))
+  @let1 cursor (cursor: vector/empty)
+  (cursor/push! tree 0 cursor)
+  cursor)
 
 (function (cursor/next! cursor) {(forall K V) (-> (Cursor K V) (Option (: K V)))}
-  (with ([(cursor: (let stack)) cursor]
-         [(: (let tree) (let i) (let j)) (vector/pop! stack)?])
-    (match
-      (if (eq? j 0)
-        (with1? (some (:found-elem (: _ (let key) (let value)))) (tree/search? (bit-index i) tree)
-          (: key value))
-        (with? ([(some (let collision-elems)) (tree/collision-elems? (bit-index i) tree)]
-                [(some (let elem)) (get? collision-elems[(- j 1)])])
-          elem))
-      [(some (let elem))
-        (vector/push! (: tree i (+ j 1)) stack)
-        (some elem)]
-      [none
-        (cursor/push! tree (+ i 1) cursor)
-        (cursor/next! cursor)])))
+  @with1 (cursor: (let stack)) cursor
+  @with1 (: (let tree) (let i) (let j)) (vector/pop! stack)?
+  (match
+    (if (eq? j 0)
+      (with1? (some (:found-elem (: _ (let key) (let value)))) (tree/search? (bit-index i) tree)
+        (: key value))
+      (with? (
+          [(some (let collision-elems)) (tree/collision-elems? (bit-index i) tree)]
+          [(some (let elem)) (get? collision-elems[(- j 1)])])
+        elem))
+    [(some (let elem))
+      (vector/push! (: tree i (+ j 1)) stack)
+      (some elem)]
+    [none
+      (cursor/push! tree (+ i 1) cursor)
+      (cursor/next! cursor)]))
 
 (function (cursor/push! tree index cursor) {(forall K V) (-> (Tree K V) U32 (Cursor K V) unit)}
   (when (<= 32 index) (return))
-  (with1 (cursor: (let stack)) cursor
-    (let ([tree (ref tree)]
-          [index (ref index)])
-      (vector/push! (: ~tree ~index 0) stack)
-      (while-match1 (some (:found-child (let t))) (tree/search? (bit-index ~index) ~tree)
-        (set! tree t)
-        (set! index 0)
-        (vector/push! (: ~tree ~index 0) stack)))))
+  @with1 (cursor: (let stack)) cursor
+  @let1 tree (ref tree)
+  @let1 index (ref index)
+  (vector/push! (: ~tree ~index 0) stack)
+  (while-match1 (some (:found-child (let t))) (tree/search? (bit-index ~index) ~tree)
+    (set! tree t)
+    (set! index 0)
+    (vector/push! (: ~tree ~index 0) stack)))
 
 ; ---------------------------
 
@@ -365,30 +375,31 @@
 
 (instance DeepCopy.HashMap (forall K V) (DeepCopy (HashMap K V)) (where (DeepCopy K) (DeepCopy V))
   (function (deep-copy a)
-    (with1 (m: (let hasher) (let length) (let tree)) a
-      (m: hasher length (deep-copy tree)))))
+    @with1 (m: (let hasher) (let length) (let tree)) a
+    (m: hasher length (deep-copy tree))))
 
 (instance DeepCopy.Tree (forall K V) (DeepCopy (Tree K V)) (where (DeepCopy K) (DeepCopy V))
   (function (deep-copy a)
-    (with1 (tree: (let emap) (let cmap) (let elems) (let children)) a
-      (let* ([el (buckets-length emap)]
-             [cl (buckets-length cmap)]
-             [new-elems (array/ptr (array/unsafe-alloc-uninitialized el))]
-             [new-children (array/ptr (array/unsafe-alloc-uninitialized cl))]
-             [i (ref 0)])
-        (while (< ~i 32)
-          (let1 i (bit-index ~i)
-            (match (: (exists? emap i) (exists? cmap i))
-              [(: #f #f)]
-              [(: #t #f)
-                (buckets-set! emap i (deep-copy (buckets-get emap i elems)) new-elems)]
-              [(: #f #t)
-                (buckets-set! cmap i (deep-copy (buckets-get cmap i children)) new-children)]
-              [(: #t #t)
-                (buckets-set! emap i (deep-copy (buckets-get emap i elems)) new-elems)
-                (buckets-set! cmap i (|> (buckets-get cmap i children) tree/as-collision-elems deep-copy tree/from-collision-elems) new-children)]))
-          (set! i (+ ~i 1)))
-        (tree: emap cmap new-elems new-children)))))
+    @with1 (tree: (let emap) (let cmap) (let elems) (let children)) a
+    @let* (
+      [el (buckets-length emap)]
+      [cl (buckets-length cmap)]
+      [new-elems (array/ptr (array/unsafe-alloc-uninitialized el))]
+      [new-children (array/ptr (array/unsafe-alloc-uninitialized cl))]
+      [i (ref 0)])
+    (while (< ~i 32)
+      (let1 i (bit-index ~i)
+        (match (: (exists? emap i) (exists? cmap i))
+          [(: #f #f)]
+          [(: #t #f)
+            (buckets-set! emap i (deep-copy (buckets-get emap i elems)) new-elems)]
+          [(: #f #t)
+            (buckets-set! cmap i (deep-copy (buckets-get cmap i children)) new-children)]
+          [(: #t #t)
+            (buckets-set! emap i (deep-copy (buckets-get emap i elems)) new-elems)
+            (buckets-set! cmap i (|> (buckets-get cmap i children) tree/as-collision-elems deep-copy tree/from-collision-elems) new-children)]))
+      (set! i (+ ~i 1)))
+    (tree: emap cmap new-elems new-children)))
 
 (instance Default.HashMap (forall K V) (Default (HashMap K V))
   (transparent-function default hash-map/empty))

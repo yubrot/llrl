@@ -25,10 +25,10 @@
   (s/match s
     [(_ ,@elems)
       (ok
-        (let1 tmp-map (gensym)
-          `(let ([,tmp-map ,\ord-map/empty])
-            ,@(s/map [^1 `(,\ord-map/insert-elem! ,%1 ,tmp-map)] elems)!
-            ,tmp-map)))]
+        @let1 tmp-map (gensym)
+        `(let ([,tmp-map ,\ord-map/empty])
+          ,@(s/map [^1 `(,\ord-map/insert-elem! ,%1 ,tmp-map)] elems)!
+          ,tmp-map))]
     [_
       (err "Expected (ord-map elem ...)")]))
 
@@ -36,85 +36,86 @@
   (m: (ref (m-body: 0 (node/new-leaf)))))
 
 (function (ord-map/length map) {(forall K V) (-> (OrdMap K V) U64)}
-  (with1 (m: (ref (m-body: (let length) _))) map
-    length))
+  @with1 (m: (ref (m-body: (let length) _))) map
+  length)
 
 (function (ord-map/empty? map) {(forall K V) (-> (OrdMap K V) Bool)}
   (eq? 0 (ord-map/length map)))
 
 (function (ord-map/get? key map) {(forall K V) (-> K (OrdMap K V) (Option V)) (where (Ord K))}
-  (with1 (m: (ref (m-body: _ (let root)))) map
-    (node/get? key root)))
+  @with1 (m: (ref (m-body: _ (let root)))) map
+  (node/get? key root))
 
 (function (ord-map/has? key map) {(forall K V) (-> K (OrdMap K V) Bool) (where (Ord K))}
   (is? (some _) (ord-map/get? key map)))
 
 (function (ord-map/get-min? map) {(forall K V) (-> (OrdMap K V) (Option (: K V))) (where (Ord K))}
-  (with1 (m: (ref (m-body: (let length) (let root)))) map
-    (if (eq? 0 length)
-      none
-      (some (node/get-min root)))))
+  @with1 (m: (ref (m-body: (let length) (let root)))) map
+  (if (eq? 0 length)
+    none
+    (some (node/get-min root))))
 
 (function (ord-map/get-max? map) {(forall K V) (-> (OrdMap K V) (Option (: K V))) (where (Ord K))}
-  (with1 (m: (ref (m-body: (let length) (let root)))) map
-    (if (eq? 0 length)
-      none
-      (some (node/get-max root)))))
+  @with1 (m: (ref (m-body: (let length) (let root)))) map
+  (if (eq? 0 length)
+    none
+    (some (node/get-max root))))
 
 (function (ord-map/insert! key value map) {(forall K V) (-> K V (OrdMap K V) (Option V)) (where (Ord K))}
-  (with1 (m: (let map-body (ref (m-body: (let length) (let root))))) map
-    (match (node/insert! key value root)
-      [(:replace (let v))
-        (some v)]
-      [:fit
-        (set! map-body (m-body: (+ length 1) root))
-        none]
-      [(:split (let key) (let value) (let right-node))
-        (set! map-body (m-body: (+ length 1) (node/new-root key value root right-node)))
-        none])))
+  @with1 (m: (let map-body (ref (m-body: (let length) (let root))))) map
+  (match (node/insert! key value root)
+    [(:replace (let v))
+      (some v)]
+    [:fit
+      (set! map-body (m-body: (+ length 1) root))
+      none]
+    [(:split (let key) (let value) (let right-node))
+      (set! map-body (m-body: (+ length 1) (node/new-root key value root right-node)))
+      none]))
 
 (function (ord-map/insert-elem! elem map) {(forall K V) (-> (: K V) (OrdMap K V) (Option V)) (where (Ord K))}
-  (with1 (: (let key) (let value)) elem
-    (ord-map/insert! key value map)))
+  @with1 (: (let key) (let value)) elem
+  (ord-map/insert! key value map))
 
 (function (ord-map/remove! key map) {(forall K V) (-> K (OrdMap K V) (Option V)) (where (Ord K))}
-  (with ([(m: (let map-body (ref (m-body: (let length) (let root))))) map]
-         [(: _ (let removed-value)) (node/remove! key root)?])
-    (set! map-body (m-body: (- length 1) (node/simplify-root root)))
-    (some removed-value)))
+  @with (
+    [(m: (let map-body (ref (m-body: (let length) (let root))))) map]
+    [(: _ (let removed-value)) (node/remove! key root)?])
+  (set! map-body (m-body: (- length 1) (node/simplify-root root)))
+  (some removed-value))
 
 (function (ord-map/remove-min! map) {(forall K V) (-> (OrdMap K V) (Option (: K V))) (where (Ord K))}
-  (with1 (m: (let map-body (ref (m-body: (let length) (let root))))) map
-    (if (eq? 0 length)
-      none
-      (let1 elem (node/remove-smallest-elem! root)
-        (set! map-body (m-body: (- length 1) (node/simplify-root root)))
-        (some elem)))))
+  @with1 (m: (let map-body (ref (m-body: (let length) (let root))))) map
+  (if (eq? 0 length)
+    none
+    (let1 elem (node/remove-smallest-elem! root)
+      (set! map-body (m-body: (- length 1) (node/simplify-root root)))
+      (some elem))))
 
 (function (ord-map/remove-max! map) {(forall K V) (-> (OrdMap K V) (Option (: K V))) (where (Ord K))}
-  (with1 (m: (let map-body (ref (m-body: (let length) (let root))))) map
-    (if (eq? 0 length)
-      none
-      (let1 elem (node/remove-largest-elem! root)
-        (set! map-body (m-body: (- length 1) (node/simplify-root root)))
-        (some elem)))))
+  @with1 (m: (let map-body (ref (m-body: (let length) (let root))))) map
+  (if (eq? 0 length)
+    none
+    (let1 elem (node/remove-largest-elem! root)
+      (set! map-body (m-body: (- length 1) (node/simplify-root root)))
+      (some elem))))
 
 (function (ord-map/clear! map) {(forall K V) (-> (OrdMap K V) unit)}
-  (with1 (m: (let map-body)) map
-    (set! map-body (m-body: 0 (node/new-leaf)))))
+  @with1 (m: (let map-body)) map
+  (set! map-body (m-body: 0 (node/new-leaf))))
 
 ; Currently we are unable to make this implementation an instance of std/iterator/Collect.
 ; In order to do so, we need to extend llrl type system to support associated types or fundeps.
 (function (ord-map/collect t) {(forall T K V) (-> (T (: K V)) (OrdMap K V)) (where (Iterate T) (Ord K))}
-  (let1 map ord-map/empty
-    (for (: (let k) (let v)) t
-      (ord-map/insert! k v map))
-    map))
+  @let1 map ord-map/empty
+  (for (: (let k) (let v)) t
+    (ord-map/insert! k v map))
+  map)
 
 (function (ord-map/elems map) {(forall K V) (-> (OrdMap K V) (Iterator (: K V)))}
-  (with1 (m: (ref (m-body: _ (let root)))) map
-    (let1 cursor (cursor/new root)
-      (iterator/new [^0 (cursor/next! cursor)]))))
+  @with1 (m: (ref (m-body: _ (let root)))) map
+  @let1 cursor (cursor/new root)
+  (iterator/new [^0 (cursor/next! cursor)]))
 
 (function (ord-map/keys map) {(forall K V) (-> (OrdMap K V) (Iterator K))}
   (it/map (case1 (: (let key) _) key) (ord-map/elems map)))
@@ -158,23 +159,23 @@
     (array/ptr (array/unsafe-alloc-uninitialized 2B))))
 
 (function (node/new-root key value left right) {(forall K V) (-> K V (Node K V) (Node K V) (Node K V))}
-  (with1 (let new-root (node: (let length) (let keys) (let values) (let edges))) (node/new-internal)
-    (set! length 1)
-    (ptr/store-at! 0 key keys)
-    (ptr/store-at! 0 value values)
-    (ptr/store-at! 0 left edges)
-    (ptr/store-at! 1 right edges)
-    new-root))
+  @with1 (let new-root (node: (let length) (let keys) (let values) (let edges))) (node/new-internal)
+  (set! length 1)
+  (ptr/store-at! 0 key keys)
+  (ptr/store-at! 0 value values)
+  (ptr/store-at! 0 left edges)
+  (ptr/store-at! 1 right edges)
+  new-root)
 
 (function (node/simplify-root root) {(forall K V) (-> (Node K V) (Node K V))}
-  (with1 (node: (let length) _ _ (let edges)) root
-    (if (and (eq? ~length 0) (ne? ptr:null edges))
-      (ptr/load-at 0 edges)
-      root)))
+  @with1 (node: (let length) _ _ (let edges)) root
+  (if (and (eq? ~length 0) (ne? ptr:null edges))
+    (ptr/load-at 0 edges)
+    root))
 
 (function (node/length node) {(forall K V) (-> (Node K V) U64)}
-  (with1 (node: (let length) _ _ _) node
-    ~length))
+  @with1 (node: (let length) _ _ _) node
+  ~length)
 
 (function (node/full? node) {(forall K V) (-> (Node K V) Bool)}
   (eq? 2B-1 (node/length node)))
@@ -184,38 +185,38 @@
 
 (function (node/value-at index node) {(forall K V) (-> U64 (Node K V) V)}
   (assert (< index (node/length node)) "node/value-at: Out of range")
-  (with1 (node: _ _ (let values) _) node
-    (ptr/load-at index values)))
+  @with1 (node: _ _ (let values) _) node
+  (ptr/load-at index values))
 
 (function (node/replace-value-at! index value node) {(forall K V) (-> U64 V (Node K V) V)}
   (assert (< index (node/length node)) "node/replace-value-at!: Out of range")
-  (with1 (node: _ _ (let values) _) node
-    (ptr/replace-at! index value values)))
+  @with1 (node: _ _ (let values) _) node
+  (ptr/replace-at! index value values))
 
 (function (node/elem-at index node) {(forall K V) (-> U64 (Node K V) (: K V))}
   (assert (< index (node/length node)) "node/elem-at: Out of range")
-  (with1 (node: _ (let keys) (let values) _) node
-    (: (ptr/load-at index keys) (ptr/load-at index values))))
+  @with1 (node: _ (let keys) (let values) _) node
+  (: (ptr/load-at index keys) (ptr/load-at index values)))
 
 (function (node/replace-elem-at! index elem node) {(forall K V) (-> U64 (: K V) (Node K V) (: K V))}
   (assert (< index (node/length node)) "node/replace-elem-at!: Out of range")
-  (with ([(node: _ (let keys) (let values) _) node]
-         [(: (let key) (let value)) elem])
-    (: (ptr/replace-at! index key keys) (ptr/replace-at! index value values))))
+  @with1 (node: _ (let keys) (let values) _) node
+  @with1 (: (let key) (let value)) elem
+  (: (ptr/replace-at! index key keys) (ptr/replace-at! index value values)))
 
 (function (node/leaf? node) {(forall K V) (-> (Node K V) Bool)}
-  (with1 (node: _ _ _ (let edges)) node
-    (eq? ptr:null edges)))
+  @with1 (node: _ _ _ (let edges)) node
+  (eq? ptr:null edges))
 
 (function (node/internal? node) {(forall K V) (-> (Node K V) Bool)}
-  (with1 (node: _ _ _ (let edges)) node
-    (ne? ptr:null edges)))
+  @with1 (node: _ _ _ (let edges)) node
+  (ne? ptr:null edges))
 
 (function (node/edge-at index node) {(forall K V) (-> U64 (Node K V) (Node K V))}
   (assert (node/internal? node) "node/edge-at: Node is leaf")
   (assert (<= index (node/length node)) "node/edge-at: Out of range")
-  (with1 (node: _ _ _ (let edges)) node
-    (ptr/load-at index edges)))
+  @with1 (node: _ _ _ (let edges)) node
+  (ptr/load-at index edges))
 
 ; (node/search "a" {elems = ["b" => B, "d" => D]}) -> (:go-down 0)
 ; (node/search "b" {elems = ["b" => B, "d" => D]}) -> (:found 0)
@@ -223,16 +224,16 @@
 ; (node/search "d" {elems = ["b" => B, "d" => D]}) -> (:found 1)
 ; (node/search "e" {elems = ["b" => B, "d" => D]}) -> (:go-down 2)
 (function (node/search key node) {(forall K V) (-> K (Node K V) SearchResult) (where (Ord K))}
-  (with1 (node: (let length) (let keys) _ _) node
-    ; linear search
-    (let1 i (ref 0)
-      (while (< ~i ~length)
-        (match (compare key (ptr/load-at ~i keys))
-          [ordering:less (return (:go-down ~i))] ; key < elems[i].key
-          [ordering:equal (return (:found ~i))]  ; key = elems[i].key
-          [ordering:greater #t])                 ; key > elems[i].key
-        (set! i (+ ~i 1)))
-      (:go-down ~length))))
+  @with1 (node: (let length) (let keys) _ _) node
+  ; linear search
+  @let1 i (ref 0)
+  (while (< ~i ~length)
+    (match (compare key (ptr/load-at ~i keys))
+      [ordering:less (return (:go-down ~i))] ; key < elems[i].key
+      [ordering:equal (return (:found ~i))]  ; key = elems[i].key
+      [ordering:greater #t])                 ; key > elems[i].key
+    (set! i (+ ~i 1)))
+  (:go-down ~length))
 
 (value-data SearchResult
   (:found U64)
@@ -290,35 +291,35 @@
 (function (node/room/insert-at! index key value elems-right-node node) {(forall K V) (-> U64 K V (Option (Node K V)) (Node K V) unit)}
   (assert (eq? (node/leaf? node) (is? none elems-right-node)) "node/room/insert-at! (node/leaf? node) != (is? none elems-right-node)")
   (assert (node/room? node) "node/room/isnert-at!: Node is full")
-  (with ([(node: (let length) (let keys) (let values) (let edges)) node]
-         [(let l) (- ~length index)])
-    ;    elems[0] ... elems[index-1]               elems[index] ... elems[elems.len()-1]
-    ; -> elems[0] ... elems[index-1] (: key value) elems[index] ... elems[elems.len()-1]
-    (set! length (+ ~length 1))
-    (ptr/move! (ptr/add index keys) l (ptr/add (+ index 1) keys))
-    (ptr/move! (ptr/add index values) l (ptr/add (+ index 1) values))
-    (ptr/store-at! index key keys)
-    (ptr/store-at! index value values)
-    (when-match1 (some (let elems-right-node)) elems-right-node
-      ;    edges[0] ... edges[index]                  edges[index+1] ... edges[elems.len()]
-      ; -> edges[0] ... edges[index] elems-right-node edges[index+1] ... edges[elems.len()]
-      (ptr/move! (ptr/add (+ index 1) edges) l (ptr/add (+ index 2) edges))
-      (ptr/store-at! (+ index 1) elems-right-node edges))))
+  @with1 (node: (let length) (let keys) (let values) (let edges)) node
+  @let1 l (- ~length index)
+  ;    elems[0] ... elems[index-1]               elems[index] ... elems[elems.len()-1]
+  ; -> elems[0] ... elems[index-1] (: key value) elems[index] ... elems[elems.len()-1]
+  (set! length (+ ~length 1))
+  (ptr/move! (ptr/add index keys) l (ptr/add (+ index 1) keys))
+  (ptr/move! (ptr/add index values) l (ptr/add (+ index 1) values))
+  (ptr/store-at! index key keys)
+  (ptr/store-at! index value values)
+  (when-match1 (some (let elems-right-node)) elems-right-node
+    ;    edges[0] ... edges[index]                  edges[index+1] ... edges[elems.len()]
+    ; -> edges[0] ... edges[index] elems-right-node edges[index+1] ... edges[elems.len()]
+    (ptr/move! (ptr/add (+ index 1) edges) l (ptr/add (+ index 2) edges))
+    (ptr/store-at! (+ index 1) elems-right-node edges)))
 
 ; (node/full/split! {elems, edges}) ->
 ; elems[0] ... elems[B-2] / elems[B-1] / elems[B] ... elems[2B-2]
 ; edges[0] ... edges[B-1] /            / edges[B] ... edges[2B-1]
 (function (node/full/split! node) {(forall K V) (-> (Node K V) (: K V (Node K V)))}
   (assert (node/full? node) "node/full/split!: Node has room")
-  (let1 right-node (if (node/internal? node) (node/new-internal) (node/new-leaf))
-    (with ([(node: (let length) (let keys) (let values) (let edges)) node]
-           [(node: (let r-length) (let r-keys) (let r-values) (let r-edges)) right-node])
-      (set! length B-1)
-      (set! r-length B-1)
-      (ptr/copy! (ptr/add B keys) B-1 r-keys) ; r-elems[0..B-1] <- elems[B..2B-1]
-      (ptr/copy! (ptr/add B values) B-1 r-values)
-      (when (node/internal? node) (ptr/copy! (ptr/add B edges) B r-edges)) ; r-edges[0..B] <- edges[B..2B]
-      (: (ptr/load-at B-1 keys) (ptr/load-at B-1 values) right-node))))
+  @let1 right-node (if (node/internal? node) (node/new-internal) (node/new-leaf))
+  @with1 (node: (let length) (let keys) (let values) (let edges)) node
+  @with1 (node: (let r-length) (let r-keys) (let r-values) (let r-edges)) right-node
+  (set! length B-1)
+  (set! r-length B-1)
+  (ptr/copy! (ptr/add B keys) B-1 r-keys) ; r-elems[0..B-1] <- elems[B..2B-1]
+  (ptr/copy! (ptr/add B values) B-1 r-values)
+  (when (node/internal? node) (ptr/copy! (ptr/add B edges) B r-edges)) ; r-edges[0..B] <- edges[B..2B]
+  (: (ptr/load-at B-1 keys) (ptr/load-at B-1 values) right-node))
 
 ; The caller is responsible for handling underflow.
 (function (node/remove! key node) {(forall K V) (-> K (Node K V) (Option (: K V))) (where (Ord K))}
@@ -326,9 +327,10 @@
     [(:found (let i))
       (if (node/leaf? node)
         (some (node/leaf/remove-at! i node))
-        (let* ([elems-right-node (node/edge-at (+ i 1) node)]
-               [alternatively-removed-elem (node/remove-smallest-elem! elems-right-node)]
-               [removed-elem (node/replace-elem-at! i alternatively-removed-elem node)])
+        (let* (
+            [elems-right-node (node/edge-at (+ i 1) node)]
+            [alternatively-removed-elem (node/remove-smallest-elem! elems-right-node)]
+            [removed-elem (node/replace-elem-at! i alternatively-removed-elem node)])
           (node/check-underflow! (+ i 1) node)
           (some removed-elem)))]
     [(:go-down (let i))
@@ -357,15 +359,15 @@
 ; The caller is responsible for handling underflow.
 (function (node/leaf/remove-at! index node) {(forall K V) (-> U64 (Node K V) (: K V))}
   (assert (node/leaf? node) "node/leaf/remove-at!: Node is internal")
-  (with ([(node: (let length) (let keys) (let values) _) node]
-         [(let l) (- ~length index 1)]
-         [(let removed-elem) (: (ptr/load-at index keys) (ptr/load-at index values))])
-    ;    elems[0] ... elems[index-1] elems[index] elems[index+1] ... elems[elems.len()-1]
-    ; -> elems[0] ... elems[index-1]              elems[index+1] ... elems[elems.len()-1]
-    (set! length (- ~length 1))
-    (ptr/move! (ptr/add (+ index 1) keys) l (ptr/add index keys))
-    (ptr/move! (ptr/add (+ index 1) values) l (ptr/add index values))
-    removed-elem))
+  @with1 (node: (let length) (let keys) (let values) _) node
+  @let1 l (- ~length index 1)
+  @let1 removed-elem (: (ptr/load-at index keys) (ptr/load-at index values))
+  ;    elems[0] ... elems[index-1] elems[index] elems[index+1] ... elems[elems.len()-1]
+  ; -> elems[0] ... elems[index-1]              elems[index+1] ... elems[elems.len()-1]
+  (set! length (- ~length 1))
+  (ptr/move! (ptr/add (+ index 1) keys) l (ptr/add index keys))
+  (ptr/move! (ptr/add (+ index 1) values) l (ptr/add index values))
+  removed-elem)
 
 (function (node/check-underflow! index node) {(forall K V) (-> U64 (Node K V) unit)}
   (if (eq? index 0)
@@ -374,163 +376,171 @@
 
 (function (node/check-underflow-left! index node) {(forall K V) (-> U64 (Node K V) unit)}
   (assert (ne? index 0) "node/check-underflow-left!: leftmost node")
-  (let ([target-node (node/edge-at index node)]
-        [targets-left-node (node/edge-at (- index 1) node)])
-    (when (<= B-1 (node/length target-node)) (return))
-    (if (< B-1 (node/length targets-left-node))
-      (node/steal-from-left! index node)
-      (node/merge! (- index 1) node))))
+  @let1 target-node (node/edge-at index node)
+  @let1 targets-left-node (node/edge-at (- index 1) node)
+  (when (<= B-1 (node/length target-node)) (return))
+  (if (< B-1 (node/length targets-left-node))
+    (node/steal-from-left! index node)
+    (node/merge! (- index 1) node)))
 
 (function (node/check-underflow-right! index node) {(forall K V) (-> U64 (Node K V) unit)}
   (assert (ne? index (node/length node)) "node/check-underflow-right!: rightmost node")
-  (let ([target-node (node/edge-at index node)]
-        [targets-right-node (node/edge-at (+ index 1) node)])
-    (when (<= B-1 (node/length target-node)) (return))
-    (if (< B-1 (node/length targets-right-node))
-      (node/steal-from-right! index node)
-      (node/merge! index node))))
+  @let1 target-node (node/edge-at index node)
+  @let1 targets-right-node (node/edge-at (+ index 1) node)
+  (when (<= B-1 (node/length target-node)) (return))
+  (if (< B-1 (node/length targets-right-node))
+    (node/steal-from-right! index node)
+    (node/merge! index node)))
 
 (function (node/steal-from-left! index node) {(forall K V) (-> U64 (Node K V) unit)}
   (assert (ne? index 0) "node/steal-from-left!: leftmost node")
-  (with ([(node: (let p-length) (let p-keys) (let p-values) (let p-edges)) node]
-         [(node: (let l-length) (let l-keys) (let l-values) (let l-edges)) (node/edge-at (- index 1) node)]
-         [(node: (let r-length) (let r-keys) (let r-values) (let r-edges)) (node/edge-at index node)])
-    (assert (> ~l-length B-1 ~r-length) "node/steal-from-left!: !(left-node-length > B-1 > right-node-length)")
-    (let ([p-key (ptr/load-at (- index 1) p-keys)]
-          [p-value (ptr/load-at (- index 1) p-values)]
-          [l-key (ptr/load-at (- ~l-length 1) l-keys)]
-          [l-value (ptr/load-at (- ~l-length 1) l-values)]
-          [edge (if (ne? ptr:null l-edges) (some (ptr/load-at ~l-length l-edges)) none)])
-      ; right-node.elems.unshift(node.elems[index-1])
-      (ptr/store-at! (- index 1) l-key p-keys)
-      (ptr/store-at! (- index 1) l-value p-values)
-      (ptr/move! r-keys ~r-length (ptr/add 1 r-keys))
-      (ptr/move! r-values ~r-length (ptr/add 1 r-values))
-      ; node.elems[index-1] <- left-node.elems.pop()
-      (ptr/store-at! 0 p-key r-keys)
-      (ptr/store-at! 0 p-value r-values)
-      (when-match1 (some (let edge)) edge
-        ; right-node.edges.unshift(left-node.edges.pop())
-        (ptr/move! r-edges (+ ~r-length 1) (ptr/add 1 r-edges))
-        (ptr/store-at! 0 edge r-edges))
-      (set! l-length (- ~l-length 1))
-      (set! r-length (+ ~r-length 1)))))
+  @with (
+    [(node: (let p-length) (let p-keys) (let p-values) (let p-edges)) node]
+    [(node: (let l-length) (let l-keys) (let l-values) (let l-edges)) (node/edge-at (- index 1) node)]
+    [(node: (let r-length) (let r-keys) (let r-values) (let r-edges)) (node/edge-at index node)])
+  (assert (> ~l-length B-1 ~r-length) "node/steal-from-left!: !(left-node-length > B-1 > right-node-length)")
+  @let (
+    [p-key (ptr/load-at (- index 1) p-keys)]
+    [p-value (ptr/load-at (- index 1) p-values)]
+    [l-key (ptr/load-at (- ~l-length 1) l-keys)]
+    [l-value (ptr/load-at (- ~l-length 1) l-values)]
+    [edge (if (ne? ptr:null l-edges) (some (ptr/load-at ~l-length l-edges)) none)])
+  ; right-node.elems.unshift(node.elems[index-1])
+  (ptr/store-at! (- index 1) l-key p-keys)
+  (ptr/store-at! (- index 1) l-value p-values)
+  (ptr/move! r-keys ~r-length (ptr/add 1 r-keys))
+  (ptr/move! r-values ~r-length (ptr/add 1 r-values))
+  ; node.elems[index-1] <- left-node.elems.pop()
+  (ptr/store-at! 0 p-key r-keys)
+  (ptr/store-at! 0 p-value r-values)
+  (when-match1 (some (let edge)) edge
+    ; right-node.edges.unshift(left-node.edges.pop())
+    (ptr/move! r-edges (+ ~r-length 1) (ptr/add 1 r-edges))
+    (ptr/store-at! 0 edge r-edges))
+  (set! l-length (- ~l-length 1))
+  (set! r-length (+ ~r-length 1)))
 
 (function (node/steal-from-right! index node) {(forall K V) (-> U64 (Node K V) unit)}
   (assert (ne? index (node/length node)) "node/steal-from-right!: rightmost node")
-  (with ([(node: (let p-length) (let p-keys) (let p-values) (let p-edges)) node]
-         [(node: (let l-length) (let l-keys) (let l-values) (let l-edges)) (node/edge-at index node)]
-         [(node: (let r-length) (let r-keys) (let r-values) (let r-edges)) (node/edge-at (+ index 1) node)])
-    (assert (< ~l-length B-1 ~r-length) "node/steal-from-right!: !(left-node-length < B-1 < right-node-length)")
-    (let ([p-key (ptr/load-at index p-keys)]
-          [p-value (ptr/load-at index p-values)]
-          [r-key (ptr/load-at 0 r-keys)]
-          [r-value (ptr/load-at 0 r-values)]
-          [edge (if (ne? ptr:null r-edges) (some (ptr/load-at 0 r-edges)) none)])
-      ; left-node.elems.push(node.elems[index])
-      (ptr/store-at! ~l-length p-key l-keys)
-      (ptr/store-at! ~l-length p-value l-values)
-      ; node.elems[index] <- right-node.elems.shift()
-      (ptr/store-at! index r-key p-keys)
-      (ptr/store-at! index r-value p-values)
-      (ptr/move! (ptr/add 1 r-keys) (- ~r-length 1) r-keys)
-      (ptr/move! (ptr/add 1 r-values) (- ~r-length 1) r-values)
-      (when-match1 (some (let edge)) edge
-        ; left-node.edges.push(right-node.edges.shift())
-        (ptr/store-at! (+ ~l-length 1) edge l-edges)
-        (ptr/move! (ptr/add 1 r-edges) ~r-length r-edges))
-      (set! l-length (+ ~l-length 1))
-      (set! r-length (- ~r-length 1)))))
+  @with (
+    [(node: (let p-length) (let p-keys) (let p-values) (let p-edges)) node]
+    [(node: (let l-length) (let l-keys) (let l-values) (let l-edges)) (node/edge-at index node)]
+    [(node: (let r-length) (let r-keys) (let r-values) (let r-edges)) (node/edge-at (+ index 1) node)])
+  (assert (< ~l-length B-1 ~r-length) "node/steal-from-right!: !(left-node-length < B-1 < right-node-length)")
+  @let (
+    [p-key (ptr/load-at index p-keys)]
+    [p-value (ptr/load-at index p-values)]
+    [r-key (ptr/load-at 0 r-keys)]
+    [r-value (ptr/load-at 0 r-values)]
+    [edge (if (ne? ptr:null r-edges) (some (ptr/load-at 0 r-edges)) none)])
+  ; left-node.elems.push(node.elems[index])
+  (ptr/store-at! ~l-length p-key l-keys)
+  (ptr/store-at! ~l-length p-value l-values)
+  ; node.elems[index] <- right-node.elems.shift()
+  (ptr/store-at! index r-key p-keys)
+  (ptr/store-at! index r-value p-values)
+  (ptr/move! (ptr/add 1 r-keys) (- ~r-length 1) r-keys)
+  (ptr/move! (ptr/add 1 r-values) (- ~r-length 1) r-values)
+  (when-match1 (some (let edge)) edge
+    ; left-node.edges.push(right-node.edges.shift())
+    (ptr/store-at! (+ ~l-length 1) edge l-edges)
+    (ptr/move! (ptr/add 1 r-edges) ~r-length r-edges))
+  (set! l-length (+ ~l-length 1))
+  (set! r-length (- ~r-length 1)))
 
 (function (node/merge! left-index node) {(forall K V) (-> U64 (Node K V) unit)}
-  (with ([(node: (let p-length) (let p-keys) (let p-values) (let p-edges)) node]
-         [(node: (let l-length) (let l-keys) (let l-values) (let l-edges)) (node/edge-at left-index node)]
-         [(node: (let r-length) (let r-keys) (let r-values) (let r-edges)) (node/edge-at (+ left-index 1) node)])
-    (assert (<= (+ ~l-length ~r-length 1) 2B-1) "node/merge!: !(merged-length <= 2B-1)")
-    (let ([key (ptr/load-at left-index p-keys)]
-          [value (ptr/load-at left-index p-values)]
-          [l (- ~p-length left-index 1)])
-      ; elem <- node.elems.remove(left-index)
-      (ptr/move! (ptr/add (+ left-index 1) p-keys) l (ptr/add left-index p-keys))
-      (ptr/move! (ptr/add (+ left-index 1) p-values) l (ptr/add left-index p-values))
-      ; node.edges.remove(left-index+1)
-      (ptr/move! (ptr/add (+ left-index 2) p-edges) l (ptr/add (+ left-index 1) p-edges))
-      ; left-node.elems.push(elem)
-      (ptr/store-at! ~l-length key l-keys)
-      (ptr/store-at! ~l-length value l-values)
-      ; left-node.elems.append(right-node.elems)
-      (ptr/copy! r-keys ~r-length (ptr/add (+ ~l-length 1) l-keys))
-      (ptr/copy! r-values ~r-length (ptr/add (+ ~l-length 1) l-values))
-      (when (ne? ptr:null l-edges)
-        ; left-node.edges.append(right-node.edges)
-        (ptr/copy! r-edges (+ ~r-length 1) (ptr/add (+ ~l-length 1) l-edges)))
-      (set! p-length (- ~p-length 1))
-      (set! l-length (+ ~l-length ~r-length 1)))))
+  @with (
+    [(node: (let p-length) (let p-keys) (let p-values) (let p-edges)) node]
+    [(node: (let l-length) (let l-keys) (let l-values) (let l-edges)) (node/edge-at left-index node)]
+    [(node: (let r-length) (let r-keys) (let r-values) (let r-edges)) (node/edge-at (+ left-index 1) node)])
+  (assert (<= (+ ~l-length ~r-length 1) 2B-1) "node/merge!: !(merged-length <= 2B-1)")
+  @let (
+    [key (ptr/load-at left-index p-keys)]
+    [value (ptr/load-at left-index p-values)]
+    [l (- ~p-length left-index 1)])
+  ; elem <- node.elems.remove(left-index)
+  (ptr/move! (ptr/add (+ left-index 1) p-keys) l (ptr/add left-index p-keys))
+  (ptr/move! (ptr/add (+ left-index 1) p-values) l (ptr/add left-index p-values))
+  ; node.edges.remove(left-index+1)
+  (ptr/move! (ptr/add (+ left-index 2) p-edges) l (ptr/add (+ left-index 1) p-edges))
+  ; left-node.elems.push(elem)
+  (ptr/store-at! ~l-length key l-keys)
+  (ptr/store-at! ~l-length value l-values)
+  ; left-node.elems.append(right-node.elems)
+  (ptr/copy! r-keys ~r-length (ptr/add (+ ~l-length 1) l-keys))
+  (ptr/copy! r-values ~r-length (ptr/add (+ ~l-length 1) l-values))
+  (when (ne? ptr:null l-edges)
+    ; left-node.edges.append(right-node.edges)
+    (ptr/copy! r-edges (+ ~r-length 1) (ptr/add (+ ~l-length 1) l-edges)))
+  (set! p-length (- ~p-length 1))
+  (set! l-length (+ ~l-length ~r-length 1)))
 
 (value-data (Cursor K V)
   (cursor: (Vector (: (Node K V) U64))))
 
 (function (cursor/new node) {(forall K V) (-> (Node K V) (Cursor K V))}
-  (let1 cursor (cursor: vector/empty)
-    (cursor/push! node 0 cursor)
-    cursor))
+  @let1 cursor (cursor: vector/empty)
+  (cursor/push! node 0 cursor)
+  cursor)
 
 (function (cursor/next! cursor) {(forall K V) (-> (Cursor K V) (Option (: K V)))}
-  (with ([(cursor: (let stack)) cursor]
-         [(: (let node) (let index)) (vector/pop! stack)?])
-    (if (< index (node/length node))
-      (begin
-        (cursor/push! node (+ index 1) cursor)
-        (some (node/elem-at index node)))
-      (cursor/next! cursor))))
+  @with1 (cursor: (let stack)) cursor
+  @with1 (: (let node) (let index)) (vector/pop! stack)?
+  (if (< index (node/length node))
+    (begin
+      (cursor/push! node (+ index 1) cursor)
+      (some (node/elem-at index node)))
+    (cursor/next! cursor)))
 
 (function (cursor/push! node index cursor) {(forall K V) (-> (Node K V) U64 (Cursor K V) unit)}
-  (with1 (cursor: (let stack)) cursor
-    (let ([node (ref node)]
-          [index (ref index)])
-      (vector/push! (: ~node ~index) stack)
-      (while (node/internal? ~node)
-        (set! node (node/edge-at ~index ~node))
-        (set! index 0)
-        (vector/push! (: ~node ~index) stack)))))
+  @with1 (cursor: (let stack)) cursor
+  @let1 node (ref node)
+  @let1 index (ref index)
+  (vector/push! (: ~node ~index) stack)
+  (while (node/internal? ~node)
+    (set! node (node/edge-at ~index ~node))
+    (set! index 0)
+    (vector/push! (: ~node ~index) stack)))
 
 ; ---------------------------
 
 (instance ShallowCopy.OrdMap (forall K V) (ShallowCopy (OrdMap K V))
   (function (shallow-copy a)
-    (with1 (m: (ref (m-body: (let length) (let root)))) a
-      (m: (ref (m-body: length (shallow-copy root)))))))
+    @with1 (m: (ref (m-body: (let length) (let root)))) a
+    (m: (ref (m-body: length (shallow-copy root))))))
 
 (instance DeepCopy.OrdMap (forall K V) (DeepCopy (OrdMap K V)) (where (DeepCopy K) (DeepCopy V))
   (function (deep-copy a)
-    (with1 (m: (ref (m-body: (let length) (let root)))) a
-      (m: (ref (m-body: length (deep-copy root)))))))
+    @with1 (m: (ref (m-body: (let length) (let root)))) a
+    (m: (ref (m-body: length (deep-copy root))))))
 
 (instance ShallowCopy.Node (forall K V) (ShallowCopy (Node K V))
   (function (shallow-copy a)
-    (with ([(node: (let length) (let keys) (let values) (let edges)) a]
-           [(let new-node (node: (let n-length) (let n-keys) (let n-values) (let n-edges))) (if (ne? ptr:null edges) (node/new-internal) (node/new-leaf))])
-      (set! n-length ~length)
-      (ptr/copy! keys ~length n-keys)
-      (ptr/copy! values ~length n-values)
-      (when (ne? ptr:null edges) (ptr/copy-map! shallow-copy edges (+ ~length 1) n-edges))
-      new-node)))
+    @with1 (node: (let length) (let keys) (let values) (let edges)) a
+    @with1 (let new-node (node: (let n-length) (let n-keys) (let n-values) (let n-edges)))
+      (if (ne? ptr:null edges) (node/new-internal) (node/new-leaf))
+    (set! n-length ~length)
+    (ptr/copy! keys ~length n-keys)
+    (ptr/copy! values ~length n-values)
+    (when (ne? ptr:null edges) (ptr/copy-map! shallow-copy edges (+ ~length 1) n-edges))
+    new-node))
 
 (instance DeepCopy.Node (forall K V) (DeepCopy (Node K V)) (where (DeepCopy K) (DeepCopy V))
   (function (deep-copy a)
-    (with ([(node: (let length) (let keys) (let values) (let edges)) a]
-           [(let new-node (node: (let n-length) (let n-keys) (let n-values) (let n-edges))) (if (ne? ptr:null edges) (node/new-internal) (node/new-leaf))])
-      (set! n-length ~length)
-      (ptr/copy-map! deep-copy keys ~length n-keys)
-      (ptr/copy-map! deep-copy values ~length n-values)
-      (when (ne? ptr:null edges) (ptr/copy-map! deep-copy edges (+ ~length 1) n-edges))
-      new-node)))
+    @with1 (node: (let length) (let keys) (let values) (let edges)) a
+    @with1 (let new-node (node: (let n-length) (let n-keys) (let n-values) (let n-edges)))
+      (if (ne? ptr:null edges) (node/new-internal) (node/new-leaf))
+    (set! n-length ~length)
+    (ptr/copy-map! deep-copy keys ~length n-keys)
+    (ptr/copy-map! deep-copy values ~length n-values)
+    (when (ne? ptr:null edges) (ptr/copy-map! deep-copy edges (+ ~length 1) n-edges))
+    new-node))
 
 (function (ptr/copy-map! f src len dest)
-  (let1 i (ref 0)
-    (while (< ~i len)
-      (ptr/store-at! ~i (f (ptr/load-at ~i src)) dest)
-      (set! i (+ ~i 1)))))
+  @let1 i (ref 0)
+  (while (< ~i len)
+    (ptr/store-at! ~i (f (ptr/load-at ~i src)) dest)
+    (set! i (+ ~i 1))))
 
 (instance Default.OrdMap (forall K V) (Default (OrdMap K V))
   (transparent-function default ord-map/empty))

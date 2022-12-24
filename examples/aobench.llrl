@@ -23,39 +23,44 @@
   (vec: F64 F64 F64)) ; x y z
 
 (function (v+ a b) {(-> Vec Vec Vec)}
-  (with ([(vec: (let ax) (let ay) (let az)) a]
-         [(vec: (let bx) (let by) (let bz)) b])
-    (vec: (+ ax bx) (+ ay by) (+ az bz))))
+  @with (
+    [(vec: (let ax) (let ay) (let az)) a]
+    [(vec: (let bx) (let by) (let bz)) b])
+  (vec: (+ ax bx) (+ ay by) (+ az bz)))
 
 (function (v* a n) {(-> Vec F64 Vec)}
-  (with1 (vec: (let x) (let y) (let z)) a
-    (vec: (* x n) (* y n) (* z n))))
+  @with1 (vec: (let x) (let y) (let z)) a
+  (vec: (* x n) (* y n) (* z n)))
 
 (function (v** a m) {(-> Vec (Array Vec) Vec)}
-  (with ([(vec: (let x) (let y) (let z)) a]
-         [(vec: (let xx) (let xy) (let xz)) (get m[0])]
-         [(vec: (let yx) (let yy) (let yz)) (get m[1])]
-         [(vec: (let zx) (let zy) (let zz)) (get m[2])])
-    (vec: (+ (* x xx) (* y yx) (* z zx))
-          (+ (* x xy) (* y yy) (* z zy))
-          (+ (* x xz) (* y yz) (* z zz)))))
+  @with (
+    [(vec: (let x) (let y) (let z)) a]
+    [(vec: (let xx) (let xy) (let xz)) (get m[0])]
+    [(vec: (let yx) (let yy) (let yz)) (get m[1])]
+    [(vec: (let zx) (let zy) (let zz)) (get m[2])])
+  (vec:
+    (+ (* x xx) (* y yx) (* z zx))
+    (+ (* x xy) (* y yy) (* z zy))
+    (+ (* x xz) (* y yz) (* z zz))))
 
 (function (vdot a b) {(-> Vec Vec F64)}
-  (with ([(vec: (let ax) (let ay) (let az)) a]
-         [(vec: (let bx) (let by) (let bz)) b])
-    (+ (* ax bx) (* ay by) (* az bz))))
+  @with (
+    [(vec: (let ax) (let ay) (let az)) a]
+    [(vec: (let bx) (let by) (let bz)) b])
+  (+ (* ax bx) (* ay by) (* az bz)))
 
 (function (vcross a b) {(-> Vec Vec Vec)}
-  (with ([(vec: (let ax) (let ay) (let az)) a]
-         [(vec: (let bx) (let by) (let bz)) b])
-    (vec: (- (* ay bz) (* az by)) (- (* az bx) (* ax bz)) (- (* ax by) (* ay bx)))))
+  @with (
+    [(vec: (let ax) (let ay) (let az)) a]
+    [(vec: (let bx) (let by) (let bz)) b])
+  (vec: (- (* ay bz) (* az by)) (- (* az bx) (* ax bz)) (- (* ax by) (* ay bx))))
 
 (function (vnormalize c) {(-> Vec Vec)}
-  (let1 length (sqrt (vdot c c))
-    (if (< 1.0e-17 (abs length))
-      (with1 (vec: (let x) (let y) (let z)) c
-        (vec: (/ x length) (/ y length) (/ z length)))
-      c)))
+  @let1 length (sqrt (vdot c c))
+  (if (< 1.0e-17 (abs length))
+    (with1 (vec: (let x) (let y) (let z)) c
+      (vec: (/ x length) (/ y length) (/ z length)))
+    c))
 
 (value-data Scene (scene: Plane (Array Sphere))) ; plane spheres
 
@@ -82,27 +87,27 @@
 (function (.hit isect) (with1 (isect: _ _ _ (let hit)) isect hit))
 
 (function (ray-sphere-intersect isect ray sphere) {(-> (Ref Isect) Ray Sphere unit)}
-  (let* ([rs (v+ (.org ray) (v* (.center sphere) -1))]
-         [B (vdot rs (.dir ray))]
-         [C (- (vdot rs rs) (* (.radius sphere) (.radius sphere)))]
-         [D (- (* B B) C)])
-    (when (<= D 0.0) (return))
-    (with ([(let s) (- 0 B (sqrt D))]
-           [(isect: (let t) _ _ _) ~isect])
-      (when (< 0.0 s t)
-        (let* ([p (v+ (.org ray) (v* (.dir ray) s))]
-               [n (vnormalize (v+ p (v* (.center sphere) -1)))])
-          (set! isect (isect: s p n #t)))))))
+  @let1 rs (v+ (.org ray) (v* (.center sphere) -1))
+  @let1 B (vdot rs (.dir ray))
+  @let1 C (- (vdot rs rs) (* (.radius sphere) (.radius sphere)))
+  @let1 D (- (* B B) C)
+  @when (< 0.0 D)
+  @let1 s (- 0 B (sqrt D))
+  @with1 (isect: (let t) _ _ _) ~isect
+  @when (< 0.0 s t)
+  @let1 p (v+ (.org ray) (v* (.dir ray) s))
+  @let1 n (vnormalize (v+ p (v* (.center sphere) -1)))
+  (set! isect (isect: s p n #t)))
 
 (function (ray-plane-intersect isect ray plane) {(-> (Ref Isect) Ray Plane unit)}
-  (let* ([d (- (vdot (.p plane) (.n plane)))]
-         [v (vdot (.dir ray) (.n plane))])
-    (when (< (abs v) 1.0e-17) (return))
-    (with ([(let s) (/ (+ (vdot (.org ray) (.n plane)) d) -1 v)]
-           [(isect: (let t) _ _ _) ~isect])
-      (when (< 0.0 s t)
-        (let1 p (v+ (.org ray) (v* (.dir ray) s))
-          (set! isect (isect: s p (.n plane) #t)))))))
+  @let1 d (- (vdot (.p plane) (.n plane)))
+  @let1 v (vdot (.dir ray) (.n plane))
+  @when (<= 1.0e-17 (abs v))
+  @let1 s (/ (+ (vdot (.org ray) (.n plane)) d) -1 v)
+  @with1 (isect: (let t) _ _ _) ~isect
+  @when (< 0.0 s t)
+  @let1 p (v+ (.org ray) (v* (.dir ray) s))
+  (set! isect (isect: s p (.n plane) #t)))
 
 (function (ortho-basis basis n) {(-> (Array Vec) Vec unit)}
   (set! basis[2] n)
@@ -117,57 +122,60 @@
   (set! basis[1] (vnormalize (vcross (get basis[2]) (get basis[0])))))
 
 (function (ambient-occlusion isect scene) {(-> Isect Scene Vec)}
-  (with1 (isect: _ (let p) (let n) _) isect
-    (let* ([ntheta NAO_SAMPLES]
-           [nphi NAO_SAMPLES]
-           [eps 0.0001]
-           [p (v+ p (v* n eps))]
-           [basis (array/unsafe-stackalloc-uninitialized 3)]
-           [occlusion (ref 0)])
-      (ortho-basis basis n)
-      (for _ (iterator/range 0 (* ntheta nphi) 1)
-        (let* ([theta (sqrt <drand48>)]
-               [phi (* 2 pi <drand48>)]
-               [v (vec: (* (cos phi) theta) (* (sin phi) theta) (sqrt (- 1 (* theta theta))))]
-               [ray (ray: p (v** v basis))]
-               [occ-isect (ref (isect: 1.0e+17 (vec: 0 0 0) (vec: 0 0 0) #f))])
-          (for (let sphere) (.spheres scene) (ray-sphere-intersect occ-isect ray sphere))
-          (ray-plane-intersect occ-isect ray (.plane scene))
-          (when (.hit ~occ-isect)
-            (set! occlusion (+ ~occlusion 1)))))
-      (let1 v (/ (- (conv (* ntheta nphi)) ~occlusion) (conv (* ntheta nphi)))
-        (vec: v v v)))))
+  @with1 (isect: _ (let p) (let n) _) isect
+  @let* (
+    [ntheta NAO_SAMPLES]
+    [nphi NAO_SAMPLES]
+    [eps 0.0001]
+    [p (v+ p (v* n eps))]
+    [basis (array/unsafe-stackalloc-uninitialized 3)]
+    [occlusion (ref 0)])
+  (ortho-basis basis n)
+  (for _ (iterator/range 0 (* ntheta nphi) 1)
+    @let* (
+      [theta (sqrt <drand48>)]
+      [phi (* 2 pi <drand48>)]
+      [v (vec: (* (cos phi) theta) (* (sin phi) theta) (sqrt (- 1 (* theta theta))))]
+      [ray (ray: p (v** v basis))]
+      [occ-isect (ref (isect: 1.0e+17 (vec: 0 0 0) (vec: 0 0 0) #f))])
+    (for (let sphere) (.spheres scene) (ray-sphere-intersect occ-isect ray sphere))
+    (ray-plane-intersect occ-isect ray (.plane scene))
+    (when (.hit ~occ-isect) (set! occlusion (+ ~occlusion 1))))
+  @let1 v (/ (- (conv (* ntheta nphi)) ~occlusion) (conv (* ntheta nphi)))
+  (vec: v v v))
 
 (c-function <drand48> {F64} "drand48")
 
 (function (clamp f) {(-> F64 U8)}
-  (let1 i (conv-to I32 (* f 255.5))
-    (cond
-      [(< i 0) 0]
-      [(< 255 i) 255]
-      [else (conv i)])))
+  @let1 i (conv-to I32 (* f 255.5))
+  (cond
+    [(< i 0) 0]
+    [(< 255 i) 255]
+    [else (conv i)]))
 
 (function (render! img w h nsubsamples scene) {(-> (Array U8) I32 I32 I32 Scene unit)}
-  (let1 fimg (array/new (vec: 0 0 0) (conv (* w h)))
-    (for (let y) (iterator/range 0 h 1)
-      (for (let x) (iterator/range 0 w 1)
-        (let* ([findex (conv (+ (* y w) x))]
-               [iindex (* findex 3)])
-          (for (let v) (iterator/range 0 nsubsamples 1)
-            (for (let u) (iterator/range 0 nsubsamples 1)
-              (let* ([px (/ (+ (conv x) (/ (conv u) (conv nsubsamples)) (/ (conv w) -2)) (conv w) 0.5)]
-                     [py (/ (+ (conv y) (/ (conv v) (conv nsubsamples)) (/ (conv h) -2)) (conv h) -0.5)]
-                     [ray (ray: (vec: 0 0 0) (vnormalize (vec: px py -1)))]
-                     [isect (ref (isect: 1.0e+17 (vec: 0 0 0) (vec: 0 0 0) #f))])
-                (for (let sphere) (.spheres scene) (ray-sphere-intersect isect ray sphere))
-                (ray-plane-intersect isect ray (.plane scene))
-                (when (.hit ~isect)
-                  (set! fimg[findex] (v+ (get fimg[findex]) (ambient-occlusion ~isect scene)))))))
-          (set! fimg[findex] (v* (get fimg[findex]) (/ (conv (* nsubsamples nsubsamples)))))
-          (with1 (vec: (let fx) (let fy) (let fz)) (get fimg[findex])
-            (set! img[(+ iindex 0)] (clamp fx))
-            (set! img[(+ iindex 1)] (clamp fy))
-            (set! img[(+ iindex 2)] (clamp fz))))))))
+  @let1 fimg (array/new (vec: 0 0 0) (conv (* w h)))
+  (for (let y) (iterator/range 0 h 1)
+    (for (let x) (iterator/range 0 w 1)
+      @let1 findex (conv (+ (* y w) x))
+      @let1 iindex (* findex 3)
+
+      (for (let v) (iterator/range 0 nsubsamples 1)
+        (for (let u) (iterator/range 0 nsubsamples 1)
+          @let1 px (/ (+ (conv x) (/ (conv u) (conv nsubsamples)) (/ (conv w) -2)) (conv w) 0.5)
+          @let1 py (/ (+ (conv y) (/ (conv v) (conv nsubsamples)) (/ (conv h) -2)) (conv h) -0.5)
+          @let1 ray (ray: (vec: 0 0 0) (vnormalize (vec: px py -1)))
+          @let1 isect (ref (isect: 1.0e+17 (vec: 0 0 0) (vec: 0 0 0) #f))
+          (for (let sphere) (.spheres scene) (ray-sphere-intersect isect ray sphere))
+          (ray-plane-intersect isect ray (.plane scene))
+          (when (.hit ~isect)
+            (set! fimg[findex] (v+ (get fimg[findex]) (ambient-occlusion ~isect scene))))))
+      (set! fimg[findex] (v* (get fimg[findex]) (/ (conv (* nsubsamples nsubsamples)))))
+
+      @with1 (vec: (let fx) (let fy) (let fz)) (get fimg[findex])
+      (set! img[(+ iindex 0)] (clamp fx))
+      (set! img[(+ iindex 1)] (clamp fy))
+      (set! img[(+ iindex 2)] (clamp fz)))))
 
 (function (init-scene) {(-> Scene)}
   (scene:
@@ -184,8 +192,10 @@
     (fprintln! fh "255")!
     (write-bytes! img fh))))
 
-(let ([img (array/new 0 (* WIDTH HEIGHT 3))]
-      [scene (init-scene)])
+(begin
+  @let1 img (array/new 0 (* WIDTH HEIGHT 3))
+  @let1 scene (init-scene)
   (render! img WIDTH HEIGHT NSUBSAMPLES scene)
-  (|> (saveppm! "ao.ppm" WIDTH HEIGHT img)
-      (result/unwrap* [^1 (assert #f (string "Failed to write: " %1))])))
+  (result/unwrap*
+    [^1 (assert #f (string "Failed to write: " %1))]
+    (saveppm! "ao.ppm" WIDTH HEIGHT img)))

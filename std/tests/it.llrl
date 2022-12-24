@@ -36,13 +36,15 @@
 (assert-eq? (array 1 3) (|> (array 1 3 5 7 2 4 6 8) (it/take-while [^1 (< %1 4)]) collect))
 (assert-eq? (array 5 7 2 4 6 8) (|> (array 1 3 5 7 2 4 6 8) (it/skip-while [^1 (< %1 4)]) collect))
 
-(assert (= (array 1 2 1 2 3 1 2 3 4)
-           (collect (it/flat-map [^1 (it/take %1 (array 1 2 3 4 5))] (array 2 3 4)))))
+(assert (=
+  (array 1 2 1 2 3 1 2 3 4)
+  (collect (it/flat-map [^1 (it/take %1 (array 1 2 3 4 5))] (array 2 3 4)))))
 
 (assert-eq? 12345 (it/fold [^2 (+ (* %1 10) %2)] 0 (array 1 2 3 4 5)))
 
-(let ([a (array 7 3 2 0 4 1)]
-      [b (array 1 8 9 4 3 5)])
+(let (
+    [a (array 7 3 2 0 4 1)]
+    [b (array 1 8 9 4 3 5)])
   (assert (it/any? [^1 (eq? %1 0)] a))
   (assert (not (it/any? [^1 (eq? %1 0)] b)))
   (assert (not (it/all? [^1 (ne? %1 0)] a)))

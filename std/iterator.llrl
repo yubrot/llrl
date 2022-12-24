@@ -21,36 +21,36 @@
   (iterator/new (lambda () (some a))))
 
 (function (iterator/only a) {(forall A) (-> A (Iterator A))}
-  (let1 next (ref (some a))
-    (iterator/new (lambda ()
-      (match ~next
-        [none none]
-        [(some (let x)) (set! next none) (some x)])))))
+  @let1 next (ref (some a))
+  (iterator/new (lambda ()
+    (match ~next
+      [none none]
+      [(some (let x)) (set! next none) (some x)]))))
 
 (function (iterator/repeat count a) {(forall A) (-> U64 A (Iterator A))}
-  (let1 i (ref count)
-    (iterator/new (lambda ()
-      (when? (< 0 ~i)
-        (set! i (- ~i 1))
-        a)))))
+  @let1 i (ref count)
+  (iterator/new (lambda ()
+    (when? (< 0 ~i)
+      (set! i (- ~i 1))
+      a))))
 
 (function (iterator/unfold f state) {(forall A B) (-> (-> B (Option (: A B))) B (Iterator A))}
-  (let1 state (ref state)
-    (iterator/new (lambda ()
-      (with1? (some (: (let a) (let next-state))) (f ~state)
-        (set! state next-state)
-        a)))))
+  @let1 state (ref state)
+  (iterator/new (lambda ()
+    (with1? (some (: (let a) (let next-state))) (f ~state)
+      (set! state next-state)
+      a))))
 
 ; [start,end)
 (function (iterator/range start end step) {(forall A) (-> A A A (Iterator A)) (where (Ord A) (Zero A) (Add A))}
-  (let1 i (ref start)
-    (iterator/new (lambda ()
-      (if (or (and (< zero step) (< ~i end))
-              (and (> zero step) (> ~i end)))
-        (let1 j ~i
-          (set! i (+ j step))
-          (some j))
-        none)))))
+  @let1 i (ref start)
+  (iterator/new (lambda ()
+    (if (or (and (< zero step) (< ~i end))
+            (and (> zero step) (> ~i end)))
+      (let1 j ~i
+        (set! i (+ j step))
+        (some j))
+      none))))
 
 (instance Iterate.Iterator (Iterate Iterator)
   (transparent-function (iterate t) t))
@@ -61,12 +61,12 @@
 (macro (for s)
   (s/match s
     [(_ ,pat ,it ,@body)
+      @let1 tmp-it (gensym)
       (ok
-        (let1 tmp-it (gensym)
-          `(let ([,tmp-it (,\iterate ,it)])
-            (while (match (,\iterator/next! ,tmp-it)
-              [(,\some ,pat) ,@body #t]
-              [,\none #f])))))]
+        `(let ([,tmp-it (,\iterate ,it)])
+          (while (match (,\iterator/next! ,tmp-it)
+            [(,\some ,pat) ,@body #t]
+            [,\none #f]))))]
     [_
       (err "Expected (for pat it body ...)")]))
 

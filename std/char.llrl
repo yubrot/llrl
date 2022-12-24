@@ -57,26 +57,26 @@
 
 (instance Display.Char (Display Char)
   (function (display! w a)
-    (let1 tmp (array/unsafe-temporary-bytearray 0 {U64})
-      (match (|> a char/unicode-scalar utf-8/encode utf-8/encode/force-success)
-        [(utf-8/complete:latin (let a))
-          (set! tmp[0] a)
-          (display! w (<tmp-string> (array/ptr tmp) 1))]
-        [(utf-8/complete:2 (let a) (let b))
-          (set! tmp[0] a)
-          (set! tmp[1] b)
-          (display! w (<tmp-string> (array/ptr tmp) 2))]
-        [(utf-8/complete:3 (let a) (let b) (let c))
-          (set! tmp[0] a)
-          (set! tmp[1] b)
-          (set! tmp[2] c)
-          (display! w (<tmp-string> (array/ptr tmp) 3))]
-        [(utf-8/complete:4 (let a) (let b) (let c) (let d))
-          (set! tmp[0] a)
-          (set! tmp[1] b)
-          (set! tmp[2] c)
-          (set! tmp[3] d)
-          (display! w (<tmp-string> (array/ptr tmp) 4))]))))
+    @let1 tmp (array/unsafe-temporary-bytearray 0 {U64})
+    (match (|> a char/unicode-scalar utf-8/encode utf-8/encode/force-success)
+      [(utf-8/complete:latin (let a))
+        (set! tmp[0] a)
+        (display! w (<tmp-string> (array/ptr tmp) 1))]
+      [(utf-8/complete:2 (let a) (let b))
+        (set! tmp[0] a)
+        (set! tmp[1] b)
+        (display! w (<tmp-string> (array/ptr tmp) 2))]
+      [(utf-8/complete:3 (let a) (let b) (let c))
+        (set! tmp[0] a)
+        (set! tmp[1] b)
+        (set! tmp[2] c)
+        (display! w (<tmp-string> (array/ptr tmp) 3))]
+      [(utf-8/complete:4 (let a) (let b) (let c) (let d))
+        (set! tmp[0] a)
+        (set! tmp[1] b)
+        (set! tmp[2] c)
+        (set! tmp[3] d)
+        (display! w (<tmp-string> (array/ptr tmp) 4))])))
 
 (builtin-op <tmp-string> {(-> (Ptr U8) U64 String)} "string.construct")
 

@@ -26,9 +26,10 @@
   (s/match s
     [(_ ,a ,@bs)
       (ok `(,\canonicalize/complete
-            ,(s/foldl (lambda (buf s) `(,\canonicalize/put! (,\path/components ,s) ,buf))
-                      \canonicalize/init
-                      `(,a ,@bs))!))]
+        ,(s/foldl
+          (lambda (buf s) `(,\canonicalize/put! (,\path/components ,s) ,buf))
+          \canonicalize/init
+          `(,a ,@bs))!))]
     [_
       (err "Expected (canonicalized-path p ...)")]))
 
@@ -37,39 +38,39 @@
 
 (function (path/base-name p) {(-> String String)}
   (when (string/empty? p) (return p))
-  (with1 (: (let l) (let r)) (last-component-start-end p)
-    (if (eq? l r)
-      "/"
-      (string/substring l r p))))
+  @with1 (: (let l) (let r)) (last-component-start-end p)
+  (if (eq? l r)
+    "/"
+    (string/substring l r p)))
 
 (function (path/dir-name p) {(-> String String)}
-  (with1 (: (let l) _) (last-component-start-end p)
-    (if (<= l 1)
-      (if (path/absolute? p) "/" ".")
-      (string/take (- l 1) p))))
+  @with1 (: (let l) _) (last-component-start-end p)
+  (if (<= l 1)
+    (if (path/absolute? p) "/" ".")
+    (string/take (- l 1) p)))
 
 (function (path/extension? p) {(-> String (Option String))}
-  (with1 (: (let l) (let e) (let r)) (last-component-start-dot-end p)
-    (if (< (+ l 1) e)
-      (some (string/substring e r p))
-      none)))
+  @with1 (: (let l) (let e) (let r)) (last-component-start-dot-end p)
+  (if (< (+ l 1) e)
+    (some (string/substring e r p))
+    none))
 
 (function (path/with-extension ext p) {(-> (Option String) String String)}
-  (with1 (: (let l) (let e) (let r)) (last-component-start-dot-end p)
-    (string
-      (if (< (+ l 1) e)
-        (string/take (- e 1) p)
-        (string/take r p))
-      (match ext
-        [(some (let ext)) (string #\. ext)]
-        [none ""])
-      (string/skip r p))))
+  @with1 (: (let l) (let e) (let r)) (last-component-start-dot-end p)
+  (string
+    (if (< (+ l 1) e)
+      (string/take (- e 1) p)
+      (string/take r p))
+    (match ext
+      [(some (let ext)) (string #\. ext)]
+      [none ""])
+    (string/skip r p)))
 
 (function (path/default-extension ext p) {(-> String String String)}
-  (with1 (: (let l) (let e) (let r)) (last-component-start-dot-end p)
-    (if (< (+ l 1) e)
-      p
-      (string (string/take r p) #\. ext (string/skip r p)))))
+  @with1 (: (let l) (let e) (let r)) (last-component-start-dot-end p)
+  (if (< (+ l 1) e)
+    p
+    (string (string/take r p) #\. ext (string/skip r p))))
 
 (function (path/absolute? p) {(-> String Bool)}
   (string/starts-with? "/" p))
@@ -86,33 +87,34 @@
   (path-component:normal String))
 
 (function (path/components p) {(-> String (Iterator PathComponent))}
-  (let1 rest (ref p)
-    (iterator/new (lambda ()
-      (cond
-        [(string/empty? ~rest)
-          none]
-        [(string/starts-with? "/" ~rest)
-          (set! rest (skip-repeated-dir-separator (string/skip 1 ~rest)))
-          (some path-component:root-dir)]
-        [(string/starts-with? "./" ~rest)
-          (set! rest (skip-repeated-dir-separator (string/skip 2 ~rest)))
-          (some path-component:current-dir)]
-        [(string/starts-with? "../" ~rest)
-          (set! rest (skip-repeated-dir-separator (string/skip 3 ~rest)))
-          (some path-component:parent-dir)]
-        [else
-          (match (string/find? "/" ~rest)
-            [(some (let i))
-              (let1 c (path-component:normal (string/take i ~rest))
-                (set! rest (skip-repeated-dir-separator (string/skip i ~rest)))
-                (some c))]
-            [none
-              (let1 c (match ~rest
-                        ["." path-component:current-dir]
-                        [".." path-component:parent-dir]
-                        [_ (path-component:normal ~rest)])
-                (set! rest "")
-                (some c))])])))))
+  @let1 rest (ref p)
+  (iterator/new (lambda ()
+    (cond
+      [(string/empty? ~rest)
+        none]
+      [(string/starts-with? "/" ~rest)
+        (set! rest (skip-repeated-dir-separator (string/skip 1 ~rest)))
+        (some path-component:root-dir)]
+      [(string/starts-with? "./" ~rest)
+        (set! rest (skip-repeated-dir-separator (string/skip 2 ~rest)))
+        (some path-component:current-dir)]
+      [(string/starts-with? "../" ~rest)
+        (set! rest (skip-repeated-dir-separator (string/skip 3 ~rest)))
+        (some path-component:parent-dir)]
+      [else
+        (match (string/find? "/" ~rest)
+          [(some (let i))
+            @let1 c (path-component:normal (string/take i ~rest))
+            (set! rest (skip-repeated-dir-separator (string/skip i ~rest)))
+            (some c)]
+          [none
+            @let1 c
+              (match ~rest
+                ["." path-component:current-dir]
+                [".." path-component:parent-dir]
+                [_ (path-component:normal ~rest)])
+            (set! rest "")
+            (some c)])]))))
 
 (function (path/canonicalize p) {(-> String String)}
   (|> canonicalize/init (canonicalize/put! (path/components p)) canonicalize/complete))
@@ -140,33 +142,32 @@
     [else (string (string/take (last-component-end p) p) #\/ q)]))
 
 (function (skip-repeated-dir-separator s) {(-> String String)}
-  (if (and (<= 1 (string/length s))
-           (= (string/byte-at 0 s) (conv (char/unicode-scalar #\/))))
+  (if (and (<= 1 (string/length s)) (= (string/byte-at 0 s) (conv (char/unicode-scalar #\/))))
     (skip-repeated-dir-separator (string/skip 1 s))
     s))
 
 ; foo/bar/baz.ext/
 ;                ^
 (function (last-component-end p) {(-> String U64)}
-  (let1 r (ref (string/length p))
-    (while (and (< 0 ~r) (eq? (string/byte-at (- ~r 1) p) (conv (char/unicode-scalar #\/))))
-      (set! r (- ~r 1)))
-    ~r))
+  @let1 r (ref (string/length p))
+  (while (and (< 0 ~r) (eq? (string/byte-at (- ~r 1) p) (conv (char/unicode-scalar #\/))))
+    (set! r (- ~r 1)))
+  ~r)
 
 ; foo/bar/baz.ext/
 ;         ^      ^
 (function (last-component-start-end p) {(-> String (: U64 U64))}
-  (let1 r (last-component-end p)
-    (let1 l (ref r)
-      (while (and (< 0 ~l) (ne? (string/byte-at (- ~l 1) p) (conv (char/unicode-scalar #\/))))
-        (set! l (- ~l 1)))
-      (: ~l r))))
+  @let1 r (last-component-end p)
+  @let1 l (ref r)
+  (while (and (< 0 ~l) (ne? (string/byte-at (- ~l 1) p) (conv (char/unicode-scalar #\/))))
+    (set! l (- ~l 1)))
+  (: ~l r))
 
 ; foo/bar/baz.ext/
 ;         ^   ^  ^
 (function (last-component-start-dot-end p) {(-> String (: U64 U64 U64))}
-  (with1 (: (let l) (let r)) (last-component-start-end p)
-    (let1 e (ref r)
-      (while (and (< l ~e) (ne? (string/byte-at (- ~e 1) p) (conv (char/unicode-scalar #\.))))
-        (set! e (- ~e 1)))
-      (: l ~e r))))
+  @with1 (: (let l) (let r)) (last-component-start-end p)
+  @let1 e (ref r)
+  (while (and (< l ~e) (ne? (string/byte-at (- ~e 1) p) (conv (char/unicode-scalar #\.))))
+    (set! e (- ~e 1)))
+  (: l ~e r))

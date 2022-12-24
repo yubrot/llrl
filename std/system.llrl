@@ -14,8 +14,8 @@
 (export args exit! random! getenv Process process/_ with-process! time)
 
 (function (args) {(-> (Array String))}
-  (with1 (<args>: (let argc) (let argv)) <args>
-    (shallow-copy (array/unsafe-from-ptr argv argc))))
+  @with1 (<args>: (let argc) (let argv)) <args>
+  (shallow-copy (array/unsafe-from-ptr argv argc)))
 
 (function (exit! status) {(forall A) (-> I32 A)}
   (<exit> status)
@@ -35,35 +35,34 @@
   (process: I32 File File File)) ; pid in out err
 
 (function (process/spawn! name args) {(forall T) (-> String (T String) (Result Process IoError)) (where (Iterate T))}
-  (let ([name (string/c-compatible-ptr name)]
-        [argv vector/empty])
+  @let (
+    [name (string/c-compatible-ptr name)]
+    [argv vector/empty])
   (vector/push! name argv)
   (for (let arg) args (vector/push! (string/c-compatible-ptr arg) argv))
   (vector/push! ptr:null argv)
-  (with1
-    (<process>: (let errno) (let pid) (let cin) (let cout) (let cerr))
+  @with1 (<process>: (let errno) (let pid) (let cin) (let cout) (let cerr))
     (<spawn-process> name (array/ptr (vector/buffer argv)))
-    (if (eq? errno 0)
-      (let ([cin (file/unsafe-from-handle cin)]
-            [cout (file/unsafe-from-handle cout)]
-            [cerr (file/unsafe-from-handle cerr)])
-        (ok (process: pid cin cout cerr)))
-      (err (io-error/from-errno errno))))))
+  (if (eq? errno 0)
+    (let (
+        [cin (file/unsafe-from-handle cin)]
+        [cout (file/unsafe-from-handle cout)]
+        [cerr (file/unsafe-from-handle cerr)])
+      (ok (process: pid cin cout cerr)))
+    (err (io-error/from-errno errno))))
 
 (function (process/execute! name args) {(forall T) (-> String (T String) (Result (Option I32) IoError)) (where (Iterate T))}
-  (let ([name (string/c-compatible-ptr name)]
-        [argv vector/empty])
+  @let1 name (string/c-compatible-ptr name)
+  @let1 argv vector/empty
   (vector/push! name argv)
   (for (let arg) args (vector/push! (string/c-compatible-ptr arg) argv))
   (vector/push! ptr:null argv)
-  (with1
-    (<process>: (let errno) (let pid) _ _ _)
+  @with1 (<process>: (let errno) (let pid) _ _ _)
     (<execute-process> name (array/ptr (vector/buffer argv)))
-    (if (eq? errno 0)
-      (ok
-        (let1 status (<wait> pid)
-          (when? (<= 0 status) status)))
-      (err (io-error/from-errno errno))))))
+  (if (eq? errno 0)
+    (let1 status (<wait> pid)
+      (ok (when? (<= 0 status) status)))
+    (err (io-error/from-errno errno))))
 
 (function (process/pid proc) {(-> Process I32)}
   (with1 (process: (let pid) _ _ _) proc pid))
@@ -78,22 +77,22 @@
   (with1 (process: _ _ _ (let err)) proc err))
 
 (function (process/wait! proc) {(-> Process (Option I32))}
-  (with1 (process: (let pid) (let in) _ _) proc
-    (file/close! in)
-    (let1 status (<wait> pid)
-      (when? (<= 0 status) status)))) ; FIXME: Identify waitpid errors, SIGNALED, and STOPPED
+  @with1 (process: (let pid) (let in) _ _) proc
+  (file/close! in)
+  @let1 status (<wait> pid)
+  (when? (<= 0 status) status)) ; FIXME: Identify waitpid errors, SIGNALED, and STOPPED
 
 (function (process/close! proc) {(-> Process (Result unit IoError))}
-  (let ([r1 (file/close! (process/in proc))]
-        [r2 (file/close! (process/out proc))]
-        [r3 (file/close! (process/err proc))])
-    (result/and r1 r2 r3)))
+  @let1 r1 (file/close! (process/in proc))
+  @let1 r2 (file/close! (process/out proc))
+  @let1 r3 (file/close! (process/err proc))
+  (result/and r1 r2 r3))
 
 (function (with-process! name args f) {(forall T A) (-> String (T String) (-> Process (Result A IoError)) (Result A IoError)) (where (Iterate T))}
-  (let* ([proc (process/spawn! name args)!]
-         [ret (f proc)])
-    (ignore (process/close! proc))
-    ret))
+  @let1 proc (process/spawn! name args)!
+  @let1 ret (f proc)
+  (ignore (process/close! proc))
+  ret)
 
 (c-function time {(-> F64)} "llrt_time")
 

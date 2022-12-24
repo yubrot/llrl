@@ -60,13 +60,13 @@
     [()
       (ok `(,\some ,t))]
     [([,index] ,@accessors)
-      (let ([next-t (gensym)])
-        (ok
-          `(match (,\load-at? ,index ,t)
-            [(,\some (let ,next-t))
-              ,(expand-get?-accessors next-t accessors)!]
-            [_
-              ,\none])))]
+      @let ([next-t (gensym)])
+      (ok
+        `(match (,\load-at? ,index ,t)
+          [(,\some (let ,next-t))
+            ,(expand-get?-accessors next-t accessors)!]
+          [_
+            ,\none]))]
     [_
       (err "Expected get accessor: [index]")]))
 

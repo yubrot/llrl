@@ -74,9 +74,9 @@
 ; Remove the all files and directories recursively.
 (function (remove-all! pathname) {(-> String (Result unit IoError))}
   (when-match1 (ok (let handle)) (directory/open! pathname)
-    (let1 result (remove-directory-contents! pathname handle)
-      (ignore (directory/close! handle))
-      result !))
+    @let1 result (remove-directory-contents! pathname handle)
+    (ignore (directory/close! handle))
+    result !)
   (remove! pathname))
 
 (function (remove-directory-contents! pathname handle) {(-> String Directory (Result unit IoError))}

@@ -40,10 +40,10 @@
     [(_ ,a ,b)
       (ok `(,pred ,a ,b))]
     [(_ ,a ,@bs)
+      @let ([tmp-a (gensym)])
       (ok
-        (let ([tmp-a (gensym)])
-          `(let ([,tmp-a ,a])
-            ,(compare-chain pred tmp-a bs))))]
+        `(let ([,tmp-a ,a])
+          ,(compare-chain pred tmp-a bs)))]
     [_
       (err "Expected (_ expr ...)")]))
 
@@ -52,9 +52,9 @@
     [(,b)
       `(,pred ,a ,b)]
     [(,b ,@bs)
-      (let ([tmp-b (gensym)])
-        `(let ([,tmp-b ,b])
-          (,\&& (,pred ,a ,tmp-b) ,(compare-chain pred tmp-b bs))))]
+      @let ([tmp-b (gensym)])
+      `(let ([,tmp-b ,b])
+        (,\&& (,pred ,a ,tmp-b) ,(compare-chain pred tmp-b bs)))]
     [_
       '#t]))
 
@@ -106,14 +106,15 @@
 (macro (derive/Ord s)
   (s/match s
     [(_ _ ,type-con ,@value-cons)
-      (let ([inst-name (derive/symbol/concat 'Ord. (derive/data/type-con/name type-con))!]
-            [inst-signature (derive/data/type-con/instance-signature \Ord type-con)!]
-            [match-body (comparison-clauses value-cons)!])
-        (ok
-          `(instance ,inst-name ,@inst-signature
-            (function (compare a b)
-              (match (: a b)
-                ,@match-body)))))]
+      @let (
+        [inst-name (derive/symbol/concat 'Ord. (derive/data/type-con/name type-con))!]
+        [inst-signature (derive/data/type-con/instance-signature \Ord type-con)!]
+        [match-body (comparison-clauses value-cons)!])
+      (ok
+        `(instance ,inst-name ,@inst-signature
+          (function (compare a b)
+            (match (: a b)
+              ,@match-body))))]
     [_
       (err "Unsupported derivation")]))
 
@@ -129,21 +130,22 @@
       `([_ ,\ordering:equal])])))
 
 (function (comparison-clause value-con)
-  (let ([con-name (derive/data/value-con/name value-con)]
-        [con-fields (derive/data/value-con/fields value-con)])
-    (ok (if-match1 (some (let fields)) con-fields
-      (let ([l-names (s/map [^1 (gensym)] fields)!]
-            [r-names (s/map [^1 (gensym)] fields)!])
-        `[(: (,con-name ,@(s/map [^1 `(let ,%1)] l-names)!)
-             (,con-name ,@(s/map [^1 `(let ,%1)] r-names)!))
-          (,\ordering/or ,@(s/zip [^2 `(,\compare ,%1 ,%2)] l-names r-names)!)])
-      `[(: ,con-name ,con-name) ,\ordering:equal]))))
+  @let (
+    [con-name (derive/data/value-con/name value-con)]
+    [con-fields (derive/data/value-con/fields value-con)])
+  (ok (if-match1 (some (let fields)) con-fields
+    (let ([l-names (s/map [^1 (gensym)] fields)!]
+          [r-names (s/map [^1 (gensym)] fields)!])
+      `[(: (,con-name ,@(s/map [^1 `(let ,%1)] l-names)!) (,con-name ,@(s/map [^1 `(let ,%1)] r-names)!))
+        (,\ordering/or ,@(s/zip [^2 `(,\compare ,%1 ,%2)] l-names r-names)!)])
+    `[(: ,con-name ,con-name) ,\ordering:equal])))
 
 (function (comparison-clause-default value-con)
-  (let ([con-name (derive/data/value-con/name value-con)]
-        [con-fields (derive/data/value-con/fields value-con)])
-    (ok (if-match1 (some (let fields)) con-fields
-      `([(: (,con-name ,@(s/map [^1 '_] fields)!) _) ,\ordering:less]
-        [(: _ (,con-name ,@(s/map [^1 '_] fields)!)) ,\ordering:greater])
-      `([(: ,con-name _) ,\ordering:less]
-        [(: _ ,con-name) ,\ordering:greater])))))
+  @let (
+    [con-name (derive/data/value-con/name value-con)]
+    [con-fields (derive/data/value-con/fields value-con)])
+  (ok (if-match1 (some (let fields)) con-fields
+    `([(: (,con-name ,@(s/map [^1 '_] fields)!) _) ,\ordering:less]
+      [(: _ (,con-name ,@(s/map [^1 '_] fields)!)) ,\ordering:greater])
+    `([(: ,con-name _) ,\ordering:less]
+      [(: _ ,con-name) ,\ordering:greater]))))

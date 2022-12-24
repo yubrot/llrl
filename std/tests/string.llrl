@@ -37,25 +37,27 @@
 (assert (string/valid-sequence? (array 240 144 144 128))) ; F0 90 90 80
 (assert (not (string/valid-sequence? (array 237 160 129 237 176 128)))) ; ED A0 81 ED B0 80: Surrogate pair
 
-(let ([x "abc日本語"])
-  (let ([y (collect (string/bytes x))])
-    (assert-eq? y (array 97 98 99 230 151 165 230 156 172 232 170 158))
-    (assert-eq? 99 (string/byte-at 2 x))
-    (assert-eq? 165 (string/byte-at 5 x))
-    (assert-eq? x (string/from-bytes y))
-    (assert-eq? "abc" (string/substring 0 3 x))
-    (assert-eq? "日本語" (string/substring 3 (string/length x) x))
-    (assert-eq? "abc" (string/take 3 x))
-    (assert-eq? "abc日本語" (string/take 12 x))
-    (assert-eq? "日本語" (string/skip 3 x))
-    (assert-eq? "" (string/skip 12 x))
-    (assert (= (array #t #t #t #t #f #f #t #f #t #f)
-               (|> (array 0 1 2 3 4 5 6 11 12 13) (it/map [^1 (string/char-boundary? %1 x)]) collect)))))
+(begin
+  @let1 x "abc日本語"
+  @let1 y (collect (string/bytes x))
+  (assert-eq? y (array 97 98 99 230 151 165 230 156 172 232 170 158))
+  (assert-eq? 99 (string/byte-at 2 x))
+  (assert-eq? 165 (string/byte-at 5 x))
+  (assert-eq? x (string/from-bytes y))
+  (assert-eq? "abc" (string/substring 0 3 x))
+  (assert-eq? "日本語" (string/substring 3 (string/length x) x))
+  (assert-eq? "abc" (string/take 3 x))
+  (assert-eq? "abc日本語" (string/take 12 x))
+  (assert-eq? "日本語" (string/skip 3 x))
+  (assert-eq? "" (string/skip 12 x))
+  (assert (=
+    (array #t #t #t #t #f #f #t #f #t #f)
+    (|> (array 0 1 2 3 4 5 6 11 12 13) (it/map [^1 (string/char-boundary? %1 x)]) collect))))
 
-(let ([x "hello"])
-  (let ([ptr (string/unsafe-ptr x)]
-        [len (string/length x)])
-    (assert-eq? "hello" (string/unsafe-from-ptr ptr len))))
+(let1 x "hello"
+  @let1 ptr (string/unsafe-ptr x)
+  @let1 len (string/length x)
+  (assert-eq? "hello" (string/unsafe-from-ptr ptr len)))
 
 (let1 src "ab\n言語€𐍈\t"
   (assert-eq? (array #\a #\b #\\n #\言 #\語 #\€ #\𐍈 #\\t) (collect (string/chars src)))

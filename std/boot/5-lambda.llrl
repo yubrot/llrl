@@ -9,9 +9,9 @@
 (macro (lambda s)
   (s/match s
     [(_ ,args ,@body)
+      @let ([tmp-f (gensym)])
       (ok
-        (let ([tmp-f (gensym)])
-          `(let ([(,tmp-f ,@args) ,@body])
-            ,tmp-f)))]
+        `(let ([(,tmp-f ,@args) ,@body])
+          ,tmp-f))]
     [_
       (err "Expected (lambda (arg ...) body ...)")]))

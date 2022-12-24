@@ -13,27 +13,30 @@
 (assert ~(ref #t))
 
 (function (fib x)
-  (let ([a (ref 0)]
-        [b (ref 1)]
-        [i (ref 1)])
-    (while (< ~i x)
-      (let ([c (+ ~a ~b)])
-        (set! a ~b)
-        (set! b c)
-        (set! i (+ ~i 1))))
-    ~b))
+  @let (
+    [a (ref 0)]
+    [b (ref 1)]
+    [i (ref 1)])
+  (while (< ~i x)
+    (let ([c (+ ~a ~b)])
+      (set! a ~b)
+      (set! b c)
+      (set! i (+ ~i 1))))
+  ~b)
 (assert-eq? (fib 20) 6765)
 
-(let* ([x (ref 1)]
-       [y (deep-copy x)])
+(let* (
+    [x (ref 1)]
+    [y (deep-copy x)])
   (set! x 3)
   (set! y 4)
   (assert-eq? ~x 3)
   (assert-eq? ~y 4))
 
-(let* ([x (ref (ref 1))]
-       [y (deep-copy x)]
-       [z (shallow-copy x)])
+(let* (
+    [x (ref (ref 1))]
+    [y (deep-copy x)]
+    [z (shallow-copy x)])
   (set! ~x 3)
   (set! ~y 4)
   (set! ~z 5)

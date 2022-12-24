@@ -28,11 +28,11 @@
 
   ; Required for optimizing Hash.U8
   (function (hash-array! s a) {(forall S) (-> S (Array A) unit) (where (Hasher S))}
-    (let ([i (ref 0)]
-          [l (array/length a)])
-      (while (< ~i l)
-        (hash! s (unsafe-get a[~i]))
-        (set! i (+ ~i 1))))))
+    @let1 i (ref 0)
+    @let1 l (array/length a)
+    (while (< ~i l)
+      (hash! s (unsafe-get a[~i]))
+      (set! i (+ ~i 1)))))
 
 (macro (hash-all! s)
   (s/match s
@@ -117,17 +117,18 @@
 (macro (derive/Hash s)
   (s/match s
     [(_ _ ,type-con ,@value-cons)
-      (let ([inst-name (derive/symbol/concat 'Hash. (derive/data/type-con/name type-con))!]
-            [inst-signature (derive/data/type-con/instance-signature \Hash type-con)!]
-            [function-body
-              (match value-cons
-                [(s:list) 'unit]
-                [(s:list (let value-con)) `(match a ,(hash-clause none value-con)!)]
-                [_ `(match a ,@(hash-clauses 0 value-cons)!)])])
-        (ok
-          `(instance ,inst-name ,@inst-signature
-            (function (hash! s a)
-              ,function-body))))]
+      @let (
+        [inst-name (derive/symbol/concat 'Hash. (derive/data/type-con/name type-con))!]
+        [inst-signature (derive/data/type-con/instance-signature \Hash type-con)!]
+        [function-body
+          (match value-cons
+            [(s:list) 'unit]
+            [(s:list (let value-con)) `(match a ,(hash-clause none value-con)!)]
+            [_ `(match a ,@(hash-clauses 0 value-cons)!)])])
+      (ok
+        `(instance ,inst-name ,@inst-signature
+          (function (hash! s a)
+            ,function-body)))]
     [_
       (err "Unsupported derivation")]))
 
@@ -141,16 +142,17 @@
       (ok '())]))
 
 (function (hash-clause index value-con)
-  (let ([hash-index
-          (if-match1 (some (let index)) index
-            `(,\hash! s (annotate ,(s:integer #f index) ,\U16))
-            'unit)]
-        [con-name (derive/data/value-con/name value-con)]
-        [con-fields (derive/data/value-con/fields value-con)])
-    (ok (if-match1 (some (let fields)) con-fields
-      (let1 names (s/map [^1 (gensym)] fields)!
-        `[(,con-name ,@(s/map [^1 `(let ,%1)] names)!)
-          ,hash-index
-          ,@(s/map [^1 `(,\hash! s ,%1)] names)!])
-      `[,con-name
-        ,hash-index]))))
+  @let (
+    [hash-index
+      (if-match1 (some (let index)) index
+        `(,\hash! s (annotate ,(s:integer #f index) ,\U16))
+        'unit)]
+    [con-name (derive/data/value-con/name value-con)]
+    [con-fields (derive/data/value-con/fields value-con)])
+  (ok (if-match1 (some (let fields)) con-fields
+    (let1 names (s/map [^1 (gensym)] fields)!
+      `[(,con-name ,@(s/map [^1 `(let ,%1)] names)!)
+        ,hash-index
+        ,@(s/map [^1 `(,\hash! s ,%1)] names)!])
+    `[,con-name
+      ,hash-index])))

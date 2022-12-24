@@ -18,9 +18,9 @@
 (builtin-op ptr/move! {(forall A) (-> (Ptr A) U64 (Ptr A) unit)} "ptr.move") ; (ptr/move src len dest)
 
 (function (ptr/replace! a p) {(forall A) (-> A (Ptr A) A)}
-  (let ([prev-a (ptr/load p)])
-    (ptr/store! a p)
-    prev-a))
+  @let ([prev-a (ptr/load p)])
+  (ptr/store! a p)
+  prev-a)
 
 (transparent-function (ptr/add v p) {(forall A) (-> U64 (Ptr A) (Ptr A))}
   (ptr/offset (<index-to-offset> v) p))
@@ -34,9 +34,9 @@
   (ptr/store! a (ptr/add index p)))
 
 (function (ptr/replace-at! index a p) {(forall A) (-> U64 A (Ptr A) A)}
-  (let ([prev-a (ptr/load-at index p)])
-    (ptr/store-at! index a p)
-    prev-a))
+  @let ([prev-a (ptr/load-at index p)])
+  (ptr/store-at! index a p)
+  prev-a)
 
 (builtin-op ptr/address {(forall A) (-> (Ptr A) U64)} "ptr.to-integer")
 (builtin-op ptr/from-address {(forall A) (-> U64 (Ptr A))} "integer.to-ptr")

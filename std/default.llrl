@@ -13,22 +13,24 @@
 (macro (derive/Default s)
   (s/match s
     [(_ _ ,type-con ,@value-cons)
-      (let ([inst-name (derive/symbol/concat 'Default. (derive/data/type-con/name type-con))!]
-            [inst-signature (derive/data/type-con/instance-signature \Default type-con)!]
-            [function-body
-              (match value-cons
-                [(s:cons (let value-con) _) (default-expr value-con)!]
-                [_ (err "Since this type has no value constructor, it cannot have a default value")!])])
-        (ok
-          `(instance ,inst-name ,@inst-signature
-            (function default
-              ,function-body))))]
+      @let (
+        [inst-name (derive/symbol/concat 'Default. (derive/data/type-con/name type-con))!]
+        [inst-signature (derive/data/type-con/instance-signature \Default type-con)!]
+        [function-body
+          (match value-cons
+            [(s:cons (let value-con) _) (default-expr value-con)!]
+            [_ (err "Since this type has no value constructor, it cannot have a default value")!])])
+      (ok
+        `(instance ,inst-name ,@inst-signature
+          (function default
+            ,function-body)))]
     [_
       (err "Unsupported derivation")]))
 
 (function (default-expr value-con)
-  (let ([con-name (derive/data/value-con/name value-con)]
-        [con-fields (derive/data/value-con/fields value-con)])
-    (ok (if-match1 (some (let fields)) con-fields
-      `(,con-name ,@(s/map [^1 \default] fields)!)
-      con-name))))
+  @let (
+    [con-name (derive/data/value-con/name value-con)]
+    [con-fields (derive/data/value-con/fields value-con)])
+  (ok (if-match1 (some (let fields)) con-fields
+    `(,con-name ,@(s/map [^1 \default] fields)!)
+    con-name)))

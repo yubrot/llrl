@@ -17,16 +17,16 @@
   (s/match s
     [(_ ,@elems)
       (ok
-        (let1 tmp-set (gensym)
-          `(let ([,tmp-set ,\hash-set/empty])
-            ,@(s/map [^1 `(,\hash-set/insert! ,%1 ,tmp-set)] elems)!
-            ,tmp-set)))]
+        @let1 tmp-set (gensym)
+        `(let ([,tmp-set ,\hash-set/empty])
+          ,@(s/map [^1 `(,\hash-set/insert! ,%1 ,tmp-set)] elems)!
+          ,tmp-set))]
     [_
       (err "Expected (hash-set elem ...)")]))
 
 (function (inner set) {(forall K) (-> (HashSet K) (HashMap K unit))}
-  (with1 (set: (let map)) set
-    map))
+  @with1 (set: (let map)) set
+  map)
 
 (function hash-set/empty {(forall K) (HashSet K)}
   (set: hash-map/empty))
@@ -52,9 +52,9 @@
 ; Currently we are unable to make this implementation an instance of std/iterator/Collect.
 ; In order to do so, we need to extend llrl type system to support associated types or fundeps.
 (function (hash-set/collect t) {(forall T K) (-> (T K) (HashSet K)) (where (Iterate T) (Eq K) (Hash K))}
-  (let1 set hash-set/empty
-    (for (let elem) t (hash-set/insert! elem set))
-    set))
+  @let1 set hash-set/empty
+  (for (let elem) t (hash-set/insert! elem set))
+  set)
 
 ; ---------------------------
 

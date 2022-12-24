@@ -114,14 +114,13 @@
   (ok (s/unsnoc-unchecked (s/force-proper-list "s/unsnoc expects proper-list" s)!)))
 
 (function (s/unsnoc-unchecked s) {(-> (Syntax Sexp) (Option (: (Syntax Sexp) (Syntax Sexp))))}
-  (let ([(go accum a b)
-          (match b
-            [(s:cons (let b) (let c))
-              (go (s:cons a accum) b c)]
-            [_
-              (: (s/reverse-unchecked (s:nil) accum) a)])])
-    (match s
-      [(s:cons (let car) (let cdr))
-        (some (go (s:nil) car cdr))]
-      [_
-        none])))
+  @let (
+    [(go accum a b)
+      (match b
+        [(s:cons (let b) (let c)) (go (s:cons a accum) b c)]
+        [_ (: (s/reverse-unchecked (s:nil) accum) a)])])
+  (match s
+    [(s:cons (let car) (let cdr))
+      (some (go (s:nil) car cdr))]
+    [_
+      none]))

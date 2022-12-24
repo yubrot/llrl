@@ -26,9 +26,9 @@
 
 (instance Read.Vector (forall A) (Read (Vector U8) A)
   (function (read-into-buf! bytes r)
-    (let1 bytes-read (vector/consume! (min (array/length bytes) (vector/length r)) r)
-      (array/copy! bytes-read bytes)
-      (ok (array/length bytes-read)))))
+    @let1 bytes-read (vector/consume! (min (array/length bytes) (vector/length r)) r)
+    (array/copy! bytes-read bytes)
+    (ok (array/length bytes-read))))
 
 ; A type class that can write bytes.
 (class (Write W Error)
@@ -47,19 +47,20 @@
     (assert #f "Unexpected eof")))
 
 (function (read-bytes-to-end! r) {(forall R Error) (-> R (Result (Array U8) Error)) (where (Read R Error))}
-  (let1 buf vector/empty
-    (read-bytes-to-end-into! buf r)!
-    (ok (vector/buffer buf))))
+  @let1 buf vector/empty
+  (read-bytes-to-end-into! buf r)!
+  (ok (vector/buffer buf)))
 
 (function (read-bytes-to-end-into! buf r) {(forall R Error) (-> (Vector U8) R (Result U64 Error)) (where (Read R Error))}
-  (let ([tmp (array/unsafe-stackalloc-uninitialized 4096)]
-        [total-len (ref 0)])
-    (while
-      (let1 len (read-into-buf! tmp r)!
-        (set! total-len (+ ~total-len len))
-        (vector/append! (array/take len tmp) buf)
-        (ne? len 0)))
-    (ok ~total-len)))
+  @let (
+    [tmp (array/unsafe-stackalloc-uninitialized 4096)]
+    [total-len (ref 0)])
+  (while @begin
+    @let1 len (read-into-buf! tmp r)!
+    (set! total-len (+ ~total-len len))
+    (vector/append! (array/take len tmp) buf)
+    (ne? len 0))
+  (ok ~total-len))
 
 (function (read-bytes! bytes r) {(forall R Error) (-> (Array U8) R (Result unit Error)) (where (Read R Error) (UnexpectedEof Error))}
   (if (eq? (read-into-buf! bytes r)! (array/length bytes))
@@ -81,9 +82,9 @@
 
   (function (($symbol read- $name) r)
     {(forall R Error) (-> R (Result $ty Error)) (where (Read R Error) (UnexpectedEof Error))}
-    (let1 tmp (array/unsafe-temporary-bytearray 0 {$ty})
-      (read-bytes! tmp r)!
-      (|> tmp array/ptr ptr/cast ptr/load ok)))
+    @let1 tmp (array/unsafe-temporary-bytearray 0 {$ty})
+    (read-bytes! tmp r)!
+    (|> tmp array/ptr ptr/cast ptr/load ok))
 
   (function (($symbol write- $name) value w)
     {(forall W Error) (-> $ty W (Result unit Error)) (where (Write W Error))}

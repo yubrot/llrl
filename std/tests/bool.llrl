@@ -19,6 +19,7 @@
 (assert (or #t #t #t))
 (assert (not (or #f #f #f)))
 
-(let ([a #t]
-      [b #f])
+(let (
+    [a #t]
+    [b #f])
   (assert-eq? (string "a = " a ", b = " b) "a = #t, b = #f"))

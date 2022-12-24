@@ -42,8 +42,9 @@
   (assert-eq? x (array (ref 1) (ref 2) (ref 0))))
 
 (let ([x (array 1 2 3 4)])
-  (let ([ptr (array/ptr x)]
-        [len (array/length x)])
+  (let (
+      [ptr (array/ptr x)]
+      [len (array/length x)])
     (assert-eq? x (array/unsafe-from-ptr ptr len))))
 
 (let ([x (array 1 2 3 4)])
@@ -68,8 +69,9 @@
     (assert-eq? y (array 1 2 3 4))))
 
 (let ([x (array (array 1 2) (array 3 4))])
-  (let ([y (deep-copy x)]
-        [z (shallow-copy x)])
+  (let (
+      [y (deep-copy x)]
+      [z (shallow-copy x)])
     (set! x[0][0] 10)
     (set! x[1] (array 30 40))
     (assert-eq? x (array (array 10 2) (array 30 40)))
@@ -102,8 +104,9 @@
   (assert-eq? (some (: (array 1 2 3 4) (array))) (array/split-at? 4 x))
   (assert-eq? none (array/split-at? 5 x)))
 
-(let ([x (array 1 2 3)]
-      [y (array 4 5 6)])
+(let (
+    [x (array 1 2 3)]
+    [y (array 4 5 6)])
   (assert-eq? (array 1 2 0 3) (array/insert 2 0 x))
   (assert-eq? (array 1 2 3 4) (array/push 4 x))
   (assert-eq? (array 0 1 2 3) (array/unshift 0 x))
@@ -113,8 +116,9 @@
   (assert-eq? (array 1 2 3) x)
   (assert-eq? (array 4 5 6) y))
 
-(let ([x (array 1 2 3 4)]
-      [y (array 5 6 7)])
+(let (
+    [x (array 1 2 3 4)]
+    [y (array 5 6 7)])
   (array/copy! y x)
   (assert-eq? (array 5 6 7 4) x))
 
@@ -124,11 +128,12 @@
   (array/swap! 0 2 x)
   (assert-eq? (array 3 4 1 2) x))
 
-(let ([a (array)]
-      [b (array 1)]
-      [c (array 1 2)]
-      [d (array 1 2 3 4 5)]
-      [e (array 1 2 3 4 5 6)])
+(let (
+    [a (array)]
+    [b (array 1)]
+    [c (array 1 2)]
+    [d (array 1 2 3 4 5)]
+    [e (array 1 2 3 4 5 6)])
   (array/reverse! a)
   (array/reverse! b)
   (array/reverse! c)

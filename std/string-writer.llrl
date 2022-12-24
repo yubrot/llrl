@@ -11,10 +11,13 @@
 
 (instance WriteString.StringWriter (forall W Error) (WriteString (StringWriter W) Error) (where (Write W Error))
   (function (write-string! s w)
-    (with1 (string-writer (let w)) w (write-bytes! (string/unsafe-array s) w))))
+    @with1 (string-writer (let w)) w
+    (write-bytes! (string/unsafe-array s) w)))
 
 (instance Write.StringWriter (forall W Error) (Write (StringWriter W) Error) (where (Write W Error))
   (function (write-bytes! bytes w)
-    (with1 (string-writer (let w)) w (write-bytes! bytes w)))
+    @with1 (string-writer (let w)) w
+    (write-bytes! bytes w))
   (function (flush! w)
-    (with1 (string-writer (let w)) w (flush! w))))
+    @with1 (string-writer (let w)) w
+    (flush! w)))
