@@ -25,6 +25,17 @@ $ make llrl1c
 $ make llrl1cl
 ```
 
+Each backend can be disabled by environment variables.
+
+- `NO_LLVM_BACKEND` - Disables `llvm` backend
+- `NO_CHIBI_BACKEND` - Disables `chibi` backend
+
+For example, to build llrl1 without LLVM, do the following:
+
+```shell
+$ NO_LLVM_BACKEND=1 make llrl1c
+```
+
 ## Run tests
 
 As with the build, we need to specify the build to be used to run the tests. We can also check for self-hosted binary matches.

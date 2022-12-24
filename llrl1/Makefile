@@ -13,9 +13,13 @@ install: llrl1l
 # For example, `llrl1cl` is built by the LLVM backend of `llrl1c`, where
 # `llrl1c` is built by the chibi backend of `llrl0`.
 
-.PHONY: test self-hosting clean
+.PHONY: test testl testc self-hosting clean
 
 test: test0l test0c test1ll test1cl test1lc test1cc self-hosting
+
+testl: test0l test1ll test1lll self-hosting1lll
+
+testc: test0c test1cc test1ccc self-hosting1ccc
 
 self-hosting: self-hosting1lll self-hosting1lcc self-hosting1cll self-hosting1ccc
 

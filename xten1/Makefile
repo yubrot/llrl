@@ -1,8 +1,10 @@
 FLAGS=-c-ldl
 
-.PHONY: test test0l test0c test1ll test1lc test1cl test1cc
+.PHONY: test testc test0l test0c test1ll test1lc test1cl test1cc
 
 test: test0l test0c test1ll test1cl test1lc test1cc
+
+testc: test0c test1cc
 
 test0l:
 	llrl0           -b llvm  $(FLAGS) tests/all
