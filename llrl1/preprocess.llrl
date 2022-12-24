@@ -1,0 +1,239 @@
+(import "std/hash-map" _)
+(import "std/hash-set" _)
+(import "~/util" _)
+(import "~/sexp" _)
+(import "~/source-location" SourceLocation _.SourceLocation)
+(import "~/preprocess/error" Error _.Error error:_)
+(export Error _.Error error:_)
+(export Preprocessor _.Preprocessor preprocessor/_)
+
+(function META_PREFIX "$")
+
+; A preprocessor that processes directives in S-expressions.
+; The preprocessor is executed before semantic analysis.
+(derive (DebugDisplay Default) value-data Preprocessor
+  (preprocessor: (HashSet String)))
+
+(getter preprocessor: enabled-features)
+
+(function (preprocessor/new) {(-> Preprocessor)}
+  default)
+
+(function (preprocessor/enable-feature! feature pp) {(-> String Preprocessor unit)}
+  (ignore (hash-set/insert! feature (enabled-features pp))))
+
+(function (preprocessor/run pp ss) {(forall A) (-> Preprocessor (Ss A) (Result (Ss A) Error))}
+  @with1 (ss: (let loc) (let elems)) ss
+  @let1 buf vector/empty
+  @let1 (put! s) (ok (vector/push! s buf))
+  @let1 state (state: pp hash-map/empty)
+  (for (let s) elems (expand! state put! s)!)
+  (ok (ss: loc (vector/buffer buf))))
+
+(data (State A)
+  (state: Preprocessor (HashMap String (S A))))
+
+(getter state: pp vars)
+
+(function (expand-one! state place s)
+  {(forall A) (-> (State A) String (S A) (Result (S A) Error))}
+  @let1 buf (ref (err #f))
+  @let1 (put! s) (ok (set! buf (if-match1 (err #f) ~buf (ok s) (err #t))))
+  (expand! state put! s)!
+  (result/map-err [^1 (error:expansion-disallowed (s/location s) place)] ~buf))
+
+(function (expand! state put! s)
+  {(forall A) (-> (State A) (-> (S A) (Result unit Error)) (S A) (Result unit Error))}
+  @let1 loc (s/location s)
+  (match s
+    [(s*symbol (let sym))
+      (if (string/starts-with? META_PREFIX sym)
+        (if-match1 (some (let s)) (hash-map/get? sym (vars state))
+          (put! s)
+          (err (error:undefined-meta-variable loc sym)))
+        (put! s))]
+    [(s*cons (let car) (let cdr))
+      (if-match (
+          [#t (s/proper-list? cdr)]
+          [(s*symbol (let sym)) car]
+          [(some (let directive)) (conv sym)])
+        (handle-directive! state put! loc directive cdr)
+        (begin
+          @let1 init vector/empty
+          @let1 last (expand-elems! state [^1 (ok (vector/push! %1 init))] s)!
+          (put! (it/fold [^2 (s: loc (s-rep:cons %2 %1))] last (rev-iterate init)))))]
+    [_
+      (put! s)]))
+
+; Traverse list elements and expand them.
+(function (expand-elems! state put! s)
+  {(forall A) (-> (State A) (-> (S A) (Result unit Error)) (S A) (Result (S A) Error))}
+  @let1 tail (ref s)
+  (while-match1 (s*cons (let car) (let cdr)) ~tail
+    (expand! state put! car)!
+    (set! tail cdr))
+  ; If s is not a proper list, this function returns non-nil.
+  (expand-one! state "cdr of cons cell" ~tail))
+
+(function (handle-directive! state put! loc directive args)
+  {(forall A) (-> (State A) (-> (S A) (Result unit Error)) SourceLocation Directive (S A) (Result unit Error))}
+  (match directive
+    [directive:symbol (handle-symbol-directive! state put! loc args)]
+    [directive:let (handle-let-directive! state put! loc args)]
+    [directive:let1 (handle-let1-directive! state put! loc args)]
+    [directive:for (handle-for-directive! state put! loc args)]
+    [directive:for1 (handle-for1-directive! state put! loc args)]
+    [directive:when (handle-when-directive! state put! loc args)]
+    [directive:not (handle-not-directive! state put! loc args)]
+    [directive:feature (handle-feature-directive! state put! loc args)]))
+
+(function (handle-symbol-directive! state put! loc args)
+  {(forall A) (-> (State A) (-> (S A) (Result unit Error)) SourceLocation (S A) (Result unit Error))}
+  @let1 name text/empty
+  @let1 (put-component! s)
+    (match s
+      [(s*symbol (let s)) (ok (text/push! s name))]
+      [(s*string (let s)) (ok (text/push! s name))]
+      [(s*char (let c)) (ok (text/put! c name))]
+      [_ (err (error:directive-syntax loc "($symbol <symbol or string or char>...)"))])
+  (expand-elems! state put-component! args)!
+  (if (text/empty? name)
+    (err (error:empty-symbol loc))
+    (put! (s: loc (s-rep:symbol (text/consume-all! name))))))
+
+(function (handle-let-directive! state put! loc args)
+  {(forall A) (-> (State A) (-> (S A) (Result unit Error)) SourceLocation (S A) (Result unit Error))}
+  (when-match1 (s*list-like (let binds) (let body)) args
+    @when (s/proper-list? binds)
+
+    @let1 expanded-binds vector/empty
+    (for (let bind) (cars binds)
+      (if-match (
+          [(s*list (s*symbol (let name)) (let expr)) bind]
+          [#t (metavar? name)])
+        (let1 expr (expand-one! state "$let bind expression" expr)!
+          (vector/push! (: name expr) expanded-binds))
+        (err (error:directive-syntax (s/location bind) "[$var <expr>]"))!))
+
+    (with-binds! state expanded-binds [^0 (expand-elems! state put! body)])!
+    (return (ok unit)))
+  (err (error:directive-syntax loc "($let ([$var <expr>]...) <body>...)")))
+
+(function (handle-let1-directive! state put! loc args)
+  {(forall A) (-> (State A) (-> (S A) (Result unit Error)) SourceLocation (S A) (Result unit Error))}
+  (when-match1 (s*list-like (s*symbol (let name)) (let expr) (let body)) args
+    @when (metavar? name)
+    @let1 expr (expand-one! state "$let1 expression" expr)!
+
+    (with-binds! state (iterator/only (: name expr)) [^0 (expand-elems! state put! body)])!
+    (return (ok unit)))
+  (err (error:directive-syntax loc "($let1 $var <expr> <body>...)")))
+
+(function (handle-for-directive! state put! loc args)
+  {(forall A) (-> (State A) (-> (S A) (Result unit Error)) SourceLocation (S A) (Result unit Error))}
+  (when-match1 (s*list-like (let s-names) (let s-elemss) (let body)) args
+    @when (s/proper-list? s-names)
+    @let1 s-elemss (expand-one! state "$for elements" s-elemss)!
+    @when (s/proper-list? s-elemss)
+
+    @let1 names vector/empty
+    @let1 elemss vector/empty
+    (for (let s-name) (cars s-names)
+      (if-match (
+          [(s*symbol (let name)) s-name]
+          [#t (metavar? name)])
+        (vector/push! name names)
+        (err (error:directive-syntax (s/location s-name) "$var"))!))
+    (for (let s-elems) (cars s-elemss)
+      @let1 elems (|> s-elems cars collect)
+      (if (and (s/proper-list? s-elems) (eq? (vector/length names) (array/length elems)))
+        (vector/push! elems elemss)
+        (err (error:directive-syntax (s/location s-elems) "[<elem>...]"))!))
+
+    (for (let elems) elemss
+      (with-binds! state (it/zip names elems) [^0 (expand-elems! state put! body)])!)
+    (return (ok unit)))
+  (err (error:directive-syntax loc "($for [$var...] ([<elem>...]...) <body>...)")))
+
+(function (handle-for1-directive! state put! loc args)
+  {(forall A) (-> (State A) (-> (S A) (Result unit Error)) SourceLocation (S A) (Result unit Error))}
+  (when-match1 (s*list-like (s*symbol (let name)) (let elems) (let body)) args
+    @when (metavar? name)
+    @let1 elems (expand-one! state "$for1 elements" elems)!
+    @when (s/proper-list? elems)
+
+    (for (let elem) (cars elems)
+      (with-binds! state (iterator/only (: name elem)) [^0 (expand-elems! state put! body)])!)
+    (return (ok unit)))
+  (err (error:directive-syntax loc "($for1 $var (<elem>...) <body>...)")))
+
+(function (handle-when-directive! state put! loc args)
+  {(forall A) (-> (State A) (-> (S A) (Result unit Error)) SourceLocation (S A) (Result unit Error))}
+  (when-match (
+      [(s*list-like (let cond) (let body)) args]
+      [(s*bool (let value)) (expand-one! state "$when condition" cond)!])
+    (when value (expand-elems! state put! body)!)
+    (return (ok unit)))
+  (err (error:directive-syntax loc "($when <bool> <body>...)")))
+
+(function (handle-not-directive! state put! loc args)
+  {(forall A) (-> (State A) (-> (S A) (Result unit Error)) SourceLocation (S A) (Result unit Error))}
+  (when-match (
+      [(s*list (let cond)) args]
+      [(s*bool (let value)) (expand-one! state "$not condition" cond)!])
+    (put! (s: loc (s-rep:bool (not value))))!
+    (return (ok unit)))
+  (err (error:directive-syntax loc "($not <bool>)")))
+
+(function (handle-feature-directive! state put! loc args)
+  {(forall A) (-> (State A) (-> (S A) (Result unit Error)) SourceLocation (S A) (Result unit Error))}
+  (when-match (
+      [(s*list (let feature)) args]
+      [(s*string (let feature)) (expand-one! state "$feature string" feature)!])
+    @let1 value (hash-set/has? feature (|> state pp enabled-features))
+    (put! (s: loc (s-rep:bool value)))!
+    (return (ok unit)))
+  (err (error:directive-syntax loc "($feature <string>)")))
+
+(function (with-binds! state binds f)
+  {(forall T A R) (-> (State A) (T (: String (S A))) (-> R) R) (where (Iterate T))}
+  @let1 vars (vars state)
+  @let1 prev-binds {(Vector (: String (Option (S A))))}
+    (|> binds
+        (it/filter @case1 (: (let name) _) (ne? name "_"))
+        (it/map @case1 (: (let name) (let expr)) (: name (hash-map/insert! name expr vars)))
+        collect)
+  @let1 result (f)
+  (for (: (let name) (let prev-expr)) prev-binds
+    (if-match1 (some (let prev-expr)) prev-expr
+      (hash-map/insert! name prev-expr vars)
+      (hash-map/remove! name vars)))
+  result)
+
+(derive (Eq DebugDisplay) value-data Directive
+  directive:symbol
+  directive:let
+  directive:let1
+  directive:for
+  directive:for1
+  directive:when
+  directive:not
+  directive:feature)
+
+(instance Conv.From.Symbol.To.Directive (Conv String (Option Directive))
+  (function (conv sym)
+    (match? sym
+      ["$symbol" directive:symbol]
+      ["$let" directive:let]
+      ["$let1" directive:let1]
+      ["$for" directive:for]
+      ["$for1" directive:for1]
+      ["$when" directive:when]
+      ["$not" directive:not]
+      ["$feature" directive:feature])))
+
+(function (metavar? sym) {(-> String Bool)}
+  (or (string/starts-with? META_PREFIX sym) (eq? sym "_")))
+
+(function (cars s) {(forall A) (-> (S A) (Iterator (S A)))}
+  (iterator/unfold (case1? (s*cons (let car) (let cdr)) (: car cdr)) s))

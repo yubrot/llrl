@@ -19,15 +19,16 @@
 
 (function (test-case/run! slt report test-case)
   {(-> SourceLocationTable Report TestCase (Result unit String))}
-  (with1 (test-case: (let sources) (let target) (let condition)) test-case
-    (let1 source-set (source-set/collect! (array path/current) (test-target/prepare-loader sources target) slt report)
-      (for (: (let path) (let error)) (source-set/errors source-set)
-        (err (string "Failed to create a source " path ": " error))!)
-      (match (source-set/resolve-dependencies-order source-set)
-        [(ok (let sources))
-          (test-target/run! slt report (vector/buffer sources) condition target)]
-        [(err (let cyclic-paths))
-          (err (string "Circular dependencies: " (it/format ", " cyclic-paths)))]))))
+  @with1 (test-case: (let sources) (let target) (let condition)) test-case
+  @let1 source-set
+    (source-set/collect! (array path/current) (test-target/prepare-loader sources target) slt default report)
+  (for (: (let path) (let error)) (source-set/errors source-set)
+    (err (string "Failed to create a source " path ": " (contextual: error slt)))!)
+  (match (source-set/resolve-dependencies-order source-set)
+    [(ok (let sources))
+      (test-target/run! slt report (vector/buffer sources) condition target)]
+    [(err (let cyclic-paths))
+      (err (string "Circular dependencies: " (it/format ", " cyclic-paths)))]))
 
 (function (syntax/test-case s)
   (match s

@@ -1,0 +1,113 @@
+(import "~/preprocess" _)
+(println! "llrl1/tests/preprocess")
+
+(import "~/sexp" _)
+(import "~/sexp/parser" parser/_ [_.ParseError _.Error])
+(import "~/sexp/lexer" lex)
+(import "~/source-location" source-locator/temporary)
+
+(function (run input) {(-> String (Result String Error))}
+  (run-with-featres input array/empty))
+
+(function (run-with-featres input features) {(-> String (Array String) (Result String Error))}
+  @let1 pp (preprocessor/new)
+  (for (let f) features (preprocessor/enable-feature! f pp))
+  (|> input
+      lex
+      (parser/new (source-locator/temporary))
+      parser/parse-ss!
+      (result/unwrap* [^1 (assert #f (string %1))])
+      (preprocessor/run pp)
+      (result/map [^1 (string %1)])))
+
+(assert-eq? (ok "") (run ""))
+(assert-eq? (ok "foo") (run "foo"))
+(assert-eq? (ok "foo\n(bar baz)") (run "foo\n(bar baz)"))
+
+(assert-is? (err (error:empty-symbol _)) (run "($symbol)"))
+(assert-is? (err (error:empty-symbol _)) (run "($symbol \"\")"))
+(assert-eq? (ok "foobar") (run "($symbol foo \"bar\")"))
+(assert-eq? (ok "abc") (run "($symbol a \"b\" #\\c)"))
+(assert-eq? (ok "foofoo") (run "($let1 $foo \"foo\" ($symbol $foo $foo))"))
+
+(assert-is? (err (error:directive-syntax _ _)) (run "($let)"))
+(assert-is? (err (error:directive-syntax _ _)) (run "($let foo)"))
+(assert-is? (err (error:directive-syntax _ _)) (run "($let foo ([$foo]))"))
+(assert-is? (err (error:directive-syntax _ _)) (run "($let foo ([foo 123]))"))
+(assert-eq? (ok "") (run "($let ())"))
+(assert-eq? (ok "1") (run "($let () 1)"))
+(assert-eq? (ok "1\n2") (run "($let () 1 2)"))
+(assert-eq? (ok "12\n34") (run "($let ([$foo 12] [$bar 34]) $foo $bar)"))
+
+; shadowing
+(assert-eq? (ok "(12 34)\n(34 12)") (run "($let ([$foo 12] [$bar 34]) @$let ([$foo ($foo $bar)] [$bar ($bar $foo)]) $foo $bar)"))
+
+; syntactically possible, but restricted for understandability
+(assert-is? (err (error:directive-syntax _ _)) (run "($let ([$foo 12 34]) $foo)"))
+; ambiguous expansion is disallowed
+(assert-is? (err (error:expansion-disallowed _ _)) (run "($let ([$foo ($for1 $ [1 2] $)]) $foo)"))
+
+(assert-is? (err (error:undefined-meta-variable _ "$foo")) (run "$foo"))
+
+(assert-is? (err (error:directive-syntax _ _)) (run "($let1)"))
+(assert-is? (err (error:directive-syntax _ _)) (run "($let1 $foo)"))
+(assert-is? (err (error:directive-syntax _ _)) (run "($let1 foo bar)"))
+(assert-eq? (ok "") (run "($let1 $foo 123)"))
+(assert-eq? (ok "bar") (run "($let1 $foo bar $foo)"))
+(assert-is? (err (error:undefined-meta-variable _ "$foo")) (run "($let1 $foo bar $foo) $foo"))
+(assert-eq? (ok "(bar foo baz)") (run "($let1 $foo bar @$let1 $bar foo ($foo $bar baz))"))
+(assert-eq? (ok "(1 2)") (run "($let1 $foo (1 ($let1 $foo 2 $foo)) $foo)"))
+; ambiguous expansion is disallowed
+(assert-is? (err (error:expansion-disallowed _ _)) (run "($let1 $foo ($for1 $ [1 2] $) $foo)"))
+
+; shadowing
+(assert-eq? (ok "(foo bar)") (run "($let1 $foo foo @$let1 $foo ($foo bar) $foo)"))
+(assert-eq? (ok "(foo bar)\nfoo") (run "($let1 $foo foo ($let1 $foo ($foo bar) $foo) $foo)"))
+
+(assert-is? (err (error:directive-syntax _ _)) (run "($for)"))
+(assert-is? (err (error:directive-syntax _ _)) (run "($for $ (1 2 3))"))
+(assert-is? (err (error:directive-syntax _ _)) (run "($for [$] [[]])"))
+(assert-is? (err (error:directive-syntax _ _)) (run "($for [$a $b] [[1 2] [3 4 5]])"))
+(assert-is? (err (error:directive-syntax _ _)) (run "($for [foo] [[1] [2]])"))
+(assert-eq? (ok "(1 2)\n(3 4)") (run "($for [$a $b] [[1 2] [3 4]] ($a $b))"))
+; ambiguous expansion is disallowed
+(assert-is? (err (error:expansion-disallowed _ _)) (run "($for [$] ($for1 $ [[] 12] $))"))
+(assert-eq? (ok "(1 _)\n(3 _)") (run "($for [$ _] [[1 2] [3 4]] ($ _))"))
+
+(assert-is? (err (error:directive-syntax _ _)) (run "($for1)"))
+(assert-is? (err (error:directive-syntax _ _)) (run "($for1 $)"))
+(assert-is? (err (error:directive-syntax _ _)) (run "($for1 $ 1)"))
+(assert-is? (err (error:directive-syntax _ _)) (run "($for1 () ())"))
+; ambiguous expansion is disallowed
+(assert-is? (err (error:expansion-disallowed _ _)) (run "($for1 $ ($for1 $ [[] 12] $))"))
+(assert-eq? (ok "") (run "($for1 $ [])"))
+(assert-eq? (ok "") (run "($for1 $ [1 2])"))
+(assert-eq? (ok "1\n2") (run "($for1 $ [1 2] $)"))
+(assert-eq? (ok "1\n1\n2\n2") (run "($for1 $ [1 2] $ $)"))
+(assert-eq? (ok "(1 3)\n(1 4)\n(2 3)\n(2 4)") (run "($for1 $a [1 2] @$for1 $b [3 4] ($a $b))"))
+(assert-eq? (ok "(1 (1 2))\n(2 (1 2))\n(3 (3))") (run "($for1 $xs [[1 2] [3] []] @$for1 $x $xs ($x $xs))"))
+
+(assert-eq? (ok "1\n2\n3\n4\n5") (run "1\n($when #t 2 3)\n4\n5"))
+(assert-eq? (ok "1\n4\n5") (run "1\n($when #f 2 3)\n4\n5"))
+
+(assert-is? (err (error:directive-syntax _ _)) (run "($not foo)"))
+(assert-is? (err (error:directive-syntax _ _)) (run "($not #t #f)"))
+(assert-eq? (ok "#t") (run "#t"))
+(assert-eq? (ok "#f") (run "($not #t)"))
+(assert-eq? (ok "(foo #t #f)") (run "(foo ($not #f) ($not #t))"))
+(assert-eq? (ok "#t") (run "($not ($not #t))"))
+
+(assert-is? (err (error:directive-syntax _ _)) (run "($feature)"))
+(assert-is? (err (error:directive-syntax _ _)) (run "($feature foo)"))
+(assert-eq?
+  (ok "#f")
+  (run-with-featres "($feature \"foo\")" array/empty))
+(assert-eq?
+  (ok "#t")
+  (run-with-featres "($feature \"foo\")" (array "foo")))
+(assert-eq?
+  (ok "(: #t #f)")
+  (run-with-featres "(: ($feature \"foo\") ($feature \"bar\"))" (array "foo")))
+
+(assert-eq? (ok "(1 4 2 3)") (run "($let1 $foo (2 3) (1 4 . $foo))"))
+(assert-eq? (ok "(1 2 . 3)") (run "(($for1 $ [1 2] $) . 3)"))

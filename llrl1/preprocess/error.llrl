@@ -1,0 +1,22 @@
+(import "~/util" _)
+(import "~/source-location" SourceLocation _.SourceLocation)
+(export Error _.Error error:_)
+
+(derive (Eq DebugDisplay) data Error
+  (error:undefined-meta-variable SourceLocation String)
+  (error:expansion-disallowed SourceLocation String)
+  (error:directive-syntax SourceLocation String)
+  (error:empty-symbol SourceLocation))
+
+(instance ContextualDisplay.Error (forall C) (ContextualDisplay Error C)
+  (where (ContextualDisplay SourceLocation C))
+  (function (contextual-display! w a ctx)
+    (match a
+      [(error:undefined-meta-variable (let loc) (let name))
+        (display-all! w (contextual: loc ctx) ": Undefined meta variable: " name)]
+      [(error:expansion-disallowed (let loc) (let place))
+        (display-all! w (contextual: loc ctx) ": Undefined disallowed at " place)]
+      [(error:directive-syntax (let loc) (let expected))
+        (display-all! w (contextual: loc ctx) ": Directive syntax error: expected " expected)]
+      [(error:empty-symbol (let loc))
+        (display-all! w (contextual: loc ctx) ": Empty symbol")])))
