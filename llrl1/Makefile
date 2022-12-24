@@ -1,4 +1,6 @@
-FLAGS=-pxten:../xten1 -pllvm:../llvm1 -c../llvm1/compat.c -c-I../rt `llvm-config --cppflags --ldflags --libs --system-libs | sed -e 's/-\([^ ]*\)/-c-\1/g'` -c-lstdc++
+FLAGS=\
+	$(if ${NO_LLVM_BACKEND},,-fllvm-backend -pllvm:../llvm1 -c../llvm1/compat.c `llvm-config --cppflags --ldflags --libs --system-libs | sed -e 's/-\([^ ]*\)/-c-\1/g'` -c-lstdc++) \
+	$(if ${NO_CHIBI_BACKEND},,-fchibi-backend -pxten:../xten1)
 
 all: llrl1l
 
