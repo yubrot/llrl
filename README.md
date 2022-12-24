@@ -126,10 +126,16 @@ $ llrl0 -O examples/fibonacci-numbers
 $ cargo run -- -O examples/fibonacci-numbers
 ```
 
-Each backend is enabled by a feature flag. For example, to build llrl0 without LLVM, do the following:
+Each backend is enabled by a feature flag and is enabled by default.
+
+- `chibi-backend` - Enables `chibi` backend, a x86_64 native backend
+- `llvm-backend` - Enables `llvm` backend, a backend built on top of [LLVM](https://llvm.org/)
+
+For example, to build llrl0 without LLVM, do the following:
 
 ```shell
-$ cargo install --path llrl0 --offline --no-default-features -F chibi-backend
+$ cargo install --path llrl0 --offline \
+    --no-default-features -F chibi-backend
 ```
 
 ### Requirements
@@ -155,7 +161,7 @@ VSCode language support is available at [yubrot/llrl-vscode](https://github.com/
 
 The syntax of llrl is basically a subset of the Scheme syntax. There are several syntax sugar that are unique to this language.
 
-| Syntax sugar  | Desugared             | Meaning                                                                      |
+| Syntax sugar  | Desugared             | Description                                                                  |
 | ------------- | --------------------- | ---------------------------------------------------------------------------- |
 | `~expr`       | `(load expr)`         | Call of the [load](./std/access.llrl) function                               |
 | `\expr`       | `(capture expr)`      | Capture of the use (See [Macros](#macros) section)                           |
@@ -422,6 +428,50 @@ For example, `and` macro (defined in [std/bool](./std/bool.llrl)) uses the funct
 To simplify the compilation and the JIT execution order, macros are not usable in the defined module.
 
 llrl does not support hygienic macros.
+
+### Preprocess
+
+llrl pre-processes several directives on S-expressions before semantic analysis.
+Directives and metavariables handled by the preprocessor are represented by identifiers starting with `$`.
+
+```llrl
+($symbol "foo" bar "baz")
+;=> foobarbaz
+
+($let ([$foo 12]
+       [$bar 34 56])
+  (println! $foo)
+  (println! $bar))
+;=> (println! 12)
+;   (println! 34 56)
+
+($let1 $foo bar (array $foo $foo))
+;=> (array bar bar)
+
+($for [$a $b] ([I8 U8] [I16 U16] [I32 U32] [I64 U64])
+  (instance ($symbol SameSize. $a "." $b) (SameSize $a $b)))
+;=> (instance SameSize.I8.U8 (SameSize I8 U8))
+;   (instance SameSize.I16.U16 (SameSize I16 U16))
+;   (instance SameSize.I32.U32 (SameSize I32 U32))
+;   (instance SameSize.I64.U64 (SameSize I64 U64))
+
+($for1 $ty [I8 I16 I32 I64]
+  (instance ($symbol Signed. $ty) (Signed $ty)))
+;=> (instance Signed.I8 (Signed I8))
+;   (instance Signed.I16 (Signed I16))
+;   (instance Signed.I32 (Signed I32))
+;   (instance Signed.I64 (Signed I64))
+
+(array ($not #t) ($not #f))
+;=> (array #f #t)
+
+(array ($when #t 12 34) ($when #f 56 78))
+;=> (array 12 34)
+
+($feature "llvm-backend")
+;=> #t  ; if "llvm-backend" feature is enabled
+;   #f  ; otherwise
+```
 
 ### Standard library
 

@@ -1,21 +1,21 @@
 use super::*;
-use crate::report::Report;
-use crate::source_loc::{SourceLocationTable, SourceLocator};
+use crate::source_loc::SourceLocator;
 use std::collections::{HashMap, HashSet};
 
 #[test]
-fn test_from_code_text() {
-    let source = Source::from_code_text(
+fn resolve_dependencies() {
+    let mut source = Source::from_code_text(
         "~/foo".parse::<Path>().unwrap(),
         &mut SourceLocator::temporary(),
         ")",
     );
-
     assert_eq!(source.path, "~/foo".parse::<Path>().unwrap());
+
+    source.resolve_dependencies();
     assert!(source.dependencies.is_empty());
     assert!(matches!(source.errors.as_slice(), [Error::ParseFailed(_)]));
 
-    let source = Source::from_code_text(
+    let mut source = Source::from_code_text(
         "~/foo".parse::<Path>().unwrap(),
         &mut SourceLocator::temporary(),
         r#"
@@ -24,7 +24,7 @@ fn test_from_code_text() {
     "#,
     );
 
-    assert_eq!(source.path, "~/foo".parse::<Path>().unwrap());
+    source.resolve_dependencies();
     assert_eq!(
         source.dependencies,
         vec![
@@ -41,7 +41,7 @@ fn test_from_code_text() {
     );
     assert!(source.errors.is_empty());
 
-    let source = Source::from_code_text(
+    let mut source = Source::from_code_text(
         "hello/world".parse::<Path>().unwrap(),
         &mut SourceLocator::temporary(),
         r#"
@@ -52,7 +52,7 @@ fn test_from_code_text() {
     "#,
     );
 
-    assert_eq!(source.path, "hello/world".parse::<Path>().unwrap());
+    source.resolve_dependencies();
     assert_eq!(
         source.dependencies,
         vec![
@@ -78,9 +78,24 @@ fn test_from_code_text() {
 }
 
 #[test]
-fn test_collect() {
+fn preprocess() {
+    let mut source = Source::from_code_text(
+        "~/foo".parse::<Path>().unwrap(),
+        &mut SourceLocator::temporary(),
+        "$foo",
+    );
+
+    source.preprocess(&Default::default());
+    assert!(matches!(
+        source.errors.as_slice(),
+        [Error::PreprocessFailed(_)]
+    ));
+}
+
+#[test]
+fn collector() {
     let mut loader = Loader::new();
-    for (path, text) in vec![
+    for (path, text) in [
         ("builtin", ""),
         ("~", r#"(import "~/bar") (import "std/a")"#),
         ("~/foo", r#"(import "~/bar") (import "std/b")"#),
@@ -90,13 +105,10 @@ fn test_collect() {
         ("std/b", r#""#),
         ("std/c", r#"(hoge"#),
         ("std", r#"(no-implicit-std)"#),
-    ]
-    .into_iter()
-    {
+    ] {
         assert!(loader.add_source(path.parse::<Path>().unwrap(), text.to_string()));
     }
 
-    let mut source_location_table = SourceLocationTable::new();
     let result = collect(
         vec![
             &"~".parse::<Path>().unwrap(),
@@ -104,8 +116,9 @@ fn test_collect() {
             &"std/c".parse::<Path>().unwrap(),
         ],
         &loader,
-        &mut source_location_table,
-        &mut Report::new(),
+        &mut Default::default(),
+        &Default::default(),
+        &mut Default::default(),
     );
 
     assert_eq!(

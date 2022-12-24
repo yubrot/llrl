@@ -2,6 +2,7 @@
 (import "~/util" _)
 (import "~/path" Path PackageName ModuleName [path/_ _] path/_)
 (import "~/source-location" SourceLocator)
+(import "~/preprocess" Preprocessor preprocessor/_)
 (import "~/syntax" syntax:_ syntax/_)
 (import "~/sexp" Ss _.Ss ss/_)
 (import "~/sexp/lexer" lex)
@@ -14,54 +15,83 @@
 (derive (DebugDisplay) data (Source A)
   (source:
     Path                  ; path
-    Bool                  ; implicit-std?
+    (Ref Bool)            ; implicit-std?
     (OrdMap String Path)  ; dependencies
-    (SourceRep A)         ; rep
-    (Array Error)))       ; errors
+    (Ref (SourceRep A))   ; rep
+    (Vector Error)))      ; errors
 
-(getter source: source/path source/implicit-std? source/dependencies source/rep source/errors)
+(getter source: source/path implicit-std? source/dependencies rep errors)
+
+(function (source/implicit-std? source) {(forall A) (-> (Source A) Bool)}
+  ~(implicit-std? source))
+
+(function (source/rep source) {(forall A) (-> (Source A) (SourceRep A))}
+  ~(rep source))
+
+(function (source/errors source) {(forall A) (-> (Source A) (Array Error))}
+  (|> source errors vector/buffer))
+
+(function (source/empty path) {(forall A) (-> Path (Source A))}
+  (source: path (ref #t) ord-map/empty (ref source-rep:empty) vector/empty))
 
 (function (source/from-error path error) {(forall A) (-> Path Error (Source A))}
-  (source: path #f ord-map/empty source-rep:empty (array error)))
+  @let1 source (source/empty path)
+  (vector/push! error (errors source))
+  source)
 
-(function (source/from-code path source) {(forall A) (-> Path (Ss A) (Source A))}
-  (let ([dependencies ord-map/empty]
-        [errors vector/empty]
-        [implicit-std? (ref #t)])
-    ; Collect the dependencies from (import ..) and (no-implicit-std) declarations.
-    (for (let s) (ss/elems source)
-      (cond
-        [when-match1 (ok unit) (syntax/no-implicit-std s)
-          (set! implicit-std? #f)]
-        [when-match1 (ok (syntax:import (let loc) (let p) (let targets))) (syntax/import s)
-          (match (path/from-string p)
-            [(ok (let import-path))
-              (let1
-                import-path
-                (if (|> import-path path/package path/package-name/current?)
-                  ; relative to the (path/package path)
-                  (path/new (path/package path) (path/module import-path))
-                  import-path)
-                (if (eq? import-path path)
-                  (vector/push! error:cannot-import-module-itself errors)
-                  (ignore (ord-map/insert! p import-path dependencies))))]
-            [(err (let e))
-              (vector/push! (error:invalid-import-path p e) errors)])]))
-    ; Every module except builtin depend on builtin.
-    (when (ne? path path/builtin)
-      (ord-map/insert! (string path/builtin) path/builtin dependencies))
-    ; Every module implicitly imports std.
-    ; This behavior can be disabled by (no-implicit-std).
-    (when ~implicit-std?
-      (if (eq? path path/std)
-        (vector/push! error:cannot-import-module-itself errors)
-        (ignore (ord-map/insert! (string path/std) path/std dependencies))))
-    (source: path ~implicit-std? dependencies (source-rep:code source) (vector/buffer errors))))
+(function (source/from-code path code) {(forall A) (-> Path (Ss A) (Source A))}
+  @let1 source (source/empty path)
+  (set! (rep source) (source-rep:code code))
+  source)
 
 (function (source/from-code-text path locator source-text) {(forall A) (-> Path SourceLocator String (Source A))}
   (match (parser/parse-ss! (parser/new locator (lex source-text)))
-    [(ok (let source)) (source/from-code path source)]
-    [(err (let e)) (source/from-error path (error:parse-failed e))]))
+    [(ok (let source))
+      (source/from-code path source)]
+    [(err (let e))
+      (source/from-error path (error:parse-failed e))]))
+
+(function (source/preprocess! pp source) {(forall A) (-> Preprocessor (Source A) unit)}
+  @when-match1 (source-rep:code (let code)) ~(rep source)
+  (match (preprocessor/run pp code)
+    [(ok (let code))
+      (set! (rep source) (source-rep:code code))]
+    [(err (let e))
+      (vector/push! (error:preprocess-failed e) (errors source))]))
+
+(function (source/resolve-dependencies! source) {(forall A) (-> (Source A) unit)}
+  @with1 (source: (let path) (let implicit-std?) (let dependencies) (let rep) (let errors)) source
+  @when-match1 (source-rep:code (let code)) ~rep
+
+  ; Collect the dependencies from (import ..) and (no-implicit-std) declarations.
+  (for (let s) (ss/elems code)
+    (cond
+      [when-match1 (ok unit) (syntax/no-implicit-std s)
+        (set! implicit-std? #f)]
+      [when-match1 (ok (syntax:import (let loc) (let p) (let targets))) (syntax/import s)
+        (match (path/from-string p)
+          [(ok (let import-path))
+            @let1 import-path
+              (if (|> import-path path/package path/package-name/current?)
+                ; relative to the (path/package path)
+                (path/new (path/package path) (path/module import-path))
+                import-path)
+            (if (eq? import-path path)
+              (vector/push! error:cannot-import-module-itself errors)
+              (ignore (ord-map/insert! p import-path dependencies)))]
+          [(err (let e))
+            (vector/push! (error:invalid-import-path p e) errors)])]))
+
+  ; Every module except builtin depend on builtin.
+  (when (ne? path path/builtin)
+    (ord-map/insert! (string path/builtin) path/builtin dependencies))
+
+  ; Every module implicitly imports std.
+  ; This behavior can be disabled by (no-implicit-std).
+  (when ~implicit-std?
+    (if (eq? path path/std)
+      (vector/push! error:cannot-import-module-itself errors)
+      (ignore (ord-map/insert! (string path/std) path/std dependencies)))))
 
 (function source/source-file-extension {String}
   "llrl")

@@ -11,6 +11,7 @@
 (import "~/sexp" S _.S s: s/_)
 (import "~/sexp/lexer" lex)
 (import "~/sexp/parser" [ParseError Error] [_.ParseError _.Error] Parser parser/_)
+(import "~/preprocess" Preprocessor _.Preprocessor preprocessor/_)
 (import "~/syntax" [SyntaxError Error] [_.SyntaxError _.Error])
 (import "~/ast" [ast/_ _])
 (import "~/unification/common" [UnificationError Error] [_.UnificationError _.Error] [unification-error:_ error:_])

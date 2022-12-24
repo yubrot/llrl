@@ -1,8 +1,10 @@
 FLAGS=-ccompat.c `llvm-config --cppflags --ldflags --libs --system-libs | sed -e 's/-\([^ ]*\)/-c-\1/g'` -c-lstdc++
 
-.PHONY: test test0l test0c test1ll test1lc test1cl test1cc
+.PHONY: test testl test0l test0c test1ll test1lc test1cl test1cc
 
 test: test0l test0c test1ll test1cl test1lc test1cc
+
+testl: test0l test1ll
 
 test0l:
 	llrl0           -b llvm  $(FLAGS) tests/all

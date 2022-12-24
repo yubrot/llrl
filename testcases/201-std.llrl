@@ -26,7 +26,6 @@
   (import "std/tests/syntax")
   (import "std/tests/s")
   (import "std/tests/never")
-  (import "std/tests/preprocess")
   (import "std/tests/control")
   (import "std/tests/derive")
   (import "std/tests/copy")

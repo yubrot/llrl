@@ -31,6 +31,7 @@ impl TestCase {
             &[Path::current()],
             &self.loader,
             &mut ctx.source_location_table,
+            &Default::default(),
             &mut ctx.report,
         );
 
@@ -39,7 +40,7 @@ impl TestCase {
                 "{}: Failed to create a source {}: {}",
                 ctx.header(),
                 path,
-                error
+                error.fmt_on(&ctx.source_location_table)
             );
         }
 

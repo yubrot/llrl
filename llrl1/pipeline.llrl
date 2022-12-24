@@ -8,7 +8,7 @@
 (export Error _.Error error:_ Pipeline _.Pipeline pipeline/_)
 
 (value-data Error
-  (error:source (Array (: Path SourceError)))
+  (error:source SourceLocationTable (Array (: Path SourceError)))
   (error:circular-dependencies (Array Path))
   (error:module SourceLocationTable (OrdMap ModuleId Module) Path ModuleError)
   (error:produce-executable String))
@@ -16,9 +16,9 @@
 (instance Display.Error (Display Error)
   (function (display! w a)
     (match a
-      [(error:source (let source-errors))
+      [(error:source (let slt) (let source-errors))
         (for (: (let path) (let e)) source-errors
-          (display-all! w path ": " e "\n")!)
+          (display-all! w path ": " (contextual: e slt) "\n")!)
         (ok unit)]
       [(error:circular-dependencies (let paths))
         (display! w "Circular dependencies detected:\n")!
@@ -33,6 +33,7 @@
 (derive (DebugDisplay) data Pipeline
   (pipeline:
     (SourceLoader ast/Construct)
+    Preprocessor
     (Vector Path)
     (Vector String)
     (Ref Bool)
@@ -40,6 +41,7 @@
 
 (getter pipeline:
   source-loader
+  preprocessor
   entry-source-paths
   clang-options
   optimize?
@@ -50,7 +52,10 @@
     (source-loader/add-embedded-builtin! loader)
     (source-loader/add-embedded-std! loader)
     (source-loader/add-package-filepath! package-name/current current-path loader)
-    (pipeline: loader vector/empty vector/empty (ref #f) (ref #f))))
+    (pipeline: loader default vector/empty vector/empty (ref #f) (ref #f))))
+
+(function (pipeline/enable-feature! feature p) {(-> String Pipeline unit)}
+  (preprocessor/enable-feature! feature (preprocessor p)))
 
 (function (pipeline/register-package! name filepath p) {(-> PackageName String Pipeline Bool)}
   (source-loader/add-package-filepath! name filepath (source-loader p)))
@@ -69,29 +74,31 @@
 
 (function (pipeline/run! output run-args b p)
   {(forall B T) (-> String (Option (T String)) (Phantom B) Pipeline (Result (Option I32) Error)) (where (Backend B) (NativeBackend B) (Iterate T))}
-  (let* ([output (io/path "." output)]
-         [slt (source-location-table/new)]
-         [report (report/new)]
-         [source-set (source-set/collect! (entry-source-paths p) (source-loader p) slt report)]
-         [source-errors (collect (source-set/errors source-set))]
-         [_ (when (not (array/empty? source-errors)) (err (error:source source-errors))!)]
-         [sources (result/map-err error:circular-dependencies (source-set/resolve-dependencies-order source-set))!]
-         [options (backend-options: ~(optimize? p) ~(verbose? p))])
-    (backend/with options (lambda (backend)
-      (let ([lowerizer (lowerizer/new backend)]
-            [entry-points (hash-set/collect (entry-source-paths p))])
-        (match (module/build! (vector/buffer sources) entry-points lowerizer report)
-          [(: (let module-set) none)
-            (lowerizer/complete! report lowerizer)
-            (result/map-err
-              error:produce-executable
-              (backend/produce-executable! output (vector/buffer (clang-options p)) backend))!
-            (backend/complete! report backend {B})
-            (ok unit)]
-          [(: (let module-set) (some (: (let path) (let error))))
-            (err (error:module slt module-set path error))]))))!
-    (ok
-      (with1? (some (let run-args)) run-args
-        (|> (process/execute! output run-args)
-            (result/unwrap* [^1 (assert #f (string "Failed to execute process: " %1))])
-            (option/unwrap* [^0 (assert #f "Failed to complete process")]))))))
+  @let1 output (io/path "." output)
+  @let1 slt (source-location-table/new)
+  @let1 report (report/new)
+
+  @let1 source-set (source-set/collect! (entry-source-paths p) (source-loader p) slt (preprocessor p) report)
+  @let1 source-errors (collect (source-set/errors source-set))
+  (when (not (array/empty? source-errors)) (err (error:source slt source-errors))!)
+  @let1 sources (result/map-err error:circular-dependencies (source-set/resolve-dependencies-order source-set))!
+
+  (backend/with (backend-options: ~(optimize? p) ~(verbose? p)) (lambda (backend)
+    @let1 lowerizer (lowerizer/new backend)
+    @let1 entry-points (hash-set/collect (entry-source-paths p))
+
+    (match (module/build! (vector/buffer sources) entry-points lowerizer report)
+      [(: (let module-set) none)
+        (lowerizer/complete! report lowerizer)
+        (result/map-err
+          error:produce-executable
+          (backend/produce-executable! output (vector/buffer (clang-options p)) backend))!
+        (backend/complete! report backend {B})
+        (ok unit)]
+      [(: (let module-set) (some (: (let path) (let error))))
+        (err (error:module slt module-set path error))])))!
+  (ok
+    (with1? (some (let run-args)) run-args
+      (|> (process/execute! output run-args)
+          (result/unwrap* [^1 (assert #f (string "Failed to execute process: " %1))])
+          (option/unwrap* [^0 (assert #f "Failed to complete process")])))))

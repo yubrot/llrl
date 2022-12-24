@@ -7,7 +7,6 @@
 ; - The names of the type-level declarations start with an uppercase letter.
 ; - The names of the functions with side effects are marked with `!` suffix.
 ; - `!` is also used for the syntactic sugar of Result's early return.
-; - `$` is used in identifiers of preprocessing macros / directives.
 ; - `^` and `%` are used for shortened lambda expressions, see "std/control".
 ; - If some function has a variation that takes a function as an argument, the function will have `*` suffix to its name.
 ; - `-` is often used as an identifier separator. `_` is not used for this purpose.
@@ -20,4 +19,5 @@
 ; - If some function or macro has a variation that returns an optional value, it will have `?` suffix to its name.
 ; - `?` is also used for the syntactic sugar of Options's early return.
 ; - `~` is used for the syntactic sugar of the load function call.
+; - `$` is used for directives and metavariables handled by the preprocessor.
 ; - To distinguish a declaration as non-exported, it is often named starting with `<` and ending with `>`.

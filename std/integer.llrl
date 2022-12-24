@@ -13,129 +13,125 @@
 (sealed-class (Signed A) (where (Integer A)))
 (sealed-class (Unsigned A) (where (Integer A)))
 
-($$ begin
-  ($for-each $ty (I8 I16 I32 I64 U8 U16 U32 U64)
-    (instance ($symbol-concat ShallowCopy. $ty) (ShallowCopy $ty)
-      (transparent-function (shallow-copy a) a))
+($for1 $ty (I8 I16 I32 I64 U8 U16 U32 U64)
+  (instance ($symbol ShallowCopy. $ty) (ShallowCopy $ty)
+    (transparent-function (shallow-copy a) a))
 
-    (instance ($symbol-concat DeepCopy. $ty) (DeepCopy $ty)
-      (transparent-function (deep-copy a) a))
+  (instance ($symbol DeepCopy. $ty) (DeepCopy $ty)
+    (transparent-function (deep-copy a) a))
 
-    (instance ($symbol-concat Default. $ty) (Default $ty)
-      (transparent-function default 0))
+  (instance ($symbol Default. $ty) (Default $ty)
+    (transparent-function default 0))
 
-    (instance ($symbol-concat Display. $ty) (Display $ty)
-      (function (display! w a) (display! w (integer/to-string 10 a))))
+  (instance ($symbol Display. $ty) (Display $ty)
+    (function (display! w a) (display! w (integer/to-string 10 a))))
 
-    (instance ($symbol-concat DebugDisplay. $ty) (DebugDisplay $ty)
-      (transparent-function (debug-display! w a) (display! w a)))
+  (instance ($symbol DebugDisplay. $ty) (DebugDisplay $ty)
+    (transparent-function (debug-display! w a) (display! w a)))
 
-    (instance ($symbol-concat Eq. $ty) (Eq $ty)
-      (transparent-function (eq? a b) (<integer/eq?> a b)))
+  (instance ($symbol Eq. $ty) (Eq $ty)
+    (transparent-function (eq? a b) (<integer/eq?> a b)))
 
-    (instance ($symbol-concat Zero. $ty) (Zero $ty)
-      (transparent-function zero 0))
+  (instance ($symbol Zero. $ty) (Zero $ty)
+    (transparent-function zero 0))
 
-    (instance ($symbol-concat One. $ty) (One $ty)
-      (transparent-function one 1))))
+  (instance ($symbol One. $ty) (One $ty)
+    (transparent-function one 1)))
 
-($$ begin
-  ($for-each $ty (I8 I16 I32 I64)
-    (instance ($symbol-concat Integer. $ty) (Integer $ty)
-      (transparent-function integer/min ($symbol-concat < $ty /min>))
-      (transparent-function integer/max ($symbol-concat < $ty /max>))
+($for1 $ty (I8 I16 I32 I64)
+  (instance ($symbol Integer. $ty) (Integer $ty)
+    (transparent-function integer/min ($symbol < $ty /min>))
+    (transparent-function integer/max ($symbol < $ty /max>))
 
-      (function (integer/to-string radix value)
-        (assert (<= 2 radix 36) "!(2 <= radix <= 36)")
-        (<i64-to-string> radix (conv value)))
+    (function (integer/to-string radix value)
+      (assert (<= 2 radix 36) "!(2 <= radix <= 36)")
+      (<i64-to-string> radix (conv value)))
 
-      (transparent-function (integer/from-string? radix value)
-        (match (<string-to-i64> radix value)
-          [(<result>: 0 _)
-            none]
-          [(<result>: _ (let value))
-            (if (<= (conv integer/min {$ty}) value (conv integer/max {$ty}))
-              (some (conv value))
-              none)])))
+    (transparent-function (integer/from-string? radix value)
+      (match (<string-to-i64> radix value)
+        [(<result>: 0 _)
+          none]
+        [(<result>: _ (let value))
+          (if (<= (conv integer/min {$ty}) value (conv integer/max {$ty}))
+            (some (conv value))
+            none)])))
 
-    (instance ($symbol-concat Signed. $ty) (Signed $ty))
+  (instance ($symbol Signed. $ty) (Signed $ty))
 
-    (instance ($symbol-concat Ord. $ty) (Ord $ty)
-      (transparent-function (lt? a b) (<signed/lt?> a b))
-      (transparent-function (le? a b) (<signed/le?> a b))
-      (transparent-function (gt? a b) (<signed/gt?> a b))
-      (transparent-function (ge? a b) (<signed/ge?> a b)))
+  (instance ($symbol Ord. $ty) (Ord $ty)
+    (transparent-function (lt? a b) (<signed/lt?> a b))
+    (transparent-function (le? a b) (<signed/le?> a b))
+    (transparent-function (gt? a b) (<signed/gt?> a b))
+    (transparent-function (ge? a b) (<signed/ge?> a b)))
 
-    (instance ($symbol-concat Add. $ty) (Add $ty)
-      (transparent-function (add a b) (<signed/add> a b)))
+  (instance ($symbol Add. $ty) (Add $ty)
+    (transparent-function (add a b) (<signed/add> a b)))
 
-    (instance ($symbol-concat Sub. $ty) (Sub $ty)
-      (transparent-function (sub a b) (<signed/sub> a b)))
+  (instance ($symbol Sub. $ty) (Sub $ty)
+    (transparent-function (sub a b) (<signed/sub> a b)))
 
-    (instance ($symbol-concat Mul. $ty) (Mul $ty)
-      (transparent-function (mul a b) (<signed/mul> a b)))
+  (instance ($symbol Mul. $ty) (Mul $ty)
+    (transparent-function (mul a b) (<signed/mul> a b)))
 
-    (instance ($symbol-concat Div. $ty) (Div $ty)
-      (transparent-function (div a b) (<signed/div> a b)))
+  (instance ($symbol Div. $ty) (Div $ty)
+    (transparent-function (div a b) (<signed/div> a b)))
 
-    (instance ($symbol-concat Rem. $ty) (Rem $ty)
-      (transparent-function (rem a b) (<signed/rem> a b)))))
+  (instance ($symbol Rem. $ty) (Rem $ty)
+    (transparent-function (rem a b) (<signed/rem> a b))))
 
-($$ begin
-  ($for-each $ty (U8 U16 U32 U64)
-    (instance ($symbol-concat Integer. $ty) (Integer $ty)
-      (transparent-function integer/min ($symbol-concat < $ty /min>))
-      (transparent-function integer/max ($symbol-concat < $ty /max>))
+($for1 $ty (U8 U16 U32 U64)
+  (instance ($symbol Integer. $ty) (Integer $ty)
+    (transparent-function integer/min ($symbol < $ty /min>))
+    (transparent-function integer/max ($symbol < $ty /max>))
 
-      (function (integer/to-string radix value)
-        (assert (<= 2 radix 36) "!(2 <= radix <= 36)")
-        (<u64-to-string> radix (conv value)))
+    (function (integer/to-string radix value)
+      (assert (<= 2 radix 36) "!(2 <= radix <= 36)")
+      (<u64-to-string> radix (conv value)))
 
-      (transparent-function (integer/from-string? radix value)
-        (match (<string-to-u64> radix value)
-          [(<result>: 0 _)
-            none]
-          [(<result>: _ (let value))
-            (if (<= (conv integer/min {$ty}) value (conv integer/max {$ty}))
-              (some (conv value))
-              none)])))
+    (transparent-function (integer/from-string? radix value)
+      (match (<string-to-u64> radix value)
+        [(<result>: 0 _)
+          none]
+        [(<result>: _ (let value))
+          (if (<= (conv integer/min {$ty}) value (conv integer/max {$ty}))
+            (some (conv value))
+            none)])))
 
-    (instance ($symbol-concat Unsigned. $ty) (Unsigned $ty))
+  (instance ($symbol Unsigned. $ty) (Unsigned $ty))
 
-    (instance ($symbol-concat Ord. $ty) (Ord $ty)
-      (transparent-function (lt? a b) (<unsigned/lt?> a b))
-      (transparent-function (le? a b) (<unsigned/le?> a b))
-      (transparent-function (gt? a b) (<unsigned/gt?> a b))
-      (transparent-function (ge? a b) (<unsigned/ge?> a b)))
+  (instance ($symbol Ord. $ty) (Ord $ty)
+    (transparent-function (lt? a b) (<unsigned/lt?> a b))
+    (transparent-function (le? a b) (<unsigned/le?> a b))
+    (transparent-function (gt? a b) (<unsigned/gt?> a b))
+    (transparent-function (ge? a b) (<unsigned/ge?> a b)))
 
-    (instance ($symbol-concat Add. $ty) (Add $ty)
-      (transparent-function (add a b) (<unsigned/add> a b)))
+  (instance ($symbol Add. $ty) (Add $ty)
+    (transparent-function (add a b) (<unsigned/add> a b)))
 
-    (instance ($symbol-concat Sub. $ty) (Sub $ty)
-      (transparent-function (sub a b) (<unsigned/sub> a b)))
+  (instance ($symbol Sub. $ty) (Sub $ty)
+    (transparent-function (sub a b) (<unsigned/sub> a b)))
 
-    (instance ($symbol-concat Mul. $ty) (Mul $ty)
-      (transparent-function (mul a b) (<unsigned/mul> a b)))
+  (instance ($symbol Mul. $ty) (Mul $ty)
+    (transparent-function (mul a b) (<unsigned/mul> a b)))
 
-    (instance ($symbol-concat Div. $ty) (Div $ty)
-      (transparent-function (div a b) (<unsigned/div> a b)))
+  (instance ($symbol Div. $ty) (Div $ty)
+    (transparent-function (div a b) (<unsigned/div> a b)))
 
-    (instance ($symbol-concat Rem. $ty) (Rem $ty)
-      (transparent-function (rem a b) (<unsigned/rem> a b)))))
+  (instance ($symbol Rem. $ty) (Rem $ty)
+    (transparent-function (rem a b) (<unsigned/rem> a b))))
 
-($$ begin
-  ($for-each
-    [$ty $min $max]
-    ([I8 -128 127]
-     [I16 -32768 32767]
-     [I32 -2147483648 2147483647]
-     [I64 -9223372036854775808 9223372036854775807]
-     [U8 0 255]
-     [U16 0 65535]
-     [U32 0 4294967295]
-     [U64 0 18446744073709551615])
-    (transparent-function ($symbol-concat < $ty /min>) {$ty} $min)
-    (transparent-function ($symbol-concat < $ty /max>) {$ty} $max)))
+($for
+  [$ty $min $max] (
+    [I8 -128 127]
+    [I16 -32768 32767]
+    [I32 -2147483648 2147483647]
+    [I64 -9223372036854775808 9223372036854775807]
+    [U8 0 255]
+    [U16 0 65535]
+    [U32 0 4294967295]
+    [U64 0 18446744073709551615])
+  (transparent-function ($symbol < $ty /min>) {$ty} $min)
+  (transparent-function ($symbol < $ty /max>) {$ty} $max))
 
 (builtin-op <integer/eq?> {(forall A) (-> A A Bool) (where (Integer A))} "integer.eq")
 

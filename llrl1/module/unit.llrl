@@ -59,26 +59,25 @@
       (inferred-types/new)
       (report/new))))
 
-($$ begin
-  ($for-each
-    [$name $type]
-    ([function Function]
-     [c-function CFunction]
-     [builtin-op BuiltinOp]
-     [macro Macro]
-     [data-type-con DataTypeCon]
-     [data-value-con DataValueCon]
-     [builtin-type-con BuiltinTypeCon]
-     [builtin-value-con BuiltinValueCon]
-     [class-con ClassCon]
-     [class-method ClassMethod]
-     [instance-con InstanceCon])
-    (function (($symbol-concat module/define- $name ($symbol "!")) x module)
-      {(-> ($symbol-concat ast/ $type) Module (Result unit Error))}
-      (with1 (symbol: (let loc) (let name)) (|> module module/symbol-map (symbol-map/get? (($symbol-concat ast/ $name /id) x)) option/force)
-        (scope/define! name (located-construct loc (($symbol-concat ast/ $name /id) x)) (module/top-level module))!
-        (($symbol-concat ast/root/add- $name ($symbol "!")) x (module/ast-root module))
-        (ok unit)))))
+($for
+  [$name $type] (
+    [function Function]
+    [c-function CFunction]
+    [builtin-op BuiltinOp]
+    [macro Macro]
+    [data-type-con DataTypeCon]
+    [data-value-con DataValueCon]
+    [builtin-type-con BuiltinTypeCon]
+    [builtin-value-con BuiltinValueCon]
+    [class-con ClassCon]
+    [class-method ClassMethod]
+    [instance-con InstanceCon])
+  (function (($symbol module/define- $name ($symbol "!")) x module)
+    {(-> ($symbol ast/ $type) Module (Result unit Error))}
+    (with1 (symbol: (let loc) (let name)) (|> module module/symbol-map (symbol-map/get? (($symbol ast/ $name /id) x)) option/force)
+      (scope/define! name (located-construct loc (($symbol ast/ $name /id) x)) (module/top-level module))!
+      (($symbol ast/root/add- $name ($symbol "!")) x (module/ast-root module))
+      (ok unit))))
 
 (function (module/add-instance-method! method module) {(-> ast/InstanceMethod Module unit)}
   (ignore (ast/root/add-instance-method! method (module/ast-root module))))

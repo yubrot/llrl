@@ -47,6 +47,8 @@
 (assert-eq? (ok "bar") (parse "(. bar)"))
 (assert-eq? (ok "(foo . bar)") (parse "(foo . bar)"))
 (assert-eq? (ok "(1 2 . 3)") (parse "(1 2 . 3)"))
+(assert-eq? (ok "(1 2 3 . 4)") (parse "(1 2 . (3 . 4))"))
+(assert-eq? (ok "(1 2 3 4)") (parse "(1 2 . (3 4))"))
 (assert-eq? (ok "(a b c d)") (parse "(a b c d)"))
 (assert-eq? (ok "(())") (parse "(@)"))
 (assert-eq? (ok "((a))") (parse "(@ a)"))

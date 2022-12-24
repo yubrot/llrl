@@ -70,24 +70,24 @@
     (display! w (string/skip (string/length "target:") (string (debug a))))))
 
 (function (validation-target/get module name target) {(-> Module String ValidationTarget (Result ast/Construct String))}
-  ($$ match target
-    ($for-each
-      [$name $type]
-      ([data ast/DataTypeCon]
-       [builtin-type ast/BuiltinTypeCon]
-       [data-value-con ast/DataValueCon]
-       [builtin-value-con ast/BuiltinValueCon]
-       [function ast/Function]
-       [c-function ast/CFunction]
-       [builtin-op ast/BuiltinOp]
-       [macro ast/Macro]
-       [class ast/ClassCon]
-       [class-method ast/ClassMethod]
-       [instance ast/InstanceCon]
-       [instance-method ast/InstanceMethod]
-       [local-var ast/LocalVar]
-       [local-fun ast/LocalFun])
-      [($symbol-concat target: $name)
+  (match target
+    ($for
+      [$name $type] (
+        [data ast/DataTypeCon]
+        [builtin-type ast/BuiltinTypeCon]
+        [data-value-con ast/DataValueCon]
+        [builtin-value-con ast/BuiltinValueCon]
+        [function ast/Function]
+        [c-function ast/CFunction]
+        [builtin-op ast/BuiltinOp]
+        [macro ast/Macro]
+        [class ast/ClassCon]
+        [class-method ast/ClassMethod]
+        [instance ast/InstanceCon]
+        [instance-method ast/InstanceMethod]
+        [local-var ast/LocalVar]
+        [local-fun ast/LocalFun])
+      [($symbol target: $name)
         (let1
           constructs
           (|> module

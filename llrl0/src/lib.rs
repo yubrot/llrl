@@ -14,6 +14,8 @@ pub mod lexer;
 pub mod parser;
 pub mod token;
 
+pub mod preprocess;
+
 pub mod syntax;
 
 #[macro_use]
@@ -45,6 +47,8 @@ pub mod prelude {
     pub use super::lexer::Lexer;
     pub use super::parser::{parse, EntireResult as ParseResult, Error as ParseError};
     pub use super::sexp::{Sexp, SexpRep, Ss};
+
+    pub use super::preprocess::Preprocessor;
 
     pub use super::ast;
 

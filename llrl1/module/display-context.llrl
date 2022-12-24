@@ -34,12 +34,11 @@
           (contextual-display! w (symbol/loc symbol) (source-location-table ctx))
           (display! w "<unknown location>"))])))
 
-($$ begin
-  ($for-each $ty [KindUse TypeUse TypeParameter ConstraintUse PatternUse PatternVar DataTypeCon BuiltinTypeCon BuiltinValueCon ClassCon InstanceCon]
-    (instance ($symbol-concat ContextualDisplay. $ty .DisplayContext)
-      (forall S) (ContextualDisplay (NodeId $ty) (DisplayContext S)) (where (ModuleSet S))
-      (function (contextual-display! w a ctx)
-        (display-symbol-name! w (conv a) ctx)))))
+($for1 $ty [KindUse TypeUse TypeParameter ConstraintUse PatternUse PatternVar DataTypeCon BuiltinTypeCon BuiltinValueCon ClassCon InstanceCon]
+  (instance ($symbol ContextualDisplay. $ty .DisplayContext)
+    (forall S) (ContextualDisplay (NodeId $ty) (DisplayContext S)) (where (ModuleSet S))
+    (function (contextual-display! w a ctx)
+      (display-symbol-name! w (conv a) ctx))))
 
 (instance ContextualDisplay.DataValueCon.DisplayContext
   (forall S) (ContextualDisplay (NodeId DataValueCon) (DisplayContext S)) (where (ModuleSet S))

@@ -26,70 +26,70 @@
 (instance Hash.unit (Hash unit)
   (transparent-function (hash! s a)))
 
-($$ begin
-  ($for-each
-    [$function $ty $params]
-    ([transparent-function Tuple.1 (A)]
-     [transparent-function Tuple.2 (A B)]
-     [transparent-function Tuple.3 (A B C)]
-     [function Tuple.4 (A B C D)]
-     [function Tuple.5 (A B C D E)]
-     [function Tuple.6 (A B C D E F)]
-     [function Tuple.7 (A B C D E F G)]
-     [function Tuple.8 (A B C D E F G H)]
-     [function Tuple.9 (A B C D E F G H I)]
-     [function Tuple.10 (A B C D E F G H I J)]
-     [function Tuple.11 (A B C D E F G H I J K)]
-     [function Tuple.12 (A B C D E F G H I J K L)]
-     [function Tuple.13 (A B C D E F G H I J K L M)]
-     [function Tuple.14 (A B C D E F G H I J K L M N)]
-     [function Tuple.15 (A B C D E F G H I J K L M N O)]
-     [function Tuple.16 (A B C D E F G H I J K L M N O P)])
-    (instance ($symbol-concat DeepCopy. $ty)
-              (forall ($for-each $p $params $p))
-              (DeepCopy (: ($for-each $p $params $p)))
-              (where ($for-each $p $params (DeepCopy $p)))
-      ($function (deep-copy a)
-        (with1 (: ($for-each $p $params (let ($symbol-concat a. $p)))) a
-          (: ($for-each $p $params (deep-copy ($symbol-concat a. $p)))))))
+($for
+  [$function $ty $params] (
+    [transparent-function Tuple.1 (A)]
+    [transparent-function Tuple.2 (A B)]
+    [transparent-function Tuple.3 (A B C)]
+    [function Tuple.4 (A B C D)]
+    [function Tuple.5 (A B C D E)]
+    [function Tuple.6 (A B C D E F)]
+    [function Tuple.7 (A B C D E F G)]
+    [function Tuple.8 (A B C D E F G H)]
+    [function Tuple.9 (A B C D E F G H I)]
+    [function Tuple.10 (A B C D E F G H I J)]
+    [function Tuple.11 (A B C D E F G H I J K)]
+    [function Tuple.12 (A B C D E F G H I J K L)]
+    [function Tuple.13 (A B C D E F G H I J K L M)]
+    [function Tuple.14 (A B C D E F G H I J K L M N)]
+    [function Tuple.15 (A B C D E F G H I J K L M N O)]
+    [function Tuple.16 (A B C D E F G H I J K L M N O P)])
 
-    (instance ($symbol-concat Default. $ty)
-              (forall ($for-each $p $params $p))
-              (Default (: ($for-each $p $params $p)))
-              (where ($for-each $p $params (Default $p)))
-      ($function default
-        (: ($for-each $p $params default))))
+  (instance ($symbol DeepCopy. $ty)
+            (forall ($for1 $p $params $p))
+            (DeepCopy (: ($for1 $p $params $p)))
+            (where ($for1 $p $params (DeepCopy $p)))
+    ($function (deep-copy a)
+      (with1 (: ($for1 $p $params (let ($symbol a. $p)))) a
+        (: ($for1 $p $params (deep-copy ($symbol a. $p)))))))
 
-    (instance ($symbol-concat DebugDisplay. $ty)
-              (forall ($for-each $p $params $p))
-              (DebugDisplay (: ($for-each $p $params $p)))
-              (where ($for-each $p $params (DebugDisplay $p)))
-      (function (debug-display! w a)
-        (with1 (: ($for-each $p $params (let ($symbol-concat a. $p)))) a
-          (display-all! w "(:" ($for-each $p $params " " (debug ($symbol-concat a. $p))) ")"))))
+  (instance ($symbol Default. $ty)
+            (forall ($for1 $p $params $p))
+            (Default (: ($for1 $p $params $p)))
+            (where ($for1 $p $params (Default $p)))
+    ($function default
+      (: ($for1 $p $params default))))
 
-    (instance ($symbol-concat Eq. $ty)
-              (forall ($for-each $p $params $p))
-              (Eq (: ($for-each $p $params $p)))
-              (where ($for-each $p $params (Eq $p)))
-      ($function (eq? a b)
-        (with ([(: ($for-each $p $params (let ($symbol-concat a. $p)))) a]
-               [(: ($for-each $p $params (let ($symbol-concat b. $p)))) b])
-          (and ($for-each $p $params (eq? ($symbol-concat a. $p) ($symbol-concat b. $p)))))))
+  (instance ($symbol DebugDisplay. $ty)
+            (forall ($for1 $p $params $p))
+            (DebugDisplay (: ($for1 $p $params $p)))
+            (where ($for1 $p $params (DebugDisplay $p)))
+    (function (debug-display! w a)
+      (with1 (: ($for1 $p $params (let ($symbol a. $p)))) a
+        (display-all! w "(:" ($for1 $p $params " " (debug ($symbol a. $p))) ")"))))
 
-    (instance ($symbol-concat Ord. $ty)
-              (forall ($for-each $p $params $p))
-              (Ord (: ($for-each $p $params $p)))
-              (where ($for-each $p $params (Ord $p)))
-      ($function (compare a b)
-        (with ([(: ($for-each $p $params (let ($symbol-concat a. $p)))) a]
-               [(: ($for-each $p $params (let ($symbol-concat b. $p)))) b])
-          (ordering/or ($for-each $p $params (compare ($symbol-concat a. $p) ($symbol-concat b. $p)))))))
+  (instance ($symbol Eq. $ty)
+            (forall ($for1 $p $params $p))
+            (Eq (: ($for1 $p $params $p)))
+            (where ($for1 $p $params (Eq $p)))
+    ($function (eq? a b)
+      (with ([(: ($for1 $p $params (let ($symbol a. $p)))) a]
+             [(: ($for1 $p $params (let ($symbol b. $p)))) b])
+        (and ($for1 $p $params (eq? ($symbol a. $p) ($symbol b. $p)))))))
 
-    (instance ($symbol-concat Hash. $ty)
-              (forall ($for-each $p $params $p))
-              (Hash (: ($for-each $p $params $p)))
-              (where ($for-each $p $params (Hash $p)))
-      ($function (hash! s a)
-        (with1 (: ($for-each $p $params (let ($symbol-concat a. $p)))) a
-          (hash-all! s ($for-each $p $params ($symbol-concat a. $p))))))))
+  (instance ($symbol Ord. $ty)
+            (forall ($for1 $p $params $p))
+            (Ord (: ($for1 $p $params $p)))
+            (where ($for1 $p $params (Ord $p)))
+    ($function (compare a b)
+      (with ([(: ($for1 $p $params (let ($symbol a. $p)))) a]
+             [(: ($for1 $p $params (let ($symbol b. $p)))) b])
+        (ordering/or ($for1 $p $params (compare ($symbol a. $p) ($symbol b. $p)))))))
+
+  (instance ($symbol Hash. $ty)
+            (forall ($for1 $p $params $p))
+            (Hash (: ($for1 $p $params $p)))
+            (where ($for1 $p $params (Hash $p)))
+    ($function (hash! s a)
+      (with1 (: ($for1 $p $params (let ($symbol a. $p)))) a
+        (hash-all! s ($for1 $p $params ($symbol a. $p)))))))

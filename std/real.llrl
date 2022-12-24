@@ -2,7 +2,6 @@
 
 (import "std/prelude/stage-0" _)
 (import "std/num-literals" _)
-(import "std/preprocess" $$)
 (import "std/float" Float Float._)
 (export Real ceil floor trunc round Real._)
 
@@ -12,13 +11,12 @@
   (function (trunc a) {(-> A A)})
   (function (round a) {(-> A A)}))
 
-($$ begin
-  ($for-each $ty (F32 F64)
-    (instance ($symbol-concat Real. $ty) (Real $ty)
-      (transparent-function (ceil a) (<real/ceil> a))
-      (transparent-function (floor a) (<real/floor> a))
-      (transparent-function (trunc a) (<real/trunc> a))
-      (transparent-function (round a) (<real/round> a)))))
+($for1 $ty (F32 F64)
+  (instance ($symbol Real. $ty) (Real $ty)
+    (transparent-function (ceil a) (<real/ceil> a))
+    (transparent-function (floor a) (<real/floor> a))
+    (transparent-function (trunc a) (<real/trunc> a))
+    (transparent-function (round a) (<real/round> a))))
 
 (builtin-op <real/ceil> {(forall A) (-> A A) (where (Float A))} "real.ceil")
 (builtin-op <real/floor> {(forall A) (-> A A) (where (Float A))} "real.floor")

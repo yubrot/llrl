@@ -1,10 +1,12 @@
 (import "std/phantom" _)
 (import "std/io" [io/_ _])
 (import "std/system" args exit!)
-(import "~/util" with-tempdir! $feature)
+(import "~/util" with-tempdir!)
 (import "~" _)
-(import "~/backend/llvm" [LLVMBackend Backend] [_.LLVMBackend _.Backend])
-(import "~/backend/chibi" [ChibiBackend Backend] [_.ChibiBackend _.Backend])
+($when ($feature "llvm-backend")
+  (import "~/backend/llvm" [LLVMBackend Backend] [_.LLVMBackend _.Backend]))
+($when ($feature "chibi-backend")
+  (import "~/backend/chibi" [ChibiBackend Backend] [_.ChibiBackend _.Backend]))
 
 (derive (DebugDisplay Eq) value-data Arg
   (arg: String)
@@ -13,6 +15,7 @@
   arg:run
   arg:verbose
   (arg:backend String)
+  (arg:feature String)
   (arg:clang-option String)
   (arg:output String)
   (arg:package String)
@@ -26,22 +29,23 @@
     iterator/empty))
 
 (function (parse-arg! arg it) {(-> String (Iterator String) Arg)}
-  ($$ cond
-    ($for-each
-      [$id $short $long]
-      ([arg:help "-h" "--help"]
-       [arg:optimize "-O" "--optimize"]
-       [arg:run "-r" "--run"]
-       [arg:verbose "-v" "--verbose"])
+  (cond
+    ($for
+      [$id $short $long] (
+        [arg:help "-h" "--help"]
+        [arg:optimize "-O" "--optimize"]
+        [arg:run "-r" "--run"]
+        [arg:verbose "-v" "--verbose"])
       [(or (eq? $short arg) (eq? $long arg))
         $id])
 
-    ($for-each
-      [$id $short $long]
-      ([arg:backend "-b" "--backend"]
-       [arg:clang-option "-c" "--clang-option"]
-       [arg:output "-o" "--output"]
-       [arg:package "-p" "--package"])
+    ($for
+      [$id $short $long] (
+        [arg:backend "-b" "--backend"]
+        [arg:clang-option "-c" "--clang-option"]
+        [arg:feature "-f" "--feature"]
+        [arg:output "-o" "--output"]
+        [arg:package "-p" "--package"])
       [(or (eq? arg $short) (eq? arg $long))
         (if-match1 (some (let value)) (iterator/next! it)
           ($id value)
@@ -118,6 +122,8 @@
           (pipeline/set-verbose! #t pipeline)]
         [(arg:backend (let b))
           (set! backend (some b))]
+        [(arg:feature (let feature))
+          (pipeline/enable-feature! feature pipeline)]
         [(arg:clang-option (let opt))
           (pipeline/add-clang-option! opt pipeline)]
         [(arg:output (let out))
@@ -141,9 +147,9 @@
         (with-tempdir! [^1 (pipeline/run! (io/path %1 "bin") ~run-args backend pipeline)]))
       (match
         (match (option/unwrap "default" ~backend)
-          ($feature "llvm-backend"
+          ($when ($feature "llvm-backend")
             ["llvm" (run! (phantom LLVMBackend))])
-          ($feature "chibi-backend"
+          ($when ($feature "chibi-backend")
             ["chibi" (run! (phantom ChibiBackend))])
           ["default" (run! (phantom DefaultBackend))]
           [(let backend) (error! (string "Unsupported backend: " backend))])
@@ -165,14 +171,15 @@
   (println! "    -v, --verbose     Enables verbose output")
   (println! "")
   (println! "OPTIONS:")
-  (println! "    -b, --backend <BACKEND>                                 Sets the backend [possible values: default, llvm, chibi]")
-  (println! "    -c, --clang-option <OPTION>...                          Adds an option to be passed to clang")
-  (println! "    -o, --output <OUTPUT>                                   Sets the destination of the executable")
-  (println! "    -p, --package <DIRPATH> or <PACKAGE-NAME>:<DIRPATH>...  Adds a package reference")
+  (println! "    -b, --backend <BACKEND>                    Sets the backend [possible values: default, llvm, chibi]")
+  (println! "    -c, --clang-option <OPTION>...             Adds an option to be passed to clang")
+  (println! "    -f, --feature <FEATURE>...                 Enables a feature")
+  (println! "    -o, --output <OUTPUT>                      Sets the destination of the executable")
+  (println! "    -p, --package <PATH or PACKAGE:PATH>...    Adds a package reference")
   (println! "")
   (println! "ARGS:")
-  (println! "    <ENTRY-POINT>...    Target to be entry-point")
-  (println! "    <RUN-ARG>...        Arguments to run"))
+  (println! "    <ENTRY>...    Target to be entry-point")
+  (println! "    <ARG>...      Arguments to run"))
 
 (function (error! e)
   (eprintln! e)

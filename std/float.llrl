@@ -8,61 +8,60 @@
   (function (float/to-string value) {(-> A String)})
   (function (float/from-string? s) {(-> String (Option A))}))
 
-($$ begin
-  ($for-each $ty (F32 F64)
-    (instance ($symbol-concat Float. $ty) (Float $ty)
-      (transparent-function (float/to-string value)
-        (($symbol-concat < $ty -to-string>) value))
+($for1 $ty (F32 F64)
+  (instance ($symbol Float. $ty) (Float $ty)
+    (transparent-function (float/to-string value)
+      (($symbol < $ty -to-string>) value))
 
-      (function (float/from-string? s)
-        (match (($symbol-concat <string-to- $ty >) s)
-          [(<result>: 0 _) none]
-          [(<result>: _ (let value)) (some value)])))
+    (function (float/from-string? s)
+      (match (($symbol <string-to- $ty >) s)
+        [(<result>: 0 _) none]
+        [(<result>: _ (let value)) (some value)])))
 
-    (instance ($symbol-concat ShallowCopy. $ty) (ShallowCopy $ty)
-      (transparent-function (shallow-copy a) a))
+  (instance ($symbol ShallowCopy. $ty) (ShallowCopy $ty)
+    (transparent-function (shallow-copy a) a))
 
-    (instance ($symbol-concat DeepCopy. $ty) (DeepCopy $ty)
-      (transparent-function (deep-copy a) a))
+  (instance ($symbol DeepCopy. $ty) (DeepCopy $ty)
+    (transparent-function (deep-copy a) a))
 
-    (instance ($symbol-concat Default. $ty) (Default $ty)
-      (transparent-function default 0.0))
+  (instance ($symbol Default. $ty) (Default $ty)
+    (transparent-function default 0.0))
 
-    (instance ($symbol-concat Display. $ty) (Display $ty)
-      (function (display! w a) (display! w (float/to-string a))))
+  (instance ($symbol Display. $ty) (Display $ty)
+    (function (display! w a) (display! w (float/to-string a))))
 
-    (instance ($symbol-concat DebugDisplay. $ty) (DebugDisplay $ty)
-      (transparent-function (debug-display! w a) (display! w a)))
+  (instance ($symbol DebugDisplay. $ty) (DebugDisplay $ty)
+    (transparent-function (debug-display! w a) (display! w a)))
 
-    (instance ($symbol-concat Eq. $ty) (Eq $ty)
-      (transparent-function (eq? a b) (<float/eq?> a b)))
+  (instance ($symbol Eq. $ty) (Eq $ty)
+    (transparent-function (eq? a b) (<float/eq?> a b)))
 
-    (instance ($symbol-concat Ord. $ty) (Ord $ty)
-      (transparent-function (lt? a b) (<float/lt?> a b))
-      (transparent-function (le? a b) (<float/le?> a b))
-      (transparent-function (gt? a b) (<float/gt?> a b))
-      (transparent-function (ge? a b) (<float/ge?> a b)))
+  (instance ($symbol Ord. $ty) (Ord $ty)
+    (transparent-function (lt? a b) (<float/lt?> a b))
+    (transparent-function (le? a b) (<float/le?> a b))
+    (transparent-function (gt? a b) (<float/gt?> a b))
+    (transparent-function (ge? a b) (<float/ge?> a b)))
 
-    (instance ($symbol-concat Zero. $ty) (Zero $ty)
-      (transparent-function zero 0.0))
+  (instance ($symbol Zero. $ty) (Zero $ty)
+    (transparent-function zero 0.0))
 
-    (instance ($symbol-concat One. $ty) (One $ty)
-      (transparent-function one 1.0))
+  (instance ($symbol One. $ty) (One $ty)
+    (transparent-function one 1.0))
 
-    (instance ($symbol-concat Add. $ty) (Add $ty)
-      (transparent-function (add a b) (<float/add> a b)))
+  (instance ($symbol Add. $ty) (Add $ty)
+    (transparent-function (add a b) (<float/add> a b)))
 
-    (instance ($symbol-concat Sub. $ty) (Sub $ty)
-      (transparent-function (sub a b) (<float/sub> a b)))
+  (instance ($symbol Sub. $ty) (Sub $ty)
+    (transparent-function (sub a b) (<float/sub> a b)))
 
-    (instance ($symbol-concat Mul. $ty) (Mul $ty)
-      (transparent-function (mul a b) (<float/mul> a b)))
+  (instance ($symbol Mul. $ty) (Mul $ty)
+    (transparent-function (mul a b) (<float/mul> a b)))
 
-    (instance ($symbol-concat Div. $ty) (Div $ty)
-      (transparent-function (div a b) (<float/div> a b)))
+  (instance ($symbol Div. $ty) (Div $ty)
+    (transparent-function (div a b) (<float/div> a b)))
 
-    (instance ($symbol-concat Rem. $ty) (Rem $ty)
-      (transparent-function (rem a b) (<float/rem> a b)))))
+  (instance ($symbol Rem. $ty) (Rem $ty)
+    (transparent-function (rem a b) (<float/rem> a b))))
 
 (builtin-op <float/eq?> {(forall A) (-> A A Bool) (where (Float A))} "float.eq")
 

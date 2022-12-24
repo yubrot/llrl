@@ -7,6 +7,7 @@
 (import "~/tests/sexp/match")
 (import "~/tests/sexp/lexer")
 (import "~/tests/sexp/parser")
+(import "~/tests/preprocess")
 (import "~/tests/syntax")
 (import "~/tests/ast")
 (import "~/tests/unification/kind")
@@ -15,7 +16,8 @@
 (import "~/tests/source")
 (import "~/tests/module")
 (import "~/tests/backend/native")
-(import "~/tests/backend/chibi")
+($when ($feature "chibi-backend")
+  (import "~/tests/backend/chibi"))
 (import "~/tests/testcases")
 
 (println! "done.")

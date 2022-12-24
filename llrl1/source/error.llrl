@@ -1,18 +1,22 @@
+(import "~/util" _)
+(import "~/source-location" SourceLocationTable _.SourceLocation)
 (import "~/path" [PathError Error] [_.PathError _.Error])
 (import "~/sexp/parser" [ParseError Error] [_.ParseError _.Error])
+(import "~/preprocess" [PreprocessError Error] [_.PreprocessError _.Error])
 (export Error _.Error error:_)
 
 ; The error that occurred during the construction of the `Source`.
-(derive (Eq Ord DebugDisplay) value-data Error
+(derive (Eq DebugDisplay) value-data Error
   error:package-not-found
   error:module-not-found
   (error:load-failed String)
   (error:parse-failed ParseError)
+  (error:preprocess-failed PreprocessError)
   (error:invalid-import-path String PathError)
   error:cannot-import-module-itself)
 
-(instance Display.Error (Display Error)
-  (function (display! w a)
+(instance ContextualDisplay.Error (ContextualDisplay Error SourceLocationTable)
+  (function (contextual-display! w a ctx)
     (match a
       [error:package-not-found
         (display! w "Package not found")]
@@ -22,8 +26,9 @@
         (display-all! w "Load failed: " e)]
       [(error:parse-failed (let e))
         (display-all! w "Parse failed: " e)]
+      [(error:preprocess-failed (let e))
+        (display-all! w "Preprocess failed: " (contextual: e ctx))]
       [(error:invalid-import-path (let path) (let e))
         (display-all! w "Invalid import path " (debug path) ": " e)]
       [error:cannot-import-module-itself
         (display! w "Cannot import module itself")])))
-

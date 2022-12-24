@@ -50,20 +50,27 @@ impl<T> Hash for Interned<T> {
 }
 
 #[derive(Debug, Clone)]
-pub struct InternTable<T: Hash + Eq> {
+pub struct InternTable<T> {
     ids: Vec<T>,
     symbols: HashMap<T, Interned<T>>,
 }
 
-impl<T: Hash + Eq> InternTable<T> {
-    #[allow(clippy::new_without_default)]
+impl<T> InternTable<T> {
     pub fn new() -> Self {
-        InternTable {
+        Self {
             ids: Vec::new(),
             symbols: HashMap::new(),
         }
     }
+}
 
+impl<T> Default for InternTable<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<T: Hash + Eq> InternTable<T> {
     pub fn get_interned<Q: ?Sized>(&self, id: &Q) -> Option<Interned<T>>
     where
         Q: Hash + Eq,

@@ -931,74 +931,73 @@
   (with1 (construct: _ (let nid)) c
     (node-id/module nid)))
 
-($$ begin
-  ($for-each
-    [$kind-id $kind-name $type]
-    ([10 KindAnn (Annotation Kind)]
-     [11 KindUse KindUse]
+($for
+  [$kind-id $kind-name $type] (
+    [10 KindAnn (Annotation Kind)]
+    [11 KindUse KindUse]
 
-     [20 TypeAnn (Annotation Type)]
-     [21 SchemeAnn (Annotation Scheme)]
-     [22 TypeUse TypeUse]
-     [23 TypeParameter TypeParameter]
-     [24 Constraint Constraint]
-     [25 ConstraintUse ConstraintUse]
+    [20 TypeAnn (Annotation Type)]
+    [21 SchemeAnn (Annotation Scheme)]
+    [22 TypeUse TypeUse]
+    [23 TypeParameter TypeParameter]
+    [24 Constraint Constraint]
+    [25 ConstraintUse ConstraintUse]
 
-     [30 Expr Expr]
-     [31 ExprUse ExprUse]
-     [32 LocalVar LocalVar]
-     [33 LocalFun LocalFun]
-     [34 Capture Construct]
+    [30 Expr Expr]
+    [31 ExprUse ExprUse]
+    [32 LocalVar LocalVar]
+    [33 LocalFun LocalFun]
+    [34 Capture Construct]
 
-     [40 Pattern Pattern]
-     [41 PatternUse PatternUse]
-     [42 PatternVar PatternVar]
+    [40 Pattern Pattern]
+    [41 PatternUse PatternUse]
+    [42 PatternVar PatternVar]
 
-     [50 Function Function]
-     [51 CFunction CFunction]
-     [52 BuiltinOp BuiltinOp]
-     [53 Macro Macro]
-     [54 DataTypeCon DataTypeCon]
-     [55 DataValueCon DataValueCon]
-     [56 BuiltinTypeCon BuiltinTypeCon]
-     [57 BuiltinValueCon BuiltinValueCon]
-     [58 ValueConField ValueConField]
-     [59 ClassCon ClassCon]
-     [60 ClassMethod ClassMethod]
-     [61 InstanceCon InstanceCon]
-     [62 InstanceMethod InstanceMethod]
-     [63 Parameter Parameter])
+    [50 Function Function]
+    [51 CFunction CFunction]
+    [52 BuiltinOp BuiltinOp]
+    [53 Macro Macro]
+    [54 DataTypeCon DataTypeCon]
+    [55 DataValueCon DataValueCon]
+    [56 BuiltinTypeCon BuiltinTypeCon]
+    [57 BuiltinValueCon BuiltinValueCon]
+    [58 ValueConField ValueConField]
+    [59 ClassCon ClassCon]
+    [60 ClassMethod ClassMethod]
+    [61 InstanceCon InstanceCon]
+    [62 InstanceMethod InstanceMethod]
+    [63 Parameter Parameter])
 
-    (begin
-      (instance ($symbol-concat Conv.From. $kind-name .To.Construct) (Conv (NodeId $type) Construct)
-        (function (conv a)
-          (construct: $kind-id (node-id/reinterpret-unchecked a))))
+  (begin
+    (instance ($symbol Conv.From. $kind-name .To.Construct) (Conv (NodeId $type) Construct)
+      (function (conv a)
+        (construct: $kind-id (node-id/reinterpret-unchecked a))))
 
-      (instance ($symbol-concat Conv.From.Construct.To. $kind-name) (Conv Construct (Option (NodeId $type)))
-        (function (conv a)
-          (with1 (construct: (let type-id) (let node-id)) a
-            (when? (eq? type-id $kind-id) (node-id/reinterpret-unchecked node-id)))))))
+    (instance ($symbol Conv.From.Construct.To. $kind-name) (Conv Construct (Option (NodeId $type)))
+      (function (conv a)
+        (with1 (construct: (let type-id) (let node-id)) a
+          (when? (eq? type-id $kind-id) (node-id/reinterpret-unchecked node-id)))))))
 
-  ($for-each
+  ($for
     [$type $con-prefix $con-names]
     ([TypeCon type-con: (data builtin)]
      [ValueCon value-con: (data builtin)]
      [Value value: (function c-function builtin-op class-method parameter local-var local-fun pattern-var)])
 
     (begin
-      (instance ($symbol-concat Conv.From. $type .To.Construct) (Conv $type Construct)
+      (instance ($symbol Conv.From. $type .To.Construct) (Conv $type Construct)
         (function (conv a)
           (match a
-            ($for-each $con-name $con-names
-              [(($symbol-concat $con-prefix $con-name) (let id))
+            ($for1 $con-name $con-names
+              [(($symbol $con-prefix $con-name) (let id))
                 (conv id)]))))
 
-      (instance ($symbol-concat Conv.From.Construct.To. $type) (Conv Construct (Option $type))
+      (instance ($symbol Conv.From.Construct.To. $type) (Conv Construct (Option $type))
         (function (conv a)
           (cond?
-            ($for-each $con-name $con-names
+            ($for1 $con-name $con-names
               [when-match1 (some (let id)) (conv a)
-                (($symbol-concat $con-prefix $con-name) id)])))))))
+                (($symbol $con-prefix $con-name) id)]))))))
 
 (instance Conv.From.Construct.To.Kind (Conv Construct (Option Kind))
   (function (conv a)
@@ -1044,66 +1043,65 @@
       (some (conv (- index 200)))
       none)))
 
-($$ begin
-  ($for-each
-    [$index $id $kind]
-    ([300 bool DataTypeCon]
-     [301 false DataValueCon]
-     [302 true DataValueCon]
+($for
+  [$index $id $kind] (
+    [300 bool DataTypeCon]
+    [301 false DataValueCon]
+    [302 true DataValueCon]
 
-     [311 i8 BuiltinTypeCon]
-     [312 i16 BuiltinTypeCon]
-     [313 i32 BuiltinTypeCon]
-     [314 i64 BuiltinTypeCon]
+    [311 i8 BuiltinTypeCon]
+    [312 i16 BuiltinTypeCon]
+    [313 i32 BuiltinTypeCon]
+    [314 i64 BuiltinTypeCon]
 
-     [321 u8 BuiltinTypeCon]
-     [322 u16 BuiltinTypeCon]
-     [323 u32 BuiltinTypeCon]
-     [324 u64 BuiltinTypeCon]
+    [321 u8 BuiltinTypeCon]
+    [322 u16 BuiltinTypeCon]
+    [323 u32 BuiltinTypeCon]
+    [324 u64 BuiltinTypeCon]
 
-     [331 f32 BuiltinTypeCon]
-     [332 f64 BuiltinTypeCon]
+    [331 f32 BuiltinTypeCon]
+    [332 f64 BuiltinTypeCon]
 
-     [340 string BuiltinTypeCon]
+    [340 string BuiltinTypeCon]
 
-     [350 char BuiltinTypeCon]
+    [350 char BuiltinTypeCon]
 
-     [360 captured-use BuiltinTypeCon]
+    [360 captured-use BuiltinTypeCon]
 
-     [370 option DataTypeCon]
-     [371 none DataValueCon]
-     [372 some DataValueCon]
+    [370 option DataTypeCon]
+    [371 none DataValueCon]
+    [372 some DataValueCon]
 
-     [380 result DataTypeCon]
-     [381 err DataValueCon]
-     [382 ok DataValueCon]
+    [380 result DataTypeCon]
+    [381 err DataValueCon]
+    [382 ok DataValueCon]
 
-     [400 number ClassCon]
-     [401 number-constraint Constraint]
+    [400 number ClassCon]
+    [401 number-constraint Constraint]
 
-     [410 number-i8 InstanceCon]
-     [411 number-i16 InstanceCon]
-     [412 number-i32 InstanceCon]
-     [413 number-i64 InstanceCon]
+    [410 number-i8 InstanceCon]
+    [411 number-i16 InstanceCon]
+    [412 number-i32 InstanceCon]
+    [413 number-i64 InstanceCon]
 
-     [420 number-u8 InstanceCon]
-     [421 number-u16 InstanceCon]
-     [422 number-u32 InstanceCon]
-     [423 number-u64 InstanceCon]
+    [420 number-u8 InstanceCon]
+    [421 number-u16 InstanceCon]
+    [422 number-u32 InstanceCon]
+    [423 number-u64 InstanceCon]
 
-     [430 number-f32 InstanceCon]
-     [431 number-f64 InstanceCon]
+    [430 number-f32 InstanceCon]
+    [431 number-f64 InstanceCon]
 
-     [450 fp-number ClassCon]
-     [451 fp-number-constraint Constraint]
+    [450 fp-number ClassCon]
+    [451 fp-number-constraint Constraint]
 
-     [480 fp-number-f32 InstanceCon]
-     [481 fp-number-f64 InstanceCon]
+    [480 fp-number-f32 InstanceCon]
+    [481 fp-number-f64 InstanceCon]
 
-     [500 syntax-type BuiltinTypeCon]
-     [501 syntax-value BuiltinValueCon]
+    [500 syntax-type BuiltinTypeCon]
+    [501 syntax-value BuiltinValueCon]
 
-     [510 sexp DataTypeCon])
+    [510 sexp DataTypeCon])
 
-    (function ($symbol-concat builtin/ $id) {(NodeId $kind)}
-      (node-id/new-unchecked module-id/builtin $index))))
+  (function ($symbol builtin/ $id) {(NodeId $kind)}
+    (node-id/new-unchecked module-id/builtin $index)))
