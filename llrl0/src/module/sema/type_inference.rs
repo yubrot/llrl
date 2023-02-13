@@ -88,7 +88,7 @@ impl<'a, E: External> Context<'a, E> {
                 let b = self.u_ctx.resolve(b);
                 let a = self.u_ctx.export(&a);
                 let b = self.u_ctx.export(&b);
-                Err(Error::CannotUnifyType(a, b, e))
+                Err(Box::new(Error::CannotUnifyType(a, b, e)))
             }
         }
     }
@@ -102,7 +102,7 @@ impl<'a, E: External> Context<'a, E> {
     where
         u::Context<KindEnv<'a, E>>: u::Resolve<A> + u::Resolve<B>,
     {
-        self.unify(a, b).map_err(|e| e.on(construct))
+        self.unify(a, b).map_err(|e| Box::new(e.on(construct)))
     }
 
     fn unify_with_params(
@@ -199,7 +199,9 @@ impl<'a, E: External> Context<'a, E> {
                     .iter()
                     .map(|c| self.build_satisfaction::<Error>(premise, c, recursion_count + 1))
                     .collect::<Result<Vec<_>>>()
-                    .map_err(|e| Error::required_for(e, &inst.target, &mut self.u_ctx))?;
+                    .map_err(|e| {
+                        Box::new(Error::required_for(*e, &inst.target, &mut self.u_ctx))
+                    })?;
 
                 return Ok(u::Satisfaction::by_instance(
                     *inst_id,
@@ -208,11 +210,11 @@ impl<'a, E: External> Context<'a, E> {
             }
         }
 
-        Err(Error::no_matching_instances(
+        Err(Box::new(Error::no_matching_instances(
             constraint,
             premise,
             &mut self.u_ctx,
-        ))
+        )))
     }
 
     fn ensure_overlap_checked(&mut self, id: ast::NodeId<ast::ClassCon>) -> Result<()> {
@@ -329,13 +331,15 @@ impl<'a, E: External> Context<'a, E> {
         for constraint in outer_ccs {
             match self.build_satisfaction::<()>(scope.context_premise(), constraint.body(), 0) {
                 Ok(satisfaction) => constraint.resolve_by(satisfaction),
-                Err(Error::BuildSatisfactionFailedAtThisScope) => {
-                    outer
-                        .as_mut()
-                        .unwrap()
-                        .inherit_deferred_context_constraint(constraint);
-                }
-                Err(e) => Err(e)?,
+                Err(e) => match *e {
+                    Error::BuildSatisfactionFailedAtThisScope => {
+                        outer
+                            .as_mut()
+                            .unwrap()
+                            .inherit_deferred_context_constraint(constraint);
+                    }
+                    _ => Err(e)?,
+                },
             }
         }
 
@@ -357,7 +361,7 @@ impl<'a, E: External> Context<'a, E> {
     ) -> Result<(Vec<u::Gen>, Vec<u::Constraint>)> {
         let construct = construct.into();
         self.finalize_scope(construct, scope, quantify_vars, outer)
-            .map_err(|e| e.on(construct))
+            .map_err(|e| Box::new(e.on(construct)))
     }
 
     fn finalized_scope_instantiation(

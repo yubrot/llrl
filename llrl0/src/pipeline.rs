@@ -46,7 +46,7 @@ impl fmt::Display for Error {
     }
 }
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, Box<Error>>;
 
 #[derive(Debug, Clone)]
 pub struct Pipeline {
@@ -124,7 +124,10 @@ impl Pipeline {
             .collect::<Vec<_>>();
 
         if !source_errors.is_empty() {
-            return Err(Error::Source(source_location_table, source_errors));
+            return Err(Box::new(Error::Source(
+                source_location_table,
+                source_errors,
+            )));
         }
 
         let sources = sources
@@ -157,7 +160,10 @@ impl Pipeline {
         let (_, module_errors) = build_modules(sources, entry_points, &lowerizer, &mut report);
 
         if !module_errors.is_empty() {
-            return Err(Error::Module(source_location_table, module_errors));
+            return Err(Box::new(Error::Module(
+                source_location_table,
+                module_errors,
+            )));
         }
 
         let backend = lowerizer.complete(&mut report);

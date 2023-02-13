@@ -47,17 +47,21 @@ impl<'a, M: ModuleSet> Context<'a, M> {
 
         if rows.is_empty() {
             // FIXME: In bottom types, it should be considered exhaustive
-            return Err(Error::NonExhaustivePattern(vec![p::Pattern::Wildcard]));
+            return Err(Box::new(Error::NonExhaustivePattern(vec![
+                p::Pattern::Wildcard,
+            ])));
         }
 
-        p::check(rows).map_err(|e| match e {
-            p::Error::Useless(mut row) => Error::UselessPattern(row.take_head().unwrap()),
-            p::Error::NonExhaustive(mat) => Error::NonExhaustivePattern(
-                mat.into_rows()
-                    .into_iter()
-                    .map(|mut row| row.take_head().unwrap())
-                    .collect(),
-            ),
+        p::check(rows).map_err(|e| {
+            Box::new(match e {
+                p::Error::Useless(mut row) => Error::UselessPattern(row.take_head().unwrap()),
+                p::Error::NonExhaustive(mat) => Error::NonExhaustivePattern(
+                    mat.into_rows()
+                        .into_iter()
+                        .map(|mut row| row.take_head().unwrap())
+                        .collect(),
+                ),
+            })
         })
     }
 

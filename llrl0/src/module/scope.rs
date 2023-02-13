@@ -52,7 +52,7 @@ impl Scope for TopLevel {
     fn define(&mut self, name: &str, c: LocatedConstruct) -> sema::Result<()> {
         match self.map.insert(name.to_string(), c) {
             Some(old_c) if old_c.construct != c.construct => {
-                Err(Error::multiple_declarations(name, old_c, c))
+                Err(Box::new(Error::multiple_declarations(name, old_c, c)))
             }
             _ => Ok(()),
         }
@@ -99,11 +99,11 @@ impl<'a> Scope for LocalScope<'a> {
             .insert(name.to_string(), self.map.remove(name))
             .is_some()
         {
-            return Err(Error::duplicated_identifier(
+            return Err(Box::new(Error::duplicated_identifier(
                 name,
                 self.stash.get(name).unwrap().unwrap(),
                 c,
-            ));
+            )));
         }
         self.map.insert(name.to_string(), c);
         Ok(())

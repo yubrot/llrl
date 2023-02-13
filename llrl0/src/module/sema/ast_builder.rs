@@ -17,7 +17,7 @@ pub fn run(module: &mut Module, code: &Ss, external: &impl External) -> Result<(
     Ok(())
 }
 
-fn define<'a, E: External>(s: &Sexp, ctx: &mut ContextImpl<'a, E>) -> Result<()> {
+fn define<E: External>(s: &Sexp, ctx: &mut ContextImpl<'_, E>) -> Result<()> {
     let s = ctx.expand_macro(s)?;
     let decl = ctx.matches::<syntax::Decl>(&s)?;
     match decl {
@@ -170,7 +170,7 @@ trait Context: Sized {
     }
 
     fn matches<'a, T: Match<'a>>(&self, s: &'a Sexp) -> Result<T::Result> {
-        Ok(s.matches::<T>()?)
+        s.matches::<T>().map_err(|e| Box::new(e.into()))
     }
 
     fn build<T: Build<S>, S>(&mut self, src: S) -> Result<T> {
@@ -510,12 +510,20 @@ impl Build<syntax::Expr<'_>> for ExprRep {
                         if value.is_static() {
                             Ok(ExprRep::Use(Use::Resolved(value, None)))
                         } else {
-                            Err(Error::unresolved(native.loc, "value", "<captured use>"))
+                            Err(Box::new(Error::unresolved(
+                                native.loc,
+                                "value",
+                                "<captured use>",
+                            )))
                         }
                     } else if let Ok(value_con) = construct.try_into() {
                         Ok(ExprRep::Con(value_con))
                     } else {
-                        Err(Error::unresolved(native.loc, "value", "<captured use>"))
+                        Err(Box::new(Error::unresolved(
+                            native.loc,
+                            "value",
+                            "<captured use>",
+                        )))
                     }
                 } else {
                     panic!("Unknown native {}", native.rep)
@@ -694,7 +702,11 @@ impl Build<syntax::Type<'_>> for Type {
                     if let Ok(type_con) = construct.try_into() {
                         Ok(build_type!(Ast, (con { type_con })))
                     } else {
-                        Err(Error::unresolved(native.loc, "type", "<captured use>"))
+                        Err(Box::new(Error::unresolved(
+                            native.loc,
+                            "type",
+                            "<captured use>",
+                        )))
                     }
                 } else {
                     panic!("Unknown native {}", native.rep)

@@ -6,7 +6,9 @@ pub fn run(module: &mut Module, code: &Ss) -> Result<()> {
     for s in code.ss.iter() {
         if let Ok(export) = s.matches::<syntax::Export>() {
             for target in export.targets {
-                let select = target.matches::<syntax::PortTarget>()?;
+                let select = target
+                    .matches::<syntax::PortTarget>()
+                    .map_err(|e| Box::new(e.into()))?;
 
                 if let Some(src) = WildcardPortTarget::from_pattern(select.target.sym) {
                     let dest = match select.name {

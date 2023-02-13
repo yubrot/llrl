@@ -21,7 +21,7 @@ fn main() {
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error(transparent)]
-    PipelineError(#[from] PipelineError),
+    PipelineError(#[from] Box<PipelineError>),
 
     #[error(transparent)]
     IoError(#[from] io::Error),

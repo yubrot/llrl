@@ -11,7 +11,7 @@ mod type_inference;
 mod validator;
 
 pub type Error = super::Error<SemaErrorContext>;
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, Box<Error>>;
 
 /// Perform a semantic analysis.
 pub fn run(module: &mut Module, source: &Source, external: &impl External) -> Result<()> {

@@ -84,7 +84,7 @@ impl<'a, S: Scope> Context for ContextImpl<'a, S> {
         let symbol = self.symbol_map.get(use_).unwrap();
         match self.scope.get(&symbol.name) {
             Some(c) => Ok((c.construct, symbol)),
-            None => Err(Error::unresolved(symbol.loc, kind, &symbol.name)),
+            None => Err(Box::new(Error::unresolved(symbol.loc, kind, &symbol.name))),
         }
     }
 

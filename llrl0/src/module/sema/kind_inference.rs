@@ -35,7 +35,7 @@ impl<'a, E: External> Context<'a, E> {
             Err(e) => {
                 let a = self.u_ctx.export(a, &mut ast::Ast);
                 let b = self.u_ctx.export(b, &mut ast::Ast);
-                Err(Error::CannotUnifyKind(a, b, e))
+                Err(Box::new(Error::CannotUnifyKind(a, b, e)))
             }
         }
     }
@@ -49,7 +49,7 @@ impl<'a, E: External> Context<'a, E> {
     where
         u::Context: u::Resolve<A> + u::Resolve<B>,
     {
-        self.unify(a, b).map_err(|e| e.on(construct))
+        self.unify(a, b).map_err(|e| Box::new(e.on(construct)))
     }
 
     fn kind_of(&mut self, construct: impl Into<ast::Construct>) -> u::Kind {
@@ -84,7 +84,7 @@ impl<'a, E: External> Context<'a, E> {
         let kind = self.u_ctx.export(kind, &mut ast::Ast);
         assert!(!kind.contains_error(), "Undetermined kind: {:?}", kind);
         if ensure_first_class && !kind.is_first_class() {
-            return Err(Error::UnsupportedKind(kind).on(construct));
+            return Err(Box::new(Error::UnsupportedKind(kind).on(construct)));
         }
         self.inferred_kinds.set(construct, kind);
         Ok(())
@@ -146,7 +146,7 @@ pub trait Infer<T: ?Sized> {
         construct: impl Into<ast::Construct>,
         target: &T,
     ) -> Result<Self::Result> {
-        self.infer(target).map_err(|e| e.on(construct))
+        self.infer(target).map_err(|e| Box::new(e.on(construct)))
     }
 }
 
@@ -479,7 +479,8 @@ impl<'a, E: External> Infer<ast::Annotation<ast::Scheme>> for Context<'a, E> {
     type Result = ();
 
     fn infer(&mut self, target: &ast::Annotation<ast::Scheme>) -> Result<Self::Result> {
-        self.infer(&target.body).map_err(|e| e.on(target.id))
+        self.infer(&target.body)
+            .map_err(|e| Box::new(e.on(target.id)))
     }
 }
 
