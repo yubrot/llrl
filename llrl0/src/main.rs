@@ -81,6 +81,8 @@ fn run_pipeline() -> Result<Option<ExitStatus>> {
         Some("llvm") => pipeline.run::<llrl::backend::llvm::Backend>(output, run_args)?,
         #[cfg(feature = "chibi-backend")]
         Some("chibi") => pipeline.run::<llrl::backend::chibi::Backend>(output, run_args)?,
+        #[cfg(feature = "interpreter-backend")]
+        Some("interp") => pipeline.run::<llrl::backend::interpreter::Backend>(output, run_args)?,
         Some(backend) => Err(io::Error::new(
             io::ErrorKind::Other,
             format!("Unsupported backend: {}", backend),
@@ -207,7 +209,7 @@ impl<'a> CliOptions<'a> {
             .short("b")
             .help("Sets the backend")
             .value_name("BACKEND")
-            .possible_values(&["default", "llvm", "chibi"])
+            .possible_values(&["default", "llvm", "chibi", "interp"])
     }
 
     fn backend(&self) -> Option<&str> {

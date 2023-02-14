@@ -164,6 +164,12 @@ impl TestTarget {
                     let backend = crate::backend::chibi::Backend::from(BackendOptions::default());
                     self.run_backend(&sources, cond, backend, ctx);
                 }
+                #[cfg(feature = "interpreter-backend")]
+                {
+                    let backend =
+                        crate::backend::interpreter::Backend::from(BackendOptions::default());
+                    self.run_backend(&sources, cond, backend, ctx);
+                }
             }
         }
     }

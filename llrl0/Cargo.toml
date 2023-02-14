@@ -13,11 +13,11 @@ name = "llrl"
 
 [features]
 chibi-backend = ["xten0"]
-default = ["llvm-backend", "chibi-backend"]
+default = ["llvm-backend", "chibi-backend", "interpreter-backend"]
+interpreter-backend = []
 llvm-backend = ["llvm0"]
 
 [dependencies]
-clap = "2"
 crossbeam-channel = "0.5"
 derive-new = "0.5"
 either = "1"
@@ -36,3 +36,8 @@ tempfile = "3"
 thiserror = "1"
 typed-arena = "2"
 xten0 = {path = "../xten0", optional = true}
+
+# NOTE: What we really want to do is to enable clap only for CLI
+# https://github.com/rust-lang/rfcs/pull/3374
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+clap = "2"
