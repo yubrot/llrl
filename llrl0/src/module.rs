@@ -1,22 +1,22 @@
 use crate::ast;
-use crate::sexp::Sexp;
 use crate::path::Path;
 use crate::report::Report;
+use crate::sexp::Sexp;
 use crate::source::Source;
 use crate::topological_sort;
 
+mod builder;
 mod error;
 mod formatter;
 mod meaning;
-mod parallel;
 mod scope;
 mod sema;
 mod set;
 
+pub use builder::{build as build_modules, Backend};
 pub use error::{Error, SemaErrorContext, TextualErrorContext};
 pub use formatter::Formatter;
 pub use meaning::*;
-pub use parallel::{build as parallel_build, Backend};
 pub use scope::*;
 pub use set::ModuleSet;
 

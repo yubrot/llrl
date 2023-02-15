@@ -61,9 +61,7 @@ pub mod prelude {
         collect as collect_sources, Error as SourceError, Loader as SourceLoader, Source, SourceSet,
     };
 
-    pub use super::module::{
-        parallel_build as build_modules, Error as ModuleError, Module, ModuleId,
-    };
+    pub use super::module::{build_modules, Error as ModuleError, Module, ModuleId};
 
     pub use super::lowering::{Backend, Lowerizer};
 

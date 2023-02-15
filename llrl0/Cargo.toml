@@ -29,7 +29,6 @@ llvm0 = {path = "../llvm0", optional = true}
 memoffset = "0.6"
 once_cell = "1"
 ordered-float = "2"
-rayon = "1"
 regex = "1"
 smallvec = "1"
 tempfile = "3"
