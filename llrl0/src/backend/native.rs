@@ -4,7 +4,6 @@ use std::path;
 
 pub mod calling;
 pub mod data;
-pub mod execution;
 pub mod linking;
 pub mod mem_layout;
 
@@ -12,7 +11,7 @@ pub mod mem_layout;
 pub trait NativeBackend {
     /// Produce an executbale binary.
     fn produce_executable(
-        &self,
+        &mut self,
         dest: path::PathBuf,
         clang_options: Vec<String>,
     ) -> Result<(), String>;

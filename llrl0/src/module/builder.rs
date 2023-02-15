@@ -7,23 +7,23 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 /// Compiler backend used by `build`.
-pub trait Backend: Sync {
+pub trait Backend {
     /// Add a built module. Built modules are added from this method without omission.
-    fn add_module(&self, module: Arc<Module>, is_entry_point: bool);
+    fn add_module(&mut self, module: Arc<Module>, is_entry_point: bool);
 
     /// Execute the macro. The macro to be executed always resides in the module added with `add_module`.
     fn execute_macro(
-        &self,
+        &mut self,
         id: ast::NodeId<ast::Macro>,
         s: &builtin::Syntax<builtin::Sexp>,
     ) -> Result<builtin::Syntax<builtin::Sexp>, String>;
 }
 
 impl Backend for () {
-    fn add_module(&self, _module: Arc<Module>, _is_entry_point: bool) {}
+    fn add_module(&mut self, _module: Arc<Module>, _is_entry_point: bool) {}
 
     fn execute_macro(
-        &self,
+        &mut self,
         _id: ast::NodeId<ast::Macro>,
         _s: &builtin::Syntax<builtin::Sexp>,
     ) -> Result<builtin::Syntax<builtin::Sexp>, String> {
@@ -37,7 +37,7 @@ impl Backend for () {
 pub fn build(
     sources: Vec<Source>,
     entry_points: HashSet<Path>,
-    backend: &impl Backend,
+    backend: &mut impl Backend,
     report: &mut Report,
 ) -> (Vec<Arc<Module>>, Vec<(Source, Error)>) {
     if sources.is_empty() {
@@ -69,14 +69,15 @@ pub fn build(
 
     for source in sources {
         let mid = ModuleId::from_index(ctx.modules.len());
-        let module = match report.on(Phase::BuildModule, || Module::build(mid, &source, &ctx)) {
+        let module = match report.on(Phase::BuildModule, || Module::build(mid, &source, &mut ctx)) {
             Ok(module) => Arc::new(module),
             Err(e) => return (ctx.modules, vec![(source, e)]),
         };
         report.merge(module.report());
         ctx.modules.push(Arc::clone(&module));
         ctx.path_to_module.insert(source.path.clone(), mid);
-        backend.add_module(module, entry_points.contains(&source.path));
+        ctx.backend
+            .add_module(module, entry_points.contains(&source.path));
     }
 
     (ctx.modules, Vec::new())
@@ -86,7 +87,7 @@ pub fn build(
 struct BuildContext<'b, B> {
     modules: Vec<Arc<Module>>,
     path_to_module: HashMap<Path, ModuleId>,
-    backend: &'b B,
+    backend: &'b mut B,
 }
 
 impl<'a, B: Backend> External for BuildContext<'a, B> {
@@ -100,7 +101,7 @@ impl<'a, B: Backend> External for BuildContext<'a, B> {
     }
 
     fn execute_macro(
-        &self,
+        &mut self,
         id: ast::NodeId<ast::Macro>,
         s: &builtin::Syntax<builtin::Sexp>,
     ) -> Result<builtin::Syntax<builtin::Sexp>, String> {

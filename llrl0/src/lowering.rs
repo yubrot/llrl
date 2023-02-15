@@ -4,11 +4,8 @@
 use crate::ast;
 use crate::module::{Backend as ModuleBackend, Module, ModuleId};
 use crate::report::{Phase, Report};
-use crossbeam_channel::{bounded, unbounded, Receiver, RecvError, Sender, TryRecvError};
-use derive_new::new;
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
-use std::thread;
 
 mod branch_expander;
 mod context;
@@ -21,7 +18,7 @@ mod translator;
 pub use context::Context;
 
 /// Low-level compiler backend used by the `Lowerizer`.
-pub trait Backend: Send + 'static {
+pub trait Backend {
     fn put_def(&mut self, id: ir::CtId, def: Arc<ir::Def>);
 
     fn put_main(&mut self, init: ir::Init);
@@ -37,149 +34,76 @@ pub trait Backend: Send + 'static {
 
 #[derive(Debug)]
 pub struct Lowerizer<B: Backend> {
-    sender: Sender<Request>,
-    handle: thread::JoinHandle<(B, Report)>,
+    backend: B,
+    report: Report,
+    modules: HashMap<ModuleId, Arc<Module>>,
+    initialized_modules: HashSet<ModuleId>,
+    ctx: Context,
 }
 
 impl<B: Backend> Lowerizer<B> {
     pub fn new(backend: B) -> Self {
-        let (sender, receiver) = unbounded();
-        let handle = thread::spawn(move || process_requests(backend, receiver));
-        Self { sender, handle }
+        Self {
+            backend,
+            report: Report::new(),
+            modules: HashMap::new(),
+            initialized_modules: HashSet::new(),
+            ctx: Context::new(),
+        }
     }
 
     pub fn complete(self, report: &mut Report) -> B {
-        drop(self.sender);
-        let (result, lowerizer_report) = self.handle.join().unwrap();
-        report.merge(&lowerizer_report);
+        report.merge(&self.report);
+        self.backend
+    }
+
+    fn populate<T>(&mut self, src: &T) -> T::Dest
+    where
+        T: translator::Translate,
+        T::Dest: ir::traverser::Traverse + ir::rewriter::Rewrite,
+    {
+        let (result, defs) = self
+            .report
+            .on(Phase::Lowerize, || self.ctx.populate(&src, &self.modules));
+        for (id, def) in defs {
+            self.backend.put_def(id, Arc::clone(def));
+        }
         result
+    }
+
+    fn entry_module(&mut self, mid: ModuleId) {
+        if !self.initialized_modules.insert(mid) {
+            return;
+        }
+        let module = Arc::clone(&self.modules[&mid]);
+        for init_expr in module.ast_root().init_expressions.iter() {
+            match init_expr {
+                expr @ ast::InitExpr::Eval(_) => {
+                    if let Some(init) = self.populate(expr) {
+                        self.backend.put_main(init);
+                    }
+                }
+                ast::InitExpr::EnsureInitialized(mid) => self.entry_module(*mid),
+            }
+        }
     }
 }
 
 impl<B: Backend> ModuleBackend for Lowerizer<B> {
-    fn add_module(&self, module: Arc<Module>, is_entry_point: bool) {
-        let request = Request::AddModule(module, is_entry_point);
-        self.sender.send(request).unwrap();
+    fn add_module(&mut self, module: Arc<Module>, is_entry_point: bool) {
+        let mid = module.id();
+        self.modules.insert(mid, module);
+        if is_entry_point {
+            self.entry_module(mid);
+        }
     }
 
     fn execute_macro(
-        &self,
+        &mut self,
         id: ast::NodeId<ast::Macro>,
         s: &ir::Syntax<ir::Sexp>,
     ) -> Result<ir::Syntax<ir::Sexp>, String> {
-        let (sender, receiver) = bounded(0);
-        let request = Request::ExecuteMacro(id, s.clone(), sender);
-        self.sender.send(request).unwrap();
-        receiver.recv().unwrap()
-    }
-}
-
-#[derive(Debug)]
-enum Request {
-    AddModule(Arc<Module>, bool),
-    ExecuteMacro(
-        ast::NodeId<ast::Macro>,
-        ir::Syntax<ir::Sexp>,
-        Sender<Result<ir::Syntax<ir::Sexp>, String>>,
-    ),
-}
-
-fn process_requests<B: Backend>(mut backend: B, receiver: Receiver<Request>) -> (B, Report) {
-    let mut ctx = Context::new();
-    let mut modules = HashMap::new();
-    let mut main = MainStatements::new(HashSet::new(), VecDeque::new());
-    let mut report = Report::new();
-
-    fn populate<T, B>(
-        ctx: &mut Context,
-        report: &mut Report,
-        backend: &mut B,
-        src: &T,
-        modules: &HashMap<ModuleId, Arc<Module>>,
-    ) -> T::Dest
-    where
-        T: translator::Translate,
-        T::Dest: ir::traverser::Traverse + ir::rewriter::Rewrite,
-        B: Backend,
-    {
-        let (result, defs) = report.on(Phase::Lowerize, || ctx.populate(&src, &modules));
-        for (id, def) in defs {
-            backend.put_def(id, Arc::clone(def));
-        }
-        result
-    }
-
-    while match if main.is_empty() {
-        // There are no scheduled tasks, recv with blocking
-        match receiver.recv() {
-            Ok(request) => Ok(request),
-            Err(RecvError) => Err(true),
-        }
-    } else {
-        // There is a scheduled task, recv without blocking
-        match receiver.try_recv() {
-            Ok(request) => Ok(request),
-            Err(TryRecvError::Empty) => Err(false),
-            Err(TryRecvError::Disconnected) => Err(true),
-        }
-    } {
-        // Consume the received request
-        Ok(request) => match request {
-            Request::AddModule(module, is_entry_point) => {
-                let mid = module.id();
-                modules.insert(mid, module);
-                if is_entry_point {
-                    main.enqueue(mid, &modules);
-                }
-                true
-            }
-            Request::ExecuteMacro(macro_id, s, response_sender) => {
-                let f = populate(&mut ctx, &mut report, &mut backend, &macro_id, &modules);
-                let result = backend.execute_macro(f.id(), s);
-                let _ = response_sender.send(result);
-                true
-            }
-        },
-        // There are no request at the moment, consume a scheduled task
-        Err(complete) => match main.dequeue() {
-            Some(init) => {
-                if let Some(init) = populate(&mut ctx, &mut report, &mut backend, &init, &modules) {
-                    backend.put_main(init);
-                }
-                true
-            }
-            None => !complete,
-        },
-    } {}
-
-    (backend, report)
-}
-
-#[derive(Debug, new)]
-struct MainStatements {
-    visited: HashSet<ModuleId>,
-    queue: VecDeque<ast::InitExpr>,
-}
-
-impl MainStatements {
-    fn is_empty(&self) -> bool {
-        self.queue.is_empty()
-    }
-
-    fn enqueue(&mut self, mid: ModuleId, map: &HashMap<ModuleId, Arc<Module>>) {
-        if !self.visited.insert(mid) {
-            return;
-        }
-
-        for init_expr in map[&mid].ast_root().init_expressions.iter() {
-            self.queue.push_back(init_expr.clone());
-            if let ast::InitExpr::EnsureInitialized(mid) = init_expr {
-                self.enqueue(*mid, map);
-            }
-        }
-    }
-
-    fn dequeue(&mut self) -> Option<ast::InitExpr> {
-        self.queue.pop_front()
+        let f = self.populate(&id);
+        self.backend.execute_macro(f.id(), s.clone())
     }
 }

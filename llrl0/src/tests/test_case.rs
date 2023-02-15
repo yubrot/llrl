@@ -150,7 +150,7 @@ impl TestTarget {
         match self {
             Self::Module => {
                 let (modules, errors) =
-                    build_modules(sources, Default::default(), &(), &mut ctx.report);
+                    build_modules(sources, Default::default(), &mut (), &mut ctx.report);
                 cond.run(&modules, &errors, ctx);
             }
             Self::Backend | Self::Std => {
@@ -181,10 +181,14 @@ impl TestTarget {
         backend: B,
         ctx: &mut TestContext,
     ) {
-        let lowerizer = Lowerizer::new(backend);
+        let mut lowerizer = Lowerizer::new(backend);
         let entry_points = vec![Path::current()].into_iter().collect();
-        let (modules, errors) =
-            build_modules(sources.to_vec(), entry_points, &lowerizer, &mut ctx.report);
+        let (modules, errors) = build_modules(
+            sources.to_vec(),
+            entry_points,
+            &mut lowerizer,
+            &mut ctx.report,
+        );
         cond.run(&modules, &errors, ctx);
 
         if matches!(cond, TestCondition::Pass(_)) {

@@ -44,7 +44,7 @@ pub struct Module {
 
 impl Module {
     /// Build a module from `Source`.
-    pub fn build(mid: ModuleId, source: &Source, external: &impl External) -> Result<Self> {
+    pub fn build(mid: ModuleId, source: &Source, external: &mut impl External) -> Result<Self> {
         use once_cell::sync::Lazy;
         use std::sync::Mutex;
 
@@ -69,7 +69,7 @@ impl Module {
                 }
                 Ok(module)
             }
-            Err(e) => Err(e.into_result_error(Formatter::new((&module, external)))),
+            Err(e) => Err(e.into_result_error(Formatter::new((&module, &*external)))),
         }
     }
 
@@ -246,7 +246,7 @@ pub trait External {
     fn find_module(&self, path: &Path) -> Option<&Module>;
 
     fn execute_macro(
-        &self,
+        &mut self,
         id: ast::NodeId<ast::Macro>,
         s: &Sexp,
     ) -> std::result::Result<Sexp, String>;

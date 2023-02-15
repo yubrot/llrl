@@ -150,14 +150,14 @@ impl Pipeline {
             }
         }
 
-        let lowerizer = Lowerizer::new(B::from(
+        let mut lowerizer = Lowerizer::new(B::from(
             BackendOptions::default()
                 .optimize(self.optimize)
                 .verbose(self.verbose),
         ));
 
         let entry_points = self.entry_source_paths.into_iter().collect();
-        let (_, module_errors) = build_modules(sources, entry_points, &lowerizer, &mut report);
+        let (_, module_errors) = build_modules(sources, entry_points, &mut lowerizer, &mut report);
 
         if !module_errors.is_empty() {
             return Err(Box::new(Error::Module(
@@ -166,7 +166,7 @@ impl Pipeline {
             )));
         }
 
-        let backend = lowerizer.complete(&mut report);
+        let mut backend = lowerizer.complete(&mut report);
         backend
             .produce_executable(output.to_owned(), self.clang_options)
             .map_err(Error::ProduceExecutable)?;

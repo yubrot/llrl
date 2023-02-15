@@ -57,7 +57,7 @@ impl lowering::Backend for Backend {
 
 impl NativeBackend for Backend {
     fn produce_executable(
-        &self,
+        &mut self,
         _dest: std::path::PathBuf,
         _clang_options: Vec<String>,
     ) -> std::result::Result<(), String> {

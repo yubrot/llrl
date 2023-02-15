@@ -6,7 +6,7 @@ use crate::syntax;
 use either::*;
 use std::borrow::Cow;
 
-pub fn run(module: &mut Module, code: &Ss, external: &impl External) -> Result<()> {
+pub fn run(module: &mut Module, code: &Ss, external: &mut impl External) -> Result<()> {
     let mut ctx = ContextImpl { module, external };
 
     for s in code.ss.iter() {
@@ -84,7 +84,7 @@ fn define<E: External>(s: &Sexp, ctx: &mut ContextImpl<'_, E>) -> Result<()> {
 
 struct ContextImpl<'a, E> {
     module: &'a mut Module,
-    external: &'a E,
+    external: &'a mut E,
 }
 
 impl<'a, E: External> Context for ContextImpl<'a, E> {

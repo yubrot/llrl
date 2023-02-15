@@ -14,7 +14,7 @@ pub type Error = super::Error<SemaErrorContext>;
 pub type Result<T> = std::result::Result<T, Box<Error>>;
 
 /// Perform a semantic analysis.
-pub fn run(module: &mut Module, source: &Source, external: &impl External) -> Result<()> {
+pub fn run(module: &mut Module, source: &Source, external: &mut impl External) -> Result<()> {
     for path in source.dependencies.values() {
         let import_module = external
             .find_module(path)
